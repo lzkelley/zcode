@@ -15,6 +15,7 @@ setup(
     keywords = "",
     url = "https://bitbucket.org/lzkelley/zcode/",
     packages=['zcode'],
+    package_dir = { 'zcode': 'src' },
     include_package_data=True,
     install_requires=requirements,
     long_description=readme,
