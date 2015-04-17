@@ -1,5 +1,5 @@
 """
-This module handles all standard plotting scripts.
+
 """
 
 __author__  = "Luke Zoltan Kelley"
@@ -8,3 +8,4 @@ __email__   = "lkelley@cfa.harvard.edu"
 __status__  = "Development"
 
 import Plotting
+import InOut
