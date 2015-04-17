@@ -26,6 +26,9 @@ FS = 10
 
 VALID_SIDES = [ None, 'left', 'right', 'top', 'bottom' ]
 
+LS_DASH_DASH = [8,4]
+LS_DASH_DOT  = [8,4,4,4]
+LS_DOT_DOT   = [4,4]
 
 
 def watermark(fig, run, fs=FS):
