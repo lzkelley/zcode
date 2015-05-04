@@ -124,13 +124,36 @@ def _setAxis_label(ax, axis, label, fs=12, c='black'):
 
 
 
-def setAxis(ax, axis='x', fs=12, c='black', pos=None, trans='axes', label=None, scale=None, thresh=None, side=None, ts=8, grid=True, lim=None):
-    assert axis  in ['x','y'],                          "``axis`` must be either `x` or `y`!"
-    assert trans in ['axes','figure'],                  "``trans`` must be either `axes` or `figure`!"
-    assert side in VALID_SIDES, "``side`` must be in '%s'" % (VALID_SIDES)
+def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None, 
+            thresh=None, side=None, ts=8, grid=True, lim=None):
+    """
+    Configure a particular axis of the given axes object.
 
-    # Set tick colors
+    Arguments
+    ---------
+    ax     : <matplotlib.axes.Axes>, base axes object to modify
+    axis   : <str>, which axis to target {``x`` or ``y``}
+    c      : <str>, color for the axis (see ``matplotlib.colors``)
+    fs     : <int>, font size for labels
+    pos    : <float>, position of axis-label/lines relative to the axes object
+    trans  : <str>, transformation type for the axes
+    label  : <str>, axes label (``None`` means blank)
+    scale  : <str>, axis scale, e.g. 'log', (``None`` means default)
+    thresh : <float>, for 'symlog' scaling, the threshold for the linear segment
+    side   : <str>, where to place the markings, {``left``, ``right``, ``top``, ``bottom``}
+    ts     : <int>, tick-size (for the major ticks only)
+    grid   : <bool>, whether grid lines should be enabled
+    lim    : <float>[2], limits for the axis range
+
+    """
+
+    assert axis  in ['x','y'],                          "``axis`` must be `x` or `y`!"
+    assert trans in ['axes','figure'],                  "``trans`` must be `axes` or `figure`!"
+    assert side  in VALID_SIDES, "``side`` must be in '%s'" % (VALID_SIDES)
+
+    # Set tick colors and font-sizes
     ax.tick_params(axis=axis, which='both', colors=c, labelsize=fs)
+    #    Set tick-size only for major ticks
     ax.tick_params(axis=axis, which='major', size=ts)
 
     # Set Grid Lines
