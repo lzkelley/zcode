@@ -316,7 +316,7 @@ def plotHistLine(ax, edges, hist, color='black', label=None, lw=1.0, ls='-', alp
 
 
 
-
+'''
 def createFigures(nfigs=1, figsize=None, axsize=None, axpos=None):
 
     # Set unset parameters to defaults
@@ -335,18 +335,8 @@ def createFigures(nfigs=1, figsize=None, axsize=None, axpos=None):
             ff.add_axes(axp + axs)
 
     return figs
-
-
 '''
-def createFigure(left=AX_LEFT, right=AX_RIGHT, bottom=AX_BOTTOM, top=AX_TOP):
 
-    fig = plt.figure(figsize=FIG_SIZE)
-    pos = [left, bottom]
-    size = [1.0-left-right, 1.0-bottom-top]
-    fig.add_axes(pos + size)
-
-    return fig
-'''
 
 def saveFigure(fname, fig, verbose=True):
     fig.savefig(fname)
