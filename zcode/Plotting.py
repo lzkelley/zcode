@@ -155,7 +155,7 @@ def plotRect(ax, loc):
     return
 
 
-def twinAxis(ax, twin='x', fs=12, c='black', pos=1.0, trans='axes', label=None, scale=None, thresh=None, ts=None, side=None, lim=None, grid=True):
+def twinAxis(ax, twin='x', fs=12, c='black', pos=1.0, trans='axes', label=None, scale=None, thresh=None, ts=None, side=None, lim=None, grid=False):
     assert twin in ['x','y'], "``twin`` must be either `x` or `y`!"
     assert trans in ['axes','figure'], "``trans`` must be either `axes` or `figure`!"
 
