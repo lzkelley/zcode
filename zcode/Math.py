@@ -180,3 +180,32 @@ def integrate_cumulative_arr_trapezoid(arr, xx, log=True, init=None, rev=False):
     return retval
 
 # integrate_cumulative_arr_trapezoid()
+
+
+
+def withinBounds(val, arr, edges=True):
+    """
+    Test whether a value or array is within the bounds of another.
+
+    Arguments
+    ---------
+       val   : <scalar>([N]), test value(s) 
+       arr   : <scalar>[M],   array or span to compare with
+       edges : (<bool>), include the boundaries of ``arr`` as 'within'
+
+    Returns
+    -------
+       <bool>, True if within, False otherwise
+
+    """
+
+    # Including edges (thus equal to edges is 'inside' )
+    if( edges ):
+        if( np.min(val) <  np.min(arr) ): return False
+        if( np.max(val) >  np.max(arr) ): return False
+    # Excluding edges (thus equal to edges is 'outside')
+    else:
+        if( np.min(val) <= np.min(arr) ): return False
+        if( np.max(val) >= np.max(arr) ): return False
+
+    return True
