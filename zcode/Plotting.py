@@ -30,19 +30,88 @@ LS_DASH_DASH = [8,4]
 LS_DASH_DOT  = [8,4,4,4]
 LS_DOT_DOT   = [4,4]
 
+LEFT  = 0.1
+RIGHT = 0.9
+BOT   = 0.1
+TOP   = 0.9
+WSPACE = 0.2
+HSPACE = 0.25
 
+### FIX: THIS SHOULDNT BE HERE !! ###
+
+'''
 def watermark(fig, run, fs=FS):
     wm_str = "Illustris-%d\n%s" % (run, datetime.now().ctime())
     text = fig.text(0.98, 0.02, wm_str, horizontalalignment='right', fontsize=FS,
                     verticalalignment='bottom', transform=plt.gcf().transFigure)
     return text
+'''
 
 
 
-def addParameterString(fig, str, xx=0.98, yy=0.1, halign='right', valign='bottom', fs=16):
-    txt = fig.text(xx, yy, str, size=fs, family='monospace',
-                   horizontalalignment=halign, verticalalignment=valign,
-                   transform=fig.transFigure)
+
+def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True, 
+             invx=False, invy=False, twinx=False, twiny=False,
+             left=LEFT, right=RIGHT, top=TOP, bot=BOT, hspace=HSPACE, wspace=WSPACE):
+    fig, axes = plt.subplots(figsize=figsize, nrows=nrows, ncols=ncols)
+
+    for ax in axes:
+        if( logx ): ax.set_xscale('log')
+        if( logy ): ax.set_yscale('log')
+        if( grid ): ax.grid()
+        if( invx ): ax.invert_xaxis()
+        if( invy ): ax.invert_yaxis()
+
+
+    if( twinx ): 
+        twxs = []
+        for ax in axes: twxs.append(ax.twinx())
+        twxs = np.array(twxs).reshape(np.shape(axes))
+        for tw in twxs: 
+            if( logy ): tw.set_yscale('log')
+
+    if( twiny ): 
+        twys = []
+        for ax in axes: twys.append(ax.twiny())
+        twys = np.array(twys).reshape(np.shape(axes))
+        for tw in twys: 
+            if( logy ): tw.set_xscale('log')
+
+
+    if(   twinx and twiny ): return fig, axes, twxs, twys
+    elif( twinx ):           return fig, axes, twxs
+    elif( twiny ):           return fig, axes, twys
+    
+    plt.subplots_adjust(left=left, right=right, top=top, bottom=bot, wspace=wspace, hspace=hspace)
+
+    return fig, axes
+
+
+
+def set_lim(ax, axis='y', lo=None, hi=None, data=None):
+
+    if(   axis == 'y' ): 
+        get_lim = ax.get_ylim
+        set_lim = ax.set_ylim
+    elif( axis == 'x' ): 
+        get_lim = ax.get_xlim
+        set_lim = ax.set_xlim
+    else:
+        raise RuntimeError("``axis`` must be either 'x' or 'y'!")
+
+    lims = np.array(get_lim())
+    if(   lo   is not None ): lims[0] = lo
+    elif( data is not None ): lims[0] = np.min(data)
+    if(   hi   is not None ): lims[1] = hi
+    elif( data is not None ): lims[1] = np.max(data)
+    set_lim(lims)
+
+    return ax
+
+
+def addParameterString(fig, str, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
+    txt = fig.text(x, y, str, size=fs, family='monospace', transform=fig.transFigure,
+                   horizontalalignment=halign, verticalalignment=valign)
 
     return txt
 
@@ -73,9 +142,9 @@ def unifyAxesLimits(axes, axis='y'):
 
 
 def setColorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
-    if(ax == None): ax = plt.gca()
+    # if(ax == None): ax = plt.gca()
     cols = [cmap(it) for it in np.linspace(left, right, num)]
-    ax.set_color_cycle(cols[::-1])
+    # ax.set_color_cycle(cols[::-1])
     return cols
 
 
@@ -125,7 +194,7 @@ def _setAxis_label(ax, axis, label, fs=12, c='black'):
 
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None, 
-            thresh=None, side=None, ts=8, grid=True, lim=None):
+            thresh=None, side=None, ts=8, grid=True, lim=None, invert=False):
     """
     Configure a particular axis of the given axes object.
 
@@ -144,6 +213,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     ts     : <int>, tick-size (for the major ticks only)
     grid   : <bool>, whether grid lines should be enabled
     lim    : <float>[2], limits for the axis range
+    invert : <bool>, whether to invert this axis direction (i.e. high to low)
 
     """
 
@@ -177,6 +247,8 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
         if( lim is not None ): ax.set_xlim( lim )
 
+        if( invert ): ax.invert_xaxis()
+
     else:
         ax.yaxis.label.set_color(c)
         offt = ax.get_yaxis().get_offset_text()
@@ -197,6 +269,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
             
         if( lim is not None ): ax.set_ylim( lim )
 
+        if( invert ): ax.invert_yaxis()
 
 
     # Set Spine colors
@@ -312,6 +385,41 @@ def plotHistLine(ax, edges, hist, color='black', label=None, lw=1.0, ls='-', alp
     line, = ax.plot( xval, yval, ls=ls, lw=lw, color=color, label=label, alpha=alpha)
     return line
     
+
+
+def skipTicks(ax, axis='y', skip=2, num=None, first=True, last=True):
+    """
+    Only label every ``N``th tick mark.
+
+    Arguments
+    ---------
+    ax   : <matplotlib.axes.Axes>, base axes object
+    axis : <str>, which axis to modify
+    skip : <int>, interval which to skip
+    num  : <int>, target number of tick labels (``None`` : used a fixed ``skip``)
+    first : <bool>, draw first tick label regardless of ``skip``/``num``
+
+    """
+
+    # Get the correct labels
+    if(   axis == 'y' ): ax_labels = ax.yaxis.get_ticklabels()
+    elif( axis == 'x' ): ax_labels = ax.yaxis.get_ticklabels()
+    else: raise RuntimeError("Unrecognized ``axis`` = '%s'!!" % (axis))
+
+    count = len(ax_labels)
+
+    # Determine ``skip`` to match target number of labels
+    if( num is not None ): skip = np.int(np.ceil(1.0*count/num))
+
+    vis = np.zeros(count, dtype=bool)
+
+    # Choose some to be visible
+    if( last ): vis[-1] = True
+    vis[::skip] = True
+
+    for label,visible in zip(ax_labels, vis): label.set_visible(visible)
+
+    return
 
 
 
