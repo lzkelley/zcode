@@ -3,36 +3,20 @@ Functions for Input/Output (IO) Operations.
 
 Functions
 ---------
- - 
+
+   getFileSize()
+   countLines()
+   checkPath()
+   dictToNPZ()
+   npzToDict()
 
 
 
 """
 
-
+import os
+import sys
 import numpy as np
-
-
-def dictToNPZ(dataDict, savefile, verbose=False):
-    """
-    Save the given dictionary to the given npz file.
-
-    If the path to the given filename doesn't already exist, it is created.
-    If ``verbose`` is True, the saved file size is printed out.
-    """
-
-    # Make sure path to file exists
-    checkPath(savefile)
-
-    # Save and confirm
-    np.savez(savefile, **dataDict)
-    if( not os.path.exists(savefile) ):
-        raise RuntimeError("Could not save to file '%s'!!" % (savefile) )
-
-    if( verbose ): print " - - Saved dictionary to '%s'" % (savefile)
-    if( verbose ): print " - - - Size '%s'" % ( getFileSize(savefile) )
-    return
-
 
 
 
@@ -60,6 +44,7 @@ def getFileSize(fnames, precision=1):
     byteStr = bytesString(byteSize, precision)
     return byteStr
 
+# getFileSize()
 
 
 
@@ -121,14 +106,46 @@ def estimateLines(files):
 
     return numLines
 
+# estimateLines()
 
 
 def checkPath(tpath):
+    """
+    Create the given filepath if it doesn't already exist.
+    """
+
     path,name = os.path.split(tpath)
     if( len(path) > 0 ):
         if( not os.path.isdir(path) ): os.makedirs(path)
 
+    return path
+
+# checkPath()
+
+
+
+def dictToNPZ(dataDict, savefile, verbose=False):
+    """
+    Save the given dictionary to the given npz file.
+
+    If the path to the given filename doesn't already exist, it is created.
+    If ``verbose`` is True, the saved file size is printed out.
+    """
+
+    # Make sure path to file exists
+    checkPath(savefile)
+
+    # Save and confirm
+    np.savez(savefile, **dataDict)
+    if( not os.path.exists(savefile) ):
+        raise RuntimeError("Could not save to file '%s'!!" % (savefile) )
+
+    if( verbose ): print " - - Saved dictionary to '%s'" % (savefile)
+    if( verbose ): print " - - - Size '%s'" % ( getFileSize(savefile) )
     return
+
+# dictToNPZ()
+
 
 
 def npzToDict(npz):
@@ -147,3 +164,5 @@ def npzToDict(npz):
     if( type(npz) is str ): npz = np.load(npz)
     newDict = { key : npz[key] for key in npz.keys() }
     return newDict
+
+# npzToDict()
