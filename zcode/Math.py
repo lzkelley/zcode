@@ -15,6 +15,26 @@ import scipy as sp
 import scipy.interpolate
 
 
+def logSpline_resample(xx, yy, newx, order=3):
+    """
+    Use a log-spline to resample the given function at new points.
+    
+    Arguments
+    ---------
+       xx   : <scalar>[N], independent variable of original function
+       yy   : <scalar>[N], dependent variable of original function
+       newx : <scalar>[M], new independent variable points at which to resample
+
+    Returns
+    -------
+       newy : <scalar>[M], resampled function values
+
+    """
+    spliner = logSpline(xx, yy, order=order)
+    newy    = spliner(newx)
+    return newy
+
+
 def logSpline(xx, yy, order=3):
     """
     Create a spline interpolant in log-log-space.
