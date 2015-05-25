@@ -88,7 +88,43 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
 
 
 
-def set_lim(ax, axis='y', lo=None, hi=None, data=None):
+def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'):
+    """
+    Set the limits (range) of the given, target axis.
+
+    When only ``lo`` or only ``hi`` is specified, the default behavior is to only set that axis
+    limit and leave the other bound to its existing value.  When ``range`` is set to `True`, then
+    the given axis boumds (``lo``/``hi``) are used as multipliers, i.e.
+
+        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='exactly')
+        will set the lower bound to be `0.1` times the existing upper bound
+
+    The ``at`` keyword determines whether the given bounds are treated as limits to the bounds,
+    or as fixed ('exact') values, i.e.
+
+        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='most')
+        will set the lower bound to at-'most' `0.1` times the existing upper bound.  If the lower
+        bound is already 0.05 times the upper bound, it will not be changed.
+
+
+    Arguments
+    ---------
+       ax    : <matplotlib.axes.Axes>, base axes object to modify
+       axis  : <str>{'x','y'}, which axis to set
+       lo    : <scalar>, lower  limit bound
+       hi    : <scalar>, higher (upper) limit bound
+       data  : <scalar>[N], range of data values from which to use max and min
+       range : <bool>, set the 'range' of the axis limits (True) or set the bounds explicitly
+       at    : <str>{'least', 'exactly', 'most'}, how to treat the given bounds - limits or exactly
+
+    """
+
+    AT_LEAST   = 'least'
+    AT_MOST    = 'most'
+    AT_EXACTLY = 'exactly'
+    AT_VALID   = [ AT_LEAST, AT_EXACTLY, AT_MOST ]
+    assert at in AT_VALID, "``at`` must be in {'%s'}!" % (str(AT_VALID))
+
 
     if(   axis == 'y' ): 
         get_lim = ax.get_ylim
@@ -100,13 +136,40 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None):
         raise RuntimeError("``axis`` must be either 'x' or 'y'!")
 
     lims = np.array(get_lim())
-    if(   lo   is not None ): lims[0] = lo
-    elif( data is not None ): lims[0] = np.min(data)
-    if(   hi   is not None ): lims[1] = hi
-    elif( data is not None ): lims[1] = np.max(data)
+    
+    ## Set Range/Span of Limits
+    if( range ):
+        if(   lo is not None ): 
+            if(   at is AT_EXACTLY ): lims[0] = lims[1]/lo
+            elif( at is AT_LEAST   ): lims[0] = np.min([lims[0], lims[0]/lo])
+            elif( at is AT_MOST    ): lims[0] = np.max([lims[0], lims[0]/lo])
+        elif( hi is not None ): 
+            if(   at is AT_EXACTLY ): lims[1] = lims[1]*hi
+            elif( at is AT_LEAST   ): lims[1] = np.min([lims[1], lims[1]*hi])
+            elif( at is AT_MOST    ): lims[1] = np.max([lims[1], lims[1]*hi])
+        else: 
+            raise RuntimeError("``lo`` or ``hi`` must be provided!")
+
+    ## Set Limits explicitly
+    else:
+        if(   lo   is not None ): 
+            if(   at is AT_EXACTLY ): lims[0] = lo
+            elif( at is AT_LEAST   ): lims[0] = np.min([lims[0], lo])
+            elif( at is AT_MOST    ): lims[0] = np.max([lims[0], lo])
+        elif( data is not None ): 
+            lims[0] = np.min(data)
+
+        if(   hi   is not None ): 
+            if(   at is AT_EXACTLY ): lims[1] = hi
+            elif( at is AT_LEAST   ): lims[1] = np.max([lims[1], hi])
+            elif( at is AT_MOST    ): lims[1] = np.min([lims[1], hi])
+        elif( data is not None ): 
+            lims[1] = np.max(data)
+
+
     set_lim(lims)
 
-    return ax
+    return
 
 
 def addParameterString(fig, str, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
