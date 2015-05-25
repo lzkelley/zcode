@@ -141,6 +141,18 @@ def integrate_cumulative_func_simpson(func, xx, log=True, init=None):
 
     retval = func(left) + 4.0*func(cent) + func(rigt)
     retval = np.cumsum((diff/6.0)*retval)
+
+
+    ## If an initial value is provided, include in integral
+    if( init is not None ):
+        # Add to all values
+        retval += init
+        # Prepend as initial value (i.e. for ``xx[0]``)
+        #if( rev ): retval = np.insert(retval, len(retval), init)
+        #else:      retval = np.insert(retval, 0, init)
+        retval = np.insert(retval, 0, init)
+
+
     return retval
 
 # integrate_cumulative_simpson()
