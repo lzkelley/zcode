@@ -37,18 +37,6 @@ TOP   = 0.9
 WSPACE = 0.2
 HSPACE = 0.25
 
-### FIX: THIS SHOULDNT BE HERE !! ###
-
-'''
-def watermark(fig, run, fs=FS):
-    wm_str = "Illustris-%d\n%s" % (run, datetime.now().ctime())
-    text = fig.text(0.98, 0.02, wm_str, horizontalalignment='right', fontsize=FS,
-                    verticalalignment='bottom', transform=plt.gcf().transFigure)
-    return text
-'''
-
-
-
 
 def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True, 
              invx=False, invy=False, twinx=False, twiny=False,
@@ -172,8 +160,8 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
     return
 
 
-def addParameterString(fig, str, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
-    txt = fig.text(x, y, str, size=fs, family='monospace', transform=fig.transFigure,
+def addParameterString(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
+    txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=fig.transFigure,
                    horizontalalignment=halign, verticalalignment=valign)
 
     return txt
