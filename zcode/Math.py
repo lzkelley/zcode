@@ -241,3 +241,24 @@ def withinBounds(val, arr, edges=True):
         if( np.max(val) >= np.max(arr) ): return False
 
     return True
+
+
+def minmax(data):
+    minmax = np.array([np.min(data), np.max(data)])
+    return minmax
+
+
+def spacing(data, scale='log', num=100, nonzero=True, positive=False):
+
+    usedata = np.array(data)
+    if( nonzero  ): usedata = usedata[np.nonzero(usedata)]
+    if( positive ): usedata = usedata[np.where(usedata > 0.0)]
+
+    span = minmax(usedata)
+    if(   scale.startswith('log') ): spacing = np.logspace( *np.log10(span), num=num )
+    elif( scale.startswith('lin') ): spacing = np.linspace( span,            num=num )
+    else: raise RuntimeError("``scale`` unrecognized!")
+
+    return spacing
+    
+
