@@ -43,6 +43,8 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
              left=LEFT, right=RIGHT, top=TOP, bot=BOT, hspace=HSPACE, wspace=WSPACE):
     fig, axes = plt.subplots(figsize=figsize, nrows=nrows, ncols=ncols)
 
+    if( not np.iterable(axes) ): axes = [axes]
+
     for ax in axes:
         if( logx ): ax.set_xscale('log')
         if( logy ): ax.set_yscale('log')
@@ -71,6 +73,8 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
     elif( twiny ):           return fig, axes, twys
     
     plt.subplots_adjust(left=left, right=right, top=top, bottom=bot, wspace=wspace, hspace=hspace)
+
+    if( len(axes) == 1 ): axes = axes[0]
 
     return fig, axes
 
@@ -471,30 +475,6 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=True, last=True):
     for label,visible in zip(ax_labels, vis): label.set_visible(visible)
 
     return
-
-
-
-
-'''
-def createFigures(nfigs=1, figsize=None, axsize=None, axpos=None):
-
-    # Set unset parameters to defaults
-    if( figsize == None ): figsize = FIG_SIZE
-    if( axsize == None ): axsize = AX_SIZE
-    if( axpos == None ): axpos = AX_POS
-
-    # Make parameters iterable
-    if( not np.iterable(axsize) ): axsize = [ axsize ]
-    if( not np.iterable(axpos) ): axpos = [ axpos ]
-
-    # Create figures, add axes
-    figs = [ plt.figure(figsize=figsize) for ii in range(nfigs) ]
-    for ff in figs:
-        for axp,axs in zip(axpos, axsize):
-            ff.add_axes(axp + axs)
-
-    return figs
-'''
 
 
 def saveFigure(fname, fig, verbose=True):
