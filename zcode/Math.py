@@ -298,3 +298,52 @@ def spacing(data, scale='log', num=100, nonzero=True, positive=False):
 
 # spacing()
 
+def histogram(args, bins, weights=None, scale=None, ave=False, edges='both'):
+    """
+    Histogram (bin) the given values.
+
+    Arguments
+    ---------
+       args    <scalar>[N]   :
+       bins    <scalar>[M]   : 
+       weights <scalar>[N]   : optional, weighting factors for each input value in ``args``
+       scale   <scalar>([M]) : optional, factor with which to scale each resulting bin
+       ave     <bool>        : optional, average over each bin instead of summing
+       edges   <str>         : optional, how to treat the given ``bins`` values, i.e. which 'edges'
+                               these represent.  Must be one of {`left`, `both`, `right`}.
+                               ``left``  : then ``bins[0]`` is the left-most inclusive edge, and
+                                           there is no right-most edge
+                               ``right`` : then ``bins[-1]`` is the right-most inclusive edge, and
+                                           there is no  left-most edge
+                               ``both``  : then values outside of the range of ``bins`` will not be
+                                           counted anywhere.  Returned histogram will have length
+                                           `M-1` --- representing space between ``bins`` values
+
+    Returns
+    -------
+       hist <scalar>[L] : resulting histogram, if ``edges`` is `both` then length is `L=M-1`,
+                          otherwise `L=M`.
+
+    """
+
+    if(   edges == 'left'  ): useBins = np.concatenate([bins, 1.01*np.max(args)])
+    elif( edges == 'right' ): useBins = np.concatenate([0.99*np.min(args), bins])
+    elif( edges == 'both'  ): useBins = np.array(bins)
+    else: raise RuntimeError("Unrecognized ``edges`` parameter!!")
+
+    hist, edge = np.histogram( args, bins=useBins, weights=weights )
+
+    # Find the average of each weighed bin
+    if( ave ): 
+        assert weights is not None, "To average, ``weights`` must be provided!"
+        hist = [ hh/nn if nn > 0 else 0.0
+                 for hh,nn in zip(hist,np.histogram( args, bins=useBins)[0]) ]
+
+    hist = np.array(hist)
+
+    # Rescale the bin values
+    if( scale is not None ): hist *= scale
+
+    return hist
+
+# histogram()
