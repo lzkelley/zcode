@@ -18,7 +18,7 @@ import scipy.interpolate
 def logSpline_resample(xx, yy, newx, order=3):
     """
     Use a log-spline to resample the given function at new points.
-    
+
     Arguments
     ---------
        xx   : <scalar>[N], independent variable of original function
@@ -50,7 +50,7 @@ def logSpline(xx, yy, order=3):
     spline : callable, spline interpolation function
 
     """
-    
+
     xl = np.log10(xx)
     yl = np.log10(yy)
     terp = sp.interpolate.InterpolatedUnivariateSpline(xl, yl, k=order)
@@ -221,7 +221,7 @@ def withinBounds(val, arr, edges=True):
 
     Arguments
     ---------
-       val   : <scalar>([N]), test value(s) 
+       val   : <scalar>([N]), test value(s)
        arr   : <scalar>[M],   array or span to compare with
        edges : (<bool>), include the boundaries of ``arr`` as 'within'
 
@@ -243,9 +243,44 @@ def withinBounds(val, arr, edges=True):
     return True
 
 
-def minmax(data):
-    minmax = np.array([np.min(data), np.max(data)])
+def minmax(data, nonzero=False, prev=None):
+    """
+    Find minimum and maximum of given data, return as numpy array.
+
+    If ``prev`` is provided, the returned minmax values will also be compared to it.
+
+    Arguments
+    ---------
+       data    <scalar>[...] : arbitrarily shaped data to find minumum and maximum of.
+       prev    <scalar>[2]   : optional, also find min/max against prev[0] and prev[1] respectively.
+       nonzero <bool>        : optional, ignore zero valued entries
+
+    Returns
+    -------
+       minmax <scalar>[2] : minimum and maximum of given data (and ``prev`` if provided).
+                            Returned data type will match the input ``data`` (and ``prev``).
+
+    """
+
+    # Filter out zeros if desired
+    if( nonzero ): useData = np.array(data[np.nonzero(data)])
+    else:          useData = np.array(data)
+
+    # If there are no elements (left), return ``prev`` (`None` if not provided)
+    if( np.size(useData) == 0 ): return prev
+
+    # Find extrema
+    minmax = np.array([np.min(useData), np.max(useData)])
+
+    # Compare to previous extrema, if given
+    if( prev is not None ):
+        minmax[0] = np.min([minmax[0],prev[0]])
+        minmax[1] = np.max([minmax[1],prev[1]])
+
     return minmax
+
+# minmax()
+
 
 
 def spacing(data, scale='log', num=100, nonzero=True, positive=False):
@@ -260,5 +295,6 @@ def spacing(data, scale='log', num=100, nonzero=True, positive=False):
     else: raise RuntimeError("``scale`` unrecognized!")
 
     return spacing
-    
+
+# spacing()
 
