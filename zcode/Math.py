@@ -328,25 +328,42 @@ def histogram(args, bins, weights=None, scale=None, ave=False, edges='both'):
 
     """
 
-    if(   edges == 'left'  ): useBins = np.concatenate([bins, [1.01*np.max(args)]])
-    elif( edges == 'right' ): useBins = np.concatenate([[0.99*np.min(args)], bins])
-    elif( edges == 'both'  ): useBins = np.array(bins)
-    else: raise RuntimeError("Unrecognized ``edges`` parameter!!")
-
-    digits = np.digitize(args, edges, right=True)
-    print digits
-    return digits
-
-    if( weights is None ): 
-        hist = [ np.sum(weights[digit == i]) for i in range(len(edges)) ]
+    if( ave ): assert weights is not None, "``weights`` must be provided to average!"
 
 
-    # Find the average of each weighed bin
-    if( ave ): 
-        assert weights is not None, "To average, ``weights`` must be provided!"
-        hist = [ hh/nn if nn > 0 else 0.0
-                 for hh,nn in zip(hist,np.histogram( args, bins=useBins)[0]) ]
+    # Prepare Effective bin edges as needed
+    rightInclusive = False
+    if(   edges == 'left'  ): 
+        useBins = np.concatenate([bins, [1.01*np.max(args)]])
+    elif( edges == 'right' ): 
+        useBins = np.concatenate([[0.99*np.min(args)], bins])
+        rightInclusive = True
+    elif( edges == 'both'  ): 
+        useBins = np.array(bins)
+    else: 
+        raise RuntimeError("Unrecognized ``edges`` parameter!!")
 
+
+    # Find where each value belongs
+    digits = np.digitize(args, useBins, right=rightInclusive)
+
+    # Histogram values (i.e. count entries in bins)
+    hist = [ np.count_nonzero(digits == ii) for ii in range(1, len(useBins)) ]
+    # Add values equaling the right-most edge
+    if( edges == 'both' ): hist[-1] += np.count_nonzero( args == useBins[-1] )
+
+    if( weights is not None ):
+        # Sum values in bins
+        vals = [ np.sum(weights[digits == ii]) for ii in range(1, len(useBins)) ]
+        # Add values equaling the right-most edge
+        if( edges == 'both' ): sums[-1] += np.weights( [args == useBins[-1]] )
+
+        # Average Bins
+        if( ave ): hist = [ vv/hh if hh > 0 else 0.0 for hh,vv in zip(hist, vals) ]
+        else:      hist = vals
+
+
+    # Convert to numpy array
     hist = np.array(hist)
 
     # Rescale the bin values
