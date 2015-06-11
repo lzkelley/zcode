@@ -304,6 +304,9 @@ def histogram(args, bins, weights=None, scale=None, ave=False, edges='both'):
     """
     Histogram (bin) the given values.
 
+    - Currently ``bins`` must be monotonically increasing!!
+    - When using edges=='both', you currently can't control which interior bin edges are inclusive
+
     Arguments
     ---------
        args    <scalar>[N]   :
@@ -313,10 +316,12 @@ def histogram(args, bins, weights=None, scale=None, ave=False, edges='both'):
        ave     <bool>        : optional, average over each bin instead of summing
        edges   <str>         : optional, how to treat the given ``bins`` values, i.e. which 'edges'
                                these represent.  Must be one of {`left`, `both`, `right`}.
-                               ``left``  : then ``bins[0]`` is the left-most inclusive edge, and
-                                           there is no right-most edge
-                               ``right`` : then ``bins[-1]`` is the right-most inclusive edge, and
-                                           there is no  left-most edge
+                               ``left``  : then ``bins[0]`` is the left-most inclusive edge
+                                           (values beyong that will not be counted), and there is 
+                                           no right-most edge
+                               ``right`` : then ``bins[-1]`` is the right-most inclusive edge 
+                                           (values beyond that will not be counted), and there is
+                                           no  left-most edge
                                ``both``  : then values outside of the range of ``bins`` will not be
                                            counted anywhere.  Returned histogram will have length
                                            `M-1` --- representing space between ``bins`` values
