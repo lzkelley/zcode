@@ -298,6 +298,8 @@ def spacing(data, scale='log', num=100, nonzero=True, positive=False):
 
 # spacing()
 
+
+
 def histogram(args, bins, weights=None, scale=None, ave=False, edges='both'):
     """
     Histogram (bin) the given values.
@@ -326,8 +328,8 @@ def histogram(args, bins, weights=None, scale=None, ave=False, edges='both'):
 
     """
 
-    if(   edges == 'left'  ): useBins = np.concatenate([bins, 1.01*np.max(args)])
-    elif( edges == 'right' ): useBins = np.concatenate([0.99*np.min(args), bins])
+    if(   edges == 'left'  ): useBins = np.concatenate([bins, [1.01*np.max(args)]])
+    elif( edges == 'right' ): useBins = np.concatenate([[0.99*np.min(args)], bins])
     elif( edges == 'both'  ): useBins = np.array(bins)
     else: raise RuntimeError("Unrecognized ``edges`` parameter!!")
 
