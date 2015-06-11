@@ -331,7 +331,13 @@ def histogram(args, bins, weights=None, scale=None, ave=False, edges='both'):
     elif( edges == 'both'  ): useBins = np.array(bins)
     else: raise RuntimeError("Unrecognized ``edges`` parameter!!")
 
-    hist, edge = np.histogram( args, bins=useBins, weights=weights )
+    digits = np.digitize(args, edges, right=True)
+    print digits
+    return digits
+
+    if( weights is None ): 
+        hist = [ np.sum(weights[digit == i]) for i in range(len(edges)) ]
+
 
     # Find the average of each weighed bin
     if( ave ): 
