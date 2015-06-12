@@ -300,7 +300,7 @@ def spacing(data, scale='log', num=100, nonzero=True, positive=False):
 
 
 
-def histogram(args, bins, weights=None, ave=False, edges='both', retcounts=False):
+def histogram(args, bins, weights=None, func='sum', edges='both', stdev=False):
     """
     Histogram (bin) the given values.
 
@@ -312,7 +312,11 @@ def histogram(args, bins, weights=None, ave=False, edges='both', retcounts=False
        args    <scalar>[N]   :
        bins    <scalar>[M]   : 
        weights <scalar>([N]) : optional, weighting factors for each input value in ``args``
-       ave     <bool>        : optional, average over each bin instead of summing
+       func    <str>         : optional, what binning operation to perform; in each bin:
+                               ``sum``   : sum all values (weights, or count)
+                               ``ave``   : average      of ``weights``
+                               ``max``   : find maximum of ``weights``
+                               ``min``   : find minimum of ``weights``
        edges   <str>         : optional, how to treat the given ``bins`` values, i.e. which 'edges'
                                these represent.  Must be one of {`left`, `both`, `right`}.
                                ``left``  : then ``bins[0]`` is the left-most inclusive edge
@@ -324,51 +328,46 @@ def histogram(args, bins, weights=None, ave=False, edges='both', retcounts=False
                                ``both``  : then values outside of the range of ``bins`` will not be
                                            counted anywhere.  Returned histogram will have length
                                            `M-1` --- representing space between ``bins`` values
-       retcounts <bool>      : optional, when using a weight for each argument (``args``) return 
-                               both the resulting, weighted binnings and *also* the raw counted
-                               histogram
+       stdev   <bool>        : optional, find standard-deviation of ``weights`` in each bin
 
     Returns
     -------
-       hist <scalar>[L] : resulting histogram, if ``edges`` is `both` then length is `L=M-1`,
-                          otherwise `L=M`.
+       counts  <int>[L]      : histogram of counts per bin, if ``edges`` is `both` then length is 
+                               `L=M-1`, otherwise `L=M`.
+       hist    <scalar>[L]   : optional, histogram of ``func`` operation on ``weights``
+                               returned if ``weights`` is given. 
+       std     <scalar>[L]   : optional, standard-deviation of ``weights`` in bin, 
+                               returned if ``stdev == True``
 
-       counts <int>[L]  : optional, histogram of counts per bin, returned if `retcounts = True` and
-                          weights are provided for each of ``args``
+
+    To-Do
+    -----
+     - Allow multiple ``funcs`` to be performed simultaneously, i.e. 'min' and 'max'
+
 
     """
 
-    ## Parse Arguments
-    #  ---------------
+    assert func in [ 'sum', 'ave', 'min', 'max' ], "Invalid ``func`` argument!"
 
-    # Default to no weighting, and a scale of 1
-    useWeights = None
-    scale = 1
-
-    # If weights are provided
-    if( weights is not None ):
-        # Single value for ``weights`` means rescale by that amount
-        if( np.size(weights) == 1 ): scale = weights
-        # Array of values means weight each ``args`` by each of ``weights``
-        else:
-            assert np.shape(weights) == np.shape(args), "Shape of ``weights`` must match ``args``!"
-            useWeights = np.array(weights)
-
-
-    if( ave ): assert useWeights is not None, "``weights`` must be provided to average!"
+    # For anything besides counting ('sum'), we need a weight for each argument
+    if( func is not 'sum' or stdev == True ): 
+        assert np.shape(weights) == np.shape(args), "Shape of ``weights`` must match ``args``!"
 
 
     ## Prepare Effective bin edges as needed
     #  -------------------------------------
 
     rightInclusive = False
+    useBins = np.array(bins)
     if(   edges == 'left'  ): 
-        useBins = np.concatenate([bins, [1.01*np.max(args)]])
+        useMax = 1.01*np.max([np.max(useBins), np.max(args)])
+        useBins = np.concatenate([useBins, [useMax]])
     elif( edges == 'right' ): 
-        useBins = np.concatenate([[0.99*np.min(args)], bins])
+        useMin = 0.99*np.min([np.min(useBins), np.min(args)])
+        useBins = np.concatenate([[useMin], useBins])
         rightInclusive = True
     elif( edges == 'both'  ): 
-        useBins = np.array(bins)
+        pass
     else: 
         raise RuntimeError("Unrecognized ``edges`` parameter!!")
 
@@ -379,33 +378,58 @@ def histogram(args, bins, weights=None, ave=False, edges='both', retcounts=False
     # Find where each value belongs
     digits = np.digitize(args, useBins, right=rightInclusive)
     # Histogram values (i.e. count entries in bins)
-    hist = [ np.count_nonzero(digits == ii) for ii in range(1, len(useBins)) ]
+    counts = [ np.count_nonzero(digits == ii) for ii in range(1, len(useBins)) ]
     # Add values equaling the right-most edge
-    if( edges == 'both' ): hist[-1] += np.count_nonzero( args == useBins[-1] )
+    if( edges == 'both' ): counts[-1] += np.count_nonzero( args == useBins[-1] )
+    
+    counts = np.array(counts)
+
+    # Just histogramming counts
+    if( weights is None ):
+        return counts
 
 
-    ## Perform Weighting if Needed
-    #  ---------------------------
-    counts = None
+    ## Perform Weighting
+    #  -----------------
 
-    if( useWeights is not None ):
-        if( retcounts ): counts = np.array(hist)
+    # if a single scaling is provided
+    if( np.size(weights) == 1 ):
+        return counts, counts*weights
+
+
+    # If ``weights`` has values for each argument ``args``
+
+        useFunc = np.sum
+    if(   func == 'min' ): useFunc = np.min
+    elif( func == 'max' ): useFunc = np.max
+
+    # Sum values in bins
+    hist = [ useFunc(weights[digits == ii]) for ii in range(1, len(useBins)) ]
+    # Add values equaling the right-most edge
+    if( edges == 'both' ): 
+        # Add values directly into right-most bin
+        if( func == 'ave' or func == 'sum' ): 
+            hist[-1] += useFunc( weights[args == useBins[-1]] )
+        # Find min/max of values compared to whats already in right-most bin
+        else:
+            hist[-1]  = useFunc( [hist[-1],weights[args == useBins[-1]]] )
+
+    # Average Bins
+    if( func == 'ave' ): hist = [ vv/hh if hh > 0 else 0.0 for hh,vv in zip(counts, hist) ]
+
+    # Calculate standard-deviation of values in each bin
+    if( stdev ):
 
         # Sum values in bins
-        vals = [ np.sum(useWeights[digits == ii]) for ii in range(1, len(useBins)) ]
-        # Add values equaling the right-most edge
-        if( edges == 'both' ): vals[-1] += np.sum( useWeights[args == useBins[-1]] )
+        std = [ np.std(weights[digits == ii]) for ii in range(1, len(useBins)) ]
+        # Fix last bin to include values which equal the right-most edge
+        if( edges == 'both' ): 
+            std[-1] = np.std( weights[ (digits == ii) | (args == useBins[-1]) ] ) 
 
-        # Average Bins
-        if( ave ): hist = [ vv/hh if hh > 0 else 0.0 for hh,vv in zip(hist, vals) ]
-        else:      hist = vals
+        return counts, hist, std
 
-    # Convert to numpy array and scale (if needed)
-    hist = scale*np.array(hist)
 
-    # Return counts along with weighted histogram
-    if( counts is not None ): return hist, counts
-
-    return hist
+    # No ``std``, just return histograms of counts and ``func`` on ``weights``
+    return counts, hist
 
 # histogram()
