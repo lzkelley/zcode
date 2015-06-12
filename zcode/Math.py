@@ -343,7 +343,7 @@ def histogram(args, bins, weights=None, func='sum', edges='both', stdev=False):
     To-Do
     -----
      - Allow multiple ``funcs`` to be performed simultaneously, i.e. 'min' and 'max'
-
+     - Changes ``edges`` options to be 'inner', 'outer', 'left', 'right'
 
     """
 
@@ -392,6 +392,8 @@ def histogram(args, bins, weights=None, func='sum', edges='both', stdev=False):
     ## Perform Weighting
     #  -----------------
 
+    weights = np.array(weights)
+
     # if a single scaling is provided
     if( np.size(weights) == 1 ):
         return counts, counts*weights
@@ -399,7 +401,7 @@ def histogram(args, bins, weights=None, func='sum', edges='both', stdev=False):
 
     # If ``weights`` has values for each argument ``args``
 
-        useFunc = np.sum
+    useFunc = np.sum
     if(   func == 'min' ): useFunc = np.min
     elif( func == 'max' ): useFunc = np.max
 
@@ -417,6 +419,9 @@ def histogram(args, bins, weights=None, func='sum', edges='both', stdev=False):
     # Average Bins
     if( func == 'ave' ): hist = [ vv/hh if hh > 0 else 0.0 for hh,vv in zip(counts, hist) ]
 
+    hist = np.array(hist)
+
+
     # Calculate standard-deviation of values in each bin
     if( stdev ):
 
@@ -425,6 +430,8 @@ def histogram(args, bins, weights=None, func='sum', edges='both', stdev=False):
         # Fix last bin to include values which equal the right-most edge
         if( edges == 'both' ): 
             std[-1] = np.std( weights[ (digits == ii) | (args == useBins[-1]) ] ) 
+
+        std = np.array(std)
 
         return counts, hist, std
 
