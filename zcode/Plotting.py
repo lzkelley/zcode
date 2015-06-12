@@ -30,6 +30,11 @@ LS_DASH_DASH = [8,4]
 LS_DASH_DOT  = [8,4,4,4]
 LS_DOT_DOT   = [4,4]
 
+LS_DASH = [8,4]
+LS_DASH_L = [12,4]
+LS_DOT  = [4,4]
+
+
 LEFT  = 0.1
 RIGHT = 0.9
 BOT   = 0.1
@@ -60,6 +65,9 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
         for tw in twxs: 
             if( logy ): tw.set_yscale('log')
 
+        if( len(twxs) == 1 ): twxs = twxs[0]
+
+
     if( twiny ): 
         twys = []
         for ax in axes: twys.append(ax.twiny())
@@ -67,6 +75,9 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
         for tw in twys: 
             if( logy ): tw.set_xscale('log')
 
+        if( len(twys) == 1 ): twys = twys[0]
+
+    if( len(axes) == 1 ): axes = axes[0]
 
     if(   twinx and twiny ): return fig, axes, twxs, twys
     elif( twinx ):           return fig, axes, twxs
@@ -74,7 +85,7 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
     
     plt.subplots_adjust(left=left, right=right, top=top, bottom=bot, wspace=wspace, hspace=hspace)
 
-    if( len(axes) == 1 ): axes = axes[0]
+
 
     return fig, axes
 
@@ -194,6 +205,28 @@ def unifyAxesLimits(axes, axis='y'):
 
     return np.array([lo,hi])
 
+
+def setLineStyleCycle(num):
+    LS = [[None,None]]  # solid
+    LS.append(LS_DASH_L)
+    LS.append(LS_DASH)
+    LS.append(LS_DOT)
+
+    LS.append(LS_DASH_L + LS_DOT)
+    LS.append(LS_DASH + LS_DOT)
+
+    LS.append(LS_DASH_L + LS_DASH + LS_DOT )
+    LS.append(LS_DASH_L + LS_DOT + LS_DASH + LS_DOT )
+
+    LS.append(LS_DASH_L + LS_DOT + LS_DOT)
+    LS.append(LS_DASH + LS_DOT + LS_DOT)
+
+    LS.append(LS_DASH_L + LS_DOT + LS_DOT + LS_DOT)
+    LS.append(LS_DASH + LS_DOT + LS_DOT + LS_DOT)
+
+    LS.append(LS_DASH_L + LS_DOT + LS_DOT + LS_DASH + LS_DOT + LS_DOT)
+
+    return LS[:num]
 
 
 def setColorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
