@@ -3,8 +3,19 @@ Functions for Math operations.
 
 Functions
 ---------
- -
-
+ - logSpline_resample()
+ - logSpine()
+ - contiguousInds()
+ - integrate_cumulative_simpson()
+ - integrate_cumulative_func_simpson()
+ - integrate_cumulative_arr_trapezoid()
+ - withinBounds()
+ - minmax()
+ - spacing()
+ - histogram()
+ - mid()
+ - disp()
+ - dist()
 
 
 """
@@ -260,11 +271,16 @@ def minmax(data, nonzero=False, prev=None):
        minmax <scalar>[2] : minimum and maximum of given data (and ``prev`` if provided).
                             Returned data type will match the input ``data`` (and ``prev``).
 
+    To-Do
+    -----
+     - Added an 'axis' argument, remove 'flatten()' to accomodate arbitrary shapes
+
     """
 
+    useData = np.array(data).flatten()
+
     # Filter out zeros if desired
-    if( nonzero ): useData = np.array(data[np.nonzero(data)])
-    else:          useData = np.array(data)
+    if( nonzero ): useData = np.array(useData[np.nonzero(useData)])
 
     # If there are no elements (left), return ``prev`` (`None` if not provided)
     if( np.size(useData) == 0 ): return prev
@@ -440,3 +456,16 @@ def histogram(args, bins, weights=None, func='sum', edges='both', stdev=False):
     return counts, hist
 
 # histogram()
+
+
+
+def mid(vals, log=False):
+    
+    mids = np.zeros(len(vals)-1)
+    for ii,vv in enumerate(zip(vals[:-1], vals[1:])):
+        if( log ): mids[ii] = np.power(10.0, np.average(np.log10(vv)) )
+        else:      mids[ii] = np.average(vv)
+
+    return mids
+
+# mid()
