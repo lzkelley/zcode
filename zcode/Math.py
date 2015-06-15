@@ -14,7 +14,6 @@ Functions
  - spacing()
  - histogram()
  - mid()
- - disp()
  - dist()
 
 
@@ -469,3 +468,31 @@ def mid(vals, log=False):
     return mids
 
 # mid()
+
+
+def dist(r1, r2):
+    """
+    Calculate the distance from vector(s) r1 to r2.
+
+    Both ``r1`` and ``r2`` can be either single, ``M`` dimensional, vectors or a set of ``N`` of
+    them.  If both ``r1`` and ``r2`` are sets of vectors, they must have the same length.
+
+    Arguments
+    ---------
+       r1 <scalar>[(N,)M] : first  vector (set)
+       r2 <scalar>[(N,)M] : second vector (set)
+
+    Returns
+    -------
+       dist <scalar>([N]) : distances
+
+    """
+
+    if( len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1 ):
+        dist = np.sqrt( np.sum( np.square(r1 - r2), axis=1) )    
+    else:
+        dist = np.sqrt( np.sum( np.square(r1 - r2) ) )
+
+    return dist
+
+# dist()
