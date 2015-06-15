@@ -44,7 +44,8 @@ HSPACE = 0.25
 
 
 def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True, 
-             invx=False, invy=False, twinx=False, twiny=False,
+             invx=False, invy=False, twinx=False, twiny=False, 
+             xlim=None, ylim=None, twinxlim=None, twinylim=None,
              left=LEFT, right=RIGHT, top=TOP, bot=BOT, hspace=HSPACE, wspace=WSPACE):
     fig, axes = plt.subplots(figsize=figsize, nrows=nrows, ncols=ncols)
 
@@ -56,7 +57,8 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
         if( grid ): ax.grid()
         if( invx ): ax.invert_xaxis()
         if( invy ): ax.invert_yaxis()
-
+        if( xlim is not None ): ax.set_xlim(xlim)
+        if( ylim is not None ): ax.set_ylim(ylim)
 
     if( twinx ): 
         twxs = []
@@ -64,6 +66,7 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
         twxs = np.array(twxs).reshape(np.shape(axes))
         for tw in twxs: 
             if( logy ): tw.set_yscale('log')
+            if( twinylim is not None ): tw.set_ylim(twinylim)
 
         if( len(twxs) == 1 ): twxs = twxs[0]
 
@@ -74,6 +77,7 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
         twys = np.array(twys).reshape(np.shape(axes))
         for tw in twys: 
             if( logy ): tw.set_xscale('log')
+            if( twinxlim is not None ): tw.set_ylim(twinxlim)
 
         if( len(twys) == 1 ): twys = twys[0]
 
@@ -384,7 +388,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     return ax
 
 
-
+'''
 def histPlotLine(values, bins, ax=None, weights=None, ls='-', lw=1.0, color='k', ave=False, scale=None, label=None):
     """
     Manually plot a histogram.
@@ -459,7 +463,7 @@ def histPlotLine(values, bins, ax=None, weights=None, ls='-', lw=1.0, color='k',
         ll, = ax.plot( xval, yval, ls, lw=lw, color=color, label=label)
 
     return ll, hist
-
+'''
 
 
 def histLine(edges, hist):
@@ -468,9 +472,29 @@ def histLine(edges, hist):
     return xval, yval
 
 
-def plotHistLine(ax, edges, hist, color='black', label=None, lw=1.0, ls='-', alpha=1.0):
+def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, color='black', label=None,
+                 lw=1.0, ls='-', alpha=1.0, c=None):
+
+    if( c is not None ): color = c
+
     xval, yval = histLine(edges, hist)
+ 
+    if( nonzero ):
+        inds = np.nonzero(yval)
+        yval = np.array(yval[inds])
+        xval = np.array(xval[inds])
+    
     line, = ax.plot( xval, yval, ls=ls, lw=lw, color=color, label=label, alpha=alpha)
+    if( yerr is not None ): 
+        xmid = zmath.mid(edges)
+
+        if( nonzero ): 
+            inds = np.where( hist != 0.0 )
+            ax.errorbar(xmid[inds], hist[inds], yerr=yerr[inds], fmt=None, ecolor=color)
+        else:
+            ax.errorbar(xmid,       hist,       yerr=yerr,       fmt=None, ecolor=color)
+
+
     return line
     
 
