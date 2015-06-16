@@ -467,9 +467,11 @@ def histPlotLine(values, bins, ax=None, weights=None, ls='-', lw=1.0, color='k',
 
 
 def histLine(edges, hist):
-    yval = np.concatenate([ [hh,hh] for hh in hist ])
     xval = np.concatenate([ [edges[jj],edges[jj+1]] for jj in range(len(edges)-1) ])
+    yval = np.concatenate([ [hh,hh] for hh in hist ])
     return xval, yval
+
+# histLine()
 
 
 def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, color='black', label=None,
@@ -478,13 +480,13 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, color='black', label
     if( c is not None ): color = c
 
     xval, yval = histLine(edges, hist)
- 
+
     if( nonzero ):
-        inds = np.nonzero(yval)
-        yval = np.array(yval[inds])
-        xval = np.array(xval[inds])
-    
+        xval = np.ma.masked_where(xval == 0.0, xval)
+        yval = np.ma.masked_where(yval == 0.0, yval)
+
     line, = ax.plot( xval, yval, ls=ls, lw=lw, color=color, label=label, alpha=alpha)
+
     if( yerr is not None ): 
         xmid = zmath.mid(edges)
 
@@ -494,9 +496,9 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, color='black', label
         else:
             ax.errorbar(xmid,       hist,       yerr=yerr,       fmt=None, ecolor=color)
 
-
     return line
-    
+
+# plotHistLine()    
 
 
 def skipTicks(ax, axis='y', skip=2, num=None, first=True, last=True):
