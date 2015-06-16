@@ -15,7 +15,7 @@ Functions
  - histogram()
  - mid()
  - dist()
-
+ - extend()
 
 """
 
@@ -299,6 +299,23 @@ def minmax(data, nonzero=False, prev=None):
 
 
 def spacing(data, scale='log', num=100, nonzero=True, positive=False):
+    """
+    Create an evenly spaced array between extrema from the given data.
+
+    Arguments
+    ---------
+       data     <scalar>[M] : data from which to extract the extrema for bounds
+       scale    <str>       : optional, scaling for spacing, {'lin', 'log'}
+       num      <int>       : optional, number of points, ``N``
+       nonzero  <bool>      : optional, only use nonzero  elements of ``data``
+       positive <bool>      : optional, only use positive elements of ``data``
+    
+    Returns
+    -------
+       spacing <scalar>[N] : array of evenly spaced points, with number of elements ``N = num``
+
+    """
+
 
     usedata = np.array(data)
     if( nonzero  ): usedata = usedata[np.nonzero(usedata)]
@@ -496,3 +513,20 @@ def dist(r1, r2):
     return dist
 
 # dist()
+
+
+def extend(arr, log=True):
+    """
+    """
+
+    if( log ): useArr = np.log10(arr)
+    else:      useArr = np.array(arr)
+
+    left = useArr[ 0] + (useArr[ 0] - useArr[ 1])
+    rigt = useArr[-1] + (useArr[-1] - useArr[-2])
+
+    if( log ):
+        left = np.power(10.0, left)
+        rigt = np.power(10.0, rigt)
+
+    return left, rigt
