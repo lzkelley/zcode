@@ -16,10 +16,11 @@ Functions
  - mid()
  - dist()
  - extend()
+ - renumerate()
 
 """
 
-
+import itertools
 import numpy as np
 import scipy as sp
 import scipy.interpolate
@@ -530,3 +531,14 @@ def extend(arr, log=True):
         rigt = np.power(10.0, rigt)
 
     return left, rigt
+
+# extend()
+
+
+def renumerate(arr):
+    """
+    Same as ``enumerate`` but in reverse order.
+    """
+    return itertools.izip(reversed(xrange(len(arr))), reversed(arr))
+
+# renumerate()    
