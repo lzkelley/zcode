@@ -537,7 +537,7 @@ def extend(arr, log=True):
 
 def renumerate(arr):
     """
-    Same as ``enumerate`` but in reverse order.
+    Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
     """
     return itertools.izip(reversed(xrange(len(arr))), reversed(arr))
 
