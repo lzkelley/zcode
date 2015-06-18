@@ -247,14 +247,14 @@ def plotRect(ax, loc):
     return
 
 
-def twinAxis(ax, twin='x', fs=12, c='black', pos=1.0, trans='axes', label=None, scale=None, thresh=None, ts=None, side=None, lim=None, grid=False):
-    assert twin in ['x','y'], "``twin`` must be either `x` or `y`!"
+def twinAxis(ax, axis='x', fs=12, c='black', pos=1.0, trans='axes', label=None, scale=None, thresh=None, ts=None, side=None, lim=None, grid=False):
+    assert axis in ['x','y'], "``axis`` must be either `x` or `y`!"
     assert trans in ['axes','figure'], "``trans`` must be either `axes` or `figure`!"
 
     if( scale == 'symlog' and thresh is None ):
         thresh = 1.0
 
-    if( twin == 'x' ):
+    if( axis == 'x' ):
         tw = ax.twinx()
         '''
         if( side is None ): 
