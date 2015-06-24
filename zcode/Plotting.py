@@ -9,6 +9,14 @@ Functions
  - twinAxis()        : easily create and set a new twin axis (like `twinx()` or `twiny()`)
  - histPlotLine()
 
+ - histLine()
+ - plotHistLine()
+ - skipTicks()
+ - saveFigure()
+ - clear_frame()
+ - make_segments()
+ - colorLine()
+ - cmapColors()
 
 """
 
@@ -19,6 +27,8 @@ import scipy as sp
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from datetime import datetime
+
+import Math as zmath
 
 CMAP = plt.cm.gist_heat
 
@@ -475,9 +485,15 @@ def histLine(edges, hist):
 
 
 def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, color='black', label=None,
-                 lw=1.0, ls='-', alpha=1.0, c=None):
+                 lw=1.0, ls='-', alpha=1.0, c=None, extend=None):
 
     if( c is not None ): color = c
+
+    if( len(edges) != len(hist)+1 ):
+        if(   extend == 'left'  ): edges = np.concatenate([[zmath.extend(edges)[0]], edges])
+        elif( extend == 'right' ): edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
+        else: raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend``")
+    
 
     xval, yval = histLine(edges, hist)
 
@@ -535,12 +551,15 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=True, last=True):
 
     return
 
+# skipTicks()
+
 
 def saveFigure(fname, fig, verbose=True):
     fig.savefig(fname)
     if( verbose ): print "Saved figure to '%s'" % (fname)
     return
 
+# saveFigure()
 
 
 def clear_frame(ax=None): 
@@ -552,6 +571,7 @@ def clear_frame(ax=None):
 
     return
 
+# clear_frame()
 
 
 def make_segments(x, y):
