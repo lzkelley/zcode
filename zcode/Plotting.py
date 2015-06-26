@@ -16,7 +16,7 @@ Functions
  - clear_frame()
  - make_segments()
  - colorLine()
- - cmapColors()
+ - colormap()      : create a colormap from scalars to colors
 
 """
 
@@ -30,9 +30,6 @@ from datetime import datetime
 
 import Math as zmath
 
-CMAP = plt.cm.gist_heat
-
-FS = 10
 
 VALID_SIDES = [ None, 'left', 'right', 'top', 'bottom' ]
 
@@ -45,18 +42,12 @@ LS_DASH_L = [12,4]
 LS_DOT  = [4,4]
 
 
-LEFT  = 0.1
-RIGHT = 0.9
-BOT   = 0.1
-TOP   = 0.9
-WSPACE = 0.2
-HSPACE = 0.25
-
 
 def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True, 
              invx=False, invy=False, twinx=False, twiny=False, 
              xlim=None, ylim=None, twinxlim=None, twinylim=None,
-             left=LEFT, right=RIGHT, top=TOP, bot=BOT, hspace=HSPACE, wspace=WSPACE):
+             left=0.1, right=0.9, top=0.9, bot=0.1, hspace=0.25, wspace=0.2):
+
     fig, axes = plt.subplots(figsize=figsize, nrows=nrows, ncols=ncols)
 
     if( not np.iterable(axes) ): axes = [axes]
@@ -281,6 +272,11 @@ def twinAxis(ax, axis='x', fs=12, c='black', pos=1.0, trans='axes', label=None, 
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
+
+    if( scale.startswith('lin') ): scale = 'linear'
+
+    if( scale == 'symlog' ): thresh = 1.0
+
     if(   axis == 'x' ): ax.set_xscale(scale, linthreshx=thresh)
     elif( axis == 'y' ): ax.set_yscale(scale, linthreshy=thresh)
     else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
@@ -302,20 +298,20 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
     Arguments
     ---------
-    ax     : <matplotlib.axes.Axes>, base axes object to modify
-    axis   : <str>, which axis to target {``x`` or ``y``}
-    c      : <str>, color for the axis (see ``matplotlib.colors``)
-    fs     : <int>, font size for labels
-    pos    : <float>, position of axis-label/lines relative to the axes object
-    trans  : <str>, transformation type for the axes
-    label  : <str>, axes label (``None`` means blank)
-    scale  : <str>, axis scale, e.g. 'log', (``None`` means default)
-    thresh : <float>, for 'symlog' scaling, the threshold for the linear segment
-    side   : <str>, where to place the markings, {``left``, ``right``, ``top``, ``bottom``}
-    ts     : <int>, tick-size (for the major ticks only)
-    grid   : <bool>, whether grid lines should be enabled
-    lim    : <float>[2], limits for the axis range
-    invert : <bool>, whether to invert this axis direction (i.e. high to low)
+       ax     : <matplotlib.axes.Axes>, base axes object to modify
+       axis   : <str>, which axis to target {``x`` or ``y``}
+       c      : <str>, color for the axis (see ``matplotlib.colors``)
+       fs     : <int>, font size for labels
+       pos    : <float>, position of axis-label/lines relative to the axes object
+       trans  : <str>, transformation type for the axes
+       label  : <str>, axes label (``None`` means blank)
+       scale  : <str>, axis scale, e.g. 'log', (``None`` means default)
+       thresh : <float>, for 'symlog' scaling, the threshold for the linear segment
+       side   : <str>, where to place the markings, {``left``, ``right``, ``top``, ``bottom``}
+       ts     : <int>, tick-size (for the major ticks only)
+       grid   : <bool>, whether grid lines should be enabled
+       lim    : <float>[2], limits for the axis range
+       invert : <bool>, whether to invert this axis direction (i.e. high to low)
 
     """
 
@@ -383,15 +379,10 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
         ax.patch.set_visible(False)
 
     # Set Axis Scaling
-    if( scale is not None ):
-        VALID_SCALES = ['linear', 'log', 'symlog']
-        assert scale in VALID_SCALES,   "``scale`` must be in '%s'!" % (VALID_SCALES)
-        _setAxis_scale(ax, axis, scale, thresh=thresh)
+    if( scale is not None ): _setAxis_scale(ax, axis, scale, thresh=thresh)
 
     # Set Axis Label
-    if( label is not None ):
-        _setAxis_label(ax, axis, label, fs=fs, c=c)
-
+    if( label is not None ): _setAxis_label(ax, axis, label, fs=fs, c=c)
 
     offt.set_color(c)
 
@@ -608,9 +599,32 @@ def colorline(x, y, z, cmap=plt.cm.jet, norm=plt.Normalize(0.0, 1.0), lw=3, alph
     return lc
 
 
-def cmapColors(args, cmap=plt.cm.jet, scale='log'):
-    if( scale == 'log' ): norm = mpl.colors.LogNorm(vmin=np.min(args), vmax=np.max(args))
-    else:                 norm = mpl.colors.Normalize(vmin=np.min(args), vmax=np.max(args))
+def colormap(args, cmap=plt.cm.jet, scale='log'):
+    """
+    Create a colormap from a scalar range to a set of colors.
+
+    Arguments
+    ---------
+       args  <scalar>[N] : range of valid scalar values to normalize with
+       cmap  <object>    : optional, desired colormap
+       scale <str>       : optional, scaling of colormap {'lin', 'log'}
+
+    Returns
+    -------
+       smap <matplotlib.cm.ScalarMappable> : scalar mappable object which contains the members
+                                             ``norm``, ``cmap``, and the function ``to_rgba``
+
+    """
+
+    if(   scale.startswith('log') ): 
+        norm = mpl.colors.LogNorm(vmin=np.min(args), vmax=np.max(args))
+    elif( scale.startswith('lin') ):
+        norm = mpl.colors.Normalize(vmin=np.min(args), vmax=np.max(args))
+    else:
+        raise RuntimeError("Unrecognized ``scale`` = '%s'!!" % (scale))
 
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-    return smap.to_rgba, norm, cmap
+    smap._A = []
+    return smap
+
+# colormap()
