@@ -1,6 +1,11 @@
 """
 Functions for Input/Output (IO) Operations.
 
+
+Classes
+-------
+ - StreamCapture  : class for capturing/redirecting stdout and stderr
+
 Functions
 ---------
 
@@ -20,6 +25,45 @@ import os
 import sys
 import numpy as np
 
+
+class StreamCapture(list):
+    """
+    Class to capture/redirect output to stdout and stderr.
+
+    See: stackoverflow.com/questions/16571150
+    Usage:
+       >>> with Capturing() as output:
+       >>>     do_something(my_object)
+       >>> print output
+
+    """
+
+    from cStringIO import StringIO
+
+    def __init__(self, out=True, err=True):
+        self.out = out
+        self.err = err
+
+
+    def __enter__(self):
+        if( self.out ):
+            self._stdout = sys.stdout
+            sys.stdout = self._stringio = StreamCapture.StringIO()
+
+        if( self.err ):
+            self._stderr = sys.stderr
+            sys.stderr = self._stringio = StreamCapture.StringIO()
+
+        return self
+
+
+    def __exit__(self, *args):
+        self.extend(self._stringio.getvalue().splitlines())
+        if( self.out ): sys.stdout = self._stdout
+        if( self.err ): sys.stderr = self._stderr
+
+
+# } class StreamCapture
 
 
 def statusString(count, total, durat=None):
@@ -232,15 +276,15 @@ def dictToNPZ(dataDict, savefile, verbose=False):
 
 def npzToDict(npz):
     """
-    Given a numpy npz file, convert it to a dictionary with the same keys and values.
+    Given a numpy npz file or filename, convert it to a dictionary with the same keys and values.
 
     Arguments
     ---------
-    npz : <NpzFile>, input dictionary-like object
+       npz <str> or <NpzFile> : input dictionary-like object
 
     Returns
     -------
-    newDict : <dict>, output dictionary with key-values from npz file.
+       newDict <dict> : output dictionary with key-values from npz file.
 
     """
     if( type(npz) is str ): npz = np.load(npz)

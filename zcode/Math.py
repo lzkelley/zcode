@@ -3,13 +3,24 @@ Functions for Math operations.
 
 Functions
 ---------
- -
-
-
+ - logSpline_resample()
+ - logSpine()
+ - contiguousInds()
+ - integrate_cumulative_simpson()
+ - integrate_cumulative_func_simpson()
+ - integrate_cumulative_arr_trapezoid()
+ - withinBounds()
+ - minmax()
+ - spacing()
+ - histogram()
+ - mid()
+ - dist()
+ - extend()
+ - renumerate()
 
 """
 
-
+import itertools
 import numpy as np
 import scipy as sp
 import scipy.interpolate
@@ -260,11 +271,16 @@ def minmax(data, nonzero=False, prev=None):
        minmax <scalar>[2] : minimum and maximum of given data (and ``prev`` if provided).
                             Returned data type will match the input ``data`` (and ``prev``).
 
+    To-Do
+    -----
+     - Added an 'axis' argument, remove 'flatten()' to accomodate arbitrary shapes
+
     """
 
+    useData = np.array(data).flatten()
+
     # Filter out zeros if desired
-    if( nonzero ): useData = np.array(data[np.nonzero(data)])
-    else:          useData = np.array(data)
+    if( nonzero ): useData = np.array(useData[np.nonzero(useData)])
 
     # If there are no elements (left), return ``prev`` (`None` if not provided)
     if( np.size(useData) == 0 ): return prev
@@ -284,6 +300,23 @@ def minmax(data, nonzero=False, prev=None):
 
 
 def spacing(data, scale='log', num=100, nonzero=True, positive=False):
+    """
+    Create an evenly spaced array between extrema from the given data.
+
+    Arguments
+    ---------
+       data     <scalar>[M] : data from which to extract the extrema for bounds
+       scale    <str>       : optional, scaling for spacing, {'lin', 'log'}
+       num      <int>       : optional, number of points, ``N``
+       nonzero  <bool>      : optional, only use nonzero  elements of ``data``
+       positive <bool>      : optional, only use positive elements of ``data``
+    
+    Returns
+    -------
+       spacing <scalar>[N] : array of evenly spaced points, with number of elements ``N = num``
+
+    """
+
 
     usedata = np.array(data)
     if( nonzero  ): usedata = usedata[np.nonzero(usedata)]
@@ -440,3 +473,72 @@ def histogram(args, bins, weights=None, func='sum', edges='both', stdev=False):
     return counts, hist
 
 # histogram()
+
+
+
+def mid(vals, log=False):
+    
+    mids = np.zeros(len(vals)-1)
+    for ii,vv in enumerate(zip(vals[:-1], vals[1:])):
+        if( log ): mids[ii] = np.power(10.0, np.average(np.log10(vv)) )
+        else:      mids[ii] = np.average(vv)
+
+    return mids
+
+# mid()
+
+
+def dist(r1, r2):
+    """
+    Calculate the distance from vector(s) r1 to r2.
+
+    Both ``r1`` and ``r2`` can be either single, ``M`` dimensional, vectors or a set of ``N`` of
+    them.  If both ``r1`` and ``r2`` are sets of vectors, they must have the same length.
+
+    Arguments
+    ---------
+       r1 <scalar>[(N,)M] : first  vector (set)
+       r2 <scalar>[(N,)M] : second vector (set)
+
+    Returns
+    -------
+       dist <scalar>([N]) : distances
+
+    """
+
+    if( len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1 ):
+        dist = np.sqrt( np.sum( np.square(r1 - r2), axis=1) )    
+    else:
+        dist = np.sqrt( np.sum( np.square(r1 - r2) ) )
+
+    return dist
+
+# dist()
+
+
+def extend(arr, log=True):
+    """
+    """
+
+    if( log ): useArr = np.log10(arr)
+    else:      useArr = np.array(arr)
+
+    left = useArr[ 0] + (useArr[ 0] - useArr[ 1])
+    rigt = useArr[-1] + (useArr[-1] - useArr[-2])
+
+    if( log ):
+        left = np.power(10.0, left)
+        rigt = np.power(10.0, rigt)
+
+    return left, rigt
+
+# extend()
+
+
+def renumerate(arr):
+    """
+    Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
+    """
+    return itertools.izip(reversed(xrange(len(arr))), reversed(arr))
+
+# renumerate()    

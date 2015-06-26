@@ -9,6 +9,14 @@ Functions
  - twinAxis()        : easily create and set a new twin axis (like `twinx()` or `twiny()`)
  - histPlotLine()
 
+ - histLine()
+ - plotHistLine()
+ - skipTicks()
+ - saveFigure()
+ - clear_frame()
+ - make_segments()
+ - colorLine()
+ - colormap()      : create a colormap from scalars to colors
 
 """
 
@@ -20,9 +28,8 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 from datetime import datetime
 
-CMAP = plt.cm.gist_heat
+import Math as zmath
 
-FS = 10
 
 VALID_SIDES = [ None, 'left', 'right', 'top', 'bottom' ]
 
@@ -35,17 +42,12 @@ LS_DASH_L = [12,4]
 LS_DOT  = [4,4]
 
 
-LEFT  = 0.1
-RIGHT = 0.9
-BOT   = 0.1
-TOP   = 0.9
-WSPACE = 0.2
-HSPACE = 0.25
-
 
 def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True, 
-             invx=False, invy=False, twinx=False, twiny=False,
-             left=LEFT, right=RIGHT, top=TOP, bot=BOT, hspace=HSPACE, wspace=WSPACE):
+             invx=False, invy=False, twinx=False, twiny=False, 
+             xlim=None, ylim=None, twinxlim=None, twinylim=None,
+             left=0.1, right=0.9, top=0.9, bot=0.1, hspace=0.25, wspace=0.2):
+
     fig, axes = plt.subplots(figsize=figsize, nrows=nrows, ncols=ncols)
 
     if( not np.iterable(axes) ): axes = [axes]
@@ -56,7 +58,8 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
         if( grid ): ax.grid()
         if( invx ): ax.invert_xaxis()
         if( invy ): ax.invert_yaxis()
-
+        if( xlim is not None ): ax.set_xlim(xlim)
+        if( ylim is not None ): ax.set_ylim(ylim)
 
     if( twinx ): 
         twxs = []
@@ -64,6 +67,7 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
         twxs = np.array(twxs).reshape(np.shape(axes))
         for tw in twxs: 
             if( logy ): tw.set_yscale('log')
+            if( twinylim is not None ): tw.set_ylim(twinylim)
 
         if( len(twxs) == 1 ): twxs = twxs[0]
 
@@ -74,6 +78,7 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
         twys = np.array(twys).reshape(np.shape(axes))
         for tw in twys: 
             if( logy ): tw.set_xscale('log')
+            if( twinxlim is not None ): tw.set_ylim(twinxlim)
 
         if( len(twys) == 1 ): twys = twys[0]
 
@@ -243,14 +248,14 @@ def plotRect(ax, loc):
     return
 
 
-def twinAxis(ax, twin='x', fs=12, c='black', pos=1.0, trans='axes', label=None, scale=None, thresh=None, ts=None, side=None, lim=None, grid=False):
-    assert twin in ['x','y'], "``twin`` must be either `x` or `y`!"
+def twinAxis(ax, axis='x', fs=12, c='black', pos=1.0, trans='axes', label=None, scale=None, thresh=None, ts=None, side=None, lim=None, grid=False):
+    assert axis in ['x','y'], "``axis`` must be either `x` or `y`!"
     assert trans in ['axes','figure'], "``trans`` must be either `axes` or `figure`!"
 
     if( scale == 'symlog' and thresh is None ):
         thresh = 1.0
 
-    if( twin == 'x' ):
+    if( axis == 'x' ):
         tw = ax.twinx()
         '''
         if( side is None ): 
@@ -267,6 +272,11 @@ def twinAxis(ax, twin='x', fs=12, c='black', pos=1.0, trans='axes', label=None, 
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
+
+    if( scale.startswith('lin') ): scale = 'linear'
+
+    if( scale == 'symlog' ): thresh = 1.0
+
     if(   axis == 'x' ): ax.set_xscale(scale, linthreshx=thresh)
     elif( axis == 'y' ): ax.set_yscale(scale, linthreshy=thresh)
     else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
@@ -288,20 +298,20 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
     Arguments
     ---------
-    ax     : <matplotlib.axes.Axes>, base axes object to modify
-    axis   : <str>, which axis to target {``x`` or ``y``}
-    c      : <str>, color for the axis (see ``matplotlib.colors``)
-    fs     : <int>, font size for labels
-    pos    : <float>, position of axis-label/lines relative to the axes object
-    trans  : <str>, transformation type for the axes
-    label  : <str>, axes label (``None`` means blank)
-    scale  : <str>, axis scale, e.g. 'log', (``None`` means default)
-    thresh : <float>, for 'symlog' scaling, the threshold for the linear segment
-    side   : <str>, where to place the markings, {``left``, ``right``, ``top``, ``bottom``}
-    ts     : <int>, tick-size (for the major ticks only)
-    grid   : <bool>, whether grid lines should be enabled
-    lim    : <float>[2], limits for the axis range
-    invert : <bool>, whether to invert this axis direction (i.e. high to low)
+       ax     : <matplotlib.axes.Axes>, base axes object to modify
+       axis   : <str>, which axis to target {``x`` or ``y``}
+       c      : <str>, color for the axis (see ``matplotlib.colors``)
+       fs     : <int>, font size for labels
+       pos    : <float>, position of axis-label/lines relative to the axes object
+       trans  : <str>, transformation type for the axes
+       label  : <str>, axes label (``None`` means blank)
+       scale  : <str>, axis scale, e.g. 'log', (``None`` means default)
+       thresh : <float>, for 'symlog' scaling, the threshold for the linear segment
+       side   : <str>, where to place the markings, {``left``, ``right``, ``top``, ``bottom``}
+       ts     : <int>, tick-size (for the major ticks only)
+       grid   : <bool>, whether grid lines should be enabled
+       lim    : <float>[2], limits for the axis range
+       invert : <bool>, whether to invert this axis direction (i.e. high to low)
 
     """
 
@@ -369,22 +379,17 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
         ax.patch.set_visible(False)
 
     # Set Axis Scaling
-    if( scale is not None ):
-        VALID_SCALES = ['linear', 'log', 'symlog']
-        assert scale in VALID_SCALES,   "``scale`` must be in '%s'!" % (VALID_SCALES)
-        _setAxis_scale(ax, axis, scale, thresh=thresh)
+    if( scale is not None ): _setAxis_scale(ax, axis, scale, thresh=thresh)
 
     # Set Axis Label
-    if( label is not None ):
-        _setAxis_label(ax, axis, label, fs=fs, c=c)
-
+    if( label is not None ): _setAxis_label(ax, axis, label, fs=fs, c=c)
 
     offt.set_color(c)
 
     return ax
 
 
-
+'''
 def histPlotLine(values, bins, ax=None, weights=None, ls='-', lw=1.0, color='k', ave=False, scale=None, label=None):
     """
     Manually plot a histogram.
@@ -459,20 +464,48 @@ def histPlotLine(values, bins, ax=None, weights=None, ls='-', lw=1.0, color='k',
         ll, = ax.plot( xval, yval, ls, lw=lw, color=color, label=label)
 
     return ll, hist
-
+'''
 
 
 def histLine(edges, hist):
-    yval = np.concatenate([ [hh,hh] for hh in hist ])
     xval = np.concatenate([ [edges[jj],edges[jj+1]] for jj in range(len(edges)-1) ])
+    yval = np.concatenate([ [hh,hh] for hh in hist ])
     return xval, yval
 
+# histLine()
 
-def plotHistLine(ax, edges, hist, color='black', label=None, lw=1.0, ls='-', alpha=1.0):
-    xval, yval = histLine(edges, hist)
-    line, = ax.plot( xval, yval, ls=ls, lw=lw, color=color, label=label, alpha=alpha)
-    return line
+
+def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, color='black', label=None,
+                 lw=1.0, ls='-', alpha=1.0, c=None, extend=None):
+
+    if( c is not None ): color = c
+
+    if( len(edges) != len(hist)+1 ):
+        if(   extend == 'left'  ): edges = np.concatenate([[zmath.extend(edges)[0]], edges])
+        elif( extend == 'right' ): edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
+        else: raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend``")
     
+
+    xval, yval = histLine(edges, hist)
+
+    if( nonzero ):
+        xval = np.ma.masked_where(xval == 0.0, xval)
+        yval = np.ma.masked_where(yval == 0.0, yval)
+
+    line, = ax.plot( xval, yval, ls=ls, lw=lw, color=color, label=label, alpha=alpha)
+
+    if( yerr is not None ): 
+        xmid = zmath.mid(edges)
+
+        if( nonzero ): 
+            inds = np.where( hist != 0.0 )
+            ax.errorbar(xmid[inds], hist[inds], yerr=yerr[inds], fmt=None, ecolor=color)
+        else:
+            ax.errorbar(xmid,       hist,       yerr=yerr,       fmt=None, ecolor=color)
+
+    return line
+
+# plotHistLine()    
 
 
 def skipTicks(ax, axis='y', skip=2, num=None, first=True, last=True):
@@ -509,12 +542,15 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=True, last=True):
 
     return
 
+# skipTicks()
+
 
 def saveFigure(fname, fig, verbose=True):
     fig.savefig(fname)
     if( verbose ): print "Saved figure to '%s'" % (fname)
     return
 
+# saveFigure()
 
 
 def clear_frame(ax=None): 
@@ -526,6 +562,7 @@ def clear_frame(ax=None):
 
     return
 
+# clear_frame()
 
 
 def make_segments(x, y):
@@ -562,9 +599,32 @@ def colorline(x, y, z, cmap=plt.cm.jet, norm=plt.Normalize(0.0, 1.0), lw=3, alph
     return lc
 
 
-def cmapColors(args, cmap=plt.cm.jet, scale='log'):
-    if( scale == 'log' ): norm = mpl.colors.LogNorm(vmin=np.min(args), vmax=np.max(args))
-    else:                 norm = mpl.colors.Normalize(vmin=np.min(args), vmax=np.max(args))
+def colormap(args, cmap=plt.cm.jet, scale='log'):
+    """
+    Create a colormap from a scalar range to a set of colors.
+
+    Arguments
+    ---------
+       args  <scalar>[N] : range of valid scalar values to normalize with
+       cmap  <object>    : optional, desired colormap
+       scale <str>       : optional, scaling of colormap {'lin', 'log'}
+
+    Returns
+    -------
+       smap <matplotlib.cm.ScalarMappable> : scalar mappable object which contains the members
+                                             ``norm``, ``cmap``, and the function ``to_rgba``
+
+    """
+
+    if(   scale.startswith('log') ): 
+        norm = mpl.colors.LogNorm(vmin=np.min(args), vmax=np.max(args))
+    elif( scale.startswith('lin') ):
+        norm = mpl.colors.Normalize(vmin=np.min(args), vmax=np.max(args))
+    else:
+        raise RuntimeError("Unrecognized ``scale`` = '%s'!!" % (scale))
 
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-    return smap.to_rgba, norm, cmap
+    smap._A = []
+    return smap
+
+# colormap()
