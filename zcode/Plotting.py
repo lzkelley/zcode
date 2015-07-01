@@ -4,7 +4,7 @@ General plotting functions.
 Functions
 ---------
  - unifyAxesLimits() : given a list of axes, set all limits to match flobal extrema
- - setColorCycle()   : create a cycle of the given number of colors
+ - colorCycle()   : create a cycle of the given number of colors
  - setAxis()         : function to set many different axis properties at once
  - twinAxis()        : easily create and set a new twin axis (like `twinx()` or `twiny()`)
  - histPlotLine()
@@ -15,7 +15,7 @@ Functions
  - saveFigure()
  - clear_frame()
  - make_segments()
- - colorLine()
+ - plotSegmentedLine()
  - colormap()      : create a colormap from scalars to colors
 
 """
@@ -234,10 +234,9 @@ def setLineStyleCycle(num):
     return LS[:num]
 
 
-def setColorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
-    # if(ax == None): ax = plt.gca()
+def colorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     cols = [cmap(it) for it in np.linspace(left, right, num)]
-    # ax.set_color_cycle(cols[::-1])
+    if( ax is not None ): ax.set_color_cycle(cols[::-1])
     return cols
 
 
@@ -580,23 +579,31 @@ def make_segments(x, y):
 
 
 
-def colorline(x, y, z, cmap=plt.cm.jet, norm=plt.Normalize(0.0, 1.0), lw=3, alpha=1.0):
+def plotSegmentedLine(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0,1.0], lw=3.0, alpha=1.0):
     """
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
 
-    Plot a colored line with coordinates x and y
+    Plot a colored line with coordinates xx and y
     Optionally specify colors in the array z
     Optionally specify a colormap, a norm function and a line width
     """
+
+    # Get the minimum and maximum of ``norm``
+    norm = zmath.minmax(norm)
+    # conver to normalization
+    norm = plt.Normalize(norm[0], norm[1])
     
-    z = np.asarray(z)
-    segments = make_segments(x, y)
-    lc = mpl.collections.LineCollection(segments, array=z, cmap=cmap, norm=norm, linewidth=lw, alpha=alpha)
+    if( zz is None ): zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
+    else:             zz = np.asarray(zz)
+
+    segments = make_segments(xx, yy)
+    lc = mpl.collections.LineCollection(segments, array=zz, cmap=cmap, norm=norm, linewidth=lw, alpha=alpha)
     
-    ax = plt.gca()
     ax.add_collection(lc)
     
     return lc
+
+# plotSegmentedLine()
 
 
 def colormap(args, cmap=plt.cm.jet, scale='log'):
