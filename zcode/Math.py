@@ -17,6 +17,7 @@ Functions
  - dist()
  - extend()
  - renumerate()
+ - cumstats()
 
 """
 
@@ -542,3 +543,25 @@ def renumerate(arr):
     return itertools.izip(reversed(xrange(len(arr))), reversed(arr))
 
 # renumerate()    
+
+
+def cumstats(arr):
+    """
+    Calculate a cumulative average and standard deviation.
+    """
+
+    tot = len(arr)
+    num = np.arange(tot)
+    std = np.zeros(tot)
+    # Cumulative sum
+    sm1 = np.cumsum(arr)
+    # Cumulative sum of squares
+    sm2 = np.cumsum( np.square(arr) )
+    # Cumulative average
+    ave = sm1/(num+1.0)
+    
+    std[1:] = ((num[1:]+1.0)*sm2[1:] - np.square(sm1[1:]))/(num[1:]*(num[1:]+1.0))
+    std[1:] = np.sqrt( std[1:] )
+    return ave,std
+
+# cumstats()    
