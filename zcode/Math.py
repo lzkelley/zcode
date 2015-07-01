@@ -18,6 +18,7 @@ Functions
  - extend()
  - renumerate()
  - cumstats()
+ - confidenceIntervals()
 
 """
 
@@ -565,3 +566,30 @@ def cumstats(arr):
     return ave,std
 
 # cumstats()    
+
+
+
+def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
+    """
+    Compute the values bounding the target confidence intervals for an array of data.
+
+    Arguments
+    ---------
+       vals <scalar>[N] : array of sample data points
+       ci   <scalar>[M] : optional, list of confidence intervals as fractions (e.g. `[0.68, 0.95]`)
+    
+    Returns
+    -------
+       med  <scalar>      : median of the data
+       conf <scalar>[M,2] : bounds for each confidence interval
+
+    """
+
+    ci = np.asarray(ci)
+    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
+    cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0 ]).T
+    conf = np.array([ np.percentile(vals, 100.0*cdf) for cdf in cdf_vals ])
+    med = np.percentile(vals, 50.0)
+    return med, conf
+
+# confidenceIntervals()
