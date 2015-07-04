@@ -9,7 +9,7 @@ Functions
  - integrate_cumulative_simpson()
  - integrate_cumulative_func_simpson()
  - integrate_cumulative_arr_trapezoid()
- - withinBounds()
+ - within()
  - minmax()
  - spacing()
  - histogram()
@@ -17,6 +17,8 @@ Functions
  - dist()
  - extend()
  - renumerate()
+ - cumstats()
+ - confidenceIntervals()
 
 """
 
@@ -226,32 +228,48 @@ def integrate_cumulative_arr_trapezoid(arr, xx, log=True, init=None, rev=False):
 
 
 
-def withinBounds(val, arr, edges=True):
+def within(vals, extr, edges=True, all=False):
     """
     Test whether a value or array is within the bounds of another.
 
     Arguments
     ---------
-       val   : <scalar>([N]), test value(s)
-       arr   : <scalar>[M],   array or span to compare with
-       edges : (<bool>), include the boundaries of ``arr`` as 'within'
+       vals   <scalar>([N]) : test value(s)
+       extr  <scalar>[M]    : array or span to compare with
+       edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
 
     Returns
     -------
-       <bool>, True if within, False otherwise
+       <bool> : True if within, False otherwise
 
     """
 
-    # Including edges (thus equal to edges is 'inside' )
-    if( edges ):
-        if( np.min(val) <  np.min(arr) ): return False
-        if( np.max(val) >  np.max(arr) ): return False
-    # Excluding edges (thus equal to edges is 'outside')
+    extr_bnds = minmax(extr)
+
+    # Test whether ALL  values in ``vals`` are within range of ``extr``
+    if( all ):
+        vals_bnds = minmax(vals)
+        # Include edges for WITHIN bounds (thus not including is outside)
+        if( edges ):
+            if( vals_bnds[0] <  extr_bnds[0] or vals_bnds[1] >  extr_bnds[1] ): return False
+        # Don't include edges for WITHIN  (thus include them for outside)
+        else:
+            if( vals_bnds[0] <= extr_bnds[0] or vals_bnds[1] >= extr_bnds[1] ): return False
+
+    # Test whether EACH value  in ``vals`` is  within range of ``extr``
     else:
-        if( np.min(val) <= np.min(arr) ): return False
-        if( np.max(val) >= np.max(arr) ): return False
+        # Include edges for WITHIN bounds (thus not including is outside)
+        if( edges ):
+            return ((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])) 
+        # Don't include edges for WITHIN  (thus include them for outside)
+        else:
+            return ((vals >  extr_bnds[0]) & (vals <  extr_bnds[1])) 
+
 
     return True
+
+# within()
+
 
 
 def minmax(data, nonzero=False, prev=None):
@@ -542,3 +560,57 @@ def renumerate(arr):
     return itertools.izip(reversed(xrange(len(arr))), reversed(arr))
 
 # renumerate()    
+
+
+def cumstats(arr):
+    """
+    Calculate a cumulative average and standard deviation.
+    """
+
+    tot = len(arr)
+    num = np.arange(tot)
+    std = np.zeros(tot)
+    # Cumulative sum
+    sm1 = np.cumsum(arr)
+    # Cumulative sum of squares
+    sm2 = np.cumsum( np.square(arr) )
+    # Cumulative average
+    ave = sm1/(num+1.0)
+    
+    std[1:] = np.fabs(sm2[1:] - np.square(sm1[1:])/(num[1:]+1.0))/num[1:]
+    std[1:] = np.sqrt( std[1:] )
+    return ave,std
+
+# cumstats()    
+
+
+
+def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
+    """
+    Compute the values bounding the target confidence intervals for an array of data.
+
+    Arguments
+    ---------
+       vals <scalar>[N] : array of sample data points
+       ci   <scalar>[M] : optional, list of confidence intervals as fractions (e.g. `[0.68, 0.95]`)
+    
+    Returns
+    -------
+       med  <scalar>      : median of the data
+       conf <scalar>[M,2] : bounds for each confidence interval
+
+    """
+
+    if( not np.iterable(ci) ): ci = [ ci ]
+    ci = np.asarray(ci)
+    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
+
+    cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0 ]).T
+    conf = np.array([ np.percentile(vals, 100.0*cdf) for cdf in cdf_vals ])
+    med = np.percentile(vals, 50.0)
+
+    if( len(conf) == 1 ): conf = conf[0]
+
+    return med, conf
+
+# confidenceIntervals()
