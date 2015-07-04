@@ -410,11 +410,19 @@ def histogram(args, bins, weights=None, func='sum', edges='both', stdev=False):
 
     rightInclusive = False
     useBins = np.array(bins)
+    # Design a right-most bin to include right-most particles
     if(   edges == 'left'  ): 
-        useMax = 1.01*np.max([np.max(useBins), np.max(args)])
+        # Try to go just after right-most value
+        useMax  = 1.01*np.max([np.max(useBins), np.max(args)])
+        # Deal with right-most being 0.0
+        useMax += 0.1*minmax(np.fabs(args), nonzero=True)[0]
         useBins = np.concatenate([useBins, [useMax]])
+    # Design a left-most  bin to include left-most  particles
     elif( edges == 'right' ): 
-        useMin = 0.99*np.min([np.min(useBins), np.min(args)])
+        # Try to go just before left-most value
+        useMin  = 0.99*np.min([np.min(useBins), np.min(args)])
+        # Deal with left-most being 0.0
+        useMin -= 0.1*minmax(np.fabs(args), nonzero=True)[0]
         useBins = np.concatenate([[useMin], useBins])
         rightInclusive = True
     elif( edges == 'both'  ): 
