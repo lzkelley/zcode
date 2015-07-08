@@ -415,14 +415,22 @@ def histogram(args, bins, weights=None, func='sum', edges='both', stdev=False):
         # Try to go just after right-most value
         useMax  = 1.01*np.max([np.max(useBins), np.max(args)])
         # Deal with right-most being 0.0
-        useMax += 0.1*minmax(np.fabs(args), nonzero=True)[0]
+        shiftMax = minmax(np.fabs(args), nonzero=True)
+        #     If there are no, nonzero values ``None`` is returned
+        if( shiftMax is None ): shiftMax = 1.0
+        else:                   shiftMax = 0.1*shiftMax[0]
+        useMax += shiftMax
         useBins = np.concatenate([useBins, [useMax]])
     # Design a left-most  bin to include left-most  particles
     elif( edges == 'right' ): 
         # Try to go just before left-most value
         useMin  = 0.99*np.min([np.min(useBins), np.min(args)])
         # Deal with left-most being 0.0
-        useMin -= 0.1*minmax(np.fabs(args), nonzero=True)[0]
+        shiftMin = minmax(np.fabs(args), nonzero=True)
+        #     If there are no, nonzero values ``None`` is returned
+        if( shiftMin is None ): shiftMin = 1.0
+        else:                   shiftMin = 0.1*shiftMin[0]
+        useMin -= shiftMin
         useBins = np.concatenate([[useMin], useBins])
         rightInclusive = True
     elif( edges == 'both'  ): 
