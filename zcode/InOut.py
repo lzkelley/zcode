@@ -9,14 +9,14 @@ Classes
 Functions
 ---------
 
-   statusString() :
-   bytesString()  :
-   getFileSize()  :
-   countLines()   :
-   checkPath()    :
-   dictToNPZ()    :
-   npzToDict()    :
-
+    statusString   :
+    bytesString    :
+    getFileSize    :
+    countLines     :
+    checkPath      :
+    dictToNPZ      :
+    npzToDict      :
+    getProgressBar :
 
 
 """
@@ -288,7 +288,38 @@ def npzToDict(npz):
 
     """
     if( type(npz) is str ): npz = np.load(npz)
-    newDict = { key : npz[key] for key in npz.keys() }
+    # newDict = { key : npz[key] for key in npz.keys() }
+    newDict = {}
+    for key in npz.keys():
+        vals = npz[key]
+        if( np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) ): 
+            vals = vals.item()
+
+        newDict[key] = vals
+
     return newDict
 
 # npzToDict()
+
+
+
+def getProgressBar(maxval, width=100):
+    """
+    Wrapper to create a progressbar object with default settings.
+    """
+
+    import progressbar
+
+    # Set Progress Bar Parameters
+    widgets = [
+        progressbar.Percentage(),
+        ' ', progressbar.Bar(),
+        ' ', progressbar.AdaptiveETA(),
+        ]
+
+    # Start Progress Bar
+    pbar = progressbar.ProgressBar(widgets=widgets, maxval=maxval, term_width=width)
+
+    return pbar
+
+# getProgressBar()
