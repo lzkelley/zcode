@@ -237,6 +237,7 @@ def within(vals, extr, edges=True, all=False):
        vals   <scalar>([N]) : test value(s)
        extr  <scalar>[M]    : array or span to compare with
        edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
+       all   <bool>         : optional, whether All values are within bounds (single return `bool`)
 
     Returns
     -------
@@ -246,27 +247,15 @@ def within(vals, extr, edges=True, all=False):
 
     extr_bnds = minmax(extr)
 
-    # Test whether ALL  values in ``vals`` are within range of ``extr``
-    if( all ):
-        vals_bnds = minmax(vals)
-        # Include edges for WITHIN bounds (thus not including is outside)
-        if( edges ):
-            if( vals_bnds[0] <  extr_bnds[0] or vals_bnds[1] >  extr_bnds[1] ): return False
-        # Don't include edges for WITHIN  (thus include them for outside)
-        else:
-            if( vals_bnds[0] <= extr_bnds[0] or vals_bnds[1] >= extr_bnds[1] ): return False
+    # Include edges for WITHIN bounds (thus not including is outside)
+    if( edges ): retval = np.asarray((vals >= extr_bnds[0]) & (vals <= extr_bnds[1]))
+    # Don't include edges for WITHIN  (thus include them for outside)
+    else:        retval = np.asarray((vals >  extr_bnds[0]) & (vals <  extr_bnds[1])) 
 
-    # Test whether EACH value  in ``vals`` is  within range of ``extr``
-    else:
-        # Include edges for WITHIN bounds (thus not including is outside)
-        if( edges ):
-            return ((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])) 
-        # Don't include edges for WITHIN  (thus include them for outside)
-        else:
-            return ((vals >  extr_bnds[0]) & (vals <  extr_bnds[1])) 
+    # Convert to single return value
+    if( all ): retval = np.all(retval)
 
-
-    return True
+    return retval
 
 # within()
 
