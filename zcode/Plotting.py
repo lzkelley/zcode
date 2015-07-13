@@ -342,7 +342,9 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
             ax.xaxis.set_label_position(side)
             ax.xaxis.set_ticks_position(side)
 
-        if( lim is not None ): ax.set_xlim( lim )
+        if( lim is not None ): 
+            if( np.size(lim) > 2 ): lim = zmath.minmax(lim)
+            ax.set_xlim( lim )
 
         if( invert ): ax.invert_xaxis()
 
@@ -507,17 +509,18 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, color='black', label
 # plotHistLine()    
 
 
-def skipTicks(ax, axis='y', skip=2, num=None, first=True, last=True):
+def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
     """
-    Only label every ``N``th tick mark.
+    Only label every ``skip`` tick marks.
 
     Arguments
     ---------
-    ax   : <matplotlib.axes.Axes>, base axes object
-    axis : <str>, which axis to modify
-    skip : <int>, interval which to skip
-    num  : <int>, target number of tick labels (``None`` : used a fixed ``skip``)
-    first : <bool>, draw first tick label regardless of ``skip``/``num``
+        ax    <obj>  : `matplotlib.axes.Axes` object, base axes class
+        axis  <str>  : which axis to modify
+        skip  <int>  : interval which to skip
+        num   <int>  : target number of tick labels (``None`` : used a fixed ``skip``)
+        first <bool> : If `True` always show first tick, if `False` never show, otherwise use skip
+        last  <bool> : If `True` always show last  tick, if `False` never show, otherwise use skip
 
     """
 
@@ -531,17 +534,24 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=True, last=True):
     # Determine ``skip`` to match target number of labels
     if( num is not None ): skip = np.int(np.ceil(1.0*count/num))
 
-    vis = np.zeros(count, dtype=bool)
+    visible = np.zeros(count, dtype=bool)
 
     # Choose some to be visible
-    if( last ): vis[-1] = True
-    vis[::skip] = True
+    visible[::skip] = True
 
-    for label,visible in zip(ax_labels, vis): label.set_visible(visible)
+    if(   first is True  ): visible[ 0] = True
+    elif( first is False ): visible[ 0] = False
+
+    if(   last  is True  ): visible[-1] = True
+    elif( last  is False ): visible[-1] = False
+
+
+    for label,vis in zip(ax_labels, visible): label.set_visible(vis)
 
     return
 
 # skipTicks()
+
 
 
 def saveFigure(fname, fig, verbose=True):
