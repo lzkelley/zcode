@@ -272,7 +272,7 @@ def within(vals, extr, edges=True, all=False):
 
 
 
-def minmax(data, nonzero=False, prev=None):
+def minmax(data, nonzero=False, prev=None, stretch=0.0):
     """
     Find minimum and maximum of given data, return as numpy array.
 
@@ -283,6 +283,7 @@ def minmax(data, nonzero=False, prev=None):
        data    <scalar>[...] : arbitrarily shaped data to find minumum and maximum of.
        prev    <scalar>[2]   : optional, also find min/max against prev[0] and prev[1] respectively.
        nonzero <bool>        : optional, ignore zero valued entries
+       stretch <flt>         : factor by which to stretch min and max by (1 +- ``stretch``)
 
     Returns
     -------
@@ -303,8 +304,12 @@ def minmax(data, nonzero=False, prev=None):
     # If there are no elements (left), return ``prev`` (`None` if not provided)
     if( np.size(useData) == 0 ): return prev
 
+    # Determine stretch factor
+    lef = (1.0-stretch)
+    rit = (1.0+stretch)
+
     # Find extrema
-    minmax = np.array([np.min(useData), np.max(useData)])
+    minmax = np.array([lef*np.min(useData), rit*np.max(useData)])
 
     # Compare to previous extrema, if given
     if( prev is not None ):
