@@ -17,6 +17,7 @@ Functions
  - make_segments()
  - plotSegmentedLine()
  - colormap()      : create a colormap from scalars to colors
+ - strSciNot()         : create a latex string of the given number in scientific notation
 
 """
 
@@ -645,3 +646,14 @@ def colormap(args, cmap=plt.cm.jet, scale='log'):
     return smap
 
 # colormap()
+
+
+def strSciNot(val, precman=1, precexp=1):
+    """
+    """
+    man, exp = zmath.frexp10(val)
+    str = "${0:.{2:d}f} \\times \, 10^{{ {1:.{3:d}f} }}$" #.format(man, exp, precman, precexp)
+    str = str.format(man, exp, precman, precexp)
+    return str
+
+# strSciNot()
