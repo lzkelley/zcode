@@ -19,6 +19,7 @@ Functions
  - renumerate()
  - cumstats()
  - confidenceIntervals()
+ - frexp10()
 
 """
 
@@ -635,3 +636,23 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
     return med, conf
 
 # confidenceIntervals()
+
+
+def frexp10(vals):
+    """
+    Return the mantissa and exponent in base 10
+
+    Arguments
+    ---------
+        vals <flt>(N) : values to be converted
+
+    Returns
+    -------
+        man <flt>(N) : mantissa
+        exp <flt>(N) : exponent
+
+    """
+
+    exp = np.int( np.floor(np.log10(vals)) )
+    man = vals / np.power(10.0, exp)
+    return man, exp
