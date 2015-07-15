@@ -14,7 +14,7 @@ Functions
  - spacing()
  - histogram()
  - mid()
- - dist()
+ - vecmag()
  - extend()
  - renumerate()
  - cumstats()
@@ -273,7 +273,7 @@ def within(vals, extr, edges=True, all=False):
 
 
 
-def minmax(data, nonzero=False, prev=None, stretch=0.0):
+def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
     """
     Find minimum and maximum of given data, return as numpy array.
 
@@ -301,6 +301,8 @@ def minmax(data, nonzero=False, prev=None, stretch=0.0):
 
     # Filter out zeros if desired
     if( nonzero ): useData = np.array(useData[np.nonzero(useData)])
+    
+    if( positive ): useData = np.array(useData[np.where(useData >= 0.0)])
 
     # If there are no elements (left), return ``prev`` (`None` if not provided)
     if( np.size(useData) == 0 ): return prev
@@ -528,7 +530,7 @@ def mid(vals, log=False):
 # mid()
 
 
-def dist(r1, r2):
+def vecmag(r1, r2=None):
     """
     Calculate the distance from vector(s) r1 to r2.
 
@@ -546,6 +548,8 @@ def dist(r1, r2):
 
     """
 
+    if( r2 is None ): r2 = np.zeros(np.shape(r1))
+
     if( len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1 ):
         dist = np.sqrt( np.sum( np.square(r1 - r2), axis=1) )    
     else:
@@ -553,7 +557,7 @@ def dist(r1, r2):
 
     return dist
 
-# dist()
+# vecmag()
 
 
 def extend(arr, log=True):
