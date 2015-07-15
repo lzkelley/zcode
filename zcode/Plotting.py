@@ -292,7 +292,7 @@ def _setAxis_label(ax, axis, label, fs=12, c='black'):
 
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None, 
-            thresh=None, side=None, ts=8, grid=True, lim=None, invert=False):
+            thresh=None, side=None, ts=8, grid=True, lim=None, invert=False, ticks=True):
     """
     Configure a particular axis of the given axes object.
 
@@ -312,6 +312,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
        grid   : <bool>, whether grid lines should be enabled
        lim    : <float>[2], limits for the axis range
        invert : <bool>, whether to invert this axis direction (i.e. high to low)
+       ticks
 
     """
 
@@ -348,6 +349,8 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
             ax.set_xlim( lim )
 
         if( invert ): ax.invert_xaxis()
+        if( not ticks ):
+            for label in ax.xaxis.get_ticklabels(): label.set_visible(False)
 
     else:
         ax.yaxis.label.set_color(c)
@@ -370,6 +373,8 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
         if( lim is not None ): ax.set_ylim( lim )
 
         if( invert ): ax.invert_yaxis()
+        if( not ticks ):
+            for label in ax.yaxis.get_ticklabels(): label.set_visible(False)
 
 
     # Set Spine colors
@@ -391,94 +396,20 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     return ax
 
 
-'''
-def histPlotLine(values, bins, ax=None, weights=None, ls='-', lw=1.0, color='k', ave=False, scale=None, label=None):
-    """
-    Manually plot a histogram.
-
-    Uses numpy.histogram to obtain binned values, then plots them manually
-    as connected lines with the given parameters.  If `weights` are provided,
-    they are the values summed for each bin instead of 1.0 for each entry in
-    `values`.
-
-    Parameters
-    ----------
-    ax : object, matplotlib.axes
-        Axes on which to make plot
-
-    values : array_like, scalar
-        Array of values to be binned and plotted.  Each entry which belongs in
-        a bin, increments that bin by 1.0 or the corresponding entry in
-        `weights` if it is provived.
-
-    bins : array_like, scalar
-        Edges of bins to use for histogram, with both left and right edges.
-        If `bins` has length N, there will be N-1 bins.
-
-    weights : array_like, scalar, optional
-        Array of the same length as `values` which contains the weights to be
-        added to each bin.
-
-    ls : str, optional
-        linestyle to plot with
-
-    lw : scalar, optional
-        lineweight to plot with
-
-    color : str, optional
-        color of line to plot with
-
-    scale : scalar or array of scalars
-        Rescale the resulting histogram by this/these values
-        (e.g. 1/binVol will convert to density)
-
-    label : str, optional
-        label to associate with plotted histogram line
-
-    Returns
-    -------
-    ll : object, matplotlib.lines.Line2D
-        Line object which was plotted to axes `ax`
-        (can then be used to make a legend, etc)
-
-    hist : array, scalar
-        The histogram which is plotted
-
-    """
-
-    hist,edge = np.histogram( values, bins=bins, weights=weights )
-
-    # Find the average of each weighed bin instead.
-    if( ave and weights is not None ):
-        hist = [ hh/nn if nn > 0 else 0.0
-                 for hh,nn in zip(hist,np.histogram( values, bins=bins)[0]) ]
-
-    # Rescale the bin values
-    if( scale != None ):
-        hist *= scale
-
-    yval = np.concatenate([ [hh,hh] for hh in hist ])
-    xval = np.concatenate([ [edge[jj],edge[jj+1]] for jj in range(len(edge)-1) ])
-
-    if( ax == None ):
-        ll = None
-    else:
-        ll, = ax.plot( xval, yval, ls, lw=lw, color=color, label=label)
-
-    return ll, hist
-'''
-
-
 def histLine(edges, hist):
-    xval = np.concatenate([ [edges[jj],edges[jj+1]] for jj in range(len(edges)-1) ])
-    yval = np.concatenate([ [hh,hh] for hh in hist ])
+    #xval = np.concatenate([ [edges[jj],edges[jj+1]] for jj in range(len(edges)-1) ])
+    #yval = np.concatenate([ [hh,hh] for hh in hist ])
+
+    xval = np.hstack([ [edges[jj],edges[jj+1]] for jj in range(len(edges)-1) ])
+    yval = np.hstack([ [hh,hh] for hh in hist ])
+
     return xval, yval
 
 # histLine()
 
 
-def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, color='black', label=None,
-                 lw=1.0, ls='-', alpha=1.0, c=None, extend=None):
+def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None,
+                 color='black', label=None, lw=1.0, ls='-', alpha=1.0, c=None):
 
     if( c is not None ): color = c
 
@@ -491,8 +422,13 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, color='black', label
     xval, yval = histLine(edges, hist)
 
     if( nonzero ):
-        xval = np.ma.masked_where(xval == 0.0, xval)
+        xval = np.ma.masked_where(yval == 0.0, xval)
         yval = np.ma.masked_where(yval == 0.0, yval)
+
+    if( positive ):
+        xval = np.ma.masked_where(yval < 0.0, xval)
+        yval = np.ma.masked_where(yval < 0.0, yval)
+
 
     line, = ax.plot( xval, yval, ls=ls, lw=lw, color=color, label=label, alpha=alpha)
 
@@ -617,15 +553,15 @@ def plotSegmentedLine(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0,1.0], lw=3
 # plotSegmentedLine()
 
 
-def colormap(args, cmap=plt.cm.jet, scale='log'):
+def colormap(args, cmap=plt.cm.jet, scale=None):
     """
     Create a colormap from a scalar range to a set of colors.
 
     Arguments
     ---------
-       args  <scalar>[N] : range of valid scalar values to normalize with
-       cmap  <object>    : optional, desired colormap
-       scale <str>       : optional, scaling of colormap {'lin', 'log'}
+       args  <scalar>([N]) : range of valid scalar values to normalize with
+       cmap  <object>      : optional, desired colormap
+       scale <str>         : optional, scaling of colormap {'lin', 'log'}
 
     Returns
     -------
@@ -634,15 +570,31 @@ def colormap(args, cmap=plt.cm.jet, scale='log'):
 
     """
 
-    if(   scale.startswith('log') ): 
-        norm = mpl.colors.LogNorm(vmin=np.min(args), vmax=np.max(args))
-    elif( scale.startswith('lin') ):
-        norm = mpl.colors.Normalize(vmin=np.min(args), vmax=np.max(args))
+    
+
+    if( scale is None ): 
+        if( np.size(args) > 1 ): scale = 'log'
+        else:                    scale = 'lin'
+
+    if(   scale.startswith('log') ): log = True
+    elif( scale.startswith('lin') ): log = False
     else:
         raise RuntimeError("Unrecognized ``scale`` = '%s'!!" % (scale))
 
+
+    # Determine minimum and maximum
+    if( np.size(args) > 1 ): min,max = zmath.minmax(args, nonzero=log, positive=log)
+    else:                    min,max = 0, np.int(args)-1
+
+    # Create normalization
+    if( log ): norm = mpl.colors.LogNorm  (vmin=min, vmax=max)
+    else:      norm = mpl.colors.Normalize(vmin=min, vmax=max)
+
+    # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+    # Bug-Fix something something
     smap._A = []
+
     return smap
 
 # colormap()
