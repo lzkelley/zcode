@@ -25,6 +25,7 @@ import os
 import sys
 import numpy as np
 
+import warnings
 
 class StreamCapture(list):
     """
@@ -306,6 +307,8 @@ def npzToDict(npz):
 def getProgressBar(maxval, width=100):
     """
     Wrapper to create a progressbar object with default settings.
+
+    Use ``pbar.start()`` and ``pbar.finish()``
     """
 
     import progressbar
@@ -314,8 +317,13 @@ def getProgressBar(maxval, width=100):
     widgets = [
         progressbar.Percentage(),
         ' ', progressbar.Bar(),
-        ' ', progressbar.AdaptiveETA(),
-        ]
+        ' ' ]
+    
+    try:
+        widgets.append(progressbar.AdaptiveETA())
+    except:
+        # warnings.warn("Could not load ``progressbar.AdaptiveETA``", RuntimeWarning)
+        widgets.append(progressbar.ETA())
 
     # Start Progress Bar
     pbar = progressbar.ProgressBar(widgets=widgets, maxval=maxval, term_width=width)
