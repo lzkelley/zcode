@@ -358,7 +358,7 @@ def spacing(data, scale='log', num=100, nonzero=True, positive=False):
 
 
 def histogram(args, bins, binScale=None, bounds='both', 
-              weights=None, func='sum', stdev=False):
+              weights=None, func='sum', cumul=False, stdev=False):
     """
     Histogram (bin) the given values.
 
@@ -390,6 +390,7 @@ def histogram(args, bins, binScale=None, bounds='both',
                                 ``ave``   : average      of ``weights``
                                 ``max``   : find maximum of ``weights``
                                 ``min``   : find minimum of ``weights``
+       cumul    <bool>        : also calculate and return a cumulative distribution of ``counts``
        stdev    <bool>        : optional, find standard-deviation of ``weights`` in each bin
 
 
@@ -398,6 +399,7 @@ def histogram(args, bins, binScale=None, bounds='both',
        edges    <scalar>[L]   : edges used for creating histogram
        counts   <int>[L]      : histogram of counts per bin, if ``edges`` is `both` then length is 
                                `L=M-1`, otherwise `L=M`.
+       cumsum   <int>[L]      : cumulative distribution of ``counts``, if ``cumul`` is True
        hist     <scalar>[L]   : optional, histogram of ``func`` operation on ``weights``
                                returned if ``weights`` is given. 
        std      <scalar>[L]   : optional, standard-deviation of ``weights`` in bin, 
@@ -480,10 +482,14 @@ def histogram(args, bins, binScale=None, bounds='both',
     if( bounds == 'both' ): counts[-1] += np.count_nonzero( args == edges[-1] )
     
     counts = np.array(counts)
+    
+    # Calculate cumulative distribution
+    if( cumul ): cumsum = np.cumsum(counts)
 
     # Just histogramming counts
     if( weights is None ):
-        return edges, counts
+        if( cumul ): return edges, counts, cumsum
+        else:        return edges, counts
 
 
     ## Perform Weighting
@@ -493,7 +499,8 @@ def histogram(args, bins, binScale=None, bounds='both',
 
     # if a single scaling is provided
     if( np.size(weights) == 1 ):
-        return edges, counts, counts*weights
+        if( cumul ): return edges, counts, cumsum, counts*weights
+        else:        return edges, counts, counts*weights
 
 
     # If ``weights`` has values for each argument ``args``
@@ -532,11 +539,13 @@ def histogram(args, bins, binScale=None, bounds='both',
 
         std = np.array(std)
 
-        return edges, counts, hist, std
+        if( cumul ): return edges, counts, hist, std
+        else:        return edges, counts, cumsum, hist, std
 
 
     # No ``std``, just return histograms of counts and ``func`` on ``weights``
-    return edges, counts, hist
+    if( cumul ): return edges, counts, cumsum, hist
+    else:        return edges, counts, hist
 
 # histogram()
 
