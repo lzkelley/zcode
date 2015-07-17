@@ -256,19 +256,19 @@ def colorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     return cols
 
 
-def twinAxis(ax, axis='x', fs=12, c='black', pos=1.0, trans='axes', label=None, scale=None, thresh=None, ts=None, side=None, lim=None, grid=False):
-    assert axis in ['x','y'], "``axis`` must be either `x` or `y`!"
-    assert trans in ['axes','figure'], "``trans`` must be either `axes` or `figure`!"
+def twinAxis(ax, axis='x', pos=1.0, **kwargs):
 
-    if( scale == 'symlog' and thresh is None ):
-        thresh = 1.0
-
-    if( axis == 'x' ):
+    if(   axis == 'x' ):
         tw = ax.twinx()
-        tw = setAxis(tw, axis='y', fs=fs, c=c, pos=pos, trans=trans, label=label, scale=scale, thresh=thresh, side=side, ts=ts, grid=grid, lim=lim)
-    else:
+        setax = 'y'
+    elif( axis == 'y' ):
         tw = ax.twiny()
-        tw = setAxis(tw, axis='x', fs=fs, c=c, pos=pos, trans=trans, label=label, scale=scale, thresh=thresh, side=side, ts=ts, grid=grid, lim=lim)
+        setax = 'x'
+    else:
+        raise RuntimeError("``axis`` must be either {`x` or `y`}!")
+
+ 
+    tw = setAxis(tw, axis=setax, pos=pos, **kwargs)
 
     return tw
 
@@ -373,7 +373,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     if( scale is not None ): _setAxis_scale(ax, axis, scale, thresh=thresh)
 
     # Set Axis Label
-    if( label is not None ): _setAxis_label(ax, axis, label, fs=fs, c=c)
+    _setAxis_label(ax, axis, label, fs=fs, c=c)
 
     offt.set_color(c)
 
@@ -384,7 +384,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
 
 def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None, 
-                 fill=False, filldict=None, **kwargs):
+                 fill=None, **kwargs):
     """
     Given bin edges and histogram-like values, plot a histogram.
 
@@ -397,8 +397,7 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
         nonzero  <bool>   : only plot non-zero values
         positive <bool>   : only plot positive values
         extend   <str>    : required if ``N != M+1``, sets direction to extend ``edges``
-        fill     <bool>   : fill below line
-        filldict <dict>   : dictionary of parameters to pass to ``fill_between`` for filling
+        fill     <obj>    : If not ``None``, fill below line; can set as dict of fill parameters
         **kwargs <dict>   : key value pairs to be passed to the plotting function
 
     Returns
