@@ -3,21 +3,31 @@ General plotting functions.
 
 Functions
 ---------
- - unifyAxesLimits() : given a list of axes, set all limits to match flobal extrema
- - colorCycle()   : create a cycle of the given number of colors
- - setAxis()         : function to set many different axis properties at once
- - twinAxis()        : easily create and set a new twin axis (like `twinx()` or `twiny()`)
- - histPlotLine()
+  - subplots             :
+  - set_lim              : set limits on an axis
+  - addParameterString   : 
+  - unifyAxesLimits      : given a list of axes, set all limits to match flobal extrema
+  - colorCycle           : create a cycle of the given number of colors
 
- - histLine()
- - plotHistLine()
- - skipTicks()
- - saveFigure()
- - clear_frame()
- - make_segments()
- - plotSegmentedLine()
- - colormap()      : create a colormap from scalars to colors
- - strSciNot()         : create a latex string of the given number in scientific notation
+  - twinAxis             : easily create and set a new twin axis (like `twinx()` or `twiny()`)
+  - setAxis              : function to set many different axis properties at once
+
+
+  - plotHistLine         : plot a line as a histogram
+  - skipTicks            : skip some tick marks
+  - saveFigure
+  - plotSegmentedLine    : Plot a line as a series of segements (e.g. with various colors)
+  - colormap             : create a colormap from scalars to colors
+  - strSciNot            : create a latex string of the given number in scientific notation
+
+
+
+  - _setAxis_scale       : 
+  - _setAxis_label       :
+  - _histLine            : construct a stepped line
+  - _clear_frame
+  - _make_segments
+
 
 """
 
@@ -33,15 +43,6 @@ import Math as zmath
 
 
 VALID_SIDES = [ None, 'left', 'right', 'top', 'bottom' ]
-
-LS_DASH_DASH = [8,4]
-LS_DASH_DOT  = [8,4,4,4]
-LS_DOT_DOT   = [4,4]
-
-LS_DASH = [8,4]
-LS_DASH_L = [12,4]
-LS_DOT  = [4,4]
-
 
 
 def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True, 
@@ -95,6 +96,7 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
 
     return fig, axes
 
+# subplots()
 
 
 def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'):
@@ -180,11 +182,12 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 
     return
 
+# set_lim()
+
 
 def addParameterString(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
     txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=fig.transFigure,
                    horizontalalignment=halign, verticalalignment=valign)
-
     return txt
 
 
@@ -211,8 +214,20 @@ def unifyAxesLimits(axes, axis='y'):
 
     return np.array([lo,hi])
 
+# unifyAxesLimits()
 
+
+'''
 def setLineStyleCycle(num):
+
+    LS_DASH_DASH = [8,4]
+    LS_DASH_DOT  = [8,4,4,4]
+    LS_DOT_DOT   = [4,4]
+
+    LS_DASH = [8,4]
+    LS_DASH_L = [12,4]
+    LS_DOT  = [4,4]
+
     LS = [[None,None]]  # solid
     LS.append(LS_DASH_L)
     LS.append(LS_DASH)
@@ -233,19 +248,12 @@ def setLineStyleCycle(num):
     LS.append(LS_DASH_L + LS_DOT + LS_DOT + LS_DASH + LS_DOT + LS_DOT)
 
     return LS[:num]
-
+'''
 
 def colorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     cols = [cmap(it) for it in np.linspace(left, right, num)]
     if( ax is not None ): ax.set_color_cycle(cols[::-1])
     return cols
-
-
-def plotRect(ax, loc):
-    rect = mpl.patches.Rectangle((loc[0], loc[1]), loc[2], loc[3],
-                                 alpha=0.4, facecolor='None', ls='dashed', lw=1.0, transform=ax.transData)
-    ax.add_patch(rect)
-    return
 
 
 def twinAxis(ax, axis='x', fs=12, c='black', pos=1.0, trans='axes', label=None, scale=None, thresh=None, ts=None, side=None, lim=None, grid=False):
@@ -257,37 +265,12 @@ def twinAxis(ax, axis='x', fs=12, c='black', pos=1.0, trans='axes', label=None, 
 
     if( axis == 'x' ):
         tw = ax.twinx()
-        '''
-        if( side is None ): 
-            if( pos > 0.0 ): side = 'right'
-            else:            side = 'left'
-        '''
         tw = setAxis(tw, axis='y', fs=fs, c=c, pos=pos, trans=trans, label=label, scale=scale, thresh=thresh, side=side, ts=ts, grid=grid, lim=lim)
     else:
         tw = ax.twiny()
-        #if( side is None ): side = 'top'
         tw = setAxis(tw, axis='x', fs=fs, c=c, pos=pos, trans=trans, label=label, scale=scale, thresh=thresh, side=side, ts=ts, grid=grid, lim=lim)
 
     return tw
-
-
-def _setAxis_scale(ax, axis, scale, thresh=None):
-
-    if( scale.startswith('lin') ): scale = 'linear'
-
-    if( scale == 'symlog' ): thresh = 1.0
-
-    if(   axis == 'x' ): ax.set_xscale(scale, linthreshx=thresh)
-    elif( axis == 'y' ): ax.set_yscale(scale, linthreshy=thresh)
-    else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
-    return
-
-
-def _setAxis_label(ax, axis, label, fs=12, c='black'):
-    if(   axis == 'x' ): ax.set_xlabel(label, size=fs, color=c)
-    elif( axis == 'y' ): ax.set_ylabel(label, size=fs, color=c)
-    else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
-    return
 
 
 
@@ -399,13 +382,9 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 # setAxis()
 
 
-def histLine(edges, hist):
-    xval = np.hstack([ [edges[jj],edges[jj+1]] for jj in range(len(edges)-1) ])
-    yval = np.hstack([ [hh,hh] for hh in hist ])
-    return xval, yval
 
-
-def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None, **kwargs):
+def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None, 
+                 fill=False, filldict=None, **kwargs):
     """
     Given bin edges and histogram-like values, plot a histogram.
 
@@ -418,6 +397,8 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
         nonzero  <bool>   : only plot non-zero values
         positive <bool>   : only plot positive values
         extend   <str>    : required if ``N != M+1``, sets direction to extend ``edges``
+        fill     <bool>   : fill below line
+        filldict <dict>   : dictionary of parameters to pass to ``fill_between`` for filling
         **kwargs <dict>   : key value pairs to be passed to the plotting function
 
     Returns
@@ -438,7 +419,7 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
         else: raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend`` given")
     
     # Construct plot points to manually create a step-plot
-    xval, yval = histLine(edges, hist)
+    xval, yval = _histLine(edges, hist)
 
     # Select nonzero values
     if( nonzero ):
@@ -462,6 +443,18 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
             ax.errorbar(xmid[inds], hist[inds], yerr=yerr[inds], fmt=None, ecolor=col)
         else:
             ax.errorbar(xmid,       hist,       yerr=yerr,       fmt=None, ecolor=col)
+
+    # Add a fill region
+    if( fill is not None ):
+        xlim = ax.get_xlim()
+        if( type(fill) == dict ): filldict = fill
+        else:                     filldict = dict()
+
+        ax.fill_between(xval, yval, xlim[0], **filldict)
+        print xlim
+        ax.set_xlim(xlim)
+        print ax.get_xlim()
+
 
     return line
 
@@ -522,31 +515,6 @@ def saveFigure(fname, fig, verbose=True):
 # saveFigure()
 
 
-def clear_frame(ax=None): 
-    # Taken from a post by Tony S Yu
-    if ax is None: ax = plt.gca() 
-    ax.xaxis.set_visible(False) 
-    ax.yaxis.set_visible(False) 
-    for spine in ax.spines.itervalues(): spine.set_visible(False) 
-
-    return
-
-# clear_frame()
-
-
-def make_segments(x, y):
-    """
-    http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
-
-    Create list of line segments from x and y coordinates, in the correct format for LineCollection:
-    an array of the form   [numlines, (points per line), 2 (x and y)] array
-    """
-
-    points = np.array([x, y]).T.reshape(-1, 1, 2)
-    segments = np.concatenate([points[:-1], points[1:]], axis=1)
-    
-    return segments
-
 
 
 def plotSegmentedLine(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0,1.0], lw=3.0, alpha=1.0):
@@ -567,7 +535,8 @@ def plotSegmentedLine(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0,1.0], lw=3
     else:             zz = np.asarray(zz)
 
     segments = make_segments(xx, yy)
-    lc = mpl.collections.LineCollection(segments, array=zz, cmap=cmap, norm=norm, linewidth=lw, alpha=alpha)
+    lc = mpl.collections.LineCollection(segments, array=zz, cmap=cmap, norm=norm, 
+                                        linewidth=lw, alpha=alpha)
     
     ax.add_collection(lc)
     
@@ -632,3 +601,64 @@ def strSciNot(val, precman=1, precexp=1):
     return str
 
 # strSciNot()
+
+
+
+
+
+
+
+
+
+
+def _setAxis_scale(ax, axis, scale, thresh=None):
+
+    if( scale.startswith('lin') ): scale = 'linear'
+
+    if( scale == 'symlog' ): thresh = 1.0
+
+    if(   axis == 'x' ): ax.set_xscale(scale, linthreshx=thresh)
+    elif( axis == 'y' ): ax.set_yscale(scale, linthreshy=thresh)
+    else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
+    return
+
+
+def _setAxis_label(ax, axis, label, fs=12, c='black'):
+    if(   axis == 'x' ): ax.set_xlabel(label, size=fs, color=c)
+    elif( axis == 'y' ): ax.set_ylabel(label, size=fs, color=c)
+    else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
+    return
+
+
+def _histLine(edges, hist):
+    xval = np.hstack([ [edges[jj],edges[jj+1]] for jj in range(len(edges)-1) ])
+    yval = np.hstack([ [hh,hh] for hh in hist ])
+    return xval, yval
+
+
+
+def _clear_frame(ax=None): 
+    # Taken from a post by Tony S Yu
+    if ax is None: ax = plt.gca() 
+    ax.xaxis.set_visible(False) 
+    ax.yaxis.set_visible(False) 
+    for spine in ax.spines.itervalues(): spine.set_visible(False) 
+    return
+
+# clear_frame()
+
+
+def _make_segments(x, y):
+    """
+    http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
+
+    Create list of line segments from x and y coordinates, in the correct format for LineCollection:
+    an array of the form   [numlines, (points per line), 2 (x and y)] array
+    """
+
+    points = np.array([x, y]).T.reshape(-1, 1, 2)
+    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    
+    return segments
+
+# _make_segments()
