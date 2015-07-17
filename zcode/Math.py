@@ -3,23 +3,23 @@ Functions for Math operations.
 
 Functions
 ---------
- - logSpline_resample()
- - logSpine()
- - contiguousInds()
- - integrate_cumulative_simpson()
- - integrate_cumulative_func_simpson()
- - integrate_cumulative_arr_trapezoid()
- - within()
- - minmax()
- - spacing()
- - histogram()
- - mid()
- - vecmag()
- - extend()
- - renumerate()
- - cumstats()
- - confidenceIntervals()
- - frexp10()
+ - logSpline_resample                   : use a log-log spline to resample the given data
+ - logSpine                             : construct a spline in log-log space
+ - contiguousInds                       : find the largest segment of contiguous array values
+ - integrate_cumulative_simpson
+ - integrate_cumulative_func_simpson
+ - integrate_cumulative_arr_trapezoid
+ - within                               
+ - minmax                               : find the min and max of given values
+ - spacing
+ - histogram                            : performed advanced binning operations
+ - mid
+ - vecmag                               : find the magnitude/distance of/between vectors
+ - extend
+ - renumerate                           : construct a reverse enumeration iterator
+ - cumstats
+ - confidenceIntervals
+ - frexp10                              : decompose a float into mantissa and exponent (base 10)
 
 """
 
@@ -162,8 +162,6 @@ def integrate_cumulative_func_simpson(func, xx, log=True, init=None):
         # Add to all values
         retval += init
         # Prepend as initial value (i.e. for ``xx[0]``)
-        #if( rev ): retval = np.insert(retval, len(retval), init)
-        #else:      retval = np.insert(retval, 0, init)
         retval = np.insert(retval, 0, init)
 
 
@@ -686,3 +684,5 @@ def frexp10(vals):
     exp = np.int( np.floor(np.log10(vals)) )
     man = vals / np.power(10.0, exp)
     return man, exp
+
+# frexp10()
