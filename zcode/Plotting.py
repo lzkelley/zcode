@@ -350,7 +350,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
         if( invert ): ax.invert_xaxis()
         if( not ticks ):
-            for label in ax.xaxis.get_ticklabels(): label.set_visible(False)
+            for tlab in ax.xaxis.get_ticklabels(): tlab.set_visible(False)
 
     else:
         ax.yaxis.label.set_color(c)
@@ -366,15 +366,16 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
         if( pos is not None ):
             offt.set_x(pos)
-            ax.yaxis.set_label_position(side)
-            ax.yaxis.set_ticks_position(side)
+
+        ax.yaxis.set_label_position(side)
+        ax.yaxis.set_ticks_position(side)
 
             
         if( lim is not None ): ax.set_ylim( lim )
 
         if( invert ): ax.invert_yaxis()
         if( not ticks ):
-            for label in ax.yaxis.get_ticklabels(): label.set_visible(False)
+            for tlab in ax.yaxis.get_ticklabels(): tlab.set_visible(False)
 
 
     # Set Spine colors
