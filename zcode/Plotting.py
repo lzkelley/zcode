@@ -505,8 +505,16 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
 
 
 
-def saveFigure(fname, fig, verbose=True):
-    fig.savefig(fname)
+def saveFigure(fname, fig, multipage=False, verbose=True, **kwargs):
+    if( multipage ):
+        from matplotlib.backends.backend_pdf import PdfPages
+        with PdfPages(fname) as pdf:
+            for ff in fig: pdf.savefig(figure=ff, **kwargs)
+
+    else:
+        fig.savefig(fname, **kwargs)
+
+
     if( verbose ): print "Saved figure to '%s'" % (fname)
     return
 
