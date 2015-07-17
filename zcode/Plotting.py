@@ -396,55 +396,77 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
     return ax
 
+# setAxis()
+
 
 def histLine(edges, hist):
-    #xval = np.concatenate([ [edges[jj],edges[jj+1]] for jj in range(len(edges)-1) ])
-    #yval = np.concatenate([ [hh,hh] for hh in hist ])
-
     xval = np.hstack([ [edges[jj],edges[jj+1]] for jj in range(len(edges)-1) ])
     yval = np.hstack([ [hh,hh] for hh in hist ])
-
     return xval, yval
 
-# histLine()
 
+def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None, **kwargs):
+    """
+    Given bin edges and histogram-like values, plot a histogram.
 
-def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None,
-                 color='black', label=None, lw=1.0, ls='-', alpha=1.0, c=None):
+    Arguments
+    ---------
+        ax       <obj>    : matplotlib axes object on which to plot
+        edges    <flt>[N] : positions of bin edges, length either that of hist ``M`` or ``M+1``
+        hist     <flt>[M] : histogram values for each bin
+        yerr     <flt>[M] : value for y-error-bars
+        nonzero  <bool>   : only plot non-zero values
+        positive <bool>   : only plot positive values
+        extend   <str>    : required if ``N != M+1``, sets direction to extend ``edges``
+        **kwargs <dict>   : key value pairs to be passed to the plotting function
 
-    if( c is not None ): color = c
+    Returns
+    -------
+        line     <obj>    : the plotted object
 
+    """
+
+    # Determine color if included in ``kwargs``
+    col = 'black'
+    if(   kwargs.get('color') is not None ): col = kwargs.get('color')
+    elif( kwargs.get('c')     is not None ): col = kwargs.get('c')
+    
+    # Extend bin edges if needed
     if( len(edges) != len(hist)+1 ):
         if(   extend == 'left'  ): edges = np.concatenate([[zmath.extend(edges)[0]], edges])
         elif( extend == 'right' ): edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
-        else: raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend``")
+        else: raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend`` given")
     
-
+    # Construct plot points to manually create a step-plot
     xval, yval = histLine(edges, hist)
 
+    # Select nonzero values
     if( nonzero ):
         xval = np.ma.masked_where(yval == 0.0, xval)
         yval = np.ma.masked_where(yval == 0.0, yval)
 
+    # Select positive values
     if( positive ):
         xval = np.ma.masked_where(yval < 0.0, xval)
         yval = np.ma.masked_where(yval < 0.0, yval)
 
+    # Plot Histogram
+    line, = ax.plot(xval, yval, **kwargs)
 
-    line, = ax.plot( xval, yval, ls=ls, lw=lw, color=color, label=label, alpha=alpha)
-
+    # Add yerror-bars
     if( yerr is not None ): 
         xmid = zmath.mid(edges)
 
         if( nonzero ): 
             inds = np.where( hist != 0.0 )
-            ax.errorbar(xmid[inds], hist[inds], yerr=yerr[inds], fmt=None, ecolor=color)
+            ax.errorbar(xmid[inds], hist[inds], yerr=yerr[inds], fmt=None, ecolor=col)
         else:
-            ax.errorbar(xmid,       hist,       yerr=yerr,       fmt=None, ecolor=color)
+            ax.errorbar(xmid,       hist,       yerr=yerr,       fmt=None, ecolor=col)
 
     return line
 
 # plotHistLine()    
+
 
 
 def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
