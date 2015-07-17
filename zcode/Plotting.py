@@ -446,14 +446,12 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
 
     # Add a fill region
     if( fill is not None ):
-        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
         if( type(fill) == dict ): filldict = fill
         else:                     filldict = dict()
 
-        ax.fill_between(xval, yval, xlim[0], **filldict)
-        print xlim
-        ax.set_xlim(xlim)
-        print ax.get_xlim()
+        ax.fill_between(xval, yval, 0.1*ylim[0], **filldict)
+        ax.set_ylim(ylim)
 
 
     return line
