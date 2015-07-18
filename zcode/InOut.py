@@ -4,7 +4,7 @@ Functions for Input/Output (IO) Operations.
 
 Classes
 -------
- - StreamCapture  : class for capturing/redirecting stdout and stderr
+  - StreamCapture  : class for capturing/redirecting stdout and stderr
 
 Functions
 ---------
@@ -308,7 +308,7 @@ def getProgressBar(maxval, width=100):
     """
     Wrapper to create a progressbar object with default settings.
 
-    Use ``pbar.start()`` and ``pbar.finish()``
+    Use ``pbar.start()``, ``pbar.update(N)`` and ``pbar.finish()``
     """
 
     import progressbar
