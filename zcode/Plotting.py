@@ -12,14 +12,14 @@ Functions
   - twinAxis             : easily create and set a new twin axis (like `twinx()` or `twiny()`)
   - setAxis              : function to set many different axis properties at once
 
-
   - plotHistLine         : plot a line as a histogram
+  - plotCorrelationGrid  : plot a grid of 1D parameter correlations and histograms
+
   - skipTicks            : skip some tick marks
   - saveFigure
   - plotSegmentedLine    : Plot a line as a series of segements (e.g. with various colors)
   - colormap             : create a colormap from scalars to colors
   - strSciNot            : create a latex string of the given number in scientific notation
-
 
 
   - _setAxis_scale       : 
@@ -217,38 +217,6 @@ def unifyAxesLimits(axes, axis='y'):
 # unifyAxesLimits()
 
 
-'''
-def setLineStyleCycle(num):
-
-    LS_DASH_DASH = [8,4]
-    LS_DASH_DOT  = [8,4,4,4]
-    LS_DOT_DOT   = [4,4]
-
-    LS_DASH = [8,4]
-    LS_DASH_L = [12,4]
-    LS_DOT  = [4,4]
-
-    LS = [[None,None]]  # solid
-    LS.append(LS_DASH_L)
-    LS.append(LS_DASH)
-    LS.append(LS_DOT)
-
-    LS.append(LS_DASH_L + LS_DOT)
-    LS.append(LS_DASH + LS_DOT)
-
-    LS.append(LS_DASH_L + LS_DASH + LS_DOT )
-    LS.append(LS_DASH_L + LS_DOT + LS_DASH + LS_DOT )
-
-    LS.append(LS_DASH_L + LS_DOT + LS_DOT)
-    LS.append(LS_DASH + LS_DOT + LS_DOT)
-
-    LS.append(LS_DASH_L + LS_DOT + LS_DOT + LS_DOT)
-    LS.append(LS_DASH + LS_DOT + LS_DOT + LS_DOT)
-
-    LS.append(LS_DASH_L + LS_DOT + LS_DOT + LS_DASH + LS_DOT + LS_DOT)
-
-    return LS[:num]
-'''
 
 def colorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     cols = [cmap(it) for it in np.linspace(left, right, num)]
@@ -272,6 +240,7 @@ def twinAxis(ax, axis='x', pos=1.0, **kwargs):
 
     return tw
 
+# twinAxes()
 
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None, 
@@ -456,6 +425,91 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
     return line
 
 # plotHistLine()    
+
+
+
+def plotCorrelationGrid(data, type='scatter', fig=None):
+    """
+    Plot a grid of correlation graphs, showing histograms of arrays and correlations between pairs.
+
+    Arguments
+    ---------
+        fig  <obj> : ``matplotlib.figure.Figure`` object on which to plot, axes are added if needed
+        data <scalar>[N][M] : ``N`` different parameters, with ``M`` values each
+
+
+    Returns
+    -------
+
+    """
+    
+    LEF = 0.05
+    RIT = 0.95
+    TOP = 0.95
+    BOT = 0.05
+
+    npars = len(data)
+    nvals = len(data[0])
+
+    dx = (RIT-LEF)/npars
+    dy = (TOP-BOT)/npars
+
+
+    ## Setup Figure and Axes
+    #  ---------------------
+
+    # Create Figure
+    if( fig is None ): fig = plt.figure()
+
+    # Axes are already on figure
+    if( len(fig.axes) > 0 ):
+        # Make sure the number of axes is correct
+        if( len(axes) != npars*npars ):
+            raise RuntimeError("``fig`` axes must be {0:d}x{0:d}!".format(npars))
+
+    # Create axes
+    else:
+        
+        for ii in xrange(npars):
+            for jj in xrange(npars):
+                ax = fig.add_axes([LEF+jj*dx, TOP-ii*dy, dx, dy])
+
+                # Make upper-right half invisible
+                if( jj > ii ): 
+                    ax.set_visible(False)
+                    continue
+
+                # Remove y-ticks from non-left-most axes
+                if( jj > 0 ):       ax.set_yticklabels(['' for tick in ax.get_yticks()])
+                #     Remove overlapping ticks
+                else: 
+                    if( ii > 0 ):
+                        ticks = ax.yaxis.get_major_ticks()
+                        ticks[-1].label1.set_visible(False)
+
+                # Remove x-ticks from non-bottom axes
+                if( ii < npars-1 ): ax.set_xticklabels(['' for tick in ax.get_yticks()])
+                #     Remove overlapping ticks
+                else: 
+                    if( jj < npars-1 ):
+                        ticks = ax.xaxis.get_major_ticks()
+                        ticks[-1].label1.set_visible(False)
+
+            # jj
+        # ii
+
+    axes = np.array(fig.axes)
+    # Reshape to grid for convenience
+    axes = axes.reshape(npars,npars)
+
+
+    ## Plot Correlations
+    # 
+
+
+    return fig, axes
+
+# plotCorrelationGrid()
 
 
 
