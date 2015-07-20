@@ -323,7 +323,7 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
 
 
 
-def spacing(data, scale='log', num=100, nonzero=True, positive=False):
+def spacing(data, scale='log', num=100, nonzero=None, positive=None):
     """
     Create an evenly spaced array between extrema from the given data.
 
@@ -341,15 +341,25 @@ def spacing(data, scale='log', num=100, nonzero=True, positive=False):
 
     """
 
+    if(   scale.startswith('log') ): log_flag = True
+    elif( scale.startswith('lin') ): log_flag = False
+    else: raise RuntimeError("``scale`` '%s' unrecognized!" % (scale))
+
+    if( nonzero is None ):
+        if( log_flag ): nonzero = True
+        else:           nonzero = False
+
+    if( positive is None ):
+        if( log_flag ): positive = True
+        else:           positive = False
 
     usedata = np.array(data)
     if( nonzero  ): usedata = usedata[np.nonzero(usedata)]
     if( positive ): usedata = usedata[np.where(usedata > 0.0)]
 
     span = minmax(usedata)
-    if(   scale.startswith('log') ): spacing = np.logspace( *np.log10(span), num=num )
-    elif( scale.startswith('lin') ): spacing = np.linspace( *span,           num=num )
-    else: raise RuntimeError("``scale`` unrecognized!")
+    if(   log_flag ): spacing = np.logspace( *np.log10(span), num=num )
+    else:             spacing = np.linspace( *span,           num=num )
 
     return spacing
 
