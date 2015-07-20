@@ -38,11 +38,19 @@ import scipy as sp
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from datetime import datetime
+import numbers
 
 import Math as zmath
 
 
-VALID_SIDES = [ None, 'left', 'right', 'top', 'bottom' ]
+COL_CORR = 'royalblue'
+CONF_INTS = [ 0.95, 0.68 ]
+COL_CONFS = [ 'green','orange' ]
+#COL_CONFS = [ 'orange','orangered' ]
+
+LW_CONF = 1.0
+
+valid_SIDES = [ None, 'left', 'right', 'top', 'bottom' ]
 
 
 def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True, 
@@ -428,13 +436,14 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
 
 
 
-def plotCorrelationGrid(data, type='scatter', fig=None):
+def plotCorrelationGrid(data, style='scatter', par_scales=None, hist_scales=None, hist_bins=None,
+                        figure=None, conf=True, cont=True):
     """
     Plot a grid of correlation graphs, showing histograms of arrays and correlations between pairs.
 
     Arguments
     ---------
-        fig  <obj> : ``matplotlib.figure.Figure`` object on which to plot, axes are added if needed
+        figure  <obj> : ``matplotlib.figure.Figure`` object on which to plot, axes are added if needed
         data <scalar>[N][M] : ``N`` different parameters, with ``M`` values each
 
 
@@ -442,7 +451,7 @@ def plotCorrelationGrid(data, type='scatter', fig=None):
     -------
 
     """
-    
+
     LEF = 0.05
     RIT = 0.95
     TOP = 0.95
@@ -451,63 +460,91 @@ def plotCorrelationGrid(data, type='scatter', fig=None):
     npars = len(data)
     nvals = len(data[0])
 
-    dx = (RIT-LEF)/npars
-    dy = (TOP-BOT)/npars
+
+    # Set default scales for each parameter
+    if( par_scales is None ):            par_scales = [ 'linear' ]*npars
+    elif( isinstance(par_scales, str) ): par_scales = [par_scales]*npars
+
+    # Set default scales for each histogram (counts)
+    if( hist_scales is None ):           hist_scales = [ 'linear' ]*npars
+    elif( isinstance(hist_scales,str) ): hist_scales = [hist_scales]*npars
+
+    # Set default bins
+    if( hist_bins is None ):                         hist_bins = [ 40 ]*npars
+    elif( isinstance(hist_bins, numbers.Integral) ): hist_bins = [hist_bins]*npars
 
 
     ## Setup Figure and Axes
     #  ---------------------
 
     # Create Figure
-    if( fig is None ): fig = plt.figure()
+    if( figure is None ): figure = plt.figure()
 
     # Axes are already on figure
-    if( len(fig.axes) > 0 ):
+    if( len(figure.axes) > 0 ):
         # Make sure the number of axes is correct
         if( len(axes) != npars*npars ):
-            raise RuntimeError("``fig`` axes must be {0:d}x{0:d}!".format(npars))
+            raise RuntimeError("``figure`` axes must be {0:d}x{0:d}!".format(npars))
 
     # Create axes
     else:
-        
-        for ii in xrange(npars):
-            for jj in xrange(npars):
-                ax = fig.add_axes([LEF+jj*dx, TOP-ii*dy, dx, dy])
 
-                # Make upper-right half invisible
+        # Divide figure evenly with padding
+        dx = (RIT-LEF)/npars
+        dy = (TOP-BOT)/npars
+
+        # Rows
+        for ii in xrange(npars):
+            # Columns
+            for jj in xrange(npars):
+                ax = figure.add_axes([LEF+jj*dx, TOP-ii*dy, dx, dy])
+                # Make upper-right half of figure invisible
                 if( jj > ii ): 
                     ax.set_visible(False)
                     continue
 
-                # Remove y-ticks from non-left-most axes
-                if( jj > 0 ):       ax.set_yticklabels(['' for tick in ax.get_yticks()])
-                #     Remove overlapping ticks
-                else: 
-                    if( ii > 0 ):
-                        ticks = ax.yaxis.get_major_ticks()
-                        ticks[-1].label1.set_visible(False)
-
-                # Remove x-ticks from non-bottom axes
-                if( ii < npars-1 ): ax.set_xticklabels(['' for tick in ax.get_yticks()])
-                #     Remove overlapping ticks
-                else: 
-                    if( jj < npars-1 ):
-                        ticks = ax.xaxis.get_major_ticks()
-                        ticks[-1].label1.set_visible(False)
-
             # jj
         # ii
 
-    axes = np.array(fig.axes)
+    axes = np.array(figure.axes)
     # Reshape to grid for convenience
     axes = axes.reshape(npars,npars)
 
 
-    ## Plot Correlations
-    # 
+    ## Plot Correlations and Histograms
+    #  --------------------------------
+
+    lims = []
+    for ii in xrange(npars):
+        lims.append( zmath.minmax(data[ii]) )
+
+        for jj in xrange(npars):
+            if( jj > ii ): continue
+
+            # Histograms
+            if( ii == jj ):
+                art = _histogram_bars(axes[ii,jj], data[ii], conf, hist_bins[ii])
+
+            # Correlations
+            else:
+                
+                if( style == 'scatter' ):
+                    art = _correlation_scatter(axes[ii,jj], data[jj], data[ii], 
+                                               par_scales[jj], par_scales[ii], cont)
+                else:
+                    raise RuntimeError("``style`` '%s' is not implemented!" % (style))
+
+        # jj
+    # ii
 
 
-    return fig, axes
+            
+    ## Configure Axes
+    #  --------------
+    _config_axes(axes, lims, par_scales, hist_scales)
+
+
+    return figure, axes
 
 # plotCorrelationGrid()
 
@@ -604,7 +641,7 @@ def plotSegmentedLine(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0,1.0], lw=3
 # plotSegmentedLine()
 
 
-def colormap(args, cmap=plt.cm.jet, scale=None):
+def colormap(args, cmap='jet', scale=None):
     """
     Create a colormap from a scalar range to a set of colors.
 
@@ -621,7 +658,7 @@ def colormap(args, cmap=plt.cm.jet, scale=None):
 
     """
 
-    
+    if( isinstance(cmap, str) ): cmap = plt.get_cmap(cmap)
 
     if( scale is None ): 
         if( np.size(args) > 1 ): scale = 'log'
@@ -665,8 +702,115 @@ def strSciNot(val, precman=1, precexp=1):
 
 
 
+def _config_axes(axes, lims, par_scales, hist_scales):
+    """
+
+    """
+    
+    shp = np.shape(axes)
+    assert len(shp) == 2 and shp[0] == shp[1], "``axes`` must have shape NxN!"
+    npars = shp[0]
+    
+    for ii in xrange(npars):
+        for jj in xrange(npars):
+
+            if( jj > ii ): continue
+
+            ax = axes[ii,jj]
+
+            ## Setup Scales and Limits
+            #  -----------------------
+            if( ii == jj ):
+                ax.set_yscale(hist_scales[ii])
+                ax.set_xlim(lims[ii])
+            else:
+                ax.set_yscale(par_scales[ii])
+                ax.set_xscale(par_scales[jj])
+                ax.set_ylim(lims[ii])
+                ax.set_xlim(lims[jj])
 
 
+            ## Setup Ticks
+            #  -----------
+
+            # Move histogram ticks to right-side
+            if( ii == jj ):
+                ax.yaxis.tick_right()
+            # Remove y-ticks from non-left-most axes
+            elif( jj > 0 ):
+                ax.set_yticklabels(['' for tick in ax.get_yticks()])
+            # Remove overlapping ticks
+            elif( ii > 0 ):
+                ticks = ax.yaxis.get_major_ticks()
+                ticks[-1].label1.set_visible(False)
+
+            # Remove x-ticks from non-bottom axes
+            if( ii < npars-1 ): 
+                ax.set_xticklabels(['' for tick in ax.get_yticks()])
+            # Remove overlapping ticks
+            else: 
+                if( jj < npars-1 ):
+                    ticks = ax.xaxis.get_major_ticks()
+                    ticks[-1].label1.set_visible(False)
+
+        # jj
+    # ii
+
+    return 
+
+# _config_axes()
+
+
+
+def _correlation_scatter(ax, xx, yy, scalex, scaley, cont=None):
+    """
+    
+    """
+    COL = COL_CORR
+    # COL = 'forestgreen'
+    ax.scatter(xx, yy, s=30, color='0.25' , alpha=0.5)
+    pnts = ax.scatter(xx, yy, s=6, color=COL, alpha=0.8)
+
+    # Add Contours
+    if( cont ):
+        NUM = 4
+        CMAP = 'jet'
+        res = np.sqrt(len(xx))
+
+        smap = colormap(NUM, CMAP, scale='lin')
+        cols = [ smap.to_rgba(it) for it in xrange(NUM) ]
+
+        xi = zmath.spacing(xx, scalex, num=res)
+        yi = zmath.spacing(yy, scaley, num=res)
+        hist, xedges, yedges = np.histogram2d(xx, yy, (xi,yi))
+        gx, gy = np.meshgrid(xedges[1:], yedges[1:])
+        ax.contour(gx, gy, hist.T, NUM, colors=cols) #, alpha=0.8 )
+
+
+    return pnts
+
+# _correlation_scatter()
+
+
+def _histogram_bars(ax, xx, conf, bins):
+    """
+    Plot a histogram bar graph onto the given axes.
+    """
+    ALPHA = 0.5
+
+    # Add Confidence intervals
+    if( conf ):
+        med, cints = zmath.confidenceIntervals(xx, ci=CONF_INTS)
+        ax.axvline(med, color='red', ls='--', lw=LW_CONF, zorder=101)
+        for ii,(vals,col) in enumerate(zip(cints, COL_CONFS)):
+            ax.axvspan(*vals, color=col, alpha=ALPHA)
+
+
+    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', rwidth=0.8, color=COL_CORR, zorder=100)
+
+    return bars
+
+# _histogram_bars()
 
 
 
