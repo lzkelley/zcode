@@ -50,7 +50,7 @@ COL_CONFS = [ 'green','orange' ]
 
 LW_CONF = 1.0
 
-valid_SIDES = [ None, 'left', 'right', 'top', 'bottom' ]
+VALID_SIDES = [ None, 'left', 'right', 'top', 'bottom' ]
 
 
 def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True, 
@@ -437,23 +437,23 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
 
 
 def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, contours=True,
-                        par_scales=None, hist_scales=None, hist_bins=None, names=None):
+                        pars_scales=None, hist_scales=None, hist_bins=None, names=None):
     """
     Plot a grid of correlation graphs, showing histograms of arrays and correlations between pairs.
 
     Arguments
     ---------
-        data <scalar>[N][M]       : ``N`` different parameters, with ``M`` values each
+        data <scalar>[N][M]        : ``N`` different parameters, with ``M`` values each
 
-        figure      <obj>         : ``matplotlib.figure.Figure`` object on which to plot
-        style       <str>         : what style of correlation plots to make
-                                    - 'scatter'
+        figure      <obj>          : ``matplotlib.figure.Figure`` object on which to plot
+        style       <str>          : what style of correlation plots to make
+                                     - 'scatter'
                                     
-        confidence  <bool>        : Add confidence intervals to histogram plots
-        contours    <bool>        : Add contour lines to correlation plots
-        par_scales  <scalar>([N]) : What scale to use for all (or each) parameter {'lin', 'log'}
-        hist_scales <scalar>([N]) : What y-axis scale to use for all (or each) histogram
-        hist_bins   <scalar>([N]) : Number of bins for all (or each) histogram
+        confidence  <bool>         : Add confidence intervals to histogram plots
+        contours    <bool>         : Add contour lines to correlation plots
+        pars_scales  <scalar>([N]) : What scale to use for all (or each) parameter {'lin', 'log'}
+        hist_scales <scalar>([N])  : What y-axis scale to use for all (or each) histogram
+        hist_bins   <scalar>([N])  : Number of bins for all (or each) histogram
 
 
     Returns
@@ -468,17 +468,28 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
     TOP = 0.95
     BOT = 0.05
 
+    FS  = 16
+
     npars = len(data)
     nvals = len(data[0])
 
 
     # Set default scales for each parameter
-    if( par_scales is None ):            par_scales = [ 'linear' ]*npars
-    elif( isinstance(par_scales, str) ): par_scales = [par_scales]*npars
+    if( pars_scales is None ):            pars_scales = [ 'linear' ]*npars
+    elif( isinstance(pars_scales, str) ): pars_scales = [pars_scales]*npars
 
     # Set default scales for each histogram (counts)
     if( hist_scales is None ):           hist_scales = [ 'linear' ]*npars
     elif( isinstance(hist_scales,str) ): hist_scales = [hist_scales]*npars
+
+    # Convert scaling strings to appropriate formats
+    for ii in xrange(npars): 
+        if(   pars_scales[ii].startswith('lin') ): pars_scales[ii] = 'linear'
+        elif( pars_scales[ii].startswith('log') ): pars_scales[ii] = 'log'
+        if(   hist_scales[ii].startswith('lin') ): hist_scales[ii] = 'linear'
+        elif( hist_scales[ii].startswith('log') ): hist_scales[ii] = 'log'
+
+
 
     # Set default bins
     if( hist_bins is None ):                         hist_bins = [ 40 ]*npars
@@ -508,7 +519,7 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
         for ii in xrange(npars):
             # Columns
             for jj in xrange(npars):
-                ax = figure.add_axes([LEF+jj*dx, TOP-ii*dy, dx, dy])
+                ax = figure.add_axes([LEF+jj*dx, TOP-(ii+1)*dy, dx, dy])
                 # Make upper-right half of figure invisible
                 if( jj > ii ): 
                     ax.set_visible(False)
@@ -534,14 +545,15 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
 
             # Histograms
             if( ii == jj ):
-                art = _histogram_bars(axes[ii,jj], data[ii], confidence, hist_bins[ii])
+                art = _histogram_bars(axes[ii,jj], data[ii], confidence, 
+                                      hist_bins[ii], pars_scales[ii])
 
             # Correlations
             else:
                 
                 if( style == 'scatter' ):
                     art = _correlation_scatter(axes[ii,jj], data[jj], data[ii], 
-                                               par_scales[jj], par_scales[ii], contours)
+                                               pars_scales[jj], pars_scales[ii], contours)
                 else:
                     raise RuntimeError("``style`` '%s' is not implemented!" % (style))
 
@@ -552,7 +564,7 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
             
     ## Configure Axes
     #  --------------
-    _config_axes(axes, lims, par_scales, hist_scales, names)
+    _config_axes(axes, lims, pars_scales, hist_scales, names, FS)
 
 
     return figure, axes
@@ -713,7 +725,7 @@ def strSciNot(val, precman=1, precexp=1):
 
 
 
-def _config_axes(axes, lims, par_scales, hist_scales, names):
+def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
     """
 
     """
@@ -730,16 +742,19 @@ def _config_axes(axes, lims, par_scales, hist_scales, names):
             if( jj > ii ): continue
 
             ax = axes[ii,jj]
+            for xy in ['x','y']: ax.tick_params(axis=xy, which='both', labelsize=fs)
+            ax.grid(True)
 
             ## Setup Scales and Limits
             #  -----------------------
+            ax.set_xscale(par_scales[jj])
             if( ii == jj ):
                 ax.set_yscale(hist_scales[ii])
+                if( hist_scales[ii].startswith('log') ): set_lim(ax, lo=0.8)
                 ax.set_xlim(lims[ii])
                 if( names is not None ): ax.set_title(names[ii], fontsize=FS_TITLE)
             else:
                 ax.set_yscale(par_scales[ii])
-                ax.set_xscale(par_scales[jj])
                 ax.set_ylim(lims[ii])
                 ax.set_xlim(lims[jj])
 
@@ -789,7 +804,7 @@ def _correlation_scatter(ax, xx, yy, scalex, scaley, cont=None):
     if( cont ):
         NUM = 4
         CMAP = 'jet'
-        res = np.sqrt(len(xx))
+        res = 0.3*np.sqrt(len(xx))
 
         smap = colormap(NUM, CMAP, scale='lin')
         cols = [ smap.to_rgba(it) for it in xrange(NUM) ]
@@ -806,7 +821,7 @@ def _correlation_scatter(ax, xx, yy, scalex, scaley, cont=None):
 # _correlation_scatter()
 
 
-def _histogram_bars(ax, xx, conf, bins):
+def _histogram_bars(ax, xx, conf, bins, scales):
     """
     Plot a histogram bar graph onto the given axes.
     """
@@ -819,6 +834,9 @@ def _histogram_bars(ax, xx, conf, bins):
         for ii,(vals,col) in enumerate(zip(cints, COL_CONFS)):
             ax.axvspan(*vals, color=col, alpha=ALPHA)
 
+
+    if( isinstance(bins, numbers.Integral) and scales is 'log' ):
+        bins = zmath.spacing(xx, num=bins)
 
     cnts, bins, bars = ax.hist(xx, bins, histtype='bar', rwidth=0.8, color=COL_CORR, zorder=100)
 
