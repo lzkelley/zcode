@@ -730,7 +730,7 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
 
     """
 
-    FS_TITLE = 20
+    FS = 16
     
     shp = np.shape(axes)
     assert len(shp) == 2 and shp[0] == shp[1], "``axes`` must have shape NxN!"
@@ -752,11 +752,15 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
                 ax.set_yscale(hist_scales[ii])
                 if( hist_scales[ii].startswith('log') ): set_lim(ax, lo=0.8)
                 ax.set_xlim(lims[ii])
-                if( names is not None ): ax.set_title(names[ii], fontsize=FS_TITLE)
             else:
                 ax.set_yscale(par_scales[ii])
                 ax.set_ylim(lims[ii])
                 ax.set_xlim(lims[jj])
+
+            # Add axis labels
+            if( names is not None ):
+                if( jj == 0 ):       ax.set_ylabel(names[ii], fontsize=FS)
+                if( ii == npars-1 ): ax.set_xlabel(names[jj], fontsize=FS)
 
 
             ## Setup Ticks
@@ -769,15 +773,19 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
             elif( jj > 0 ):
                 ax.set_yticklabels(['' for tick in ax.get_yticks()])
             # Remove overlapping ticks
-            elif( ii > 0 ):
-                ticks = ax.yaxis.get_major_ticks()
-                ticks[-1].label1.set_visible(False)
+            else:
+
+                if( ii > 0 ):
+                    ticks = ax.yaxis.get_major_ticks()
+                    ticks[-1].label1.set_visible(False)
+
 
             # Remove x-ticks from non-bottom axes
             if( ii < npars-1 ): 
                 ax.set_xticklabels(['' for tick in ax.get_yticks()])
             # Remove overlapping ticks
             else: 
+
                 if( jj < npars-1 ):
                     ticks = ax.xaxis.get_major_ticks()
                     ticks[-1].label1.set_visible(False)
