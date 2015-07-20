@@ -228,7 +228,7 @@ def integrate_cumulative_arr_trapezoid(arr, xx, log=True, init=None, rev=False):
 
 
 
-def within(vals, extr, edges=True, all=False):
+def within(vals, extr, edges=True, all=False, inv=False):
     """
     Test whether a value or array is within the bounds of another.
 
@@ -238,6 +238,7 @@ def within(vals, extr, edges=True, all=False):
        extr  <scalar>[M]    : array or span to compare with
        edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
        all   <bool>         : optional, whether All values are within bounds (single return `bool`)
+       inv   <bool>         : optional, invert results (i.e. `True` ==> `False` and visa-versa)
 
     Returns
     -------
@@ -248,12 +249,15 @@ def within(vals, extr, edges=True, all=False):
     extr_bnds = minmax(extr)
 
     # Include edges for WITHIN bounds (thus not including is outside)
-    if( edges ): retval = np.asarray((vals >= extr_bnds[0]) & (vals <= extr_bnds[1]))
+    if( edges ): retval = np.asarray( ((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])) )
     # Don't include edges for WITHIN  (thus include them for outside)
-    else:        retval = np.asarray((vals >  extr_bnds[0]) & (vals <  extr_bnds[1])) 
+    else:        retval = np.asarray( ((vals >  extr_bnds[0]) & (vals <  extr_bnds[1])) )
 
     # Convert to single return value
     if( all ): retval = np.all(retval)
+
+    # Invert results
+    if( inv ): retval = np.invert(retval)
 
     return retval
 
