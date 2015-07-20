@@ -436,19 +436,30 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
 
 
 
-def plotCorrelationGrid(data, style='scatter', par_scales=None, hist_scales=None, hist_bins=None,
-                        figure=None, conf=True, cont=True):
+def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, contours=True,
+                        par_scales=None, hist_scales=None, hist_bins=None):
     """
     Plot a grid of correlation graphs, showing histograms of arrays and correlations between pairs.
 
     Arguments
     ---------
-        figure  <obj> : ``matplotlib.figure.Figure`` object on which to plot, axes are added if needed
-        data <scalar>[N][M] : ``N`` different parameters, with ``M`` values each
+        data <scalar>[N][M]       : ``N`` different parameters, with ``M`` values each
+
+        figure      <obj>         : ``matplotlib.figure.Figure`` object on which to plot
+        style       <str>         : what style of correlation plots to make
+                                    - 'scatter'
+                                    
+        confidence  <bool>        : Add confidence intervals to histogram plots
+        contours    <bool>        : Add contour lines to correlation plots
+        par_scales  <scalar>([N]) : What scale to use for all (or each) parameter {'lin', 'log'}
+        hist_scales <scalar>([N]) : What y-axis scale to use for all (or each) histogram
+        hist_bins   <scalar>([N]) : Number of bins for all (or each) histogram
 
 
     Returns
     -------
+        figure <obj>      : ``matplotlib.figure.Figure`` object
+        axes   <obj>[N,N] : array of ``matplotlib.axes`` objects
 
     """
 
@@ -523,14 +534,14 @@ def plotCorrelationGrid(data, style='scatter', par_scales=None, hist_scales=None
 
             # Histograms
             if( ii == jj ):
-                art = _histogram_bars(axes[ii,jj], data[ii], conf, hist_bins[ii])
+                art = _histogram_bars(axes[ii,jj], data[ii], confidence, hist_bins[ii])
 
             # Correlations
             else:
                 
                 if( style == 'scatter' ):
                     art = _correlation_scatter(axes[ii,jj], data[jj], data[ii], 
-                                               par_scales[jj], par_scales[ii], cont)
+                                               par_scales[jj], par_scales[ii], contours)
                 else:
                     raise RuntimeError("``style`` '%s' is not implemented!" % (style))
 
