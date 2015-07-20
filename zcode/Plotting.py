@@ -437,7 +437,7 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
 
 
 def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, contours=True,
-                        par_scales=None, hist_scales=None, hist_bins=None):
+                        par_scales=None, hist_scales=None, hist_bins=None, names=None):
     """
     Plot a grid of correlation graphs, showing histograms of arrays and correlations between pairs.
 
@@ -552,7 +552,7 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
             
     ## Configure Axes
     #  --------------
-    _config_axes(axes, lims, par_scales, hist_scales)
+    _config_axes(axes, lims, par_scales, hist_scales, names)
 
 
     return figure, axes
@@ -713,10 +713,12 @@ def strSciNot(val, precman=1, precexp=1):
 
 
 
-def _config_axes(axes, lims, par_scales, hist_scales):
+def _config_axes(axes, lims, par_scales, hist_scales, names):
     """
 
     """
+
+    FS_TITLE = 20
     
     shp = np.shape(axes)
     assert len(shp) == 2 and shp[0] == shp[1], "``axes`` must have shape NxN!"
@@ -734,6 +736,7 @@ def _config_axes(axes, lims, par_scales, hist_scales):
             if( ii == jj ):
                 ax.set_yscale(hist_scales[ii])
                 ax.set_xlim(lims[ii])
+                if( names is not None ): ax.set_title(names[ii], fontsize=FS_TITLE)
             else:
                 ax.set_yscale(par_scales[ii])
                 ax.set_xscale(par_scales[jj])
