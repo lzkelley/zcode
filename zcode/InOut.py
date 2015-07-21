@@ -4,7 +4,7 @@ Functions for Input/Output (IO) Operations.
 
 Classes
 -------
-  - StreamCapture  : class for capturing/redirecting stdout and stderr
+    StreamCapture  : class for capturing/redirecting stdout and stderr
 
 Functions
 ---------
@@ -18,6 +18,7 @@ Functions
     npzToDict      :
     getProgressBar :
 
+    combineFiles   :
 
 """
 
@@ -179,32 +180,21 @@ def countLines(files, progress=False):
     """ Count the number of lines in the given file """
 
     # If string, or otherwise not-iterable, convert to list
-    if( not iterableNotString(files) ): files = [ files ]
+    if( np.iterable(files) and not isinstance(files, str) ): files = [ files ]
 
-    if( progress ):
-        numFiles = len(files)
-        if( numFiles < 100 ): interval = 1
-        else:                 interval = np.int(np.floor(numFiles/100.0))
-        start = datetime.datetime.now()
+    if( progress ): pbar = getProgressBar(len(files))
 
     nums = 0
-    # Iterate over each file
+    # Iterate over each file, count lines
     for ii,fil in enumerate(files):
-        # Count number of lines
         nums += sum(1 for line in open(fil))
+        if( progress ): pbar.update(ii)
 
-        # Print progresss
-        if( progress ):
-            now = datetime.datetime.now()
-            dur = now-start
-
-            statStr = aux.statusString(ii+1, numFiles, dur)
-            sys.stdout.write('\r - - - %s' % (statStr))
-            sys.stdout.flush()
-            if( ii+1 == numFiles ): sys.stdout.write('\n')
-
+    if( progress ): pbar.finish()
 
     return nums
+
+# countLines()
 
 
 def estimateLines(files):
@@ -331,3 +321,56 @@ def getProgressBar(maxval, width=100):
     return pbar
 
 # getProgressBar()
+
+
+
+def combineFiles(inFilenames, outFilename, verbose=False):
+    """
+    Concatenate the contents of a set of input files into a single output file.
+
+    Arguments
+    ---------
+    inFilenames : iterable<str>, list of input file names
+    outFilename : <str>, output file name
+    verbose : <bool> (optional=_VERBOSE), print verbose output
+
+    Returns
+
+    """
+
+    # Make sure outfile path exists
+    checkPath(outFilename)
+    inSize = 0.0
+    nums = len(inFilenames)
+
+    # Open output file for writing
+    if( verbose ): pbar = getProgressBar(nums)
+    with open(outFilename, 'w') as outfil:
+
+        # Iterate over input files
+        for ii,inname in enumerate(inFilenames):
+            inSize += os.path.getsize(inname)
+            if( verbose ): pbar.update(ii)
+
+            # Open input file for reading
+            with open(inname, 'r') as infil:
+                # Iterate over input file lines
+                for line in infil: outfil.write(line)
+            # } infil
+
+        # } inname
+
+    # } outfil
+
+    if( verbose ): pbar.finish()
+
+    outSize = os.path.getsize(outFilename)
+
+    inStr   = bytesString(inSize)
+    outStr  = bytesString(outSize)
+
+    if( verbose ): print " - - - Total input size = %s, output size = %s" % (inStr, outStr)
+
+    return
+
+# combineFiles()
