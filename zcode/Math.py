@@ -20,6 +20,7 @@ Functions
  - cumstats
  - confidenceIntervals
  - frexp10                              : decompose a float into mantissa and exponent (base 10)
+ - stats                                          : return ave, stdev
 
 """
 
@@ -698,3 +699,13 @@ def frexp10(vals):
     return man, exp
 
 # frexp10()
+
+
+def stats(vals):
+    """
+    """
+    
+    ave = np.average(vals)
+    std = np.std(vals)
+    return ave, std
+    
