@@ -669,7 +669,9 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
 
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0 ]).T
-    conf = np.array([ np.percentile(vals, 100.0*cdf) for cdf in cdf_vals ])
+    conf = [ [np.percentile(vals, 100.0*cdf[0]), np.percentile(vals, 100.0*cdf[1])] 
+             for cdf in cdf_vals ]
+    conf = np.array(conf)
     med = np.percentile(vals, 50.0)
 
     if( len(conf) == 1 ): conf = conf[0]
