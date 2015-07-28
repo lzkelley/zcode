@@ -32,6 +32,7 @@ Functions
 
 import os, sys, logging, inspect, warnings
 import numpy as np
+import cPickle as pickle
 
 
 class StreamCapture(list):
