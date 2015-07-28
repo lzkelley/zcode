@@ -23,6 +23,10 @@ Functions
     combineFiles   :
 
     getLogger      :
+    defaultLogger  : Create a basic ``logging.Logger`` object.
+
+    pickleSave     : Use pickle to save the target object.
+    pickleLoad     : Use pickle to load from the target file.
 
 """
 
@@ -463,3 +467,74 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None, strLevel=None, file
     return logger
 
 # getLogger()
+
+
+def defaultLogger(logger=None, verbose=False, debug=False):
+    """
+    Create a basic ``logging.Logger`` object.  With no arguments, a stream-logger set to Warning.
+    
+    Arguments
+    ---------
+        logger  <obj>  : a ``logging`` level (integer), or `None` for default
+        verbose <bool> : True to set 'verbose' output (`logging.INFO`)
+        debug   <bool> : True to set 'debug'   output (`logging.DEBUG`), overrides ``verbose``
+
+    Returns
+    -------
+        logger  <obj>  : ``logging.Logger`` object.
+
+    """
+
+    if( isinstance(logger, logging.Logger) ): return logger
+
+    import numbers
+
+    if( isinstance(logger, numbers.Integral) ):
+        level = logger
+    else:
+        if(   debug   ): level = logging.DEBUG
+        elif( verbose ): level = logging.INFO
+        else:            level = logging.WARNING
+
+    logger = getLogger(None, strLevel=level, tostr=True)
+
+    return logger
+
+# defaultLogger()
+
+
+def pickleSave(obj, name, mode='wb'):
+    """
+    Use pickle to save the given object.
+    
+    Arguments
+    ---------
+        obj  <obj> : pickleable object to save
+        name <str> : filename to which to save
+        mode <str> : mode with which to open save file, see ``file.__doc__``
+
+    """
+    with open(name, mode) as pfil:
+        pickle.dump(obj,pfil)
+
+    return
+
+# pickleSave()
+
+
+def pickleLoad(name, mode='rb'):
+    """
+    Use pickle to load the given object.
+    
+    Arguments
+    ---------
+        name <str> : filename to which to save
+        mode <str> : mode with which to open save file, see ``file.__doc__``
+
+    """
+    with open(name, mode) as pfil:
+        pickle.load(obj,pfil)
+
+    return
+
+# pickleLoad()
