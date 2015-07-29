@@ -431,7 +431,7 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None, strLevel=None, file
     while len(logger.handlers) > 0: logger.handlers.pop()
 
     ## Determine and Set Logging Level
-    if( fileLevel is None ): fileLevel = logging.WARNING
+    if( fileLevel is None ): fileLevel = logging.DEBUG
     if( strLevel  is None ): strLevel  = logging.WARNING
     # Logger object must be at minimum level
     logger.setLevel(np.min([fileLevel, strLevel]))
@@ -442,8 +442,8 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None, strLevel=None, file
     #  -----------
     if( tofile is not None ):
         if( fileFmt is None ):
-            fileFmt  = "%(asctime)s %(levelname)8.8s [%(filename)15.15s:"
-            fileFmt += "%(funcName)-15.15s]%(indent)s%(message)s"
+            fileFmt  = "%(asctime)s %(levelname)8.8s [%(filename)20.20s:"
+            fileFmt += "%(funcName)-20.20s]%(indent)s%(message)s"
 
         fileFormatter = IndentFormatter(fileFmt, datefmt=dateFmt)
         fileHandler = logging.FileHandler(tofile, 'w')
