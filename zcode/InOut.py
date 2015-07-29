@@ -15,14 +15,14 @@ Functions
     bytesString    :
     getFileSize    :
     countLines     :
-    checkPath      :
+    checkPath      : Create the given filepath if it doesn't already exist.
     dictToNPZ      :
     npzToDict      :
     getProgressBar :
 
     combineFiles   :
 
-    getLogger      :
+    getLogger      : Create a standard logger object which logs to file and/or stdout stream.
     defaultLogger  : Create a basic ``logging.Logger`` object.
 
     pickleSave     : Use pickle to save the target object.
@@ -76,14 +76,15 @@ class StreamCapture(list):
 
 
 class IndentFormatter(logging.Formatter):
-    def __init__( self, fmt=None, datefmt=None ):
+    def __init__(self, fmt=None, datefmt=None):
         logging.Formatter.__init__(self, fmt, datefmt)
         self.baseline = None
-    def format( self, rec ):
+    def format(self, rec):
         stack = inspect.stack()
         if( self.baseline is None ): self.baseline = len(stack)
         indent = (len(stack)-self.baseline)
-        rec.indent = ' -'*indent + ' '*(indent > 0)
+        addSpace = ((indent > 0) & (not rec.msg.startswith(" -")))
+        rec.indent = ' -'*indent + ' '*addSpace
         out = logging.Formatter.format(self, rec)
         del rec.indent
         return out
@@ -255,7 +256,6 @@ def checkPath(tpath):
     """
     Create the given filepath if it doesn't already exist.
     """
-
     path,name = os.path.split(tpath)
     if( len(path) > 0 ):
         if( not os.path.isdir(path) ): os.makedirs(path)
@@ -456,7 +456,7 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None, strLevel=None, file
     #  -------------
     if( tostr ):
         if( strFmt is None ):
-            strFmt = "%(indent)s %(message)s"
+            strFmt = "%(indent)s%(message)s"
 
         strFormatter = IndentFormatter(strFmt, datefmt=dateFmt)
         strHandler = logging.StreamHandler()
