@@ -18,7 +18,7 @@ Functions
   - plotScatter : 
 
   - skipTicks            : skip some tick marks
-  - saveFigure
+  - saveFigure           : Save the given figure(s) to the given filename.
   - plotSegmentedLine    : Plot a line as a series of segements (e.g. with various colors)
   - colormap             : create a colormap from scalars to colors
   - strSciNot            : create a latex string of the given number in scientific notation
@@ -42,8 +42,8 @@ from matplotlib import pyplot as plt
 from datetime import datetime
 import numbers
 
-import Math as zmath
-
+import Math  as zmath
+import InOut as zio
 
 COL_CORR = 'royalblue'
 CONF_INTS = [ 0.95, 0.68 ]
@@ -622,8 +622,23 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
 
 
 
-def saveFigure(fname, fig, multipage=False, verbose=True, **kwargs):
-    if( multipage ):
+def saveFigure(fname, fig, verbose=True, log=None, **kwargs):
+    """
+    Save the given figure(s) to the given filename.
+
+    If ``fig`` is iterable, a multipage pdf is created.  Otherwise a single file is made.
+  
+    Arguments
+    ---------
+        fname    <str>      : filename to save to.
+        fig      <obj>([N]) : one or multiple ``matplotlib.figure.Figure`` objects.
+
+        verbose  <bool>     : print verbose output to stdout
+        log      <bool>     : ``logging.Logger`` object to print output to
+        **kwargs <dict>     : additional arguments past to ``savefig()``.
+    """
+    
+    if( np.iterable(fig) ):
         from matplotlib.backends.backend_pdf import PdfPages
         with PdfPages(fname) as pdf:
             for ff in fig: pdf.savefig(figure=ff, **kwargs)
@@ -631,8 +646,10 @@ def saveFigure(fname, fig, multipage=False, verbose=True, **kwargs):
     else:
         fig.savefig(fname, **kwargs)
 
+    printStr = "Saved figure to '%s'" % (fname)
+    if( verbose ): print printStr
+    if( log is not None ): log.warning(printStr)
 
-    if( verbose ): print "Saved figure to '%s'" % (fname)
     return
 
 # saveFigure()
