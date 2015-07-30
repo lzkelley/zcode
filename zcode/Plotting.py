@@ -30,17 +30,13 @@ Functions
   - _clear_frame
   - _make_segments
 
-
 """
 
+import logging, numbers
 
 import numpy as np
-import astropy   as ap
-import scipy as sp
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-from datetime import datetime
-import numbers
 
 import Math  as zmath
 import InOut as zio
@@ -622,7 +618,7 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
 
 
 
-def saveFigure(fname, fig, verbose=True, log=None, **kwargs):
+def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, **kwargs):
     """
     Save the given figure(s) to the given filename.
 
@@ -648,7 +644,7 @@ def saveFigure(fname, fig, verbose=True, log=None, **kwargs):
 
     printStr = "Saved figure to '%s'" % (fname)
     if( verbose ): print printStr
-    if( log is not None ): log.warning(printStr)
+    if( log is not None ): log.log(level, printStr)
 
     return
 
