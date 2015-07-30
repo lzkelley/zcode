@@ -429,6 +429,8 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None, strLevel=None, file
     logger = logging.getLogger(name)
     # Make sure handlers don't get duplicated (ipython issue)
     while len(logger.handlers) > 0: logger.handlers.pop()
+    # Prevents duplication or something something...
+    logger.propagate = 0
 
     ## Determine and Set Logging Level
     if( fileLevel is None ): fileLevel = logging.DEBUG
