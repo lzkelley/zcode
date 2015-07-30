@@ -20,7 +20,8 @@ Functions
  - cumstats
  - confidenceIntervals
  - frexp10                              : decompose a float into mantissa and exponent (base 10)
- - stats                                          : return ave, stdev
+ - stats                                : return ave, stdev
+ - groupDigitized                       : Find groups of array indices corresponding to each bin.
 
 """
 
@@ -706,8 +707,40 @@ def frexp10(vals):
 def stats(vals):
     """
     """
-    
     ave = np.average(vals)
     std = np.std(vals)
     return ave, std
+
+# } stats()
     
+
+def groupDigitized(arr, bins, right=True):
+    """
+    Find groups of array indices corresponding to each bin.
+
+    Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
+    bin, finds the list of array indices which belong in that bin.
+    
+    Arguments
+    ---------
+        arr   <flt>[N] : array of values to digitize and group
+        bins  <flt>[M] : array of bin edges to digitize and group by
+        right <bool>   : whether bin edges are 'right' edges, otherwise assumed left
+    
+    Returns
+    -------
+        groups <int>[M][...] : Each list contains the ``arr`` indices belonging in each bin
+
+    """
+
+    # Find in which bin each element of arr belongs
+    bins = np.digitize(arr, bins, right=right)
+
+    groups = []
+    # Group indices by bin number
+    for ii in xrange(len(bins)):
+        groups.append( np.where(bins == ii)[0] )
+
+    return groups
+
+# } groupDigitized()
