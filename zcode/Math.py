@@ -712,7 +712,8 @@ def stats(vals):
     return ave, std
 
 # } stats()
-    
+
+
 
 def groupDigitized(arr, bins, right=True):
     """
@@ -720,6 +721,9 @@ def groupDigitized(arr, bins, right=True):
 
     Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
     bin, finds the list of array indices which belong in that bin.
+
+    For example:
+        >>> 
     
     Arguments
     ---------
@@ -731,15 +735,22 @@ def groupDigitized(arr, bins, right=True):
     -------
         groups <int>[M][...] : Each list contains the ``arr`` indices belonging in each bin
 
+    
+
     """
 
+    # ``numpy.digitize`` always assumes ``bins`` are right-edges (in effect)
+    shift = 0
+    # If we want 'left' bin edges, such shift each bin leftwards
+    if( not right ): shift = -1
+
     # Find in which bin each element of arr belongs
-    bins = np.digitize(arr, bins, right=right)
+    pos = np.digitize(arr, bins, right=right) + shift
 
     groups = []
     # Group indices by bin number
     for ii in xrange(len(bins)):
-        groups.append( np.where(bins == ii)[0] )
+        groups.append( np.where(pos == ii)[0] )
 
     return groups
 
