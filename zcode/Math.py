@@ -712,20 +712,29 @@ def stats(vals):
     return ave, std
 
 # } stats()
-    
 
-def groupDigitized(arr, bins, right=True):
+
+
+def groupDigitized(arr, bins, edges='right')
     """
     Find groups of array indices corresponding to each bin.
 
     Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
     bin, finds the list of array indices which belong in that bin.
+
+    Example:
+        >>> arr = [ 0.0, 1.3, 1.8, 2.1 ]
+        >>> bins = [ 1.0, 2.0, 3.0 ]
+        >>> zcode.Math.groupDigitized(arr, bins, right=True)
+        [array([0]), array([1, 2]), array([3])]
+        >>> zcode.Math.groupDigitized(arr, bins, right=False)
+        [array([1, 2]), array([3]), array([])]
     
     Arguments
     ---------
         arr   <flt>[N] : array of values to digitize and group
         bins  <flt>[M] : array of bin edges to digitize and group by
-        right <bool>   : whether bin edges are 'right' edges, otherwise assumed left
+        edges <str>    : whether bin edges are 'right' or 'left' {'right', 'left'}
     
     Returns
     -------
@@ -733,13 +742,22 @@ def groupDigitized(arr, bins, right=True):
 
     """
 
+    if(   edges.startswith('r') ): right = True
+    elif( edges.startswith('l') ): right = False
+    else: RuntimeError("``edges`` must be 'right' or 'left'!")
+
+    # ``numpy.digitize`` always assumes ``bins`` are right-edges (in effect)
+    shift = 0
+    # If we want 'left' bin edges, such shift each bin leftwards
+    if( not right ): shift = -1
+
     # Find in which bin each element of arr belongs
-    bins = np.digitize(arr, bins, right=right)
+    pos = np.digitize(arr, bins, right=right) + shift
 
     groups = []
     # Group indices by bin number
     for ii in xrange(len(bins)):
-        groups.append( np.where(bins == ii)[0] )
+        groups.append( np.where(pos == ii)[0] )
 
     return groups
 
