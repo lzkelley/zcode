@@ -11,7 +11,7 @@ Functions
  - integrate_cumulative_arr_trapezoid
  - within                               
  - minmax                               : find the min and max of given values
- - spacing
+ - spacing                              : Create an even spacing between extrema from given data.
  - histogram                            : performed advanced binning operations
  - mid
  - vecmag                               : find the magnitude/distance of/between vectors
@@ -321,6 +321,8 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
 def spacing(data, scale='log', num=100, nonzero=None, positive=None):
     """
     Create an evenly spaced array between extrema from the given data.
+
+    If ``nonzero`` and ``positive`` are not given, educated guesses are made based on ``scale``.
 
     Arguments
     ---------
@@ -715,7 +717,7 @@ def stats(vals):
 
 
 
-def groupDigitized(arr, bins, edges='right')
+def groupDigitized(arr, bins, edges='right'):
     """
     Find groups of array indices corresponding to each bin.
 
