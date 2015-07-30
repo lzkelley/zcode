@@ -643,8 +643,8 @@ def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, **kwar
         fig.savefig(fname, **kwargs)
 
     printStr = "Saved figure to '%s'" % (fname)
-    if( verbose ): print printStr
     if( log is not None ): log.log(level, printStr)
+    elif( verbose ): print printStr
 
     return
 
