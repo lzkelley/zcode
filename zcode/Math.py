@@ -20,6 +20,8 @@ Functions
  - cumstats
  - confidenceIntervals
  - frexp10                              : decompose a float into mantissa and exponent (base 10)
+ - stats                                : return ave, stdev
+ - groupDigitized                       : Find groups of array indices corresponding to each bin.
 
 """
 
@@ -227,7 +229,7 @@ def integrate_cumulative_arr_trapezoid(arr, xx, log=True, init=None, rev=False):
 
 
 
-def within(vals, extr, edges=True, all=False):
+def within(vals, extr, edges=True, all=False, inv=False):
     """
     Test whether a value or array is within the bounds of another.
 
@@ -236,6 +238,8 @@ def within(vals, extr, edges=True, all=False):
        vals   <scalar>([N]) : test value(s)
        extr  <scalar>[M]    : array or span to compare with
        edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
+       all   <bool>         : optional, whether All values are within bounds (single return `bool`)
+       inv   <bool>         : optional, invert results (i.e. `True` ==> `False` and visa-versa)
 
     Returns
     -------
@@ -245,27 +249,18 @@ def within(vals, extr, edges=True, all=False):
 
     extr_bnds = minmax(extr)
 
-    # Test whether ALL  values in ``vals`` are within range of ``extr``
-    if( all ):
-        vals_bnds = minmax(vals)
-        # Include edges for WITHIN bounds (thus not including is outside)
-        if( edges ):
-            if( vals_bnds[0] <  extr_bnds[0] or vals_bnds[1] >  extr_bnds[1] ): return False
-        # Don't include edges for WITHIN  (thus include them for outside)
-        else:
-            if( vals_bnds[0] <= extr_bnds[0] or vals_bnds[1] >= extr_bnds[1] ): return False
+    # Include edges for WITHIN bounds (thus not including is outside)
+    if( edges ): retval = np.asarray( ((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])) )
+    # Don't include edges for WITHIN  (thus include them for outside)
+    else:        retval = np.asarray( ((vals >  extr_bnds[0]) & (vals <  extr_bnds[1])) )
 
-    # Test whether EACH value  in ``vals`` is  within range of ``extr``
-    else:
-        # Include edges for WITHIN bounds (thus not including is outside)
-        if( edges ):
-            return ((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])) 
-        # Don't include edges for WITHIN  (thus include them for outside)
-        else:
-            return ((vals >  extr_bnds[0]) & (vals <  extr_bnds[1])) 
+    # Convert to single return value
+    if( all ): retval = np.all(retval)
 
+    # Invert results
+    if( inv ): retval = np.invert(retval)
 
-    return True
+    return retval
 
 # within()
 
@@ -675,7 +670,9 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
 
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0 ]).T
-    conf = np.array([ np.percentile(vals, 100.0*cdf) for cdf in cdf_vals ])
+    conf = [ [np.percentile(vals, 100.0*cdf[0]), np.percentile(vals, 100.0*cdf[1])] 
+             for cdf in cdf_vals ]
+    conf = np.array(conf)
     med = np.percentile(vals, 50.0)
 
     if( len(conf) == 1 ): conf = conf[0]
@@ -705,3 +702,45 @@ def frexp10(vals):
     return man, exp
 
 # frexp10()
+
+
+def stats(vals):
+    """
+    """
+    ave = np.average(vals)
+    std = np.std(vals)
+    return ave, std
+
+# } stats()
+    
+
+def groupDigitized(arr, bins, right=True):
+    """
+    Find groups of array indices corresponding to each bin.
+
+    Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
+    bin, finds the list of array indices which belong in that bin.
+    
+    Arguments
+    ---------
+        arr   <flt>[N] : array of values to digitize and group
+        bins  <flt>[M] : array of bin edges to digitize and group by
+        right <bool>   : whether bin edges are 'right' edges, otherwise assumed left
+    
+    Returns
+    -------
+        groups <int>[M][...] : Each list contains the ``arr`` indices belonging in each bin
+
+    """
+
+    # Find in which bin each element of arr belongs
+    bins = np.digitize(arr, bins, right=right)
+
+    groups = []
+    # Group indices by bin number
+    for ii in xrange(len(bins)):
+        groups.append( np.where(bins == ii)[0] )
+
+    return groups
+
+# } groupDigitized()

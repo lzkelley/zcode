@@ -4,7 +4,9 @@ Functions for Input/Output (IO) Operations.
 
 Classes
 -------
-  - StreamCapture  : class for capturing/redirecting stdout and stderr
+    StreamCapture  : class for capturing/redirecting stdout and stderr
+    IndentFormatter : <logging.Formatter> subclass for stack-depth based indentation logging
+
 
 Functions
 ---------
@@ -13,19 +15,25 @@ Functions
     bytesString    :
     getFileSize    :
     countLines     :
-    checkPath      :
+    checkPath      : Create the given filepath if it doesn't already exist.
     dictToNPZ      :
     npzToDict      :
     getProgressBar :
 
+    combineFiles   :
+
+    getLogger      : Create a standard logger object which logs to file and/or stdout stream.
+    defaultLogger  : Create a basic ``logging.Logger`` object.
+
+    pickleSave     : Use pickle to save the target object.
+    pickleLoad     : Use pickle to load from the target file.
 
 """
 
-import os
-import sys
+import os, sys, logging, inspect, warnings
 import numpy as np
+import cPickle as pickle
 
-import warnings
 
 class StreamCapture(list):
     """
@@ -65,6 +73,25 @@ class StreamCapture(list):
 
 
 # } class StreamCapture
+
+
+class IndentFormatter(logging.Formatter):
+    def __init__(self, fmt=None, datefmt=None):
+        logging.Formatter.__init__(self, fmt, datefmt)
+        self.baseline = None
+    def format(self, rec):
+        stack = inspect.stack()
+        if( self.baseline is None ): self.baseline = len(stack)
+        indent = (len(stack)-self.baseline)
+        addSpace = ((indent > 0) & (not rec.msg.startswith(" -")))
+        rec.indent = ' -'*indent + ' '*addSpace
+        out = logging.Formatter.format(self, rec)
+        del rec.indent
+        return out
+
+# } class IndentFormatter
+
+
 
 
 def statusString(count, total, durat=None):
@@ -179,32 +206,21 @@ def countLines(files, progress=False):
     """ Count the number of lines in the given file """
 
     # If string, or otherwise not-iterable, convert to list
-    if( not iterableNotString(files) ): files = [ files ]
+    if( np.iterable(files) and not isinstance(files, str) ): files = [ files ]
 
-    if( progress ):
-        numFiles = len(files)
-        if( numFiles < 100 ): interval = 1
-        else:                 interval = np.int(np.floor(numFiles/100.0))
-        start = datetime.datetime.now()
+    if( progress ): pbar = getProgressBar(len(files))
 
     nums = 0
-    # Iterate over each file
+    # Iterate over each file, count lines
     for ii,fil in enumerate(files):
-        # Count number of lines
         nums += sum(1 for line in open(fil))
+        if( progress ): pbar.update(ii)
 
-        # Print progresss
-        if( progress ):
-            now = datetime.datetime.now()
-            dur = now-start
-
-            statStr = aux.statusString(ii+1, numFiles, dur)
-            sys.stdout.write('\r - - - %s' % (statStr))
-            sys.stdout.flush()
-            if( ii+1 == numFiles ): sys.stdout.write('\n')
-
+    if( progress ): pbar.finish()
 
     return nums
+
+# countLines()
 
 
 def estimateLines(files):
@@ -240,7 +256,6 @@ def checkPath(tpath):
     """
     Create the given filepath if it doesn't already exist.
     """
-
     path,name = os.path.split(tpath)
     if( len(path) > 0 ):
         if( not os.path.isdir(path) ): os.makedirs(path)
@@ -331,3 +346,198 @@ def getProgressBar(maxval, width=100):
     return pbar
 
 # getProgressBar()
+
+
+
+def combineFiles(inFilenames, outFilename, verbose=False):
+    """
+    Concatenate the contents of a set of input files into a single output file.
+
+    Arguments
+    ---------
+    inFilenames : iterable<str>, list of input file names
+    outFilename : <str>, output file name
+    verbose : <bool> (optional=_VERBOSE), print verbose output
+
+    Returns
+
+    """
+
+    # Make sure outfile path exists
+    checkPath(outFilename)
+    inSize = 0.0
+    nums = len(inFilenames)
+
+    # Open output file for writing
+    if( verbose ): pbar = getProgressBar(nums)
+    with open(outFilename, 'w') as outfil:
+
+        # Iterate over input files
+        for ii,inname in enumerate(inFilenames):
+            inSize += os.path.getsize(inname)
+            if( verbose ): pbar.update(ii)
+
+            # Open input file for reading
+            with open(inname, 'r') as infil:
+                # Iterate over input file lines
+                for line in infil: outfil.write(line)
+            # } infil
+
+        # } inname
+
+    # } outfil
+
+    if( verbose ): pbar.finish()
+
+    outSize = os.path.getsize(outFilename)
+
+    inStr   = bytesString(inSize)
+    outStr  = bytesString(outSize)
+
+    if( verbose ): print " - - - Total input size = %s, output size = %s" % (inStr, outStr)
+
+    return
+
+# combineFiles()
+
+
+def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None, strLevel=None, fileLevel=None,
+              tofile=None, tostr=True):
+    """
+    Create a standard logger object which logs to file and or stdout stream ('str')
+
+    Arguments
+    ---------
+        name    <str> : handle for this logger, must be distinct for a distinct logger
+
+        strFmt  <str>  : format of log messages to stream (stdout)
+        fileFmt <str>  : format of log messages to file
+        dateFmt <str>  : format of time stamps to stream and/or file
+        strLevel  <int>  : logging level for stream
+        fileLevel <int>  : logging level for file
+        tofile  <str>  : filename to log to (turned off if `None`)
+        tostr   <bool> : log to stdout stream
+
+    Returns
+    -------
+        logger  <obj>  : ``logging`` logger object
+
+    """
+
+    if( tofile is None and not tostr ): raise RuntimeError("Must log to something")
+
+    logger = logging.getLogger(name)
+    # Make sure handlers don't get duplicated (ipython issue)
+    while len(logger.handlers) > 0: logger.handlers.pop()
+    # Prevents duplication or something something...
+    logger.propagate = 0
+
+    ## Determine and Set Logging Level
+    if( fileLevel is None ): fileLevel = logging.DEBUG
+    if( strLevel  is None ): strLevel  = logging.WARNING
+    # Logger object must be at minimum level
+    logger.setLevel(np.min([fileLevel, strLevel]))
+
+    if( dateFmt is None ): dateFmt = '%Y/%m/%d %H:%M:%S'
+
+    ## Log to file
+    #  -----------
+    if( tofile is not None ):
+        if( fileFmt is None ):
+            fileFmt  = "%(asctime)s %(levelname)8.8s [%(filename)20.20s:"
+            fileFmt += "%(funcName)-20.20s]%(indent)s%(message)s"
+
+        fileFormatter = IndentFormatter(fileFmt, datefmt=dateFmt)
+        fileHandler = logging.FileHandler(tofile, 'w')
+        fileHandler.setFormatter(fileFormatter)
+        fileHandler.setLevel(fileLevel)
+        logger.addHandler(fileHandler)
+
+
+    ## Log To stdout
+    #  -------------
+    if( tostr ):
+        if( strFmt is None ):
+            strFmt = "%(indent)s%(message)s"
+
+        strFormatter = IndentFormatter(strFmt, datefmt=dateFmt)
+        strHandler = logging.StreamHandler()
+        strHandler.setFormatter(strFormatter)
+        strHandler.setLevel(strLevel)
+        logger.addHandler(strHandler)
+
+
+    return logger
+
+# getLogger()
+
+
+def defaultLogger(logger=None, verbose=False, debug=False):
+    """
+    Create a basic ``logging.Logger`` object.  With no arguments, a stream-logger set to Warning.
+    
+    Arguments
+    ---------
+        logger  <obj>  : a ``logging`` level (integer), or `None` for default
+        verbose <bool> : True to set 'verbose' output (`logging.INFO`)
+        debug   <bool> : True to set 'debug'   output (`logging.DEBUG`), overrides ``verbose``
+
+    Returns
+    -------
+        logger  <obj>  : ``logging.Logger`` object.
+
+    """
+
+    if( isinstance(logger, logging.Logger) ): return logger
+
+    import numbers
+
+    if( isinstance(logger, numbers.Integral) ):
+        level = logger
+    else:
+        if(   debug   ): level = logging.DEBUG
+        elif( verbose ): level = logging.INFO
+        else:            level = logging.WARNING
+
+    logger = getLogger(None, strLevel=level, tostr=True)
+
+    return logger
+
+# defaultLogger()
+
+
+def pickleSave(obj, name, mode='wb'):
+    """
+    Use pickle to save the given object.
+    
+    Arguments
+    ---------
+        obj  <obj> : pickleable object to save
+        name <str> : filename to which to save
+        mode <str> : mode with which to open save file, see ``file.__doc__``
+
+    """
+    with open(name, mode) as pfil:
+        pickle.dump(obj,pfil)
+
+    return
+
+# pickleSave()
+
+
+def pickleLoad(name, mode='rb'):
+    """
+    Use pickle to load the given object.
+    
+    Arguments
+    ---------
+        name <str> : filename to which to save
+        mode <str> : mode with which to open save file, see ``file.__doc__``
+
+    """
+    with open(name, mode) as pfil:
+        pickle.load(obj,pfil)
+
+    return
+
+# pickleLoad()

@@ -14,9 +14,11 @@ Functions
 
   - plotHistLine         : plot a line as a histogram
   - plotCorrelationGrid  : plot a grid of 1D parameter correlations and histograms
+  - plotHistBars         : 
+  - plotScatter : 
 
   - skipTicks            : skip some tick marks
-  - saveFigure
+  - saveFigure           : Save the given figure(s) to the given filename.
   - plotSegmentedLine    : Plot a line as a series of segements (e.g. with various colors)
   - colormap             : create a colormap from scalars to colors
   - strSciNot            : create a latex string of the given number in scientific notation
@@ -28,25 +30,21 @@ Functions
   - _clear_frame
   - _make_segments
 
-
 """
 
+import logging, numbers
 
 import numpy as np
-import astropy   as ap
-import scipy as sp
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-from datetime import datetime
-import numbers
 
-import Math as zmath
-
+import Math  as zmath
+import InOut as zio
 
 COL_CORR = 'royalblue'
 CONF_INTS = [ 0.95, 0.68 ]
-COL_CONFS = [ 'green','orange' ]
-#COL_CONFS = [ 'orange','orangered' ]
+CONF_COLS = [ 'green','orange' ]
+#CONF_COLS = [ 'orange','orangered' ]
 
 LW_CONF = 1.0
 
@@ -489,6 +487,8 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
         if(   hist_scales[ii].startswith('lin') ): hist_scales[ii] = 'linear'
         elif( hist_scales[ii].startswith('log') ): hist_scales[ii] = 'log'
 
+    if( confidence ): confInts = CONF_INTS
+    else:             confInts = None
 
 
     # Set default bins
@@ -545,15 +545,15 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
 
             # Histograms
             if( ii == jj ):
-                art = _histogram_bars(axes[ii,jj], data[ii], confidence, 
-                                      hist_bins[ii], pars_scales[ii])
+                art = plotHistBars(axes[ii,jj], data[ii], bins=hist_bins[ii],
+                                      scalex=pars_scales[ii], conf=True)
 
             # Correlations
             else:
                 
                 if( style == 'scatter' ):
-                    art = _correlation_scatter(axes[ii,jj], data[jj], data[ii], 
-                                               pars_scales[jj], pars_scales[ii], contours)
+                    art = plotScatter(axes[ii,jj], data[jj], data[ii], 
+                                      scalex=pars_scales[jj], scaley=pars_scales[ii], cont=contours)
                 else:
                     raise RuntimeError("``style`` '%s' is not implemented!" % (style))
 
@@ -618,8 +618,23 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
 
 
 
-def saveFigure(fname, fig, multipage=False, verbose=True, **kwargs):
-    if( multipage ):
+def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, **kwargs):
+    """
+    Save the given figure(s) to the given filename.
+
+    If ``fig`` is iterable, a multipage pdf is created.  Otherwise a single file is made.
+  
+    Arguments
+    ---------
+        fname    <str>      : filename to save to.
+        fig      <obj>([N]) : one or multiple ``matplotlib.figure.Figure`` objects.
+
+        verbose  <bool>     : print verbose output to stdout
+        log      <bool>     : ``logging.Logger`` object to print output to
+        **kwargs <dict>     : additional arguments past to ``savefig()``.
+    """
+    
+    if( np.iterable(fig) ):
         from matplotlib.backends.backend_pdf import PdfPages
         with PdfPages(fname) as pdf:
             for ff in fig: pdf.savefig(figure=ff, **kwargs)
@@ -627,8 +642,10 @@ def saveFigure(fname, fig, multipage=False, verbose=True, **kwargs):
     else:
         fig.savefig(fname, **kwargs)
 
+    printStr = "Saved figure to '%s'" % (fname)
+    if( log is not None ): log.log(level, printStr)
+    elif( verbose ): print printStr
 
-    if( verbose ): print "Saved figure to '%s'" % (fname)
     return
 
 # saveFigure()
@@ -799,14 +816,20 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
 
 
 
-def _correlation_scatter(ax, xx, yy, scalex, scaley, cont=None):
+def plotScatter(ax, xx, yy, scalex='log', scaley='log', 
+                size=None, cont=False, color=None, alpha=None, **kwargs):
     """
     
     """
     COL = COL_CORR
     # COL = 'forestgreen'
-    ax.scatter(xx, yy, s=30, color='0.25' , alpha=0.5)
-    pnts = ax.scatter(xx, yy, s=6, color=COL, alpha=0.8)
+
+    if( size  is None ): size  = [ 30, 6 ]
+    if( color is None ): color = [ '0.25', COL ]
+    if( alpha is None ): alpha = [ 0.5, 0.8 ]
+
+    ax.scatter(xx, yy, s=size[0], color=color[0] , alpha=alpha[0], **kwargs)
+    pnts = ax.scatter(xx, yy, s=size[1], color=color[1], alpha=alpha[1], **kwargs)
 
     # Add Contours
     if( cont ):
@@ -823,34 +846,37 @@ def _correlation_scatter(ax, xx, yy, scalex, scaley, cont=None):
         gx, gy = np.meshgrid(xedges[1:], yedges[1:])
         ax.contour(gx, gy, hist.T, NUM, colors=cols) #, alpha=0.8 )
 
-
     return pnts
 
-# _correlation_scatter()
+# plotScatter()
 
 
-def _histogram_bars(ax, xx, conf, bins, scales):
+def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwargs):
     """
     Plot a histogram bar graph onto the given axes.
     """
     ALPHA = 0.5
 
+    if( scaley.startswith('log') ): logy = True
+    else:                           logy = False
+
     # Add Confidence intervals
     if( conf ):
         med, cints = zmath.confidenceIntervals(xx, ci=CONF_INTS)
         ax.axvline(med, color='red', ls='--', lw=LW_CONF, zorder=101)
-        for ii,(vals,col) in enumerate(zip(cints, COL_CONFS)):
+        for ii,(vals,col) in enumerate(zip(cints, CONF_COLS)):
             ax.axvspan(*vals, color=col, alpha=ALPHA)
 
 
-    if( isinstance(bins, numbers.Integral) and scales is 'log' ):
+    if( isinstance(bins, numbers.Integral) and scalex is 'log' ):
         bins = zmath.spacing(xx, num=bins)
 
-    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', rwidth=0.8, color=COL_CORR, zorder=100)
+    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', log=logy,
+                               rwidth=0.8, color=COL_CORR, zorder=100, **kwargs)
 
     return bars
 
-# _histogram_bars()
+# plotHistBars()
 
 
 
