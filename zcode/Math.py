@@ -11,7 +11,7 @@ Functions
  - integrate_cumulative_arr_trapezoid
  - within                               
  - minmax                               : find the min and max of given values
- - spacing
+ - spacing                              : Create an even spacing between extrema from given data.
  - histogram                            : performed advanced binning operations
  - mid
  - vecmag                               : find the magnitude/distance of/between vectors
@@ -274,10 +274,11 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
 
     Arguments
     ---------
-       data    <scalar>[...] : arbitrarily shaped data to find minumum and maximum of.
-       prev    <scalar>[2]   : optional, also find min/max against prev[0] and prev[1] respectively.
-       nonzero <bool>        : optional, ignore zero valued entries
-       stretch <flt>         : factor by which to stretch min and max by (1 +- ``stretch``)
+       data     <scalar>[...] : arbitrarily shaped data to find minumum and maximum of.
+       nonzero  <bool>        : ignore zero values in input ``data``
+       positive <bool>        : select values '>= 0.0' in input ``data``
+       prev     <scalar>[2]   : also find min/max against prev[0] and prev[1] respectively.
+       stretch  <flt>         : factor by which to stretch min and max by (1 +- ``stretch``)
 
     Returns
     -------
@@ -293,8 +294,7 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
     useData = np.array(data).flatten()
 
     # Filter out zeros if desired
-    if( nonzero ): useData = np.array(useData[np.nonzero(useData)])
-    
+    if( nonzero ):  useData = np.array(useData[np.nonzero(useData)])
     if( positive ): useData = np.array(useData[np.where(useData >= 0.0)])
 
     # If there are no elements (left), return ``prev`` (`None` if not provided)
@@ -322,13 +322,15 @@ def spacing(data, scale='log', num=100, nonzero=None, positive=None):
     """
     Create an evenly spaced array between extrema from the given data.
 
+    If ``nonzero`` and ``positive`` are not given, educated guesses are made based on ``scale``.
+
     Arguments
     ---------
        data     <scalar>[M] : data from which to extract the extrema for bounds
        scale    <str>       : optional, scaling for spacing, {'lin', 'log'}
        num      <int>       : optional, number of points, ``N``
-       nonzero  <bool>      : optional, only use nonzero  elements of ``data``
-       positive <bool>      : optional, only use positive elements of ``data``
+       nonzero  <bool>      : optional, only use '!= 0.0' elements of ``data``
+       positive <bool>      : optional, only use '>= 0.0' elements of ``data``
     
     Returns
     -------
@@ -348,11 +350,7 @@ def spacing(data, scale='log', num=100, nonzero=None, positive=None):
         if( log_flag ): positive = True
         else:           positive = False
 
-    usedata = np.array(data)
-    if( nonzero  ): usedata = usedata[np.nonzero(usedata)]
-    if( positive ): usedata = usedata[np.where(usedata > 0.0)]
-
-    span = minmax(usedata)
+    span = minmax(data, nonzero=nonzero, positive=positive)
     if(   log_flag ): spacing = np.logspace( *np.log10(span), num=num )
     else:             spacing = np.linspace( *span,           num=num )
 
@@ -372,7 +370,7 @@ def histogram(args, bins, binScale=None, bounds='both',
 
     Arguments
     ---------
-       args     <scalar>[N]   :
+       args     <scalar>[N]   : data to be histogrammed.
        bins     <scalar>([M]) : Positions of bin edges or number of bins to construct automatically.
                                 If a single ``bins`` value is given, it is assumed to be a number of
                                 bins to create with a scaling given by ``binScale`` (see desc).
@@ -404,11 +402,13 @@ def histogram(args, bins, binScale=None, bounds='both',
        edges    <scalar>[L]   : edges used for creating histogram
        counts   <int>[L]      : histogram of counts per bin, if ``edges`` is `both` then length is 
                                `L=M-1`, otherwise `L=M`.
-       cumsum   <int>[L]      : cumulative distribution of ``counts``, if ``cumul`` is True
+
+       cumsum   <int>[L]      : optional, cumulative distribution of ``counts``, 
+                                returned if ``cumul`` is True
        hist     <scalar>[L]   : optional, histogram of ``func`` operation on ``weights``
-                               returned if ``weights`` is given. 
+                                returned if ``weights`` is given. 
        std      <scalar>[L]   : optional, standard-deviation of ``weights`` in bin, 
-                               returned if ``stdev == True``
+                                returned if ``stdev == True``
 
 
     To-Do
@@ -715,7 +715,7 @@ def stats(vals):
 
 
 
-def groupDigitized(arr, bins, edges='right')
+def groupDigitized(arr, bins, edges='right'):
     """
     Find groups of array indices corresponding to each bin.
 

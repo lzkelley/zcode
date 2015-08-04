@@ -9,8 +9,8 @@ Functions
   - unifyAxesLimits      : given a list of axes, set all limits to match flobal extrema
   - colorCycle           : create a cycle of the given number of colors
 
-  - twinAxis             : easily create and set a new twin axis (like `twinx()` or `twiny()`)
   - setAxis              : function to set many different axis properties at once
+  - twinAxis             : easily create and set a new twin axis (like `twinx()` or `twiny()`)
 
   - plotHistLine         : plot a line as a histogram
   - plotCorrelationGrid  : plot a grid of 1D parameter correlations and histograms

@@ -18,7 +18,7 @@ Functions
     checkPath      : Create the given filepath if it doesn't already exist.
     dictToNPZ      :
     npzToDict      :
-    getProgressBar :
+    getProgressBar : Wrapper to create a progressbar object with default settings.
 
     combineFiles   :
 
