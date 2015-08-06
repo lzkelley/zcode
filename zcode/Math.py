@@ -15,7 +15,7 @@ Functions
  - histogram                            : performed advanced binning operations
  - mid
  - vecmag                               : find the magnitude/distance of/between vectors
- - extend
+ - extend                               : Extend the given array by extraplation.
  - renumerate                           : construct a reverse enumeration iterator
  - cumstats
  - confidenceIntervals
@@ -598,21 +598,41 @@ def vecmag(r1, r2=None):
 # vecmag()
 
 
-def extend(arr, log=True):
+def extend(arr, num=1, log=True, append=False, side='both'):
     """
+    Extend the given array by extraplation.
+
+    Arguments
+    ---------
+        arr    <flt>[N] : array to extend
+        num    <int>    : number of points to add (on each side, if ``both``)
+        log    <bool>   : extrapolate in log-space
+        append <bool>   : add the extended points onto the given array
+        side   <str>    : which side to extend from {'left','both','right'}.
+
+    Returns
+    -------
+        retval <flt>[M] : extension (or input ``arr`` with extension added, if ``append``).
+
     """
 
     if( log ): useArr = np.log10(arr)
     else:      useArr = np.array(arr)
 
-    left = useArr[ 0] + (useArr[ 0] - useArr[ 1])
-    rigt = useArr[-1] + (useArr[-1] - useArr[-2])
+    steps = np.arange(1,num+1).squeeze()
+    if( side == 'both' or side == 'left' ): left = useArr[ 0] + (useArr[ 0] - useArr[ 1])*steps
+    else: left = []
+    if( side == 'both' or side == 'right'): rigt = useArr[-1] + (useArr[-1] - useArr[-2])*steps
+    else: rigt = []
 
     if( log ):
         left = np.power(10.0, left)
         rigt = np.power(10.0, rigt)
 
-    return left, rigt
+    if( append ): retval = np.hstack([left, arr, rigt])
+    else:         retval = np.hstack([left, rigt])
+
+    return retval
 
 # extend()
 
