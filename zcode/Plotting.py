@@ -618,7 +618,7 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
 
 
 
-def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, **kwargs):
+def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, close=True, **kwargs):
     """
     Save the given figure(s) to the given filename.
 
@@ -631,16 +631,21 @@ def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, **kwar
 
         verbose  <bool>     : print verbose output to stdout
         log      <bool>     : ``logging.Logger`` object to print output to
+        level    <int>      :
+        close    <bool>     : close figures after saving
         **kwargs <dict>     : additional arguments past to ``savefig()``.
     """
     
     if( np.iterable(fig) ):
         from matplotlib.backends.backend_pdf import PdfPages
         with PdfPages(fname) as pdf:
-            for ff in fig: pdf.savefig(figure=ff, **kwargs)
+            for ff in fig: 
+                pdf.savefig(figure=ff, **kwargs)
+                if( close ): plt.close(ff)
 
     else:
         fig.savefig(fname, **kwargs)
+        if( close ): plt.close(fig)
 
     printStr = "Saved figure to '%s'" % (fname)
     if( log is not None ): log.log(level, printStr)
