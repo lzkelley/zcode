@@ -5,7 +5,7 @@ Functions
 ---------
   - subplots             :
   - set_lim              : set limits on an axis
-  - addParameterString   : 
+  - text   : 
   - unifyAxesLimits      : given a list of axes, set all limits to match flobal extrema
   - colorCycle           : create a cycle of the given number of colors
 
@@ -191,7 +191,7 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 # set_lim()
 
 
-def addParameterString(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
+def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
     txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=fig.transFigure,
                    horizontalalignment=halign, verticalalignment=valign)
     return txt
