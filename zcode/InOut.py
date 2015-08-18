@@ -28,11 +28,14 @@ Functions
     pickleSave     : Use pickle to save the target object.
     pickleLoad     : Use pickle to load from the target file.
 
+    dillSave       : Use dill to save the target object.
+    dillLoad       : Use dill to load from the target file.
+
+
 """
 
 import os, sys, logging, inspect, warnings
 import numpy as np
-import cPickle as pickle
 
 
 class StreamCapture(list):
@@ -517,6 +520,8 @@ def pickleSave(obj, name, mode='wb'):
         mode <str> : mode with which to open save file, see ``file.__doc__``
 
     """
+    import cPickle as pickle
+    
     with open(name, mode) as pfil:
         pickle.dump(obj,pfil)
 
@@ -535,9 +540,52 @@ def pickleLoad(name, mode='rb'):
         mode <str> : mode with which to open save file, see ``file.__doc__``
 
     """
+    import cPickle as pickle
+
     with open(name, mode) as pfil:
         pickle.load(obj,pfil)
 
     return
 
 # pickleLoad()
+
+
+def dillSave(obj, name, mode='wb'):
+    """
+    Use dill to save the given object.
+    
+    Arguments
+    ---------
+        obj  <obj> : pickleable object to save
+        name <str> : filename to which to save
+        mode <str> : mode with which to open save file, see ``file.__doc__``
+
+    """
+    import dill as pickle
+    
+    with open(name, mode) as pfil:
+        pickle.dump(obj,pfil)
+
+    return
+
+# dillSave()
+
+
+def dillLoad(name, mode='rb'):
+    """
+    Use dill to load the given object.
+    
+    Arguments
+    ---------
+        name <str> : filename to which to save
+        mode <str> : mode with which to open save file, see ``file.__doc__``
+
+    """
+    import dill as pickle
+
+    with open(name, mode) as pfil:
+        pickle.load(obj,pfil)
+
+    return
+
+# dillLoad()
