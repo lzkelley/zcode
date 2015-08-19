@@ -5,7 +5,7 @@ Functions
 ---------
   - subplots             :
   - set_lim              : set limits on an axis
-  - addParameterString   : 
+  - text   : 
   - unifyAxesLimits      : given a list of axes, set all limits to match flobal extrema
   - colorCycle           : create a cycle of the given number of colors
 
@@ -191,7 +191,7 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 # set_lim()
 
 
-def addParameterString(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
+def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
     txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=fig.transFigure,
                    horizontalalignment=halign, verticalalignment=valign)
     return txt
@@ -616,7 +616,7 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
 
 
 
-def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, **kwargs):
+def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, close=True, **kwargs):
     """
     Save the given figure(s) to the given filename.
 
@@ -629,16 +629,21 @@ def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, **kwar
 
         verbose  <bool>     : print verbose output to stdout
         log      <bool>     : ``logging.Logger`` object to print output to
+        level    <int>      :
+        close    <bool>     : close figures after saving
         **kwargs <dict>     : additional arguments past to ``savefig()``.
     """
     
     if( np.iterable(fig) ):
         from matplotlib.backends.backend_pdf import PdfPages
         with PdfPages(fname) as pdf:
-            for ff in fig: pdf.savefig(figure=ff, **kwargs)
+            for ff in fig: 
+                pdf.savefig(figure=ff, **kwargs)
+                if( close ): plt.close(ff)
 
     else:
         fig.savefig(fname, **kwargs)
+        if( close ): plt.close(fig)
 
     printStr = "Saved figure to '%s'" % (fname)
     if( log is not None ): log.log(level, printStr)
