@@ -550,7 +550,6 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
 
             # Correlations
             else:
-                
                 if( style == 'scatter' ):
                     art = plotScatter(axes[ii,jj], data[jj], data[ii], 
                                       scalex=pars_scales[jj], scaley=pars_scales[ii], cont=contours)
@@ -565,7 +564,6 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
     ## Configure Axes
     #  --------------
     _config_axes(axes, lims, pars_scales, hist_scales, names, FS)
-
 
     return figure, axes
 
