@@ -628,7 +628,7 @@ def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, close=
         fig      <obj>([N]) : one or multiple ``matplotlib.figure.Figure`` objects.
 
         verbose  <bool>     : print verbose output to stdout
-        log      <bool>     : ``logging.Logger`` object to print output to
+        log      <obj>      : ``logging.Logger`` object to print output to
         level    <int>      :
         close    <bool>     : close figures after saving
         **kwargs <dict>     : additional arguments past to ``savefig()``.
