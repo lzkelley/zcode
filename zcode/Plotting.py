@@ -633,7 +633,9 @@ def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, close=
         close    <bool>     : close figures after saving
         **kwargs <dict>     : additional arguments past to ``savefig()``.
     """
-    
+
+    if( log is not None ): log.debug("Saving figure...")
+
     if( np.iterable(fig) ):
         from matplotlib.backends.backend_pdf import PdfPages
         with PdfPages(fname) as pdf:
