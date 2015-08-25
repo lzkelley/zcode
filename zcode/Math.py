@@ -51,7 +51,7 @@ def logSpline_resample(xx, yy, newx, order=3):
     return newy
 
 
-def logSpline(xx, yy, order=3):
+def logSpline(xx, yy, order=3, pos=True):
     """
     Create a spline interpolant in log-log-space.
 
@@ -67,8 +67,18 @@ def logSpline(xx, yy, order=3):
 
     """
 
-    xl = np.log10(xx)
-    yl = np.log10(yy)
+    if( pos ): 
+        inds = np.where( (xx > 0.0) & (yy > 0.0) )
+        xl = np.log10(xx[inds])
+        yl = np.log10(yy[inds])
+        if( len(inds[0]) < order+1 ): 
+            raise RuntimeError("Too few valid valies (%d) for order %d!!" % (len(inds), order))
+
+    else:
+        xl = np.log10(xx)
+        yl = np.log10(yy)
+
+
     terp = sp.interpolate.InterpolatedUnivariateSpline(xl, yl, k=order)
     spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
 
