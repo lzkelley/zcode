@@ -22,6 +22,7 @@ MELC = ap.constants.m_e.cgs.value
 MPRT = ap.constants.m_p.cgs.value
 
 H0 = cosmo.H0.cgs.value                           # Hubble Constants at z=0.0 
+HPAR = cosmo.H0.value/100.0
 OMEGA_M = cosmo.Om0
 OMEGA_B = cosmo.Ob0
 OMEGA_DM = cosmo.Odm0
