@@ -4,12 +4,13 @@ Functions for Math operations.
 Functions
 ---------
  - logSpline_resample                   : use a log-log spline to resample the given data
- - logSpine                             : construct a spline in log-log space
+ - logSpline                            : construct a spline in log-log space
+ - logSpline_mono                       : monotonic, cubic spline interpolant in log-log-space.
  - contiguousInds                       : find the largest segment of contiguous array values
  - integrate_cumulative_simpson
  - integrate_cumulative_func_simpson
  - integrate_cumulative_arr_trapezoid
- - within                               
+ - within
  - minmax                               : find the min and max of given values
  - spacing                              : Create an even spacing between extrema from given data.
  - histogram                            : performed advanced binning operations
@@ -67,11 +68,11 @@ def logSpline(xx, yy, order=3, pos=True):
 
     """
 
-    if( pos ): 
+    if( pos ):
         inds = np.where( (xx > 0.0) & (yy > 0.0) )
         xl = np.log10(xx[inds])
         yl = np.log10(yy[inds])
-        if( len(inds[0]) < order+1 ): 
+        if( len(inds[0]) < order+1 ):
             raise RuntimeError("Too few valid valies (%d) for order %d!!" % (len(inds), order))
 
     else:
@@ -83,6 +84,46 @@ def logSpline(xx, yy, order=3, pos=True):
     spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
 
     return spline
+
+# } logSpline()
+
+
+
+def logSpline_mono(xx, yy, pos=True, extrap=False):
+    """
+    Create a *monotonic*, cubic spline interpolant in log-log-space.
+
+    Parameters
+    ----------
+        xx     <flt>[N] : independent variable
+        yy     <flt>[N] : function of ``xx``
+        pos    <bool>   : select only positive values from ``yy`` (and corresponding ``xx``)
+        extrap <bool>   : allow extrapolation outside of bounds of ``xx``
+
+    Returns
+    -------
+        spline <call>   : spline interpolation function.
+
+    """
+
+    if( pos ):
+        inds = np.where( (xx > 0.0) & (yy > 0.0) )
+        xl = np.log10(xx[inds])
+        yl = np.log10(yy[inds])
+        if( len(inds[0]) < order+1 ):
+            raise RuntimeError("Too few valid valies (%d) for order %d!!" % (len(inds), order))
+
+    else:
+        xl = np.log10(xx)
+        yl = np.log10(yy)
+
+    terp = sp.interpolate.PchipInterpolator(xl, yl, extrapolate=extrap)
+    spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
+
+    return spline
+
+# } logSpline_mono()
+
 
 
 def contiguousInds(args):
@@ -341,7 +382,7 @@ def spacing(data, scale='log', num=100, nonzero=None, positive=None):
        num      <int>       : optional, number of points, ``N``
        nonzero  <bool>      : optional, only use '!= 0.0' elements of ``data``
        positive <bool>      : optional, only use '>= 0.0' elements of ``data``
-    
+
     Returns
     -------
        spacing <scalar>[N] : array of evenly spaced points, with number of elements ``N = num``
@@ -370,7 +411,7 @@ def spacing(data, scale='log', num=100, nonzero=None, positive=None):
 
 
 
-def histogram(args, bins, binScale=None, bounds='both', 
+def histogram(args, bins, binScale=None, bounds='both',
               weights=None, func='sum', cumul=False, stdev=False):
     """
     Histogram (bin) the given values.
@@ -389,9 +430,9 @@ def histogram(args, bins, binScale=None, bounds='both',
        bounds    <str>        : optional, how to treat the given ``bins`` values, i.e. which 'edges'
                                 these represent.  Must be one of {`left`, `both`, `right`}.
                                 ``left``  : then ``bins[0]`` is the left-most inclusive edge
-                                            (values beyong that will not be counted), and there is 
+                                            (values beyong that will not be counted), and there is
                                             no right-most edge
-                                ``right`` : then ``bins[-1]`` is the right-most inclusive edge 
+                                ``right`` : then ``bins[-1]`` is the right-most inclusive edge
                                             (values beyond that will not be counted), and there is
                                             no  left-most edge
                                 ``both``  : then values outside of the range of ``bins`` will not be
@@ -410,14 +451,14 @@ def histogram(args, bins, binScale=None, bounds='both',
     Returns
     -------
        edges    <scalar>[L]   : edges used for creating histogram
-       counts   <int>[L]      : histogram of counts per bin, if ``edges`` is `both` then length is 
+       counts   <int>[L]      : histogram of counts per bin, if ``edges`` is `both` then length is
                                `L=M-1`, otherwise `L=M`.
 
-       cumsum   <int>[L]      : optional, cumulative distribution of ``counts``, 
+       cumsum   <int>[L]      : optional, cumulative distribution of ``counts``,
                                 returned if ``cumul`` is True
        hist     <scalar>[L]   : optional, histogram of ``func`` operation on ``weights``
-                                returned if ``weights`` is given. 
-       std      <scalar>[L]   : optional, standard-deviation of ``weights`` in bin, 
+                                returned if ``weights`` is given.
+       std      <scalar>[L]   : optional, standard-deviation of ``weights`` in bin,
                                 returned if ``stdev == True``
 
 
@@ -431,7 +472,7 @@ def histogram(args, bins, binScale=None, bounds='both',
     assert func in [ 'sum', 'ave', 'min', 'max' ], "Invalid ``func`` argument!"
 
     # For anything besides counting ('sum'), we need a weight for each argument
-    if( func is not 'sum' or stdev == True ): 
+    if( func is not 'sum' or stdev == True ):
         assert np.shape(weights) == np.shape(args), "Shape of ``weights`` must match ``args``!"
 
 
@@ -441,7 +482,7 @@ def histogram(args, bins, binScale=None, bounds='both',
     rightInclusive = False
 
     # Construct a certain number ``bins`` bins spaced appropriately
-    if( np.size(bins) == 1 ): 
+    if( np.size(bins) == 1 ):
         extr = minmax(args)
         useScale = binScale
         # If no bin scaling is given, make an appropriate choice
@@ -458,7 +499,7 @@ def histogram(args, bins, binScale=None, bounds='both',
 
 
     # Design a right-most bin to include right-most particles
-    if(   bounds == 'left'  ): 
+    if(   bounds == 'left'  ):
         # Try to go just after right-most value
         useMax  = 1.01*np.max([np.max(edges), np.max(args)])
         # Deal with right-most being 0.0
@@ -469,7 +510,7 @@ def histogram(args, bins, binScale=None, bounds='both',
         useMax += shiftMax
         edges = np.concatenate([edges, [useMax]])
     # Design a left-most  bin to include left-most  particles
-    elif( bounds == 'right' ): 
+    elif( bounds == 'right' ):
         # Try to go just before left-most value
         useMin  = 0.99*np.min([np.min(edges), np.min(args)])
         # Deal with left-most being 0.0
@@ -480,9 +521,9 @@ def histogram(args, bins, binScale=None, bounds='both',
         useMin -= shiftMin
         edges = np.concatenate([[useMin], edges])
         rightInclusive = True
-    elif( bounds == 'both'  ): 
+    elif( bounds == 'both'  ):
         pass
-    else: 
+    else:
         raise RuntimeError("Unrecognized ``bounds`` parameter!!")
 
 
@@ -495,9 +536,9 @@ def histogram(args, bins, binScale=None, bounds='both',
     counts = [ np.count_nonzero(digits == ii) for ii in range(1, len(edges)) ]
     # Add values equaling the right-most edge
     if( bounds == 'both' ): counts[-1] += np.count_nonzero( args == edges[-1] )
-    
+
     counts = np.array(counts)
-    
+
     # Calculate cumulative distribution
     if( cumul ): cumsum = np.cumsum(counts)
 
@@ -527,9 +568,9 @@ def histogram(args, bins, binScale=None, bounds='both',
     # Sum values in bins
     hist = [ useFunc(weights[digits == ii]) for ii in range(1, len(edges)) ]
     # Add values equaling the right-most edge
-    if( bounds == 'both' ): 
+    if( bounds == 'both' ):
         # Add values directly into right-most bin
-        if( func == 'ave' or func == 'sum' ): 
+        if( func == 'ave' or func == 'sum' ):
             hist[-1] += useFunc( weights[args == edges[-1]] )
         # Find min/max of values compared to whats already in right-most bin
         else:
@@ -549,8 +590,8 @@ def histogram(args, bins, binScale=None, bounds='both',
         # Sum values in bins
         std = [ np.std(weights[digits == ii]) for ii in range(1, len(edges)) ]
         # Fix last bin to include values which equal the right-most edge
-        if( bounds == 'both' ): 
-            std[-1] = np.std( weights[ (digits == ii) | (args == edges[-1]) ] ) 
+        if( bounds == 'both' ):
+            std[-1] = np.std( weights[ (digits == ii) | (args == edges[-1]) ] )
 
         std = np.array(std)
 
@@ -567,7 +608,7 @@ def histogram(args, bins, binScale=None, bounds='both',
 
 
 def mid(vals, log=False):
-    
+
     mids = np.zeros(len(vals)-1)
     for ii,vv in enumerate(zip(vals[:-1], vals[1:])):
         if( log ): mids[ii] = np.power(10.0, np.average(np.log10(vv)) )
@@ -599,7 +640,7 @@ def vecmag(r1, r2=None):
     if( r2 is None ): r2 = np.zeros(np.shape(r1))
 
     if( len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1 ):
-        dist = np.sqrt( np.sum( np.square(r1 - r2), axis=1) )    
+        dist = np.sqrt( np.sum( np.square(r1 - r2), axis=1) )
     else:
         dist = np.sqrt( np.sum( np.square(r1 - r2) ) )
 
@@ -653,7 +694,7 @@ def renumerate(arr):
     """
     return itertools.izip(reversed(xrange(len(arr))), reversed(arr))
 
-# renumerate()    
+# renumerate()
 
 
 def cumstats(arr):
@@ -670,12 +711,12 @@ def cumstats(arr):
     sm2 = np.cumsum( np.square(arr) )
     # Cumulative average
     ave = sm1/(num+1.0)
-    
+
     std[1:] = np.fabs(sm2[1:] - np.square(sm1[1:])/(num[1:]+1.0))/num[1:]
     std[1:] = np.sqrt( std[1:] )
     return ave,std
 
-# cumstats()    
+# cumstats()
 
 
 
@@ -687,7 +728,7 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
     ---------
        vals <scalar>[N] : array of sample data points
        ci   <scalar>[M] : optional, list of confidence intervals as fractions (e.g. `[0.68, 0.95]`)
-    
+
     Returns
     -------
        med  <scalar>      : median of the data
@@ -700,7 +741,7 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
 
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0 ]).T
-    conf = [ [np.percentile(vals, 100.0*cdf[0]), np.percentile(vals, 100.0*cdf[1])] 
+    conf = [ [np.percentile(vals, 100.0*cdf[0]), np.percentile(vals, 100.0*cdf[1])]
              for cdf in cdf_vals ]
     conf = np.array(conf)
     med = np.percentile(vals, 50.0)
@@ -759,13 +800,13 @@ def groupDigitized(arr, bins, edges='right'):
         [array([0]), array([1, 2]), array([3])]
         >>> zcode.Math.groupDigitized(arr, bins, right=False)
         [array([1, 2]), array([3]), array([])]
-    
+
     Arguments
     ---------
         arr   <flt>[N] : array of values to digitize and group
         bins  <flt>[M] : array of bin edges to digitize and group by
         edges <str>    : whether bin edges are 'right' or 'left' {'right', 'left'}
-    
+
     Returns
     -------
         groups <int>[M][...] : Each list contains the ``arr`` indices belonging in each bin
