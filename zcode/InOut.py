@@ -30,6 +30,9 @@ Functions
     dillSave       : Use dill to save the target object.
     dillLoad       : Use dill to load from the target file.
 
+    checkURL       : Check that the given url exists.
+
+    promptYesNo    : Prompt the user (via CLI) for yes or no.
 
 """
 
@@ -616,3 +619,42 @@ def checkURL(url, codemax=200, timeout=3.0):
 
 # } checkURL()
 
+
+def promptYesNo(msg='', def='n'):
+    """
+    Prompt the user (via CLI) for yes or no.
+
+    If ``def`` is 'y', then any response which *doesnt* start with 'y' will return False.
+    If ``def`` is 'n', then any response which *doesnt* start with 'n' will return True.
+
+    Arguments
+    ---------
+        msg <str> : message to prepend the prompt
+        def <str> : default option {'y','n'}
+
+    Returns
+    -------
+        retval <bool> : `True` for 'y' response, `False` for 'n'
+
+    """
+
+    message = str(msg)
+    if( len(message) > 0 ): message += ' '
+
+    if(   def == 'n' ): message += 'y/[n] : '
+    elif( def == 'y' ): message += '[y]/n : '
+    else: raise RuntimeError("Unrecognized ``def`` '%s'" % (def))
+
+    arg = raw_input(message).strip().lower()
+
+    if(   def == 'n' ):
+        if( arg.startswith('y') ): retval = True
+        else: retval = False
+    elif( def == 'y' ):
+        if( arg.startswith('n') ): retval = False
+        else: retval = True
+
+
+    return retval
+
+# } promptYesNo()
