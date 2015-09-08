@@ -1,7 +1,6 @@
 """
 Functions for Input/Output (IO) Operations.
 
-
 Classes
 -------
     StreamCapture  : class for capturing/redirecting stdout and stderr
@@ -589,3 +588,31 @@ def dillLoad(name, mode='rb'):
     return
 
 # dillLoad()
+
+
+def checkURL(url, codemax=200, timeout=3.0):
+    """
+    Check that the given url exists.
+
+    Note on ``status_code``s (see: 'https://en.wikipedia.org/wiki/List_of_HTTP_status_codes')
+        1xx - informational
+        2xx - success
+        3xx - redirection
+        4xx - client error
+        5xx - server error
+
+    """
+
+    import requests, logging
+    retval = False
+    try:
+        logging.getLogger("requests").setLevel(logging.WARNING)
+        req = requests.head(url, timeout=timeout)
+        retval = (req.status_code <= codemax)
+    except:
+        pass
+
+    return retval
+
+# } checkURL()
+
