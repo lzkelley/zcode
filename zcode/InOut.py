@@ -34,6 +34,8 @@ Functions
 
     promptYesNo    : Prompt the user (via CLI) for yes or no.
 
+    modifyFilename : Modify the given filename (only filename, not filepath).
+
 """
 
 import os, sys, logging, inspect, warnings
@@ -620,17 +622,17 @@ def checkURL(url, codemax=200, timeout=3.0):
 # } checkURL()
 
 
-def promptYesNo(msg='', def='n'):
+def promptYesNo(msg='', default='n'):
     """
     Prompt the user (via CLI) for yes or no.
 
-    If ``def`` is 'y', then any response which *doesnt* start with 'y' will return False.
-    If ``def`` is 'n', then any response which *doesnt* start with 'n' will return True.
+    If ``default`` is 'y', then any response which *doesnt* start with 'y' will return False.
+    If ``default`` is 'n', then any response which *doesnt* start with 'n' will return True.
 
     Arguments
     ---------
         msg <str> : message to prepend the prompt
-        def <str> : default option {'y','n'}
+        default <str> : default option {'y','n'}
 
     Returns
     -------
@@ -641,16 +643,16 @@ def promptYesNo(msg='', def='n'):
     message = str(msg)
     if( len(message) > 0 ): message += ' '
 
-    if(   def == 'n' ): message += 'y/[n] : '
-    elif( def == 'y' ): message += '[y]/n : '
-    else: raise RuntimeError("Unrecognized ``def`` '%s'" % (def))
+    if(   default == 'n' ): message += 'y/[n] : '
+    elif( default == 'y' ): message += '[y]/n : '
+    else: raise RuntimeError("Unrecognized ``default`` '%s'" % (default))
 
     arg = raw_input(message).strip().lower()
 
-    if(   def == 'n' ):
+    if(   default == 'n' ):
         if( arg.startswith('y') ): retval = True
         else: retval = False
-    elif( def == 'y' ):
+    elif( default == 'y' ):
         if( arg.startswith('n') ): retval = False
         else: retval = True
 
@@ -658,3 +660,24 @@ def promptYesNo(msg='', def='n'):
     return retval
 
 # } promptYesNo()
+
+
+def modifyFilename(fname, prepend='', append=''):
+    """
+    Modify the given filename (only filename, not filepath).
+
+    Arguments
+    ---------
+        fname   <str> : filename to modify.
+        prepend <str> : string to prepend to beginning of filename
+        append  <str> : string to append to end of filename
+
+    Returns
+    -------
+        newName <str> : new filename
+
+    """
+    oldPath, oldName = os.path.split(fname)
+    newName = os.path.join(oldPath, prepend + oldName + append)
+    return newName
+    
