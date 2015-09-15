@@ -19,7 +19,7 @@ AU = ap.constants.au.cgs.value
 YR = ap.units.year.to(ap.units.s)
 
 MELC = ap.constants.m_e.cgs.value
-MPRO = ap.constants.m_p.cgs.value
+MPRT = ap.constants.m_p.cgs.value
 
 H0 = cosmo.H0.cgs.value                           # Hubble Constants at z=0.0 
 OMEGA_M = cosmo.Om0

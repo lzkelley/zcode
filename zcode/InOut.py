@@ -545,11 +545,11 @@ def pickleLoad(name, mode='rb'):
 
     """
     import cPickle as pickle
-
+    
     with open(name, mode) as pfil:
-        pickle.load(obj,pfil)
+        obj = pickle.load(pfil)
 
-    return
+    return obj
 
 # pickleLoad()
 
@@ -566,7 +566,8 @@ def dillSave(obj, name, mode='wb'):
 
     """
     import dill as pickle
-    
+
+    checkPath(name)
     with open(name, mode) as pfil:
         pickle.dump(obj,pfil)
 
@@ -588,9 +589,9 @@ def dillLoad(name, mode='rb'):
     import dill as pickle
 
     with open(name, mode) as pfil:
-        pickle.load(obj,pfil)
+        obj = pickle.load(pfil)
 
-    return
+    return obj
 
 # dillLoad()
 
