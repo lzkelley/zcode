@@ -22,6 +22,7 @@ MELC = ap.constants.m_e.cgs.value
 MPRT = ap.constants.m_p.cgs.value
 
 H0 = cosmo.H0.cgs.value                           # Hubble Constants at z=0.0 
+HPAR = cosmo.H0.value/100.0
 OMEGA_M = cosmo.Om0
 OMEGA_B = cosmo.Ob0
 OMEGA_DM = cosmo.Odm0
@@ -46,8 +47,9 @@ SCHW                  = 2*NWTG/(SPLC*SPLC)                  # Schwarzschild Cons
 #RHO_CRIT              = 3.0*H0*H0/(4.0*np.pi*NWTG)          # Cosmological Critical Density [g/cm^3
 HTAU                  = 1.0/H0                              # Hubble Time - 1/H0 [sec]
 
-#YEAR                  = YR
 MYR                   = 1.0e6*YR
 GYR                   = 1.0e9*YR
 
-KPC                   = 1000.0*PC
+KPC                   = 1.0e3*PC
+MPC                   = 1.0e6*PC
+GPC                   = 1.0e9*PC

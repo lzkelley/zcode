@@ -106,6 +106,8 @@ def logSpline_mono(xx, yy, pos=True, extrap=False):
 
     """
 
+    order = 2
+
     if( pos ):
         inds = np.where( (xx > 0.0) & (yy > 0.0) )
         xl = np.log10(xx[inds])
