@@ -669,8 +669,10 @@ def modifyFilename(fname, prepend='', append=''):
     Arguments
     ---------
         fname   <str> : filename to modify.
-        prepend <str> : string to prepend to beginning of filename
-        append  <str> : string to append to end of filename
+        prepend <str> : string to prepend to beginning of filename;
+                        added after the terminal slash, otherwise at the beginning.
+        append  <str> : string to appended to end of filename;
+                        added before the terminal '.' if it exists, otherwise at the end.
 
     Returns
     -------
@@ -678,6 +680,12 @@ def modifyFilename(fname, prepend='', append=''):
 
     """
     oldPath, oldName = os.path.split(fname)
-    newName = os.path.join(oldPath, prepend + oldName + append)
+    newName = prepend + oldName
+    if( len(append) > 0 ):
+        oldSplit = newName.split('.')
+        if( len(oldSplit) >= 2 ): oldSplit[-2] += append
+        else:                     oldSplit[-1] += append
+        newName = '.'.join(oldSplit)
+
+    newName = os.path.join(oldPath, newName)
     return newName
-    
