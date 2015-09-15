@@ -835,3 +835,43 @@ def groupDigitized(arr, bins, edges='right'):
     return groups
 
 # } groupDigitized()
+
+'''
+def createSlice(index, max):
+    """
+    Create an array slicing object.
+
+    Arguments
+    ---------
+        index <obj> : int, list of int, or 'None'
+        max   <int> : length of array to be sliced.
+
+    Returns
+    -------
+        ids <int>([N]) : indices included in slice.
+        cut <obj>      : Slicing object, either `slice` or `np.array`.
+
+    """
+
+    import numbers
+    # Single Value
+    if( isinstance(index, numbers.Integral) ): 
+        cut = slice(index, index+1)
+        ids = np.arange(index, index+1)
+    # Range of values
+    elif( np.iterable(index) ): 
+        cut = index
+        ids = index
+    else:
+        if( index is not None ):
+            self.log.error("Unrecognized `index` = '%s'!" % (str(index)))
+            self.log.warning("Returning all entries")
+
+        cut = slice(None)
+        ids = np.arange(max)
+
+
+    return ids, cut
+
+# } createSlice()
+'''

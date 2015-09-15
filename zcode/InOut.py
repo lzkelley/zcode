@@ -1,7 +1,6 @@
 """
 Functions for Input/Output (IO) Operations.
 
-
 Classes
 -------
     StreamCapture  : class for capturing/redirecting stdout and stderr
@@ -31,6 +30,11 @@ Functions
     dillSave       : Use dill to save the target object.
     dillLoad       : Use dill to load from the target file.
 
+    checkURL       : Check that the given url exists.
+
+    promptYesNo    : Prompt the user (via CLI) for yes or no.
+
+    modifyFilename : Modify the given filename (only filename, not filepath).
 
 """
 
@@ -590,3 +594,99 @@ def dillLoad(name, mode='rb'):
     return obj
 
 # dillLoad()
+
+
+def checkURL(url, codemax=200, timeout=3.0):
+    """
+    Check that the given url exists.
+
+    Note on ``status_code``s (see: 'https://en.wikipedia.org/wiki/List_of_HTTP_status_codes')
+        1xx - informational
+        2xx - success
+        3xx - redirection
+        4xx - client error
+        5xx - server error
+
+    """
+
+    import requests, logging
+    retval = False
+    try:
+        logging.getLogger("requests").setLevel(logging.WARNING)
+        req = requests.head(url, timeout=timeout)
+        retval = (req.status_code <= codemax)
+    except:
+        pass
+
+    return retval
+
+# } checkURL()
+
+
+def promptYesNo(msg='', default='n'):
+    """
+    Prompt the user (via CLI) for yes or no.
+
+    If ``default`` is 'y', then any response which *doesnt* start with 'y' will return False.
+    If ``default`` is 'n', then any response which *doesnt* start with 'n' will return True.
+
+    Arguments
+    ---------
+        msg <str> : message to prepend the prompt
+        default <str> : default option {'y','n'}
+
+    Returns
+    -------
+        retval <bool> : `True` for 'y' response, `False` for 'n'
+
+    """
+
+    message = str(msg)
+    if( len(message) > 0 ): message += ' '
+
+    if(   default == 'n' ): message += 'y/[n] : '
+    elif( default == 'y' ): message += '[y]/n : '
+    else: raise RuntimeError("Unrecognized ``default`` '%s'" % (default))
+
+    arg = raw_input(message).strip().lower()
+
+    if(   default == 'n' ):
+        if( arg.startswith('y') ): retval = True
+        else: retval = False
+    elif( default == 'y' ):
+        if( arg.startswith('n') ): retval = False
+        else: retval = True
+
+
+    return retval
+
+# } promptYesNo()
+
+
+def modifyFilename(fname, prepend='', append=''):
+    """
+    Modify the given filename (only filename, not filepath).
+
+    Arguments
+    ---------
+        fname   <str> : filename to modify.
+        prepend <str> : string to prepend to beginning of filename;
+                        added after the terminal slash, otherwise at the beginning.
+        append  <str> : string to appended to end of filename;
+                        added before the terminal '.' if it exists, otherwise at the end.
+
+    Returns
+    -------
+        newName <str> : new filename
+
+    """
+    oldPath, oldName = os.path.split(fname)
+    newName = prepend + oldName
+    if( len(append) > 0 ):
+        oldSplit = newName.split('.')
+        if( len(oldSplit) >= 2 ): oldSplit[-2] += append
+        else:                     oldSplit[-1] += append
+        newName = '.'.join(oldSplit)
+
+    newName = os.path.join(oldPath, newName)
+    return newName
