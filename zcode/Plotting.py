@@ -819,6 +819,55 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
 
 
 
+def plot2DHist(ax, rads, data, nbins, cbax=None):
+    """
+    Plot a 2D histogram of the given data.
+
+    Arguments
+    ---------
+        ax 
+        rads <flt>[N]   : positions of x values, assumed to be the same for all rows of ``data``
+        data <flt>[M,N] : scalar values for each object, at each radius (x-value) -- plotted on Y axis
+        nbins <int>     : number of y-axis bins, i.e. bins of ``data`` values
+        cbax
+
+
+    """
+
+    hist = np.zeros([len(rads), nbins])
+
+    ## Histogram
+    #  ---------
+    dataRange = zmath.minmax( data, stretch=0.01, nonzero=True, positive=True )
+    dataRange = zmath.spacing( dataRange, num=nbins+1, nonzero=True, positive=True)
+    xgrid, ygrid = np.meshgrid(rads, dataRange)
+
+    # Bin Data for each radial bin
+    extrema = None
+    for rr,rad in enumerate(rads):
+        useEdges, hist[rr,:] = zmath.histogram( data[:,rr], dataRange )
+        extrema = zmath.minmax(hist[rr,:], prev=extrema, nonzero=True)
+
+    # Plot
+    smap = zplot.colormap(extrema, cmap=plt.cm.jet, scale='log')
+    ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap)
+
+    # Add color bar
+    if( cbax is not None ):
+        cbar = plt.colorbar(smap, cax=cbax)
+        cbar.set_label('Counts', fontsize=FS)
+        cbar.ax.tick_params(labelsize=FS)
+
+    zplot.set_lim(ax, 'x', data=rads)
+    zplot.set_lim(ax, 'y', data=dataRange)
+
+    return
+
+# } plot2DHist
+
+
+
+
 def plotScatter(ax, xx, yy, scalex='log', scaley='log', 
                 size=None, cont=False, color=None, alpha=None, **kwargs):
     """
@@ -934,3 +983,6 @@ def _make_segments(x, y):
     return segments
 
 # _make_segments()
+
+
+
