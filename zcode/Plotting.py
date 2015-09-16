@@ -16,6 +16,7 @@ Functions
   - plotCorrelationGrid  : plot a grid of 1D parameter correlations and histograms
   - plotHistBars         : 
   - plotScatter : 
+  - plot2DHist           : Plot a 2D histogram of the given data.
 
   - skipTicks            : skip some tick marks
   - saveFigure           : Save the given figure(s) to the given filename.
@@ -23,7 +24,7 @@ Functions
   - colormap             : create a colormap from scalars to colors
   - strSciNot            : create a latex string of the given number in scientific notation
 
-
+  - _config_axes()
   - _setAxis_scale       : 
   - _setAxis_label       :
   - _histLine            : construct a stepped line
@@ -191,9 +192,10 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 # set_lim()
 
 
-def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
-    txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=fig.transFigure,
-                   horizontalalignment=halign, verticalalignment=valign)
+def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans=None, **kwargs):
+    if( trans is None ): trans = fig.transFigure
+    txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
+                   horizontalalignment=halign, verticalalignment=valign, **kwargs)
     return txt
 
 
@@ -821,49 +823,44 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
 
 
 
-def plot2DHist(ax, rads, data, nbins, cbax=None):
+def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet, fs=12, 
+               extrema=None, **kwargs):
     """
-    Plot a 2D histogram of the given data.
+    Plot the given 2D histogram of data.
 
+    Use with (e.g.) ``numpy.histogram2d``, 
+    
     Arguments
     ---------
-        ax 
-        rads <flt>[N]   : positions of x values, assumed to be the same for all rows of ``data``
-        data <flt>[M,N] : scalar values for each object, at each radius (x-value) -- plotted on Y axis
-        nbins <int>     : number of y-axis bins, i.e. bins of ``data`` values
-        cbax
+        ax     <obj>      : <matplotlib.axes.Axes> object on which to plot.
+        xvals  <flt>[N]   : positions of x values, assumed to be the same for all rows of ``data``
 
+
+        cbax   <obj>      : <matplotlib.axes.Axes> object on which to add a colorbar.
+        cscale <str>      : scale to use for the colormap {'linear','log'}
+        cmap   <obj>      : <matplotlib.colors.Colormap> object to use as colormap
 
     """
 
-    hist = np.zeros([len(rads), nbins])
+    xgrid, ygrid = np.meshgrid(xvals, yvals)
 
-    ## Histogram
-    #  ---------
-    dataRange = zmath.minmax( data, stretch=0.01, nonzero=True, positive=True )
-    dataRange = zmath.spacing( dataRange, num=nbins+1, nonzero=True, positive=True)
-    xgrid, ygrid = np.meshgrid(rads, dataRange)
-
-    # Bin Data for each radial bin
-    extrema = None
-    for rr,rad in enumerate(rads):
-        useEdges, hist[rr,:] = zmath.histogram( data[:,rr], dataRange )
-        extrema = zmath.minmax(hist[rr,:], prev=extrema, nonzero=True)
+    if( extrema is None ): extrema = zmath.minmax(hist, nonzero=(cscale=='log'))
 
     # Plot
-    smap = zplot.colormap(extrema, cmap=plt.cm.jet, scale='log')
-    ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap)
+    smap = colormap(extrema, cmap=cmap, scale=cscale)
+    pcm = ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap, # edgecolors='face',
+                        **kwargs)
 
     # Add color bar
     if( cbax is not None ):
         cbar = plt.colorbar(smap, cax=cbax)
-        cbar.set_label('Counts', fontsize=FS)
-        cbar.ax.tick_params(labelsize=FS)
+        cbar.set_label('Counts', fontsize=fs)
+        cbar.ax.tick_params(labelsize=fs)
 
-    zplot.set_lim(ax, 'x', data=rads)
-    zplot.set_lim(ax, 'y', data=dataRange)
+    set_lim(ax, 'x', data=xvals)
+    set_lim(ax, 'y', data=yvals)
 
-    return
+    return pcm
 
 # } plot2DHist
 
