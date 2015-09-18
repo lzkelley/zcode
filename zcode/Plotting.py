@@ -5,7 +5,7 @@ Functions
 ---------
   # - subplots             :
   - set_lim              : set limits on an axis
-  - limStretch           : Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
+  - stretchAxes           : Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
   - text                 : 
   - unifyAxesLimits      : given a list of axes, set all limits to match flobal extrema
   - colorCycle           : create a cycle of the given number of colors
@@ -196,7 +196,7 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 # set_lim()
 
 
-def limStretch(ax, xs=1.0, ys=1.0):
+def stretchAxes(ax, xs=1.0, ys=1.0):
     """
     Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
     """
@@ -204,28 +204,27 @@ def limStretch(ax, xs=1.0, ys=1.0):
     xlog = (ax.get_xscale() == u'log')
     ylog = (ax.get_yscale() == u'log')
 
-    xlims = np.array(ax.get_xlims())
-    ylims = np.array(ax.get_ylims())
+    xlims = np.array(ax.get_xlim())
+    ylims = np.array(ax.get_ylim())
 
     if( xlog ): xlims = np.log10(xlims)
     if( ylog ): ylims = np.log10(ylims)
 
-    xlims = [ xlim[0] + (1.0-xs)*(xlim[1]-xlim[0]),
-              xlim[1] + (1.0-xs)*(xlim[0]-xlim[1]) ]
+    xlims = [ xlims[0] + 0.5*(1.0-xs)*(xlims[1]-xlims[0]),
+              xlims[1] + 0.5*(1.0-xs)*(xlims[0]-xlims[1]) ]
 
-    ylims = [ ylim[0] + (1.0-ys)*(ylim[1]-ylim[0]),
-              ylim[1] + (1.0-ys)*(ylim[0]-ylim[1]) ]
-
+    ylims = [ ylims[0] + 0.5*(1.0-ys)*(ylims[1]-ylims[0]),
+              ylims[1] + 0.5*(1.0-ys)*(ylims[0]-ylims[1]) ]
 
     if( xlog ): xlims = np.power(10.0, xlims)
     if( ylog ): ylims = np.power(10.0, ylims)
 
-    ax.set_xscale(xlims)
-    ax.set_yscale(ylims)    
+    ax.set_xlim(xlims)
+    ax.set_ylim(ylims)    
 
     return ax
 
-# } limStretch()
+# } stretchAxes()
 
 
 def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans=None, **kwargs):
