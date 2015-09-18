@@ -3,9 +3,10 @@ General plotting functions.
 
 Functions
 ---------
-  - subplots             :
+  # - subplots             :
   - set_lim              : set limits on an axis
-  - text   : 
+  - limStretch           : Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
+  - text                 : 
   - unifyAxesLimits      : given a list of axes, set all limits to match flobal extrema
   - colorCycle           : create a cycle of the given number of colors
 
@@ -52,6 +53,7 @@ LW_CONF = 1.0
 VALID_SIDES = [ None, 'left', 'right', 'top', 'bottom' ]
 
 
+'''
 def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True, 
              invx=False, invy=False, twinx=False, twiny=False, 
              xlim=None, ylim=None, twinxlim=None, twinylim=None,
@@ -104,6 +106,8 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
     return fig, axes
 
 # subplots()
+'''
+
 
 
 def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'):
@@ -190,6 +194,38 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
     return
 
 # set_lim()
+
+
+def limStretch(ax, xs=1.0, ys=1.0):
+    """
+    Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
+    """
+
+    xlog = (ax.get_xscale() == u'log')
+    ylog = (ax.get_yscale() == u'log')
+
+    xlims = np.array(ax.get_xlims())
+    ylims = np.array(ax.get_ylims())
+
+    if( xlog ): xlims = np.log10(xlims)
+    if( ylog ): ylims = np.log10(ylims)
+
+    xlims = [ xlim[0] + (1.0-xs)*(xlim[1]-xlim[0]),
+              xlim[1] + (1.0-xs)*(xlim[0]-xlim[1]) ]
+
+    ylims = [ ylim[0] + (1.0-ys)*(ylim[1]-ylim[0]),
+              ylim[1] + (1.0-ys)*(ylim[0]-ylim[1]) ]
+
+
+    if( xlog ): xlims = np.power(10.0, xlims)
+    if( ylog ): ylims = np.power(10.0, ylims)
+
+    ax.set_xscale(xlims)
+    ax.set_yscale(ylims)    
+
+    return ax
+
+# } limStretch()
 
 
 def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans=None, **kwargs):
