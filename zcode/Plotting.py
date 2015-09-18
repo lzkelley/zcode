@@ -3,9 +3,10 @@ General plotting functions.
 
 Functions
 ---------
-  - subplots             :
+  # - subplots             :
   - set_lim              : set limits on an axis
-  - text   : 
+  - limStretch           : Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
+  - text                 : 
   - unifyAxesLimits      : given a list of axes, set all limits to match flobal extrema
   - colorCycle           : create a cycle of the given number of colors
 
@@ -16,6 +17,7 @@ Functions
   - plotCorrelationGrid  : plot a grid of 1D parameter correlations and histograms
   - plotHistBars         : 
   - plotScatter : 
+  - plot2DHist           : Plot a 2D histogram of the given data.
 
   - skipTicks            : skip some tick marks
   - saveFigure           : Save the given figure(s) to the given filename.
@@ -23,7 +25,7 @@ Functions
   - colormap             : create a colormap from scalars to colors
   - strSciNot            : create a latex string of the given number in scientific notation
 
-
+  - _config_axes()
   - _setAxis_scale       : 
   - _setAxis_label       :
   - _histLine            : construct a stepped line
@@ -51,6 +53,7 @@ LW_CONF = 1.0
 VALID_SIDES = [ None, 'left', 'right', 'top', 'bottom' ]
 
 
+'''
 def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True, 
              invx=False, invy=False, twinx=False, twiny=False, 
              xlim=None, ylim=None, twinxlim=None, twinylim=None,
@@ -103,6 +106,8 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
     return fig, axes
 
 # subplots()
+'''
+
 
 
 def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'):
@@ -191,9 +196,42 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 # set_lim()
 
 
-def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16):
-    txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=fig.transFigure,
-                   horizontalalignment=halign, verticalalignment=valign)
+def limStretch(ax, xs=1.0, ys=1.0):
+    """
+    Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
+    """
+
+    xlog = (ax.get_xscale() == u'log')
+    ylog = (ax.get_yscale() == u'log')
+
+    xlims = np.array(ax.get_xlims())
+    ylims = np.array(ax.get_ylims())
+
+    if( xlog ): xlims = np.log10(xlims)
+    if( ylog ): ylims = np.log10(ylims)
+
+    xlims = [ xlim[0] + (1.0-xs)*(xlim[1]-xlim[0]),
+              xlim[1] + (1.0-xs)*(xlim[0]-xlim[1]) ]
+
+    ylims = [ ylim[0] + (1.0-ys)*(ylim[1]-ylim[0]),
+              ylim[1] + (1.0-ys)*(ylim[0]-ylim[1]) ]
+
+
+    if( xlog ): xlims = np.power(10.0, xlims)
+    if( ylog ): ylims = np.power(10.0, ylims)
+
+    ax.set_xscale(xlims)
+    ax.set_yscale(ylims)    
+
+    return ax
+
+# } limStretch()
+
+
+def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans=None, **kwargs):
+    if( trans is None ): trans = fig.transFigure
+    txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
+                   horizontalalignment=halign, verticalalignment=valign, **kwargs)
     return txt
 
 
@@ -821,49 +859,44 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
 
 
 
-def plot2DHist(ax, rads, data, nbins, cbax=None):
+def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet, fs=12, 
+               extrema=None, **kwargs):
     """
-    Plot a 2D histogram of the given data.
+    Plot the given 2D histogram of data.
 
+    Use with (e.g.) ``numpy.histogram2d``, 
+    
     Arguments
     ---------
-        ax 
-        rads <flt>[N]   : positions of x values, assumed to be the same for all rows of ``data``
-        data <flt>[M,N] : scalar values for each object, at each radius (x-value) -- plotted on Y axis
-        nbins <int>     : number of y-axis bins, i.e. bins of ``data`` values
-        cbax
+        ax     <obj>      : <matplotlib.axes.Axes> object on which to plot.
+        xvals  <flt>[N]   : positions of x values, assumed to be the same for all rows of ``data``
 
+
+        cbax   <obj>      : <matplotlib.axes.Axes> object on which to add a colorbar.
+        cscale <str>      : scale to use for the colormap {'linear','log'}
+        cmap   <obj>      : <matplotlib.colors.Colormap> object to use as colormap
 
     """
 
-    hist = np.zeros([len(rads), nbins])
+    xgrid, ygrid = np.meshgrid(xvals, yvals)
 
-    ## Histogram
-    #  ---------
-    dataRange = zmath.minmax( data, stretch=0.01, nonzero=True, positive=True )
-    dataRange = zmath.spacing( dataRange, num=nbins+1, nonzero=True, positive=True)
-    xgrid, ygrid = np.meshgrid(rads, dataRange)
-
-    # Bin Data for each radial bin
-    extrema = None
-    for rr,rad in enumerate(rads):
-        useEdges, hist[rr,:] = zmath.histogram( data[:,rr], dataRange )
-        extrema = zmath.minmax(hist[rr,:], prev=extrema, nonzero=True)
+    if( extrema is None ): extrema = zmath.minmax(hist, nonzero=(cscale=='log'))
 
     # Plot
-    smap = zplot.colormap(extrema, cmap=plt.cm.jet, scale='log')
-    ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap)
+    smap = colormap(extrema, cmap=cmap, scale=cscale)
+    pcm = ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap, # edgecolors='face',
+                        **kwargs)
 
     # Add color bar
     if( cbax is not None ):
         cbar = plt.colorbar(smap, cax=cbax)
-        cbar.set_label('Counts', fontsize=FS)
-        cbar.ax.tick_params(labelsize=FS)
+        cbar.set_label('Counts', fontsize=fs)
+        cbar.ax.tick_params(labelsize=fs)
 
-    zplot.set_lim(ax, 'x', data=rads)
-    zplot.set_lim(ax, 'y', data=dataRange)
+    set_lim(ax, 'x', data=xvals)
+    set_lim(ax, 'y', data=yvals)
 
-    return
+    return pcm
 
 # } plot2DHist
 
