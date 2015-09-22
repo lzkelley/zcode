@@ -287,7 +287,7 @@ def twinAxis(ax, axis='x', pos=1.0, **kwargs):
 
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None, 
-            thresh=None, side=None, ts=8, grid=True, lim=None, invert=False, ticks=True):
+            thresh=None, side=None, ts=8, grid=True, lim=None, invert=False, ticks=True, stretch=1.0):
     """
     Configure a particular axis of the given axes object.
 
@@ -308,6 +308,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
        lim    : <float>[2], limits for the axis range
        invert : <bool>, whether to invert this axis direction (i.e. high to low)
        ticks
+       stretch : <flt>, 
 
     """
 
@@ -386,6 +387,10 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
     # Set Axis Label
     _setAxis_label(ax, axis, label, fs=fs, c=c)
+
+    if( stretch != 1.0 ): 
+        if(   axis == 'x' ): ax = stretchAxes(ax, xs=stretch)
+        elif( axis == 'y' ): ax = stretchAxes(ax, ys=stretch)
 
     offt.set_color(c)
 
@@ -908,7 +913,6 @@ def plotScatter(ax, xx, yy, scalex='log', scaley='log',
     
     """
     COL = COL_CORR
-    # COL = 'forestgreen'
 
     if( size  is None ): size  = [ 30, 6 ]
     if( color is None ): color = [ '0.25', COL ]
@@ -922,6 +926,7 @@ def plotScatter(ax, xx, yy, scalex='log', scaley='log',
         NUM = 4
         CMAP = 'jet'
         res = 0.3*np.sqrt(len(xx))
+        res = np.max([1,res])
 
         smap = colormap(NUM, CMAP, scale='lin')
         cols = [ smap.to_rgba(it) for it in xrange(NUM) ]
@@ -930,7 +935,7 @@ def plotScatter(ax, xx, yy, scalex='log', scaley='log',
         yi = zmath.spacing(yy, scaley, num=res)
         hist, xedges, yedges = np.histogram2d(xx, yy, (xi,yi))
         gx, gy = np.meshgrid(xedges[1:], yedges[1:])
-        ax.contour(gx, gy, hist.T, NUM, colors=cols) #, alpha=0.8 )
+        ax.contour(gx, gy, hist.T, NUM, colors=cols)
 
     return pnts
 
