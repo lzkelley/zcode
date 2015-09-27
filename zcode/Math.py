@@ -3,6 +3,7 @@ Functions for Math operations.
 
 Functions
 ---------
+ - spline                               : Create a general spline interpolation function.
  - logSpline_resample                   : use a log-log spline to resample the given data
  - logSpline                            : construct a spline in log-log space
  - logSpline_mono                       : monotonic, cubic spline interpolant in log-log-space.
@@ -14,7 +15,7 @@ Functions
  - minmax                               : find the min and max of given values
  - spacing                              : Create an even spacing between extrema from given data.
  - histogram                            : performed advanced binning operations
- - mid
+ - midpoints                            : Return the midpoints between values in the given array.
  - vecmag                               : find the magnitude/distance of/between vectors
  - extend                               : Extend the given array by extraplation.
  - renumerate                           : construct a reverse enumeration iterator
@@ -23,6 +24,9 @@ Functions
  - frexp10                              : decompose a float into mantissa and exponent (base 10)
  - stats                                : return ave, stdev
  - groupDigitized                       : Find groups of array indices corresponding to each bin.
+ - sampleInverse                        : Find x-sampling to evenly divide a function in y-space.
+
+# createSlice
 
 """
 
@@ -30,6 +34,61 @@ import itertools
 import numpy as np
 import scipy as sp
 import scipy.interpolate
+import warnings
+
+def spline(xx, yy, order=3, log=True, mono=False, extrap=True):
+    """
+    Create a general spline interpolation function.
+
+    Arguments
+    ---------
+        xx     <flt>[N] : Input independent variable
+        yy     <flt>[N] : Input   dependent variable
+        order  <int>    : order of interpolation (must be ``3`` if ``mono``)
+        log    <bool>   : interpolate in log-log-space
+        mono   <bool>   : use a specifically monotonic interpolator
+        extrap <bool>   : allow extrapolation outside of range of ``xx``
+
+    Returns
+    -------
+        spline <obj> : callable function returning the interpolated values
+
+    """
+
+    # Convert to log-space as needed
+    if( log ):
+        usex = np.log10(xx)
+        usey = np.log10(yy)
+    else:
+        usex = np.array(xx)
+        usey = np.array(yy)
+
+
+    # Sort input arrays
+    inds = np.argsort(usex)
+    usex = usex[inds]
+    usey = usey[inds]
+
+    # Monotonic Interpolation
+    if( mono ): 
+        if( order != 3 ): warnings.warn("monotonic `PchipInterpolator` is always cubic!")
+        terp = sp.interpolate.PchipInterpolator(usex, usey, extrapolate=extrap)
+    # General Interpolation
+    else: 
+        # Let function extrapolate outside range
+        if( extrap ): ext = 0
+        # Return zero outside of range
+        else:         ext = 1
+        terp = sp.interpolate.InterpolatedUnivariateSpline(usex, usey, k=order, ext=ext)
+
+
+    # Convert back to normal space, as needed
+    if( log ): spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
+    else:      spline = terp
+
+    return spline
+
+# } spline()
 
 
 def logSpline_resample(xx, yy, newx, order=3):
@@ -56,15 +115,17 @@ def logSpline(xx, yy, order=3, pos=True):
     """
     Create a spline interpolant in log-log-space.
 
+    Extrapolates to new values outside of range
+
     Parameters
     ----------
-    xx : array, independent variable
-    yy : array, function of ``xx``
-    order : int, order of spline interpolant
+        xx : array, independent variable
+        yy : array, function of ``xx``
+        order : int, order of spline interpolant
 
     Returns
     -------
-    spline : callable, spline interpolation function
+        spline : callable, spline interpolation function
 
     """
 
@@ -608,17 +669,36 @@ def histogram(args, bins, binScale=None, bounds='both',
 # histogram()
 
 
+def midpoints(arr, log=False):
+    """
+    Return the midpoints between values in the given array.
 
-def mid(vals, log=False):
+    Arguments
+    ---------
+        arr <flt>[N] : input array of length `N`
+        log <bool>   : find midpoints in log of ``arr``
 
-    mids = np.zeros(len(vals)-1)
-    for ii,vv in enumerate(zip(vals[:-1], vals[1:])):
-        if( log ): mids[ii] = np.power(10.0, np.average(np.log10(vv)) )
-        else:      mids[ii] = np.average(vv)
+    Returns
+    -------
+        mids <flt>[N-1]: midpoints of length `N-1`
+
+    """
+
+    if( np.size(arr) < 2 ):
+        raise RuntimeError("Input ``arr`` too small!")
+
+    if( log ): user = np.log10(arr)
+    else:      user = arr
+
+    diff = np.diff(user)
+    mids = user[:-1] + 0.5*diff
+
+    if( log ): mids = np.power(10.0, mids)
 
     return mids
 
-# mid()
+# } midpoints()
+
 
 
 def vecmag(r1, r2=None):
@@ -836,6 +916,68 @@ def groupDigitized(arr, bins, edges='right'):
 
 # } groupDigitized()
 
+
+def sampleInverse(xx, yy, num=100, log=True):
+    """
+    Find the x-sampling of a function to evenly divide its results in y-space.
+
+    Arguments
+    ---------
+        xx  <flt>[N] : array(scalar), initial sample space
+        yy  <flt>[N] : function to resample
+        num <int>    : number of points to produce
+        log <bool>   : sample in log space
+
+    Returns
+    -------
+        samps <flt>[``num``] : new sample points from ``xx``
+
+    """
+
+    if( log ):
+        usex = np.log10(xx)
+        usey = np.log10(yy)
+    else:
+        usex = np.array(xx)
+        usey = np.array(yy)
+
+
+    ### Construct Interpolating Function
+    inds = np.argsort(usex)
+    usex = usex[inds]
+    usey = usey[inds]
+
+    func = interp1d_wrap(usex, usey, kind='linear', log=False)
+
+
+    ### Construct Inverse Interpolating Function ###
+    inds = np.argsort(usey)
+    usex = usex[inds]
+    usey = usey[inds]
+
+    funcInv = interp1d_wrap(usey, usex, kind='linear', log=False)
+
+
+    ### Divide y-axis, and find corresponding x-points ###
+    extr = minmax(usey)
+    levels = np.linspace( *extr, num=num)
+    samps = funcInv(levels)
+
+    if( ax is not None ):
+        ax.plot(usex, usey, 'k-', alpha=0.5, lw=LW_L)
+        ax.scatter(samps, func(samps), color='k', marker=MARK, s=PS, lw=LW_P)
+
+
+    ### Convert back to normal space ###
+    if( log ): samps = np.power(10.0, samps)
+
+    return samps
+
+# } sampleInverse()
+
+
+
+
 '''
 def createSlice(index, max):
     """
@@ -875,3 +1017,4 @@ def createSlice(index, max):
 
 # } createSlice()
 '''
+
