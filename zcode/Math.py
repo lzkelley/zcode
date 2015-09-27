@@ -51,35 +51,35 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True):
 
     Returns
     -------
-        spline <obj> : callable function returning the interpolated values
+        spline <obj>    : callable function returning the interpolated values.
 
     """
 
     # Convert to log-space as needed
     if( log ):
-        usex = np.log10(xx)
-        usey = np.log10(yy)
+        xp = np.log10(xx)
+        yp = np.log10(yy)
     else:
-        usex = np.array(xx)
-        usey = np.array(yy)
+        xp = np.array(xx)
+        yp = np.array(yy)
 
 
     # Sort input arrays
-    inds = np.argsort(usex)
-    usex = usex[inds]
-    usey = usey[inds]
+    inds = np.argsort(xp)
+    xp = xp[inds]
+    yp = yp[inds]
 
     # Monotonic Interpolation
     if( mono ): 
         if( order != 3 ): warnings.warn("monotonic `PchipInterpolator` is always cubic!")
-        terp = sp.interpolate.PchipInterpolator(usex, usey, extrapolate=extrap)
+        terp = sp.interpolate.PchipInterpolator(xp, yp, extrapolate=extrap)
     # General Interpolation
     else: 
         # Let function extrapolate outside range
         if( extrap ): ext = 0
         # Return zero outside of range
         else:         ext = 1
-        terp = sp.interpolate.InterpolatedUnivariateSpline(usex, usey, k=order, ext=ext)
+        terp = sp.interpolate.InterpolatedUnivariateSpline(xp, yp, k=order, ext=ext)
 
 
     # Convert back to normal space, as needed
@@ -921,6 +921,8 @@ def sampleInverse(xx, yy, num=100, log=True):
     """
     Find the x-sampling of a function to evenly divide its results in y-space.
 
+    Input function *must* be strictly monotonic in ``yy``.
+
     Arguments
     ---------
         xx  <flt>[N] : array(scalar), initial sample space
@@ -934,6 +936,13 @@ def sampleInverse(xx, yy, num=100, log=True):
 
     """
 
+    # Check for strict-monotonicity
+    if( not all(left < right for left,right in zip(yy, yy[1:])) and
+        not all(left > right for left,right in zip(yy, yy[1:])) ):
+        raise RuntimeError("Input must be monotonic!")
+
+
+    # Convert to log-space as needed
     if( log ):
         usex = np.log10(xx)
         usey = np.log10(yy)
@@ -942,36 +951,17 @@ def sampleInverse(xx, yy, num=100, log=True):
         usey = np.array(yy)
 
 
-    ### Construct Interpolating Function
-    inds = np.argsort(usex)
-    usex = usex[inds]
-    usey = usey[inds]
+    # Construct Interpolating Function
+    interpBack = spline(usey, usex, log=False, mono=True)
 
-    func = interp1d_wrap(usex, usey, kind='linear', log=False)
+    # Divide y-axis evenly, and find corresponding x-points
+    levels = spacing(usey, scale='lin', num=num)
+    samples = interpBack(levels)
 
+    # Convert back to normal space, as needed
+    if( log ): samples = np.power(10.0, samples)
 
-    ### Construct Inverse Interpolating Function ###
-    inds = np.argsort(usey)
-    usex = usex[inds]
-    usey = usey[inds]
-
-    funcInv = interp1d_wrap(usey, usex, kind='linear', log=False)
-
-
-    ### Divide y-axis, and find corresponding x-points ###
-    extr = minmax(usey)
-    levels = np.linspace( *extr, num=num)
-    samps = funcInv(levels)
-
-    if( ax is not None ):
-        ax.plot(usex, usey, 'k-', alpha=0.5, lw=LW_L)
-        ax.scatter(samps, func(samps), color='k', marker=MARK, s=PS, lw=LW_P)
-
-
-    ### Convert back to normal space ###
-    if( log ): samps = np.power(10.0, samps)
-
-    return samps
+    return samples
 
 # } sampleInverse()
 
