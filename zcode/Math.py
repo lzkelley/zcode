@@ -734,29 +734,44 @@ def histogram(args, bins, binScale=None, bounds='both',
 # histogram()
 
 
-def midpoints(arr, log=False):
+def midpoints(arr, log=False, frac=0.5):
     """
     Return the midpoints between values in the given array.
+    
+    If the given array is N-dimensional, midpoints are calculated from the last dimension.
 
     Arguments
     ---------
-        arr <flt>[N] : input array of length `N`
-        log <bool>   : find midpoints in log of ``arr``
+        arr <flt>[...,N] : input array of length `N`
+        log <bool>       : find midpoints in log of ``arr``
+        frac <flt>       : fraction of the way between intervals
 
     Returns
     -------
-        mids <flt>[N-1]: midpoints of length `N-1`
+        mids <flt>[...,N-1]: midpoints of length `N-1`
 
     """
 
-    if( np.size(arr) < 2 ):
-        raise RuntimeError("Input ``arr`` too small!")
+    if( np.shape(arr)[-1] < 2 ):
+        raise RuntimeError("Input ``arr`` does not have a valid shape!")
 
     if( log ): user = np.log10(arr)
-    else:      user = arr
+    else:      user = np.array(arr)
 
     diff = np.diff(user)
-    mids = user[:-1] + 0.5*diff
+
+    # start = user[:-1]
+    if( np.ndim(arr) > 1 ):
+        #     Create an object to slice all elements of all dims
+        cut = [slice(None)]*np.ndim(arr)
+        #     Exclude the last element of the last dimension
+        cut[-1] = slice(0,np.shape(arr)[-1]-1)
+    else:
+        cut = slice(0,np.size(arr)-1)
+
+
+    start = arr[cut]
+    mids = start + frac*diff
 
     if( log ): mids = np.power(10.0, mids)
 
