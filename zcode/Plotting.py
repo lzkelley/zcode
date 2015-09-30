@@ -23,7 +23,7 @@ Functions
   - saveFigure           : Save the given figure(s) to the given filename.
   - plotSegmentedLine    : Plot a line as a series of segements (e.g. with various colors)
   - colormap             : create a colormap from scalars to colors
-  - strSciNot            : create a latex string of the given number in scientific notation
+  - strSciNot            : Create a string with appropriate scientific notation (latex formatted).
 
   - _config_axes()
   - _setAxis_scale       : 
@@ -775,11 +775,23 @@ def colormap(args, cmap='jet', scale=None):
 # colormap()
 
 
-def strSciNot(val, precman=1, precexp=1):
+def strSciNot(val, precman=1, precexp=0):
     """
+    Convert the given value into a string with appropriate scientific notation (latex formatted).
+
+    Arguments
+    ---------
+        val <flt> : numerical value to convert
+        precman <int> : precision of the mantissa (decimal points)
+        precexp <int> : precision of the exponent (decimal points)
+
+    Returns
+    -------
+        str <str> : scientific notation string using latex formatting.
+
     """
     man, exp = zmath.frexp10(val)
-    str = "${0:.{2:d}f} \\times \, 10^{{ {1:.{3:d}f} }}$" #.format(man, exp, precman, precexp)
+    str = "${0:.{2:d}f} \\times \, 10^{{ {1:.{3:d}f} }}$"
     str = str.format(man, exp, precman, precexp)
     return str
 
