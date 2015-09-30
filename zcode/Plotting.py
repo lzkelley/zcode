@@ -287,7 +287,8 @@ def twinAxis(ax, axis='x', pos=1.0, **kwargs):
 
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None, 
-            thresh=None, side=None, ts=8, grid=True, lim=None, invert=False, ticks=True, stretch=1.0):
+            thresh=None, side=None, ts=8, grid=True, lim=None, invert=False, ticks=True, 
+            stretch=1.0):
     """
     Configure a particular axis of the given axes object.
 
@@ -322,7 +323,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     ax.tick_params(axis=axis, which='major', size=ts)
 
     # Set Grid Lines
-    ax.grid(grid, axis=axis)
+    ax.grid(grid, which='both', axis=axis)
 
     if( axis == 'x' ):
         ax.xaxis.label.set_color(c)
