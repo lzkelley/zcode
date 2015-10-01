@@ -8,10 +8,7 @@ Functions
  - logSpline                            : construct a spline in log-log space
  - logSpline_mono                       : monotonic, cubic spline interpolant in log-log-space.
  - contiguousInds                       : find the largest segment of contiguous array values
- - integrate_cumulative_simpson
- - integrate_cumulative_func_simpson
- - integrateCumulative                  : Perform a cumulative integral using the Trapezoidal Rule.
-# - integrate_cumulative_arr_trapezoid
+ - cumtrapz_loglog
  - within
  - minmax                               : find the min and max of given values
  - spacing                              : Create an even spacing between extrema from given data.
@@ -65,7 +62,7 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
         inds = np.where( yp > 0.0 )[0]
         xp = xp[inds]
         yp = yp[inds]
-    
+
     # Convert to log-space as needed
     if( log ):
         xp = np.log10(xp)
@@ -77,11 +74,11 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
     yp = yp[inds]
 
     # Monotonic Interpolation
-    if( mono ): 
+    if( mono ):
         if( order != 3 ): warnings.warn("monotonic `PchipInterpolator` is always cubic!")
         terp = sp.interpolate.PchipInterpolator(xp, yp, extrapolate=extrap)
     # General Interpolation
-    else: 
+    else:
         # Let function extrapolate outside range
         if( extrap ): ext = 0
         # Return zero outside of range
@@ -231,186 +228,43 @@ def contiguousInds(args):
 # contiguousInds()
 
 
-def cumint():
-
-
-    return
-
-# } cumint()
-
-
-'''
-def integrate_cumulative_simpson(func, xx, log=True):
+def cumtrapz_loglog(yy, xx, init=0.0, rev=False):
     """
-    Perform a cumulative integral of a callable functon using Simpson's rule.
-
-    Notes
-    -----
-      See: https://en.wikipedia.org/wiki/Simpson%27s_rule
-
-
+    From Thomas Robitaille
+    https://github.com/astrofrog/fortranlib/blob/master/src/lib_array.f90
     """
 
-    left = xx[:-1]
-    rigt = xx[1:]
-    diff = np.diff(xx)
-    if( log ): cent = np.power(10.0, 0.5*(np.log10(left) + np.log10(rigt)))
-    else:      cent = 0.5*(left + rigt)
+    if( np.ndim(yy) > 1 ): raise RuntimeError("This isn't implemented for ndim > 1!")
 
-    retval = func(left) + 4.0*func(cent) + func(rigt)
-    retval = np.cumsum((diff/6.0)*retval)
-    return retval
+    nums = len(xx)
+    sum = np.zeros(nums)
 
-# integrate_cumulative_simpson()
+    if( rev ): 
+        xx = xx[::-1]
+        yy = yy[::-1]
+
+    sum[0] = init
+    for ii in xrange(1,nums):
+        sum[ii] = sum[ii-1] + _trapezium_loglog(xx[ii-1], yy[ii-1], xx[ii], yy[ii])
+
+    if( rev ): sum = sum[::-1]
+
+    return sum
 
 
-
-def integrate_cumulative_func_simpson(func, xx, log=True, init=None):
+def _trapezium_loglog(x1,y1,x2,y2):
     """
-    Perform a cumulative integral of a callable functon using Simpson's rule.
-
-    Notes
-    -----
-      See: https://en.wikipedia.org/wiki/Simpson%27s_rule
-
-
+    From Thomas Robitaille
+    https://github.com/astrofrog/fortranlib/blob/master/src/lib_array.f90
     """
+    b = np.log10(y1/y2) / np.log10(x1/x2)
+    if(np.fabs(b+1.0) < 1.0e-10):
+        trap = x1 * y1 * np.log(x2/x1)
+    else:
+        trap = y1 * (x2*(x2/x1)**b-x1) / (b+1.0)
 
-    left = xx[:-1]
-    rigt = xx[1:]
-    diff = np.diff(xx)
-    if( log ): cent = np.power(10.0, 0.5*(np.log10(left) + np.log10(rigt)))
-    else:      cent = 0.5*(left + rigt)
+    return trap
 
-    retval = func(left) + 4.0*func(cent) + func(rigt)
-    retval = np.cumsum((diff/6.0)*retval)
-
-
-    ## If an initial value is provided, include in integral
-    if( init is not None ):
-        # Add to all values
-        retval += init
-        # Prepend as initial value (i.e. for ``xx[0]``)
-        retval = np.insert(retval, 0, init)
-
-
-    return retval
-
-# integrate_cumulative_simpson()
-
-
-def integrateCumulative(arr, xx, log=True, init=None, rev=False):
-    """
-    Perform a cumulative integral of a array using the Trapezoidal Rule
-
-    Arguments
-    ---------
-    arr  : <scalar>[N], array of values to be integrated
-    xx   : <scalar>[N], array of spacings used as the variable of integration (i.e. independent)
-    log  : (<bool>),    perform integral in log-space (i.e. average the array in log-space)
-    init : (<scalar>),  initial value of integral (i.e. constant of integration), if this value is
-                        provided (i.e. not-`None`) then it will be added to each element of the
-                        integrated values and prepended to the returned array.
-
-    Returns
-    -------
-    retval : <scalar>[*], integrated array, if ``init`` is NOT provided the length of the returned
-                          array will be [N-1] --- i.e. the number of intervals in the array, but if
-                          ``init`` IS provided, the ``init`` value will be prepended and the
-                          returned length will be [N].
-
-    Notes
-    -----
-      See: https://en.wikipedia.org/wiki/Trapezoidal_rule
-
-    """
-    
-
-    ## Find left and right bin edges, and bin widths
-    lx = xx[:-1]
-    rx = xx[1:]
-    diff = np.diff(xx)
-
-    ## Find left and right array values, and averages
-    ly = arr[:-1]
-    ry = arr[1:]
-    # Average in log-space if desired
-    if( log ): aves = np.power(10.0, 0.5*(np.log10(ly) + np.log10(ry)))
-    else:      aves = 0.5*(ly + ry)
-
-    if( rev ): retval = np.cumsum(diff[::-1]*aves[::-1])[::-1]
-    else:      retval = np.cumsum(diff*aves)
-
-    ## If an initial value is provided, include in integral
-    if( init is not None ):
-        # Add to all values
-        retval += init
-        # Prepend as initial value (i.e. for ``xx[0]``)
-        if( rev ): retval = np.insert(retval, len(retval), init)
-        else:      retval = np.insert(retval, 0, init)
-
-    return retval
-
-# } integrateCumulative()
-
-
-
-def integrate_cumulative_arr_trapezoid(arr, xx, log=True, init=None, rev=False):
-    """
-    Perform a cumulative integral of a array using the Trapezoidal Rule
-
-    Arguments
-    ---------
-    arr  : <scalar>[N], array of values to be integrated
-    xx   : <scalar>[N], array of spacings used as the variable of integration (i.e. independent)
-    log  : (<bool>),    perform integral in log-space (i.e. average the array in log-space)
-    init : (<scalar>),  initial value of integral (i.e. constant of integration), if this value is
-                        provided (i.e. not-`None`) then it will be added to each element of the
-                        integrated values and prepended to the returned array.
-
-    Returns
-    -------
-    retval : <scalar>[*], integrated array, if ``init`` is NOT provided the length of the returned
-                          array will be [N-1] --- i.e. the number of intervals in the array, but if
-                          ``init`` IS provided, the ``init`` value will be prepended and the
-                          returned length will be [N].
-
-    Notes
-    -----
-      See: https://en.wikipedia.org/wiki/Trapezoidal_rule
-
-    """
-    
-    warnings.warn("This function is deprecated, use ``integrateCumulative``", DeprecationWarning)
-
-    ## Find left and right bin edges, and bin widths
-    lx = xx[:-1]
-    rx = xx[1:]
-    diff = np.diff(xx)
-
-    ## Find left and right array values, and averages
-    ly = arr[:-1]
-    ry = arr[1:]
-    # Average in log-space if desired
-    if( log ): aves = np.power(10.0, 0.5*(np.log10(ly) + np.log10(ry)))
-    else:      aves = 0.5*(ly + ry)
-
-    if( rev ): retval = np.cumsum(diff[::-1]*aves[::-1])[::-1]
-    else:      retval = np.cumsum(diff*aves)
-
-    ## If an initial value is provided, include in integral
-    if( init is not None ):
-        # Add to all values
-        retval += init
-        # Prepend as initial value (i.e. for ``xx[0]``)
-        # retval = np.insert(retval, 0, init)
-        if( rev ): retval = np.insert(retval, len(retval), init)
-        else:      retval = np.insert(retval, 0, init)
-
-    return retval
-
-# integrate_cumulative_arr_trapezoid()
-'''
 
 
 def within(vals, extr, edges=True, all=False, inv=False):
@@ -742,7 +596,7 @@ def histogram(args, bins, binScale=None, bounds='both',
 def midpoints(arr, log=False, frac=0.5):
     """
     Return the midpoints between values in the given array.
-    
+
     If the given array is N-dimensional, midpoints are calculated from the last dimension.
 
     Arguments
@@ -1078,11 +932,11 @@ def createSlice(index, max):
 
     import numbers
     # Single Value
-    if( isinstance(index, numbers.Integral) ): 
+    if( isinstance(index, numbers.Integral) ):
         cut = slice(index, index+1)
         ids = np.arange(index, index+1)
     # Range of values
-    elif( np.iterable(index) ): 
+    elif( np.iterable(index) ):
         cut = index
         ids = index
     else:
