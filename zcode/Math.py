@@ -3,18 +3,20 @@ Functions for Math operations.
 
 Functions
 ---------
+ - spline                               : Create a general spline interpolation function.
  - logSpline_resample                   : use a log-log spline to resample the given data
  - logSpline                            : construct a spline in log-log space
  - logSpline_mono                       : monotonic, cubic spline interpolant in log-log-space.
  - contiguousInds                       : find the largest segment of contiguous array values
  - integrate_cumulative_simpson
  - integrate_cumulative_func_simpson
- - integrate_cumulative_arr_trapezoid
+ - integrateCumulative                  : Perform a cumulative integral using the Trapezoidal Rule.
+# - integrate_cumulative_arr_trapezoid
  - within
  - minmax                               : find the min and max of given values
  - spacing                              : Create an even spacing between extrema from given data.
  - histogram                            : performed advanced binning operations
- - mid
+ - midpoints                            : Return the midpoints between values in the given array.
  - vecmag                               : find the magnitude/distance of/between vectors
  - extend                               : Extend the given array by extraplation.
  - renumerate                           : construct a reverse enumeration iterator
@@ -23,6 +25,9 @@ Functions
  - frexp10                              : decompose a float into mantissa and exponent (base 10)
  - stats                                : return ave, stdev
  - groupDigitized                       : Find groups of array indices corresponding to each bin.
+ - sampleInverse                        : Find x-sampling to evenly divide a function in y-space.
+
+# createSlice
 
 """
 
@@ -30,6 +35,67 @@ import itertools
 import numpy as np
 import scipy as sp
 import scipy.interpolate
+import warnings
+
+def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
+    """
+    Create a general spline interpolation function.
+
+    Arguments
+    ---------
+        xx     <flt>[N] : Input independent variable
+        yy     <flt>[N] : Input   dependent variable
+        order  <int>    : order of interpolation (must be ``3`` if ``mono``)
+        log    <bool>   : interpolate in log-log-space
+        mono   <bool>   : use a specifically monotonic interpolator
+        extrap <bool>   : allow extrapolation outside of range of ``xx``
+        pos    <bool>   : filter to only positive values of ``yy``
+
+    Returns
+    -------
+        spline <obj>    : callable function returning the interpolated values.
+
+    """
+
+    xp = np.array(xx)
+    yp = np.array(yy)
+
+    # Select positive y-values
+    if( pos ):
+        inds = np.where( yp > 0.0 )[0]
+        xp = xp[inds]
+        yp = yp[inds]
+    
+    # Convert to log-space as needed
+    if( log ):
+        xp = np.log10(xp)
+        yp = np.log10(yp)
+
+    # Sort input arrays
+    inds = np.argsort(xp)
+    xp = xp[inds]
+    yp = yp[inds]
+
+    # Monotonic Interpolation
+    if( mono ): 
+        if( order != 3 ): warnings.warn("monotonic `PchipInterpolator` is always cubic!")
+        terp = sp.interpolate.PchipInterpolator(xp, yp, extrapolate=extrap)
+    # General Interpolation
+    else: 
+        # Let function extrapolate outside range
+        if( extrap ): ext = 0
+        # Return zero outside of range
+        else:         ext = 1
+        terp = sp.interpolate.InterpolatedUnivariateSpline(xp, yp, k=order, ext=ext)
+
+
+    # Convert back to normal space, as needed
+    if( log ): spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
+    else:      spline = terp
+
+    return spline
+
+# } spline()
 
 
 def logSpline_resample(xx, yy, newx, order=3):
@@ -56,15 +122,17 @@ def logSpline(xx, yy, order=3, pos=True):
     """
     Create a spline interpolant in log-log-space.
 
+    Extrapolates to new values outside of range
+
     Parameters
     ----------
-    xx : array, independent variable
-    yy : array, function of ``xx``
-    order : int, order of spline interpolant
+        xx : array, independent variable
+        yy : array, function of ``xx``
+        order : int, order of spline interpolant
 
     Returns
     -------
-    spline : callable, spline interpolation function
+        spline : callable, spline interpolation function
 
     """
 
@@ -163,9 +231,15 @@ def contiguousInds(args):
 # contiguousInds()
 
 
+def cumint():
 
 
+    return
 
+# } cumint()
+
+
+'''
 def integrate_cumulative_simpson(func, xx, log=True):
     """
     Perform a cumulative integral of a callable functon using Simpson's rule.
@@ -225,6 +299,61 @@ def integrate_cumulative_func_simpson(func, xx, log=True, init=None):
 # integrate_cumulative_simpson()
 
 
+def integrateCumulative(arr, xx, log=True, init=None, rev=False):
+    """
+    Perform a cumulative integral of a array using the Trapezoidal Rule
+
+    Arguments
+    ---------
+    arr  : <scalar>[N], array of values to be integrated
+    xx   : <scalar>[N], array of spacings used as the variable of integration (i.e. independent)
+    log  : (<bool>),    perform integral in log-space (i.e. average the array in log-space)
+    init : (<scalar>),  initial value of integral (i.e. constant of integration), if this value is
+                        provided (i.e. not-`None`) then it will be added to each element of the
+                        integrated values and prepended to the returned array.
+
+    Returns
+    -------
+    retval : <scalar>[*], integrated array, if ``init`` is NOT provided the length of the returned
+                          array will be [N-1] --- i.e. the number of intervals in the array, but if
+                          ``init`` IS provided, the ``init`` value will be prepended and the
+                          returned length will be [N].
+
+    Notes
+    -----
+      See: https://en.wikipedia.org/wiki/Trapezoidal_rule
+
+    """
+    
+
+    ## Find left and right bin edges, and bin widths
+    lx = xx[:-1]
+    rx = xx[1:]
+    diff = np.diff(xx)
+
+    ## Find left and right array values, and averages
+    ly = arr[:-1]
+    ry = arr[1:]
+    # Average in log-space if desired
+    if( log ): aves = np.power(10.0, 0.5*(np.log10(ly) + np.log10(ry)))
+    else:      aves = 0.5*(ly + ry)
+
+    if( rev ): retval = np.cumsum(diff[::-1]*aves[::-1])[::-1]
+    else:      retval = np.cumsum(diff*aves)
+
+    ## If an initial value is provided, include in integral
+    if( init is not None ):
+        # Add to all values
+        retval += init
+        # Prepend as initial value (i.e. for ``xx[0]``)
+        if( rev ): retval = np.insert(retval, len(retval), init)
+        else:      retval = np.insert(retval, 0, init)
+
+    return retval
+
+# } integrateCumulative()
+
+
 
 def integrate_cumulative_arr_trapezoid(arr, xx, log=True, init=None, rev=False):
     """
@@ -251,6 +380,8 @@ def integrate_cumulative_arr_trapezoid(arr, xx, log=True, init=None, rev=False):
       See: https://en.wikipedia.org/wiki/Trapezoidal_rule
 
     """
+    
+    warnings.warn("This function is deprecated, use ``integrateCumulative``", DeprecationWarning)
 
     ## Find left and right bin edges, and bin widths
     lx = xx[:-1]
@@ -279,7 +410,7 @@ def integrate_cumulative_arr_trapezoid(arr, xx, log=True, init=None, rev=False):
     return retval
 
 # integrate_cumulative_arr_trapezoid()
-
+'''
 
 
 def within(vals, extr, edges=True, all=False, inv=False):
@@ -608,17 +739,51 @@ def histogram(args, bins, binScale=None, bounds='both',
 # histogram()
 
 
+def midpoints(arr, log=False, frac=0.5):
+    """
+    Return the midpoints between values in the given array.
+    
+    If the given array is N-dimensional, midpoints are calculated from the last dimension.
 
-def mid(vals, log=False):
+    Arguments
+    ---------
+        arr <flt>[...,N] : input array of length `N`
+        log <bool>       : find midpoints in log of ``arr``
+        frac <flt>       : fraction of the way between intervals
 
-    mids = np.zeros(len(vals)-1)
-    for ii,vv in enumerate(zip(vals[:-1], vals[1:])):
-        if( log ): mids[ii] = np.power(10.0, np.average(np.log10(vv)) )
-        else:      mids[ii] = np.average(vv)
+    Returns
+    -------
+        mids <flt>[...,N-1]: midpoints of length `N-1`
+
+    """
+
+    if( np.shape(arr)[-1] < 2 ):
+        raise RuntimeError("Input ``arr`` does not have a valid shape!")
+
+    if( log ): user = np.log10(arr)
+    else:      user = np.array(arr)
+
+    diff = np.diff(user)
+
+    # start = user[:-1]
+    if( np.ndim(arr) > 1 ):
+        #     Create an object to slice all elements of all dims
+        cut = [slice(None)]*np.ndim(arr)
+        #     Exclude the last element of the last dimension
+        cut[-1] = slice(0,np.shape(arr)[-1]-1)
+    else:
+        cut = slice(0,np.size(arr)-1)
+
+
+    start = arr[cut]
+    mids = start + frac*diff
+
+    if( log ): mids = np.power(10.0, mids)
 
     return mids
 
-# mid()
+# } midpoints()
+
 
 
 def vecmag(r1, r2=None):
@@ -836,6 +1001,64 @@ def groupDigitized(arr, bins, edges='right'):
 
 # } groupDigitized()
 
+
+def sampleInverse(xx, yy, num=100, log=True, sort=True):
+    """
+    Find the x-sampling of a function to evenly divide its results in y-space.
+
+    Input function *must* be strictly monotonic in ``yy``.
+
+    Arguments
+    ---------
+        xx   <flt>[N] : array(scalar), initial sample space
+        yy   <flt>[N] : function to resample
+        num  <int>    : number of points to produce
+        log  <bool>   : sample in log space
+        sort <bool>   : sort ``yy``; if ``False``, ``yy`` must be sorted already
+
+    Returns
+    -------
+        samps <flt>[``num``] : new sample points from ``xx``
+
+    """
+
+    # Convert to log-space, as needed
+    if( log ):
+        xp = np.log10(xx)
+        yp = np.log10(yy)
+    else:
+        xp = np.array(xx)
+        yp = np.array(yy)
+
+    # y-values must be sorted
+    if( sort ):
+        inds = np.argsort(yp)
+        xp = xp[inds]
+        yp = yp[inds]
+    else:
+        # Check for strict-monotonicity
+        if( not all(left < right for left,right in zip(yp, yp[1:])) and
+            not all(left > right for left,right in zip(yp, yp[1:])) ):
+            raise RuntimeError("Input must be monotonic!")
+
+
+    # Construct Interpolating Function, *must be monotonic*
+    interpBack = spline(yp, xp, log=False, mono=True)
+
+    # Divide y-axis evenly, and find corresponding x-points
+    levels = spacing(yp, scale='lin', num=num)
+    samples = interpBack(levels)
+
+    # Convert back to normal space, as needed
+    if( log ): samples = np.power(10.0, samples)
+
+    return samples
+
+# } sampleInverse()
+
+
+
+
 '''
 def createSlice(index, max):
     """
@@ -875,3 +1098,4 @@ def createSlice(index, max):
 
 # } createSlice()
 '''
+

@@ -5,7 +5,8 @@ Classes
 -------
     StreamCapture  : class for capturing/redirecting stdout and stderr
     IndentFormatter : <logging.Formatter> subclass for stack-depth based indentation logging
-
+    _Keys_Meta      : Metaclass for ``Keys`` class
+    Keys            : Provide convenience for classes used as enumerated dictionary keys.
 
 Functions
 ---------
@@ -97,6 +98,70 @@ class IndentFormatter(logging.Formatter):
         return out
 
 # } class IndentFormatter
+
+
+class _Keys_Meta(type):
+    """
+    Metaclass for the ``Keys`` class.  See, ``InOut.Keys``.
+
+    To-Do
+    -----
+        - Modify the attribute getter to yield more unique responses than
+          the values given in the user-defined class.
+          e.g. 
+              class TestKeys(Keys):
+                  one = 1
+
+              Then the actual value used should be something like 
+              ``"TestKeys.one"`` or ``"TestKeys.1"``, to make them more unique
+              than just ``"one"`` or ``1``.
+
+
+    """
+
+    ## Store all attribute values to list ``__values__`` (if they dont start with '__')
+    def __init__(self, name, bases, dict):
+        print "name = ", name
+        self.__init__(self)
+        self.__values__ = [ self.__dict__.values()[ii] for ii,ent in enumerate(self.__dict__)
+                            if not ent.startswith('__') ]
+
+    ## Iterate over the list of attributes values
+    def __iter__(self):
+        for val in self.__values__:
+            yield val
+
+    '''
+    def __getattribute__(self, attr):
+        if( not hasattr(self, '__values__') ): self.__values__ = []
+        if( attr in self.__values__ ): print "ATTR = ", attr
+        return object.__getattribute__(self, attr)
+    '''
+
+
+class Keys(object):
+    """
+    Super class to provide convenience for classes used as enumerated dictionary keys.
+
+    Uses the metaclass ``_Key_Meta`` to override the ``__iter__`` and ``__init__`` methods.  The
+    initializer simply stores a list of the *VALUES* of each attribute (not starting with '__'),
+    for later use.  Iterator yields each element of the attributes values, list.
+
+    Example
+    -------
+        from InOut import Keys
+        class Test(Keys):
+            one = '1'
+            two = 'two'
+            three = '3.0'
+
+        for tt in Test:
+            print tt
+            if( tt == Test.two ): print "Found two!"
+
+    """
+
+    __metaclass__ = _Keys_Meta
 
 
 
