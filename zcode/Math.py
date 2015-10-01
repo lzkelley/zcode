@@ -231,9 +231,15 @@ def contiguousInds(args):
 # contiguousInds()
 
 
+def cumint():
 
 
+    return
 
+# } cumint()
+
+
+'''
 def integrate_cumulative_simpson(func, xx, log=True):
     """
     Perform a cumulative integral of a callable functon using Simpson's rule.
@@ -291,7 +297,6 @@ def integrate_cumulative_func_simpson(func, xx, log=True, init=None):
     return retval
 
 # integrate_cumulative_simpson()
-
 
 
 def integrateCumulative(arr, xx, log=True, init=None, rev=False):
@@ -405,7 +410,7 @@ def integrate_cumulative_arr_trapezoid(arr, xx, log=True, init=None, rev=False):
     return retval
 
 # integrate_cumulative_arr_trapezoid()
-
+'''
 
 
 def within(vals, extr, edges=True, all=False, inv=False):
