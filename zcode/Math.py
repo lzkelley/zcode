@@ -8,11 +8,13 @@ Functions
  - logSpline                            : construct a spline in log-log space
  - logSpline_mono                       : monotonic, cubic spline interpolant in log-log-space.
  - contiguousInds                       : find the largest segment of contiguous array values
+# - cumtrapz_rev
  - cumtrapz_loglog
  - within
  - minmax                               : find the min and max of given values
  - spacing                              : Create an even spacing between extrema from given data.
  - histogram                            : performed advanced binning operations
+ - sliceForAxis                         : Array slicing object which slices only the target axis.
  - midpoints                            : Return the midpoints between values in the given array.
  - vecmag                               : find the magnitude/distance of/between vectors
  - extend                               : Extend the given array by extraplation.
@@ -226,6 +228,26 @@ def contiguousInds(args):
     return inds
 
 # contiguousInds()
+
+'''
+def cumtrapz_rev(yy, xx=None, initial=0.0):
+    """
+    """
+    if( xx is not None ):
+        assert np.shape(yy) == np.shape(xx), "Shapes of ``yy`` and ``xx`` must match!"
+
+    # Reverse the last axis
+    cut = sliceForAxis(yy, axis=-1, step=-1)
+
+    yy = yy[cut]
+    if( xx is not None ): xx = xx[cut]
+
+    integ = sp.integrate.cumtrapz(yy, x=xx, initial=initial)[cut]
+
+    return integ
+
+# } cumtrapz_rev()
+'''
 
 
 def cumtrapz_loglog(yy, xx, init=0.0, rev=False):
@@ -593,6 +615,47 @@ def histogram(args, bins, binScale=None, bounds='both',
 # histogram()
 
 
+def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
+    """
+    Creates an array slicing object which slices only the target axis.
+
+    If ``arr`` is a single number, it is taken as the number of dimensions to create the slice for.
+    Otherwise, the ndim of ``arr`` is used.
+    
+    Arguments
+    ---------
+        arr   <obj>    : integer number of dimensions, or N-Dim array of objects to retrieve ndim
+        axis  <int>    : target axis (`-1` for last)
+        start <int>    : None for default
+        stop  <int>    : None for default
+        step  <int>    : None for default
+
+    Returns
+    -------
+        cut   <obj>[N] : list of `slice` objects for each dimension, only slicing on ``axis``
+    
+    """
+
+    if( start == stop == step == None ): 
+        raise RuntimeError("``start``,``stop``, or ``step`` required!")
+
+    ndim = np.ndim(arr)
+    if( ndim == 0 ): ndim = arr
+
+    if( ndim > 1 ):
+        #     Create an object to slice all elements of all dims
+        cut = [slice(None)]*ndim
+        #     Exclude the last element of the last dimension
+        cut[axis] = slice(start,stop,step)
+    else:
+        if( axis != 0 and axis != -1 ): raise RuntimeError("cannot slice nonexistent axis!")
+        cut = slice(start, stop, step)
+
+    return cut
+
+# } sliceForAxis()    
+
+
 def midpoints(arr, log=False, frac=0.5):
     """
     Return the midpoints between values in the given array.
@@ -619,16 +682,8 @@ def midpoints(arr, log=False, frac=0.5):
 
     diff = np.diff(user)
 
-    # start = user[:-1]
-    if( np.ndim(arr) > 1 ):
-        #     Create an object to slice all elements of all dims
-        cut = [slice(None)]*np.ndim(arr)
-        #     Exclude the last element of the last dimension
-        cut[-1] = slice(0,np.shape(arr)[-1]-1)
-    else:
-        cut = slice(0,np.size(arr)-1)
-
-
+    # skip the last element, or the last axis
+    cut = sliceForAxis(arr, axis=-1, stop=-1)
     start = arr[cut]
     mids = start + frac*diff
 
