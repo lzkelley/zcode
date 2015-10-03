@@ -121,7 +121,6 @@ class _Keys_Meta(type):
 
     ## Store all attribute values to list ``__values__`` (if they dont start with '__')
     def __init__(self, name, bases, dict):
-        print "name = ", name
         self.__init__(self)
         self.__values__ = [ self.__dict__.values()[ii] for ii,ent in enumerate(self.__dict__)
                             if not ent.startswith('__') ]
@@ -755,3 +754,6 @@ def modifyFilename(fname, prepend='', append=''):
 
     newName = os.path.join(oldPath, newName)
     return newName
+
+# } modifyFilename()
+
