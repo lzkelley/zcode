@@ -26,6 +26,8 @@ Functions
  - groupDigitized                       : Find groups of array indices corresponding to each bin.
  - sampleInverse                        : Find x-sampling to evenly divide a function in y-space.
 
+ - smooth
+
 # createSlice
 
 """
@@ -34,7 +36,8 @@ import itertools
 import numpy as np
 import scipy as sp
 import scipy.interpolate
-import warnings
+import warnings, numbers
+
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
     """
@@ -966,6 +969,121 @@ def sampleInverse(xx, yy, num=100, log=True, sort=True):
 # } sampleInverse()
 
 
+
+
+
+def smooth(arr, size, width=None, loc=None, mode='same'):
+    """
+    Use convolution to smooth the given array.
+
+    The ``width`` and ``loc`` arguments can be given as integers, in which case they are taken
+    as indices in the input array; or they can be floats, in which case they are interpreted as
+    fractions of the length of the input array.
+
+    Arguments
+    ---------
+        arr   <flt>[N] : input array to be smoothed
+        size  <int>    : size of smoothing window
+        width <obj>    : scalar specifying the region to be smoothed, of twp values are given
+                         they are taken as left and right bounds
+        loc   <flt>    : int or float specifying to center position of smoothing,
+                         ``width`` is used relative to this position, if provided.
+        mode  <str>    : type of convolution, passed to ``numpy.convolve``
+
+    Returns
+    -------
+        smArr <flt>[N] : smoothed array
+
+    """
+
+    length = np.size(arr)
+
+    assert size <= length, "``size`` must be less than length of input array!"
+
+    window = np.ones(int(size))/float(size)
+
+    # Smooth entire array
+    smArr = np.convolve(arr, window, mode=mode)
+
+    # Return full smoothed array if no bounds given
+    if( width is None ):
+        return smArr
+
+    # Other convolution modes require dealing with differing lengths
+    #    If smoothing only a portion of the array, 
+    assert mode == 'same', "Other convolution modes not supported for portions of array!"
+
+    ## Smooth portion of array
+    #  -----------------------
+
+    if( np.size(width) == 2 ):
+        lef = width[0]
+        rit = width[1]
+    elif( np.size(width) == 1 ):
+        if( loc is None ): raise ValueError("For a singular ``width``, ``pos`` must be provided!")
+        lef = width
+        rit = width
+    else:
+        raise ValueError("``width`` must be one or two scalars!")
+
+
+    # Convert fractions to positions, if needed
+    lef = _fracToInt(lef, length-1, within=1.0, round='floor')
+    rit = _fracToInt(rit, length-1, within=1.0, round='floor')
+        
+    # If ``loc`` is provided, use ``width`` relative to that
+    if( loc is not None ):
+        loc = _fracToInt(loc, length-1, within=1.0, round='floor')
+        lef = loc - lef
+        rit = loc + rit
+
+    
+    mask = np.ones(length, dtype=bool)
+    mask[lef:rit] = False
+    smArr[mask] = arr[mask]
+
+    return smArr
+# } smooth()
+
+
+def _fracToInt(frac, size, within=None, round='floor'):
+    """
+    Convert from a float ``frac`` to that fraction of ``size``.
+
+    If ``frac`` is already an integer, do nothing.
+
+    Arguments
+    ---------
+        frac   <flt>  : fraction to convert
+        size   <int>  : find the fraction of this size
+        within <obj>  : assert that ``frac`` is within [0.0,``within``], `None` for no assertion
+        round  <str>  : which direction to round {'floor','ceil'}
+
+    Returns
+    -------
+        loc    <int>  : ``frac`` of ``size`` as rounded integer
+
+    """
+
+    # If ``frac`` is already an integer, do nothing, return it
+    if( isinstance(frac, numbers.Integral) ): return frac
+
+    if(   round == 'floor' ):
+        roundFunc = np.floor
+    elif( round == 'ceil' ):
+        roundFunc = np.ceil
+    else:
+        raise ValueError("Unrecognized ``round``!")
+
+    # Convert fractional input into an integer
+    if( within is not None ):
+        assert frac >= 0.0 and frac <= within, "``frac`` must be between [0.0,%s]!" % (str(within))
+
+    loc = np.int(roundFunc(frac*size))
+
+    return loc
+
+# } _fracToInt()
 
 
 '''
