@@ -12,6 +12,8 @@ Functions
 
   - setAxis              : function to set many different axis properties at once
   - twinAxis             : easily create and set a new twin axis (like `twinx()` or `twiny()`)
+  - setGrid              : 
+#  - rescale              :
 
   - plotHistLine         : plot a line as a histogram
   - plotCorrelationGrid  : plot a grid of 1D parameter correlations and histograms
@@ -110,7 +112,7 @@ def subplots(figsize=[14,8], nrows=1, ncols=1, logx=True, logy=True, grid=True,
 
 
 
-def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'):
+def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
     """
     Set the limits (range) of the given, target axis.
 
@@ -190,6 +192,9 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 
 
     set_lim(lims)
+    if( invert ):
+        if( axis == 'x' ): ax.invert_xaxis()
+        else:              ax.invert_yaxis()
 
     return
 
@@ -323,7 +328,8 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     ax.tick_params(axis=axis, which='major', size=ts)
 
     # Set Grid Lines
-    ax.grid(grid, which='both', axis=axis)
+    # ax.grid(grid, which='both', axis=axis)
+    setGrid(ax, grid, axis=axis)
 
     if( axis == 'x' ):
         ax.xaxis.label.set_color(c)
@@ -397,9 +403,53 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
     return ax
 
-# setAxis()
+# } setAxis()
 
 
+
+def setGrid(ax, val, axis='both', below=True):
+    """
+    """
+
+    ax.grid(False, which='both', axis=axis)
+    ax.set_axisbelow(below)
+
+    if( val ):
+        ax.grid(True, which='major', axis=axis, c='0.50', ls='-')
+        ax.grid(True, which='minor', axis=axis, c='0.75', ls='-')
+
+    return 
+
+# } setGrid()
+
+'''
+def rescale(ax, which='both'):
+    """
+    """
+
+    if( which == 'x' ): 
+        scaley = False
+        scalex = True
+    elif( which == 'y' ):
+        scaley = True
+        scalex = True
+    elif( which == 'both' ):
+        scaley = True
+        scalex = True
+    else:
+        raise ValueError("Unrecognized ``which`` = '%s'" % str(which))
+
+
+    # recompute the ax.dataLim
+    ax.relim()
+    # update ax.viewLim using the new dataLim
+    ax.autoscale_view(tight=True, scaley=scaley, scalex=scalex)
+    plt.draw()
+
+    return ax
+
+# } rescale()
+'''
 
 def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None, 
                  fill=None, **kwargs):
