@@ -19,10 +19,10 @@ Functions
  - vecmag                               : find the magnitude/distance of/between vectors
  - extend                               : Extend the given array by extraplation.
  - renumerate                           : construct a reverse enumeration iterator
- - cumstats
+ - cumstats                             : Calculate a cumulative average and standard deviation.
  - confidenceIntervals
  - frexp10                              : decompose a float into mantissa and exponent (base 10)
- - stats                                : return ave, stdev
+ - stats                                : Get basic statistics for the given array.
  - groupDigitized                       : Find groups of array indices corresponding to each bin.
  - sampleInverse                        : Find x-sampling to evenly divide a function in y-space.
 
@@ -686,8 +686,8 @@ def midpoints(arr, log=False, frac=0.5):
     diff = np.diff(user)
 
     # skip the last element, or the last axis
-    cut = sliceForAxis(arr, axis=-1, stop=-1)
-    start = arr[cut]
+    cut = sliceForAxis(user, axis=-1, stop=-1)
+    start = user[cut]
     mids = start + frac*diff
 
     if( log ): mids = np.power(10.0, mids)
@@ -728,7 +728,7 @@ def vecmag(r1, r2=None):
 # vecmag()
 
 
-def extend(arr, num=1, log=True, append=False, side='both'):
+def extend(arr, num=1, log=True, append=False):
     """
     Extend the given array by extraplation.
 
@@ -738,7 +738,6 @@ def extend(arr, num=1, log=True, append=False, side='both'):
         num    <int>    : number of points to add (on each side, if ``both``)
         log    <bool>   : extrapolate in log-space
         append <bool>   : add the extended points onto the given array
-        side   <str>    : which side to extend from {'left','both','right'}.
 
     Returns
     -------
@@ -749,20 +748,16 @@ def extend(arr, num=1, log=True, append=False, side='both'):
     if( log ): useArr = np.log10(arr)
     else:      useArr = np.array(arr)
 
-    steps = np.arange(1,num+1).squeeze()
-    if( side == 'both' or side == 'left' ): left = useArr[ 0] + (useArr[ 0] - useArr[ 1])*steps
-    else: left = []
-    if( side == 'both' or side == 'right'): rigt = useArr[-1] + (useArr[-1] - useArr[-2])*steps
-    else: rigt = []
+    steps = np.arange(1,num+1)
+    left = useArr[ 0] + (useArr[ 0] - useArr[ 1])*steps[::-1].squeeze()
+    rigt = useArr[-1] + (useArr[-1] - useArr[-2])*steps.squeeze()
 
     if( log ):
         left = np.power(10.0, left)
         rigt = np.power(10.0, rigt)
 
-    if( append ): retval = np.hstack([left, arr, rigt])
-    else:         retval = np.hstack([left, rigt])
-
-    return retval
+    if( append ): return np.hstack([left, arr, rigt])
+    else:         return [left, rigt]
 
 # extend()
 
@@ -779,6 +774,17 @@ def renumerate(arr):
 def cumstats(arr):
     """
     Calculate a cumulative average and standard deviation.
+
+    Arguments
+    ---------
+        arr <flt>[N] : input array
+
+    Returns
+    -------
+        ave <flt>[N] : cumulative average over ``arr``
+        std <flt>[N] : cumulative standard deviation over ``arr``
+        
+
     """
 
     tot = len(arr)
@@ -793,7 +799,7 @@ def cumstats(arr):
 
     std[1:] = np.fabs(sm2[1:] - np.square(sm1[1:])/(num[1:]+1.0))/num[1:]
     std[1:] = np.sqrt( std[1:] )
-    return ave,std
+    return ave, std
 
 # cumstats()
 
@@ -854,11 +860,28 @@ def frexp10(vals):
 # frexp10()
 
 
-def stats(vals):
+def stats(vals, median=False):
     """
+    Get basic statistics for the given array.
+
+    Arguments
+    ---------
+        vals <flt>[N] : input array
+        median <bool> : include median in return values
+
+    Returns
+    -------
+        ave <flt>
+        std <flt>
+        [med <flt>] : median, returned if ``median`` is `True`
+
     """
     ave = np.average(vals)
     std = np.std(vals)
+    if( median ):
+        med = np.median(vals)
+        return ave, std, med
+
     return ave, std
 
 # } stats()
@@ -914,7 +937,7 @@ def groupDigitized(arr, bins, edges='right'):
 # } groupDigitized()
 
 
-def sampleInverse(xx, yy, num=100, log=True, sort=True):
+def sampleInverse(xx, yy, num=100, log=True, sort=False):
     """
     Find the x-sampling of a function to evenly divide its results in y-space.
 
@@ -926,7 +949,7 @@ def sampleInverse(xx, yy, num=100, log=True, sort=True):
         yy   <flt>[N] : function to resample
         num  <int>    : number of points to produce
         log  <bool>   : sample in log space
-        sort <bool>   : sort ``yy``; if ``False``, ``yy`` must be sorted already
+        sort <bool>   : sort return array ``samps``
 
     Returns
     -------
@@ -942,27 +965,22 @@ def sampleInverse(xx, yy, num=100, log=True, sort=True):
         xp = np.array(xx)
         yp = np.array(yy)
 
-    # y-values must be sorted
-    if( sort ):
-        inds = np.argsort(yp)
-        xp = xp[inds]
-        yp = yp[inds]
-    else:
-        # Check for strict-monotonicity
-        if( not all(left < right for left,right in zip(yp, yp[1:])) and
-            not all(left > right for left,right in zip(yp, yp[1:])) ):
-            raise RuntimeError("Input must be monotonic!")
-
+    inds = np.argsort(yp)
+    xp = xp[inds]
+    yp = yp[inds]
 
     # Construct Interpolating Function, *must be monotonic*
     interpBack = spline(yp, xp, log=False, mono=True)
 
     # Divide y-axis evenly, and find corresponding x-points
+    #     Note: `log` spacing is enforced manually, use `lin` here!
     levels = spacing(yp, scale='lin', num=num)
     samples = interpBack(levels)
 
     # Convert back to normal space, as needed
     if( log ): samples = np.power(10.0, samples)
+
+    if( sort ): samples = samples[np.argsort(samples)]
 
     return samples
 
@@ -976,14 +994,14 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     """
     Use convolution to smooth the given array.
 
-    The ``width`` and ``loc`` arguments can be given as integers, in which case they are taken
+    The ``width``, ``loc`` and ``size`` arguments can be given as integers, in which case they are taken
     as indices in the input array; or they can be floats, in which case they are interpreted as
     fractions of the length of the input array.
 
     Arguments
     ---------
         arr   <flt>[N] : input array to be smoothed
-        size  <int>    : size of smoothing window
+        size  <obj>    : size of smoothing window
         width <obj>    : scalar specifying the region to be smoothed, of twp values are given
                          they are taken as left and right bounds
         loc   <flt>    : int or float specifying to center position of smoothing,
@@ -997,6 +1015,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     """
 
     length = np.size(arr)
+    size = _fracToInt(size, length, within=1.0, round='floor')
 
     assert size <= length, "``size`` must be less than length of input array!"
 
