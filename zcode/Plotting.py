@@ -288,22 +288,22 @@ def zoom(ax, loc, axis='x', scale=2.0):
     elif( axis == 'y' ):
         axScale = ax.get_yscale()
         lim = ax.get_ylim()
-        set_lim = ax.set_ylim    
+        set_lim = ax.set_ylim
     else:
         raise ValueError("Unrecognized ``axis`` = '%s'!!" % (str(axis)))
 
     lim = np.array(lim)
 
     # Determine axis scaling
-    if(   axScale.startswith('lin') ): 
+    if(   axScale.startswith('lin') ):
         log = False
-    elif( axScale.startswith('log') ): 
+    elif( axScale.startswith('log') ):
         log = True
     else:
         raise ValueError("``axScale`` '%s' not implemented!" % (str(axScale)))
 
     # Convert to log if appropriate
-    if( log ): 
+    if( log ):
         lim = np.log10(lim)
         loc = np.log10(loc)
 
@@ -361,11 +361,11 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
 
 def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans=None, **kwargs):
     if( trans is None ): trans = fig.transFigure
-    if( valign == 'upper' ): 
+    if( valign == 'upper' ):
         warnings.warn("Use `'top'` not `'upper'`!")
         valign = 'top'
 
-    if( valign == 'lower' ): 
+    if( valign == 'lower' ):
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
@@ -704,7 +704,7 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
 # skipTicks()
 
 
-def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, close=True, **kwargs):
+def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=True, **kwargs):
     """
     Save the given figure(s) to the given filename.
 
@@ -712,8 +712,8 @@ def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, close=
 
     Arguments
     ---------
-        fname    <str>      : filename to save to.
         fig      <obj>([N]) : one or multiple ``matplotlib.figure.Figure`` objects.
+        fname    <str>      : filename to save to.
 
         verbose  <bool>     : print verbose output to stdout
         log      <obj>      : ``logging.Logger`` object to print output to
@@ -721,6 +721,13 @@ def saveFigure(fname, fig, verbose=True, log=None, level=logging.WARNING, close=
         close    <bool>     : close figures after saving
         **kwargs <dict>     : additional arguments past to ``savefig()``.
     """
+
+    # CATCH WRONG ORDER OF ARGUMENTS
+    if(type(fig) == str):
+        warnings.warn("FIRST ARGUMENT SHOULD BE `fig`!!")
+        temp = str(fig)
+        fig = fname
+        fname = temp
 
     if(log is not None): log.debug("Saving figure...")
 
