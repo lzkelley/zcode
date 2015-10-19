@@ -38,6 +38,7 @@ Functions
 
 import logging
 import numbers
+import warnings
 
 import numpy as np
 import matplotlib as mpl
@@ -277,6 +278,56 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 # set_lim()
 
 
+def zoom(ax, loc, axis='x', scale=2.0):
+
+    # Choose functions based on target axis
+    if( axis == 'x' ):
+        axScale = ax.get_xscale()
+        lim = ax.get_xlim()
+        set_lim = ax.set_xlim
+    elif( axis == 'y' ):
+        axScale = ax.get_yscale()
+        lim = ax.get_ylim()
+        set_lim = ax.set_ylim    
+    else:
+        raise ValueError("Unrecognized ``axis`` = '%s'!!" % (str(axis)))
+
+    lim = np.array(lim)
+
+    # Determine axis scaling
+    if(   axScale.startswith('lin') ): 
+        log = False
+    elif( axScale.startswith('log') ): 
+        log = True
+    else:
+        raise ValueError("``axScale`` '%s' not implemented!" % (str(axScale)))
+
+    # Convert to log if appropriate
+    if( log ): 
+        lim = np.log10(lim)
+        loc = np.log10(loc)
+
+    # Find new axis bounds
+    delta = np.diff( zmath.minmax(lim) )[0]
+    lim = np.array([ loc - (0.5/scale)*delta, loc + (0.5/scale)*delta ])
+    # Convert back to linear if appropriate
+    if( log ): lim = np.power(10.0, lim)
+    set_lim(lim)
+
+    return lim
+
+# } zoom()
+
+
+
+def limits(xx, yy, xlims):
+    """
+    """
+    inds = np.where( (xx >= np.min(xlims)) & (xx <= np.max(xlims)) )[0]
+    return zmath.minmax(yy[inds])
+
+
+
 def stretchAxes(ax, xs=1.0, ys=1.0):
     """
     Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
@@ -309,7 +360,15 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
 
 
 def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans=None, **kwargs):
-    if(trans is None): trans = fig.transFigure
+    if( trans is None ): trans = fig.transFigure
+    if( valign == 'upper' ): 
+        warnings.warn("Use `'top'` not `'upper'`!")
+        valign = 'top'
+
+    if( valign == 'lower' ): 
+        warnings.warn("Use `'bottom'` not `'lower'`!")
+        valign = 'bottom'
+
     txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
     return txt
@@ -498,7 +557,7 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
 
     """
 
-    LEF = 0.05
+    LEF = 0.06
     RIT = 0.95
     TOP = 0.95
     BOT = 0.05
@@ -775,9 +834,9 @@ def strSciNot(val, precman=1, precexp=0):
 
     """
     man, exp = zmath.frexp10(val)
-    str = "${0:.{2:d}f} \\times \, 10^{{ {1:.{3:d}f} }}$"
-    str = str.format(man, exp, precman, precexp)
-    return str
+    notStr = "${0:.{2:d}f} \\times \, 10^{{ {1:.{3:d}f} }}$"
+    notStr = notStr.format(man, exp, precman, precexp)
+    return notStr
 
 # strSciNot()
 
@@ -891,6 +950,8 @@ def plotScatter(ax, xx, yy, scalex='log', scaley='log',
 def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwargs):
     """
     Plot a histogram bar graph onto the given axes.
+
+    NOTE: For log-y, make sure `yscale` is either not manually set, or include `nonposy='clip'`
     """
     ALPHA = 0.5
 
@@ -901,6 +962,9 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     if(conf):
         med, cints = zmath.confidenceIntervals(xx, ci=CONF_INTS)
         ax.axvline(med, color='red', ls='--', lw=LW_CONF, zorder=101)
+        # Add average
+        ave = np.average(xx)
+        ax.axvline(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
         for ii,(vals,col) in enumerate(zip(cints, CONF_COLS)):
             ax.axvspan(*vals, color=col, alpha=ALPHA)
 
