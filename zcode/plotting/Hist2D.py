@@ -14,61 +14,88 @@ import zcode.Plotting as _zplot
 
 __all__ = ['plot2DHist', 'plot2DHistProj']
 
-_LEFT = 0.1
-_RIGHT = 0.05
-_BOTTOM = 0.1
-_TOP = 0.1
+_LEFT = 0.08
+_RIGHT = 0.06
+_BOTTOM = 0.08
+_TOP = 0.12
+
+_CB_WID = 0.03
+_CB_WPAD = 0.08
 
 _COL = '0.5'
 
 
-def _constructFigure(fig, figsize, xproj, yproj, hratio, wratio, scale, histScale):
+def _constructFigure(fig, figsize, xproj, yproj, hratio, wratio, scale, histScale, labels, cbar):
+    """
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure with axes added on (access via ``fig.axes``)
+    xkey : int
+        The index number of the x-proj plot in the ``fig.axes`` array.  `0` for None.
+        e.g. if ``xproj == yproj == True``, then ``xkey = 1`` and ``ykey = 2``.
+    ykey : int
+        The index number of the y-proj plot in the ``fig.axes`` array.  `0` for None.
+
+    """
     assert 0.0 <= hratio <= 1.0, "`hratio` must be between [0.0,1.0]!"
     assert 0.0 <= wratio <= 1.0, "`wratio` must be between [0.0,1.0]!"
 
     # Create figure if needed
     if(not fig): fig = _plt.figure(figsize=figsize)
 
-    xkey = ykey = 0
+    xpax = ypax = cbax = None
 
     # Determine usable space and axes sizes
     useable = [1.0-_LEFT-_RIGHT, 1.0-_TOP-_BOTTOM]
+    if(cbar):
+        useable[0] -= _CB_WID + _CB_WPAD
+
     if(yproj):
         prim_wid = useable[0]*wratio
         ypro_wid = useable[0]*(1.0-wratio)
+    else:
+        prim_wid = useable[0]
 
     if(xproj):
         prim_hit = useable[1]*hratio
         xpro_hit = useable[1]*(1.0-hratio)
+    else:
+        prim_hit = useable[1]
 
     # Create primary axes, at bottom left
-    fig.add_axes([_LEFT, _BOTTOM, prim_wid, prim_hit])
-    fig.axes[0].set_xscale(scale[0])
-    fig.axes[0].set_yscale(scale[1])
-    count = 1
+    prax = fig.add_axes([_LEFT, _BOTTOM, prim_wid, prim_hit])
+    prax.set(xscale=scale[0], yscale=scale[1], xlabel=labels[0], ylabel=labels[1])
+    _zplot.setGrid(prax, False)
+
     # Add x-projection axes on top-left
     if(xproj):
-        fig.add_axes([_LEFT, _BOTTOM+prim_hit, prim_wid, xpro_hit])
-        fig.axes[count].set_xscale(scale[0])
-        fig.axes[count].set_yscale(histScale)
-        xkey = count
-        count += 1
+        xpax = fig.add_axes([_LEFT, _BOTTOM+prim_hit, prim_wid, xpro_hit])
+        xpax.set(xscale=scale[0], yscale=histScale, ylabel='Counts', xlabel=labels[0])
+        xpax.xaxis.set_label_position('top')
+        _zplot.setGrid(xpax, True, axis='y')
 
     # Add y-projection axes on bottom-right
     if(yproj):
-        fig.add_axes([_LEFT+prim_wid, _BOTTOM, ypro_wid, prim_hit])
-        fig.axes[count].set_yscale(scale[1])
-        fig.axes[count].set_xscale(histScale)
-        ykey = count
+        ypax = fig.add_axes([_LEFT+prim_wid, _BOTTOM, ypro_wid, prim_hit])
+        ypax.set(yscale=scale[1], xscale=histScale, xlabel='Counts', ylabel=labels[1])
+        ypax.yaxis.set_label_position('right')
+        _zplot.setGrid(ypax, True, axis='x')
 
-    for ax in fig.axes:
-        _zplot.setGrid(ax, False)
+    # Add color-bar axes on the right
+    if(cbar):
+        cbar_left = _LEFT + prim_wid + _CB_WPAD
+        if(yproj): cbar_left += ypro_wid
+        cbax = fig.add_axes([cbar_left, _BOTTOM, _CB_WID, prim_hit])
 
-    return fig, xkey, ykey
+    return fig, prax, xpax, ypax, cbax
+# } def _constructFigure
 
 
-def plot2DHistProj(xvals, yvals, bins=10, fig=None, figsize=[16, 12], xproj=True, yproj=True,
-                   hratio=0.7, wratio=0.7, fs=12, scale='log', histScale='log'):
+def plot2DHistProj(xvals, yvals, bins=10, fig=None, figsize=[18, 12], xproj=True, yproj=True,
+                   hratio=0.7, wratio=0.7, fs=12, scale='log', histScale='log', labels=None,
+                   cbar=True):
     """
     Plot a 2D histogram with projections of one or both axes.
 
@@ -102,6 +129,8 @@ def plot2DHistProj(xvals, yvals, bins=10, fig=None, figsize=[16, 12], xproj=True
     histScale : str, optional
         Scaling to use for the histograms {'log','lin'}-- the color scale on the 2D histogram,
         or the Counts axis on the 1D histograms.
+    cbar : bool, optional
+        Add a colorbar.
 
     Returns
     -------
@@ -114,9 +143,11 @@ def plot2DHistProj(xvals, yvals, bins=10, fig=None, figsize=[16, 12], xproj=True
     elif(_np.size(scale) != 2):
         raise ValueError("`scale` must be one or two scaling specifications!")
 
+    if(not labels): labels = ['', '']
+
     # Create and initializae figure and axes
-    fig, xk, yk = _constructFigure(fig, figsize, xproj, yproj, hratio, wratio, scale, histScale)
-    axes = fig.axes
+    fig, prax, xpax, ypax, cbax = _constructFigure(fig, figsize, xproj, yproj, hratio, wratio,
+                                                   scale, histScale, labels, cbar)
 
     # Create bins
     # -----------
@@ -147,31 +178,31 @@ def plot2DHistProj(xvals, yvals, bins=10, fig=None, figsize=[16, 12], xproj=True
     # Plot 2D Histogram and Projections
     # ---------------------------------
     hist, xedges, yedges = _np.histogram2d(xvals, yvals, bins=[xbins, ybins])
-    plot2DHist(axes[0], xedges, yedges, hist)
+    plot2DHist(prax, xedges, yedges, hist, cbax=cbax)
     # cb = _plt.colorbar(hist_im, orientation='horizontal', cax=axCB)
 
     # Plot projection of the x-axis (i.e. ignore 'y')
-    if(xproj):
+    if(xpax):
         islog = scale[0].startswith('log')
         #     create and plot histogram
-        nums, edges, patches = axes[xk].hist(xvals, bins=xbins, color=_COL, log=islog)
+        nums, edges, patches = xpax.hist(xvals, bins=xbins, color=_COL, log=islog)
         #     set tick-labels to the top
-        _plt.setp(axes[xk].get_yticklabels(), fontsize=fs)
-        axes[xk].xaxis.tick_top()
+        _plt.setp(xpax.get_yticklabels(), fontsize=fs)
+        xpax.xaxis.tick_top()
         #     set bounds to bin edges
-        _zplot.set_lim(axes[xk], 'x', data=xedges)
+        _zplot.set_lim(xpax, 'x', data=xedges)
 
     # Plot projection of the y-axis (i.e. ignore 'x')
-    if(yproj):
+    if(ypax):
         islog = scale[1].startswith('log')
         #    create and plot histogram
-        nums, edges, patches = axes[yk].hist(
+        nums, edges, patches = ypax.hist(
             yvals, bins=ybins, orientation='horizontal', color=_COL, log=islog)
         #     set tick-labels to the top
-        _plt.setp(axes[yk].get_yticklabels(), fontsize=fs, rotation=90)
-        axes[yk].yaxis.tick_right()
+        _plt.setp(ypax.get_yticklabels(), fontsize=fs, rotation=90)
+        ypax.yaxis.tick_right()
         #     set bounds to bin edges
-        _zplot.set_lim(axes[yk], 'y', data=yedges)
+        _zplot.set_lim(ypax, 'y', data=yedges)
 
     return fig
 # } def plot2DHistProj
