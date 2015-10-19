@@ -406,17 +406,11 @@ def colorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     return cols
 
 
-
-
-
-
-
-
 def setGrid(ax, val, axis='both', below=True):
     """
     """
 
-    ax.grid(False, which='both', axis=axis)
+    ax.grid(False, which='both', axis='both')
     ax.set_axisbelow(below)
 
     if(val):
