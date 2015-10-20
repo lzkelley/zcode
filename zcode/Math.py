@@ -158,8 +158,8 @@ def logSpline(xx, yy, order=3, pos=True):
 # } logSpline()
 
 
-
-def logSpline_mono(xx, yy, pos=True, extrap=False):
+'''
+def logSpline_mono(xx, yy, pos=True, extrap=True):
     """
     Create a *monotonic*, cubic spline interpolant in log-log-space.
 
@@ -195,7 +195,7 @@ def logSpline_mono(xx, yy, pos=True, extrap=False):
     return spline
 
 # } logSpline_mono()
-
+'''
 
 
 def contiguousInds(args):
@@ -598,7 +598,6 @@ def histogram(args, bins, binScale=None, bounds='both',
     # -----------------------------
 
     if( stdev ):
-
         # Sum values in bins
         std = [ np.std(weights[digits == ii]) for ii in range(1, len(edges)) ]
         # Fix last bin to include values which equal the right-most edge
@@ -607,15 +606,15 @@ def histogram(args, bins, binScale=None, bounds='both',
 
         std = np.array(std)
 
-        if( cumul ): return edges, counts, hist, std
-        else:        return edges, counts, cumsum, hist, std
+        if( cumul ): return edges, counts, cumsum, hist, std
+        else:        return edges, counts, hist, std
 
 
     # No ``std``, just return histograms of counts and ``func`` on ``weights``
     if( cumul ): return edges, counts, cumsum, hist
     else:        return edges, counts, hist
 
-# histogram()
+# } def histogram
 
 
 def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
