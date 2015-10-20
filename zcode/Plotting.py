@@ -45,6 +45,7 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 
 import Math as zmath
+import InOut as zio
 from . import plotting
 from plotting import *
 
@@ -725,7 +726,10 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
 
     if(log is not None): log.debug("Saving figure...")
 
-    if(np.iterable(fig)):
+    if(not np.iterable(fig)): fig = [fig]
+
+    # Save as multipage PDF
+    if(fname.endswith('pdf') and np.size(fig) > 1):
         from matplotlib.backends.backend_pdf import PdfPages
         with PdfPages(fname) as pdf:
             for ff in fig:
@@ -733,8 +737,16 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
                 if(close): plt.close(ff)
 
     else:
-        fig.savefig(fname, **kwargs)
-        if(close): plt.close(fig)
+        # Save each figure to a different file
+        for ii, ff in enumerate(fig):
+            # On subsequent figures, append the number to the filename
+            if(ii == 0):
+                usefname = str(fname)
+            else:
+                usefname = zio.modifyFilename(fname, append='_%d' % (ii))
+
+            ff.savefig(usefname, **kwargs)
+            if(close): plt.close(ff)
 
     printStr = "Saved figure to '%s'" % (fname)
     if(log is not None): log.log(level, printStr)
