@@ -3,30 +3,27 @@ Functions for Math operations.
 
 Functions
 ---------
- - spline                               : Create a general spline interpolation function.
- - logSpline_resample                   : use a log-log spline to resample the given data
- - logSpline                            : construct a spline in log-log space
- - logSpline_mono                       : monotonic, cubic spline interpolant in log-log-space.
- - contiguousInds                       : find the largest segment of contiguous array values
-# - cumtrapz_rev
- - cumtrapz_loglog
- - within
- - minmax                               : find the min and max of given values
- - spacing                              : Create an even spacing between extrema from given data.
- - histogram                            : performed advanced binning operations
- - sliceForAxis                         : Array slicing object which slices only the target axis.
- - midpoints                            : Return the midpoints between values in the given array.
- - vecmag                               : find the magnitude/distance of/between vectors
- - extend                               : Extend the given array by extraplation.
- - renumerate                           : construct a reverse enumeration iterator
- - cumstats                             : Calculate a cumulative average and standard deviation.
- - confidenceIntervals
- - frexp10                              : decompose a float into mantissa and exponent (base 10)
- - stats                                : Get basic statistics for the given array.
- - groupDigitized                       : Find groups of array indices corresponding to each bin.
- - sampleInverse                        : Find x-sampling to evenly divide a function in y-space.
+-   spline                               - Create a general spline interpolation function.
+-   logSpline                            - Construct a spline in log-log space
+-   logSpline_resample                   - Use a log-log spline to resample the given data
+-   contiguousInds                       - Find the largest segment of contiguous array values
+-   cumtrapz_loglog                      - Perform a cumulative integral in log-log space.
+-   within                               - Test whether a value is within the bounds of another.
+-   minmax                               - Find the min and max of given values
+-   spacing                              - Create an even spacing between extrema from given data.
+-   sliceForAxis                         - Array slicing object which slices only the target axis.
+-   midpoints                            - Return the midpoints between values in the given array.
+-   vecmag                               - find the magnitude/distance of/between vectors
+-   extend                               - Extend the given array by extraplation.
+-   renumerate                           - construct a reverse enumeration iterator
+-   cumstats                             - Calculate a cumulative average and standard deviation.
+-   confidenceIntervals
+-   frexp10                             -   decompose a float into mantissa and exponent (base 10)
+-   stats                                - Get basic statistics for the given array.
+-   groupDigitized                       - Find groups of array indices corresponding to each bin.
+-   sampleInverse                        - Find x-sampling to evenly divide a function in y-space.
 
- - smooth
+-   smooth
 
 # createSlice
 
@@ -36,13 +33,15 @@ import itertools
 import numpy as np
 import scipy as sp
 import scipy.interpolate
-import warnings, numbers
+import warnings
+import numbers
 
-__all__ = []
+__all__ = ['spline', 'logSpline', 'logSpline_resample', 'contiguousInds', 'cumtrapz_loglog',
+           'within', 'minmax', 'spacing',  ]
+
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
-    """
-    Create a general spline interpolation function.
+    """Create a general spline interpolation function.
 
     Arguments
     ---------
@@ -64,13 +63,13 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
     yp = np.array(yy)
 
     # Select positive y-values
-    if( pos ):
-        inds = np.where( yp > 0.0 )[0]
+    if(pos):
+        inds = np.where(yp > 0.0)[0]
         xp = xp[inds]
         yp = yp[inds]
 
     # Convert to log-space as needed
-    if( log ):
+    if(log):
         xp = np.log10(xp)
         yp = np.log10(yp)
 
@@ -80,50 +79,26 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
     yp = yp[inds]
 
     # Monotonic Interpolation
-    if( mono ):
-        if( order != 3 ): warnings.warn("monotonic `PchipInterpolator` is always cubic!")
+    if(mono):
+        if(order != 3): warnings.warn("monotonic `PchipInterpolator` is always cubic!")
         terp = sp.interpolate.PchipInterpolator(xp, yp, extrapolate=extrap)
     # General Interpolation
     else:
         # Let function extrapolate outside range
-        if( extrap ): ext = 0
+        if(extrap): ext = 0
         # Return zero outside of range
-        else:         ext = 1
+        else:       ext = 1
         terp = sp.interpolate.InterpolatedUnivariateSpline(xp, yp, k=order, ext=ext)
 
-
     # Convert back to normal space, as needed
-    if( log ): spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
-    else:      spline = terp
+    if(log): spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
+    else:    spline = terp
 
     return spline
 
-# } spline()
-
-
-def logSpline_resample(xx, yy, newx, order=3):
-    """
-    Use a log-spline to resample the given function at new points.
-
-    Arguments
-    ---------
-       xx   : <scalar>[N], independent variable of original function
-       yy   : <scalar>[N], dependent variable of original function
-       newx : <scalar>[M], new independent variable points at which to resample
-
-    Returns
-    -------
-       newy : <scalar>[M], resampled function values
-
-    """
-    spliner = logSpline(xx, yy, order=order)
-    newy    = spliner(newx)
-    return newy
-
 
 def logSpline(xx, yy, order=3, pos=True):
-    """
-    Create a spline interpolant in log-log-space.
+    """Create a spline interpolant in log-log-space.
 
     Extrapolates to new values outside of range
 
@@ -139,71 +114,45 @@ def logSpline(xx, yy, order=3, pos=True):
 
     """
 
-    if( pos ):
-        inds = np.where( (xx > 0.0) & (yy > 0.0) )
+    if(pos):
+        inds = np.where((xx > 0.0) & (yy > 0.0))
         xl = np.log10(xx[inds])
         yl = np.log10(yy[inds])
-        if( len(inds[0]) < order+1 ):
+        if(len(inds[0]) < order+1):
             raise RuntimeError("Too few valid valies (%d) for order %d!!" % (len(inds), order))
 
     else:
         xl = np.log10(xx)
         yl = np.log10(yy)
 
-
     terp = sp.interpolate.InterpolatedUnivariateSpline(xl, yl, k=order)
-    spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
+    spline = lambda xx, terp=terp: np.power(10.0, terp(np.log10(xx)))
 
     return spline
 
-# } logSpline()
 
+def logSpline_resample(xx, yy, newx, order=3):
+    """Use a log-spline to resample the given function at new points.
 
-'''
-def logSpline_mono(xx, yy, pos=True, extrap=True):
-    """
-    Create a *monotonic*, cubic spline interpolant in log-log-space.
-
-    Parameters
-    ----------
-        xx     <flt>[N] : independent variable
-        yy     <flt>[N] : function of ``xx``
-        pos    <bool>   : select only positive values from ``yy`` (and corresponding ``xx``)
-        extrap <bool>   : allow extrapolation outside of bounds of ``xx``
+    Arguments
+    ---------
+       xx   : <scalar>[N], independent variable of original function
+       yy   : <scalar>[N], dependent variable of original function
+       newx : <scalar>[M], new independent variable points at which to resample
 
     Returns
     -------
-        spline <call>   : spline interpolation function.
+       newy : <scalar>[M], resampled function values
 
     """
-
-    order = 2
-
-    if( pos ):
-        inds = np.where( (xx > 0.0) & (yy > 0.0) )
-        xl = np.log10(xx[inds])
-        yl = np.log10(yy[inds])
-        if( len(inds[0]) < order+1 ):
-            raise RuntimeError("Too few valid valies (%d) for order %d!!" % (len(inds), order))
-
-    else:
-        xl = np.log10(xx)
-        yl = np.log10(yy)
-
-    terp = sp.interpolate.PchipInterpolator(xl, yl, extrapolate=extrap)
-    spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
-
-    return spline
-
-# } logSpline_mono()
-'''
+    spliner = logSpline(xx, yy, order=order)
+    newy = spliner(newx)
+    return newy
 
 
 def contiguousInds(args):
+    """Find the longest contiguous segment of positive values in the array.
     """
-    Find the longest contiguous segment of positive values in the array.
-    """
-
     condition = (np.array(args) > 0.0)
 
     # Find the indicies of changes in ``condition``
@@ -220,10 +169,10 @@ def contiguousInds(args):
     if condition[-1]: idx = np.r_[idx, condition.size]
 
     # Reshape the result into two columns
-    idx.shape = (-1,2)
+    idx.shape = (-1, 2)
 
     # Find lengths of each contiguous segment
-    sizes = np.diff( idx, axis=1 )
+    sizes = np.diff(idx, axis=1)
     # Find the location of maximum segment length
     maxPos = np.argmax(sizes)
     # Make indices spanning longest segment
@@ -231,54 +180,31 @@ def contiguousInds(args):
 
     return inds
 
-# contiguousInds()
-
-'''
-def cumtrapz_rev(yy, xx=None, initial=0.0):
-    """
-    """
-    if( xx is not None ):
-        assert np.shape(yy) == np.shape(xx), "Shapes of ``yy`` and ``xx`` must match!"
-
-    # Reverse the last axis
-    cut = sliceForAxis(yy, axis=-1, step=-1)
-
-    yy = yy[cut]
-    if( xx is not None ): xx = xx[cut]
-
-    integ = sp.integrate.cumtrapz(yy, x=xx, initial=initial)[cut]
-
-    return integ
-
-# } cumtrapz_rev()
-'''
-
 
 def cumtrapz_loglog(yy, xx, init=0.0, rev=False):
-    """
+    """Perform a cumulative integral in log-log space.
     From Thomas Robitaille
     https://github.com/astrofrog/fortranlib/blob/master/src/lib_array.f90
     """
-
-    if( np.ndim(yy) > 1 ): raise RuntimeError("This isn't implemented for ndim > 1!")
+    if(np.ndim(yy) > 1): raise RuntimeError("This isn't implemented for ndim > 1!")
 
     nums = len(xx)
     sum = np.zeros(nums)
 
-    if( rev ):
+    if(rev):
         xx = xx[::-1]
         yy = yy[::-1]
 
     sum[0] = init
-    for ii in xrange(1,nums):
+    for ii in xrange(1, nums):
         sum[ii] = sum[ii-1] + _trapezium_loglog(xx[ii-1], yy[ii-1], xx[ii], yy[ii])
 
-    if( rev ): sum = sum[::-1]
+    if(rev): sum = sum[::-1]
 
     return sum
 
 
-def _trapezium_loglog(x1,y1,x2,y2):
+def _trapezium_loglog(x1, y1, x2, y2):
     """
     From Thomas Robitaille
     https://github.com/astrofrog/fortranlib/blob/master/src/lib_array.f90
@@ -292,10 +218,8 @@ def _trapezium_loglog(x1,y1,x2,y2):
     return trap
 
 
-
 def within(vals, extr, edges=True, all=False, inv=False):
-    """
-    Test whether a value or array is within the bounds of another.
+    """Test whether a value or array is within the bounds of another.
 
     Arguments
     ---------
@@ -314,25 +238,21 @@ def within(vals, extr, edges=True, all=False, inv=False):
     extr_bnds = minmax(extr)
 
     # Include edges for WITHIN bounds (thus not including is outside)
-    if( edges ): retval = np.asarray( ((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])) )
+    if(edges): retval = np.asarray(((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])))
     # Don't include edges for WITHIN  (thus include them for outside)
-    else:        retval = np.asarray( ((vals >  extr_bnds[0]) & (vals <  extr_bnds[1])) )
+    else:      retval = np.asarray(((vals > extr_bnds[0]) & (vals < extr_bnds[1])))
 
     # Convert to single return value
-    if( all ): retval = np.all(retval)
+    if(all): retval = np.all(retval)
 
     # Invert results
-    if( inv ): retval = np.invert(retval)
+    if(inv): retval = np.invert(retval)
 
     return retval
 
-# within()
-
-
 
 def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
-    """
-    Find minimum and maximum of given data, return as numpy array.
+    """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
 
@@ -358,11 +278,11 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
     useData = np.array(data).flatten()
 
     # Filter out zeros if desired
-    if( nonzero ):  useData = np.array(useData[np.nonzero(useData)])
-    if( positive ): useData = np.array(useData[np.where(useData >= 0.0)])
+    if(nonzero):  useData = np.array(useData[np.nonzero(useData)])
+    if(positive): useData = np.array(useData[np.where(useData >= 0.0)])
 
     # If there are no elements (left), return ``prev`` (`None` if not provided)
-    if( np.size(useData) == 0 ): return prev
+    if(np.size(useData) == 0): return prev
 
     # Determine stretch factor
     lef = (1.0-stretch)
@@ -372,19 +292,15 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
     minmax = np.array([lef*np.min(useData), rit*np.max(useData)])
 
     # Compare to previous extrema, if given
-    if( prev is not None ):
-        minmax[0] = np.min([minmax[0],prev[0]])
-        minmax[1] = np.max([minmax[1],prev[1]])
+    if(prev is not None):
+        minmax[0] = np.min([minmax[0], prev[0]])
+        minmax[1] = np.max([minmax[1], prev[1]])
 
     return minmax
 
-# minmax()
-
-
 
 def spacing(data, scale='log', num=100, nonzero=None, positive=None):
-    """
-    Create an evenly spaced array between extrema from the given data.
+    """Create an evenly spaced array between extrema from the given data.
 
     If ``nonzero`` and ``positive`` are not given, educated guesses are made based on ``scale``.
 
@@ -402,220 +318,23 @@ def spacing(data, scale='log', num=100, nonzero=None, positive=None):
 
     """
 
-    if(   scale.startswith('log') ): log_flag = True
-    elif( scale.startswith('lin') ): log_flag = False
+    if(scale.startswith('log')): log_flag = True
+    elif(scale.startswith('lin')): log_flag = False
     else: raise RuntimeError("``scale`` '%s' unrecognized!" % (scale))
 
-    if( nonzero is None ):
-        if( log_flag ): nonzero = True
+    if(nonzero is None):
+        if(log_flag): nonzero = True
         else:           nonzero = False
 
-    if( positive is None ):
-        if( log_flag ): positive = True
+    if(positive is None):
+        if(log_flag): positive = True
         else:           positive = False
 
     span = minmax(data, nonzero=nonzero, positive=positive)
-    if(   log_flag ): spacing = np.logspace( *np.log10(span), num=num )
-    else:             spacing = np.linspace( *span,           num=num )
+    if(log_flag): spacing = np.logspace(*np.log10(span), num=num)
+    else:             spacing = np.linspace(*span,           num=num)
 
     return spacing
-
-# spacing()
-
-
-
-def histogram(args, bins, binScale=None, bounds='both',
-              weights=None, func='sum', cumul=False, stdev=False):
-    """
-    Histogram (bin) the given values.
-
-    - Currently ``bins`` must be monotonically increasing!!
-    - When using bounds=='both', you currently can't control which interior bin edges are inclusive
-
-    Arguments
-    ---------
-       args     <scalar>[N]   : data to be histogrammed.
-       bins     <scalar>([M]) : Positions of bin edges or number of bins to construct automatically.
-                                If a single ``bins`` value is given, it is assumed to be a number of
-                                bins to create with a scaling given by ``binScale`` (see desc).
-       binScale <str>         : scaling to use when creating bins automatically.
-                                If `None`, the extrema of ``args`` are used to make an selection.
-       bounds    <str>        : optional, how to treat the given ``bins`` values, i.e. which 'edges'
-                                these represent.  Must be one of {`left`, `both`, `right`}.
-                                ``left``  : then ``bins[0]`` is the left-most inclusive edge
-                                            (values beyong that will not be counted), and there is
-                                            no right-most edge
-                                ``right`` : then ``bins[-1]`` is the right-most inclusive edge
-                                            (values beyond that will not be counted), and there is
-                                            no  left-most edge
-                                ``both``  : then values outside of the range of ``bins`` will not be
-                                            counted anywhere.  Returned histogram will have length
-                                            `M-1` --- representing space between ``bins`` values
-       weights  <scalar>([N]) : optional, weighting factors for each input value in ``args``
-       func     <str>         : optional, what binning operation to perform; in each bin:
-                                ``sum``   : sum all values (weights, or count)
-                                ``ave``   : average      of ``weights``
-                                ``max``   : find maximum of ``weights``
-                                ``min``   : find minimum of ``weights``
-       cumul    <bool>        : also calculate and return a cumulative distribution of ``counts``
-       stdev    <bool>        : optional, find standard-deviation of ``weights`` in each bin
-
-
-    Returns
-    -------
-       edges    <scalar>[L]   : edges used for creating histogram
-       counts   <int>[L]      : histogram of counts per bin, if ``edges`` is `both` then length is
-                               `L=M-1`, otherwise `L=M`.
-
-       cumsum   <int>[L]      : optional, cumulative distribution of ``counts``,
-                                returned if ``cumul`` is True
-       hist     <scalar>[L]   : optional, histogram of ``func`` operation on ``weights``
-                                returned if ``weights`` is given.
-       std      <scalar>[L]   : optional, standard-deviation of ``weights`` in bin,
-                                returned if ``stdev == True``
-
-
-    To-Do
-    -----
-     - Allow multiple ``funcs`` to be performed simultaneously, i.e. 'min' and 'max'
-     - Changes ``bounds`` options to be 'inner', 'outer', 'left', 'right'
-
-    """
-
-    assert func in [ 'sum', 'ave', 'min', 'max' ], "Invalid ``func`` argument!"
-
-    # For anything besides counting ('sum'), we need a weight for each argument
-    if( func is not 'sum' or stdev == True ):
-        assert np.shape(weights) == np.shape(args), "Shape of ``weights`` must match ``args``!"
-
-
-    ## Prepare Effective bin edges as needed
-    #  -------------------------------------
-
-    rightInclusive = False
-
-    # Construct a certain number ``bins`` bins spaced appropriately
-    if( np.size(bins) == 1 ):
-        extr = minmax(args)
-        useScale = binScale
-        # If no bin scaling is given, make an appropriate choice
-        if( useScale is None ):
-            useScale = 'log'
-            # Dont use log if there are zero/negative values
-            if(   extr[0] <= 0.0 ):         useScale = 'lin'
-            # Dont use log for small ranges of values
-            elif( extr[1]/extr[0] < 10.0 ): useScale = 'lin'
-
-        edges = spacing(extr, scale=useScale, num=bins+1, nonzero=False)
-    else:
-        edges = np.array(bins)
-
-
-    # Design a right-most bin to include right-most particles
-    if(   bounds == 'left'  ):
-        # Try to go just after right-most value
-        useMax  = 1.01*np.max([np.max(edges), np.max(args)])
-        # Deal with right-most being 0.0
-        shiftMax = minmax(np.fabs(args), nonzero=True)
-        #     If there are no, nonzero values ``None`` is returned
-        if( shiftMax is None ): shiftMax = 1.0
-        else:                   shiftMax = 0.1*shiftMax[0]
-        useMax += shiftMax
-        edges = np.concatenate([edges, [useMax]])
-    # Design a left-most  bin to include left-most  particles
-    elif( bounds == 'right' ):
-        # Try to go just before left-most value
-        useMin  = 0.99*np.min([np.min(edges), np.min(args)])
-        # Deal with left-most being 0.0
-        shiftMin = minmax(np.fabs(args), nonzero=True)
-        #     If there are no, nonzero values ``None`` is returned
-        if( shiftMin is None ): shiftMin = 1.0
-        else:                   shiftMin = 0.1*shiftMin[0]
-        useMin -= shiftMin
-        edges = np.concatenate([[useMin], edges])
-        rightInclusive = True
-    elif( bounds == 'both'  ):
-        pass
-    else:
-        raise RuntimeError("Unrecognized ``bounds`` parameter!!")
-
-
-    ## Find bins for each value
-    #  ------------------------
-
-    # Find where each value belongs
-    digits = np.digitize(args, edges, right=rightInclusive)
-    # Histogram values (i.e. count entries in bins)
-    counts = [ np.count_nonzero(digits == ii) for ii in range(1, len(edges)) ]
-    # Add values equaling the right-most edge
-    if( bounds == 'both' ): counts[-1] += np.count_nonzero( args == edges[-1] )
-
-    counts = np.array(counts)
-
-    # Calculate cumulative distribution
-    if( cumul ): cumsum = np.cumsum(counts)
-
-    # Just histogramming counts
-    if( weights is None ):
-        if( cumul ): return edges, counts, cumsum
-        else:        return edges, counts
-
-
-    ## Perform Weighting
-    #  -----------------
-
-    weights = np.array(weights)
-
-    # if a single scaling is provided
-    if( np.size(weights) == 1 ):
-        if( cumul ): return edges, counts, cumsum, counts*weights
-        else:        return edges, counts, counts*weights
-
-
-    # If ``weights`` has values for each argument ``args``
-
-    useFunc = np.sum
-    if(   func == 'min' ): useFunc = np.min
-    elif( func == 'max' ): useFunc = np.max
-
-    # Sum values in bins
-    hist = [ useFunc(weights[digits == ii]) for ii in range(1, len(edges)) ]
-    # Add values equaling the right-most edge
-    if( bounds == 'both' ):
-        # Add values directly into right-most bin
-        if( func == 'ave' or func == 'sum' ):
-            hist[-1] += useFunc( weights[args == edges[-1]] )
-        # Find min/max of values compared to whats already in right-most bin
-        else:
-            hist[-1]  = useFunc( [hist[-1],weights[args == edges[-1]]] )
-
-    # Average Bins
-    if( func == 'ave' ): hist = [ vv/hh if hh > 0 else 0.0 for hh,vv in zip(counts, hist) ]
-
-    hist = np.array(hist)
-
-
-    # Calculate standard-deviations
-    # -----------------------------
-
-    if( stdev ):
-        # Sum values in bins
-        std = [ np.std(weights[digits == ii]) for ii in range(1, len(edges)) ]
-        # Fix last bin to include values which equal the right-most edge
-        if( bounds == 'both' ):
-            std[-1] = np.std( weights[ (digits == ii) | (args == edges[-1]) ] )
-
-        std = np.array(std)
-
-        if( cumul ): return edges, counts, cumsum, hist, std
-        else:        return edges, counts, hist, std
-
-
-    # No ``std``, just return histograms of counts and ``func`` on ``weights``
-    if( cumul ): return edges, counts, cumsum, hist
-    else:        return edges, counts, hist
-
-# } def histogram
 
 
 def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
@@ -639,19 +358,19 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
 
     """
 
-    if( start == stop == step == None ):
+    if(start == stop == step == None):
         raise RuntimeError("``start``,``stop``, or ``step`` required!")
 
     ndim = np.ndim(arr)
-    if( ndim == 0 ): ndim = arr
+    if(ndim == 0): ndim = arr
 
-    if( ndim > 1 ):
+    if(ndim > 1):
         #     Create an object to slice all elements of all dims
         cut = [slice(None)]*ndim
         #     Exclude the last element of the last dimension
         cut[axis] = slice(start,stop,step)
     else:
-        if( axis != 0 and axis != -1 ): raise RuntimeError("cannot slice nonexistent axis!")
+        if(axis != 0 and axis != -1): raise RuntimeError("cannot slice nonexistent axis!")
         cut = slice(start, stop, step)
 
     return cut
@@ -677,10 +396,10 @@ def midpoints(arr, log=False, frac=0.5):
 
     """
 
-    if( np.shape(arr)[-1] < 2 ):
+    if(np.shape(arr)[-1] < 2):
         raise RuntimeError("Input ``arr`` does not have a valid shape!")
 
-    if( log ): user = np.log10(arr)
+    if(log): user = np.log10(arr)
     else:      user = np.array(arr)
 
     diff = np.diff(user)
@@ -690,7 +409,7 @@ def midpoints(arr, log=False, frac=0.5):
     start = user[cut]
     mids = start + frac*diff
 
-    if( log ): mids = np.power(10.0, mids)
+    if(log): mids = np.power(10.0, mids)
 
     return mids
 
@@ -716,12 +435,12 @@ def vecmag(r1, r2=None):
 
     """
 
-    if( r2 is None ): r2 = np.zeros(np.shape(r1))
+    if(r2 is None): r2 = np.zeros(np.shape(r1))
 
-    if( len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1 ):
-        dist = np.sqrt( np.sum( np.square(r1 - r2), axis=1) )
+    if(len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1):
+        dist = np.sqrt(np.sum(np.square(r1 - r2), axis=1))
     else:
-        dist = np.sqrt( np.sum( np.square(r1 - r2) ) )
+        dist = np.sqrt(np.sum(np.square(r1 - r2)))
 
     return dist
 
@@ -745,18 +464,18 @@ def extend(arr, num=1, log=True, append=False):
 
     """
 
-    if( log ): useArr = np.log10(arr)
+    if(log): useArr = np.log10(arr)
     else:      useArr = np.array(arr)
 
     steps = np.arange(1,num+1)
     left = useArr[ 0] + (useArr[ 0] - useArr[ 1])*steps[::-1].squeeze()
     rigt = useArr[-1] + (useArr[-1] - useArr[-2])*steps.squeeze()
 
-    if( log ):
+    if(log):
         left = np.power(10.0, left)
         rigt = np.power(10.0, rigt)
 
-    if( append ): return np.hstack([left, arr, rigt])
+    if(append): return np.hstack([left, arr, rigt])
     else:         return [left, rigt]
 
 # extend()
@@ -793,12 +512,12 @@ def cumstats(arr):
     # Cumulative sum
     sm1 = np.cumsum(arr)
     # Cumulative sum of squares
-    sm2 = np.cumsum( np.square(arr) )
+    sm2 = np.cumsum(np.square(arr))
     # Cumulative average
     ave = sm1/(num+1.0)
 
     std[1:] = np.fabs(sm2[1:] - np.square(sm1[1:])/(num[1:]+1.0))/num[1:]
-    std[1:] = np.sqrt( std[1:] )
+    std[1:] = np.sqrt(std[1:])
     return ave, std
 
 # cumstats()
@@ -821,7 +540,7 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
 
     """
 
-    if( not np.iterable(ci) ): ci = [ ci ]
+    if(not np.iterable(ci)): ci = [ ci ]
     ci = np.asarray(ci)
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
 
@@ -831,7 +550,7 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
     conf = np.array(conf)
     med = np.percentile(vals, 50.0)
 
-    if( len(conf) == 1 ): conf = conf[0]
+    if(len(conf) == 1): conf = conf[0]
 
     return med, conf
 
@@ -853,7 +572,7 @@ def frexp10(vals):
 
     """
 
-    exp = np.int( np.floor(np.log10(vals)) )
+    exp = np.int(np.floor(np.log10(vals)))
     man = vals / np.power(10.0, exp)
     return man, exp
 
@@ -878,7 +597,7 @@ def stats(vals, median=False):
     """
     ave = np.average(vals)
     std = np.std(vals)
-    if( median ):
+    if(median):
         med = np.median(vals)
         return ave, std, med
 
@@ -915,14 +634,14 @@ def groupDigitized(arr, bins, edges='right'):
 
     """
 
-    if(   edges.startswith('r') ): right = True
-    elif( edges.startswith('l') ): right = False
+    if(edges.startswith('r')): right = True
+    elif(edges.startswith('l')): right = False
     else: RuntimeError("``edges`` must be 'right' or 'left'!")
 
     # ``numpy.digitize`` always assumes ``bins`` are right-edges (in effect)
     shift = 0
     # If we want 'left' bin edges, such shift each bin leftwards
-    if( not right ): shift = -1
+    if(not right): shift = -1
 
     # Find in which bin each element of arr belongs
     pos = np.digitize(arr, bins, right=right) + shift
@@ -930,7 +649,7 @@ def groupDigitized(arr, bins, edges='right'):
     groups = []
     # Group indices by bin number
     for ii in xrange(len(bins)):
-        groups.append( np.where(pos == ii)[0] )
+        groups.append(np.where(pos == ii)[0])
 
     return groups
 
@@ -958,7 +677,7 @@ def sampleInverse(xx, yy, num=100, log=True, sort=False):
     """
 
     # Convert to log-space, as needed
-    if( log ):
+    if(log):
         xp = np.log10(xx)
         yp = np.log10(yy)
     else:
@@ -978,9 +697,9 @@ def sampleInverse(xx, yy, num=100, log=True, sort=False):
     samples = interpBack(levels)
 
     # Convert back to normal space, as needed
-    if( log ): samples = np.power(10.0, samples)
+    if(log): samples = np.power(10.0, samples)
 
-    if( sort ): samples = samples[np.argsort(samples)]
+    if(sort): samples = samples[np.argsort(samples)]
 
     return samples
 
@@ -1025,7 +744,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     smArr = np.convolve(arr, window, mode=mode)
 
     # Return full smoothed array if no bounds given
-    if( width is None ):
+    if(width is None):
         return smArr
 
     # Other convolution modes require dealing with differing lengths
@@ -1035,11 +754,11 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     ## Smooth portion of array
     #  -----------------------
 
-    if( np.size(width) == 2 ):
+    if(np.size(width) == 2):
         lef = width[0]
         rit = width[1]
-    elif( np.size(width) == 1 ):
-        if( loc is None ): raise ValueError("For a singular ``width``, ``pos`` must be provided!")
+    elif(np.size(width) == 1):
+        if(loc is None): raise ValueError("For a singular ``width``, ``pos`` must be provided!")
         lef = width
         rit = width
     else:
@@ -1051,7 +770,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     rit = _fracToInt(rit, length-1, within=1.0, round='floor')
 
     # If ``loc`` is provided, use ``width`` relative to that
-    if( loc is not None ):
+    if(loc is not None):
         loc = _fracToInt(loc, length-1, within=1.0, round='floor')
         lef = loc - lef
         rit = loc + rit
@@ -1085,17 +804,17 @@ def _fracToInt(frac, size, within=None, round='floor'):
     """
 
     # If ``frac`` is already an integer, do nothing, return it
-    if( isinstance(frac, numbers.Integral) ): return frac
+    if(isinstance(frac, numbers.Integral)): return frac
 
-    if(   round == 'floor' ):
+    if(round == 'floor'):
         roundFunc = np.floor
-    elif( round == 'ceil' ):
+    elif(round == 'ceil'):
         roundFunc = np.ceil
     else:
         raise ValueError("Unrecognized ``round``!")
 
     # Convert fractional input into an integer
-    if( within is not None ):
+    if(within is not None):
         assert frac >= 0.0 and frac <= within, "``frac`` must be between [0.0,%s]!" % (str(within))
 
     loc = np.int(roundFunc(frac*size))
@@ -1124,15 +843,15 @@ def createSlice(index, max):
 
     import numbers
     # Single Value
-    if( isinstance(index, numbers.Integral) ):
+    if(isinstance(index, numbers.Integral)):
         cut = slice(index, index+1)
         ids = np.arange(index, index+1)
     # Range of values
-    elif( np.iterable(index) ):
+    elif(np.iterable(index)):
         cut = index
         ids = index
     else:
-        if( index is not None ):
+        if(index is not None):
             self.log.error("Unrecognized `index` = '%s'!" % (str(index)))
             self.log.warning("Returning all entries")
 
@@ -1143,4 +862,66 @@ def createSlice(index, max):
     return ids, cut
 
 # } createSlice()
+'''
+
+
+'''
+def logSpline_mono(xx, yy, pos=True, extrap=True):
+    """
+    Create a *monotonic*, cubic spline interpolant in log-log-space.
+
+    Parameters
+    ----------
+        xx     <flt>[N] : independent variable
+        yy     <flt>[N] : function of ``xx``
+        pos    <bool>   : select only positive values from ``yy`` (and corresponding ``xx``)
+        extrap <bool>   : allow extrapolation outside of bounds of ``xx``
+
+    Returns
+    -------
+        spline <call>   : spline interpolation function.
+
+    """
+
+    order = 2
+
+    if(pos):
+        inds = np.where((xx > 0.0) & (yy > 0.0))
+        xl = np.log10(xx[inds])
+        yl = np.log10(yy[inds])
+        if(len(inds[0]) < order+1):
+            raise RuntimeError("Too few valid valies (%d) for order %d!!" % (len(inds), order))
+
+    else:
+        xl = np.log10(xx)
+        yl = np.log10(yy)
+
+    terp = sp.interpolate.PchipInterpolator(xl, yl, extrapolate=extrap)
+    spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
+
+    return spline
+
+# } logSpline_mono()
+'''
+
+
+
+'''
+def cumtrapz_rev(yy, xx=None, initial=0.0):
+    """
+    """
+    if(xx is not None):
+        assert np.shape(yy) == np.shape(xx), "Shapes of ``yy`` and ``xx`` must match!"
+
+    # Reverse the last axis
+    cut = sliceForAxis(yy, axis=-1, step=-1)
+
+    yy = yy[cut]
+    if(xx is not None): xx = xx[cut]
+
+    integ = sp.integrate.cumtrapz(yy, x=xx, initial=initial)[cut]
+
+    return integ
+
+# } cumtrapz_rev()
 '''

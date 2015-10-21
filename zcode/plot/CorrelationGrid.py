@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numbers
 
 import zcode.math as zmath
-from . import core as zplot
+from . import plot_core as zplot
 
 __all__ = ['plotCorrelationGrid']
 

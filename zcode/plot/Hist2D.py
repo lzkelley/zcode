@@ -10,7 +10,7 @@ import numpy as _np
 import matplotlib.pyplot as _plt
 
 import zcode.math as _zmath
-from . import core as _zplot
+from . import plot_core as _zplot
 
 __all__ = ['plot2DHist', 'plot2DHistProj']
 

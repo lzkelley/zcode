@@ -1,8 +1,11 @@
 """Math and numerical routines.
 """
 
-from . import core
-from core import *
+from . import math_core
+from math_core import *
+from . import hist
+from hist import *
 
 __all__ = []
-__all__.extend(core.__all__)
+__all__.extend(math_core.__all__)
+__all__.extend(hist.__all__)
