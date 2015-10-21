@@ -3,37 +3,30 @@ General plotting functions.
 
 Functions
 ---------
--   setAxis              : function to set many different axis properties at once
--   twinAxis             : easily create and set a new twin axis (like `twinx()` or `twiny()`)
+-   setAxis              - Set many different axis properties at once.
+-   twinAxis             - Easily create and set a new twin axis (like `twinx()` or `twiny()`)
+-   setLim               - Set limits on an axis
+-   zoom                 - Zoom-in at a certain location on the given axes.
+-   stretchAxes          - Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
+-   text                 - Add text to figure.
+-   unifyAxesLimits      - Set limits on all given axes to match global extrema.
+-   colorCycle           - Create a range of colors.
+-   colormap             - Create a colormap from scalars to colors.
+-   setGrid              - Configure the axes' grid.
+-   skipTicks            - skip some tick marks
+-   saveFigure           - Save the given figure(s) to the given filename.
+-   strSciNot            - Convert a scalar into a string with scientific notation.
 
--   set_lim              : set limits on an axis
--   stretchAxes           : Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
--   text                 :
--   unifyAxesLimits      : given a list of axes, set all limits to match flobal extrema
--   colorCycle           : create a cycle of the given number of colors
+-   plotHistLine         - Plot a histogram line.
+-   plotSegmentedLine    - Draw a line segment by segment.
+-   plotScatter          - Draw a scatter plot.
+-   plotHistBars         - Plot a histogram bar graph.
 
--   setGrid              :
-#-   rescale              :
-
--   plotHistLine         : plot a line as a histogram
--   plotCorrelationGrid  : plot a grid of 1D parameter correlations and histograms
--   plotHistBars         :
--   plotScatter :
--   plot2DHist           : Plot a 2D histogram of the given data.
-
--   skipTicks            : skip some tick marks
--   saveFigure           : Save the given figure(s) to the given filename.
--   plotSegmentedLine    : Plot a line as a series of segements (e.g. with various colors)
--   colormap             : create a colormap from scalars to colors
--   strSciNot            : Create a string with appropriate scientific notation (latex formatted).
-
--   _config_axes()
--   _setAxis_scale       :
--   _setAxis_label       :
--   _histLine            : construct a stepped line
--   _clear_frame
--   _make_segments
-
+-   _setAxis_scale       -
+-   _setAxis_label       -
+-   _histLine            - construct a stepped line
+-   _clear_frame         -
+-   _make_segments       -
 """
 
 import logging
@@ -44,19 +37,14 @@ import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
-import Math as zmath
-import InOut as zio
-from . import plotting
-from plotting import *
+import zcode.math as zmath
+import zcode.inout as zio
 
-__all__ = ['setAxis', 'twinAxis', 'setGrid', 'set_lim', 'stretchAxes']
-__all__.append(plotting.__all__)
-
+__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'unifyAxesLimits',
+           'setGrid', 'skipTicks', 'saveFigure', 'strSciNot', 'plotHistLine', 'plotSegmentedLine',
+           'plotScatter', 'plotHistBars']
 
 COL_CORR = 'royalblue'
-CONF_INTS = [0.95, 0.68]
-CONF_COLS = ['green', 'orange']
-# CONF_COLS = ['orange','orangered']
 
 LW_CONF = 1.0
 
@@ -191,7 +179,7 @@ def twinAxis(ax, axis='x', pos=1.0, **kwargs):
 # } def twinAxes
 
 
-def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
+def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
     """
     Set the limits (range) of the given, target axis.
 
@@ -199,13 +187,13 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
     limit and leave the other bound to its existing value.  When ``range`` is set to `True`, then
     the given axis boumds (``lo``/``hi``) are used as multipliers, i.e.
 
-        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='exactly')
+        >>> Plotting.setLim(ax, lo=0.1, range=True, at='exactly')
         will set the lower bound to be `0.1` times the existing upper bound
 
     The ``at`` keyword determines whether the given bounds are treated as limits to the bounds,
     or as fixed ('exact') values, i.e.
 
-        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='most')
+        >>> Plotting.setLim(ax, lo=0.1, range=True, at='most')
         will set the lower bound to at-'most' `0.1` times the existing upper bound.  If the lower
         bound is already 0.05 times the upper bound, it will not be changed.
 
@@ -222,12 +210,11 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 
     """
 
-    AT_LEAST   = 'least'
-    AT_MOST    = 'most'
+    AT_LEAST = 'least'
+    AT_MOST = 'most'
     AT_EXACTLY = 'exactly'
-    AT_VALID   = [AT_LEAST, AT_EXACTLY, AT_MOST]
+    AT_VALID = [AT_LEAST, AT_EXACTLY, AT_MOST]
     assert at in AT_VALID, "``at`` must be in {'%s'}!" % (str(AT_VALID))
-
 
     if(axis == 'y'):
         get_lim = ax.get_ylim
@@ -269,24 +256,26 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
         elif(data is not None):
             lims[1] = np.max(data)
 
+    # Actually set the axes limits
     set_lim(lims)
     if(invert):
         if(axis == 'x'): ax.invert_xaxis()
-        else:              ax.invert_yaxis()
+        else:            ax.invert_yaxis()
 
     return
-
-# set_lim()
+# } def setLim
 
 
 def zoom(ax, loc, axis='x', scale=2.0):
+    """Zoom-in at a certain location on the given axes.
+    """
 
     # Choose functions based on target axis
-    if( axis == 'x' ):
+    if(axis == 'x'):
         axScale = ax.get_xscale()
         lim = ax.get_xlim()
         set_lim = ax.set_xlim
-    elif( axis == 'y' ):
+    elif(axis == 'y'):
         axScale = ax.get_yscale()
         lim = ax.get_ylim()
         set_lim = ax.set_ylim
@@ -296,37 +285,28 @@ def zoom(ax, loc, axis='x', scale=2.0):
     lim = np.array(lim)
 
     # Determine axis scaling
-    if(   axScale.startswith('lin') ):
+    if(axScale.startswith('lin')):
         log = False
-    elif( axScale.startswith('log') ):
+    elif(axScale.startswith('log')):
         log = True
     else:
         raise ValueError("``axScale`` '%s' not implemented!" % (str(axScale)))
 
     # Convert to log if appropriate
-    if( log ):
+    if(log):
         lim = np.log10(lim)
         loc = np.log10(loc)
 
     # Find new axis bounds
-    delta = np.diff( zmath.minmax(lim) )[0]
-    lim = np.array([ loc - (0.5/scale)*delta, loc + (0.5/scale)*delta ])
+    delta = np.diff(zmath.minmax(lim))[0]
+    lim = np.array([loc - (0.5/scale)*delta, loc + (0.5/scale)*delta])
     # Convert back to linear if appropriate
-    if( log ): lim = np.power(10.0, lim)
+    if(log): lim = np.power(10.0, lim)
     set_lim(lim)
 
     return lim
 
 # } zoom()
-
-
-
-def limits(xx, yy, xlims):
-    """
-    """
-    inds = np.where( (xx >= np.min(xlims)) & (xx <= np.max(xlims)) )[0]
-    return zmath.minmax(yy[inds])
-
 
 
 def stretchAxes(ax, xs=1.0, ys=1.0):
@@ -356,28 +336,29 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     ax.set_ylim(ylims)
 
     return ax
-
-# } stretchAxes()
+# } def stretchAxes
 
 
 def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans=None, **kwargs):
-    if( trans is None ): trans = fig.transFigure
-    if( valign == 'upper' ):
+    """Add text to figure.
+    """
+    if(trans is None): trans = fig.transFigure
+    if(valign == 'upper'):
         warnings.warn("Use `'top'` not `'upper'`!")
         valign = 'top'
 
-    if( valign == 'lower' ):
+    if(valign == 'lower'):
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
     txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
     return txt
+# } def text
 
 
 def unifyAxesLimits(axes, axis='y'):
-    """
-    Given a list of axes, set all limits to match global extrema.
+    """Given a list of axes, set all limits to match global extrema.
     """
 
     assert axis in ['x', 'y'], "``axis`` must be either 'x' or 'y' !!"
@@ -398,17 +379,60 @@ def unifyAxesLimits(axes, axis='y'):
 
     return np.array([lo, hi])
 
-# } def unifyAxesLimits
-
 
 def colorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
+    """Create a range of colors.
+    """
     cols = [cmap(it) for it in np.linspace(left, right, num)]
     if(ax is not None): ax.set_color_cycle(cols[::-1])
     return cols
 
 
-def setGrid(ax, val, axis='both', below=True):
+def colormap(args, cmap='jet', scale=None):
+    """Create a colormap from a scalar range to a set of colors.
+
+    Arguments
+    ---------
+       args  <scalar>([N]) : range of valid scalar values to normalize with
+       cmap  <object>      : optional, desired colormap
+       scale <str>         : optional, scaling of colormap {'lin', 'log'}
+
+    Returns
+    -------
+       smap <matplotlib.cm.ScalarMappable> : scalar mappable object which contains the members
+                                             ``norm``, ``cmap``, and the function ``to_rgba``
+
     """
+
+    if(isinstance(cmap, str)): cmap = plt.get_cmap(cmap)
+
+    if(scale is None):
+        if(np.size(args) > 1): scale = 'log'
+        else:                    scale = 'lin'
+
+    if(scale.startswith('log')): log = True
+    elif(scale.startswith('lin')): log = False
+    else:
+        raise RuntimeError("Unrecognized ``scale`` = '%s'!!" % (scale))
+
+    # Determine minimum and maximum
+    if(np.size(args) > 1): min, max = zmath.minmax(args, nonzero=log, positive=log)
+    else:                  min, max = 0, np.int(args)-1
+
+    # Create normalization
+    if(log): norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+    else:    norm = mpl.colors.Normalize(vmin=min, vmax=max)
+
+    # Create scalar-mappable
+    smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+    # Bug-Fix something something
+    smap._A = []
+
+    return smap
+
+
+def setGrid(ax, val, axis='both', below=True):
+    """Configure the axes' grid.
     """
 
     ax.grid(False, which='both', axis='both')
@@ -420,42 +444,126 @@ def setGrid(ax, val, axis='both', below=True):
 
     return
 
-# } setGrid()
 
-'''
-def rescale(ax, which='both'):
+def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
     """
+    Only label every ``skip`` tick marks.
+
+    Arguments
+    ---------
+        ax    <obj>  : `matplotlib.axes.Axes` object, base axes class
+        axis  <str>  : which axis to modify
+        skip  <int>  : interval which to skip
+        num   <int>  : target number of tick labels (``None`` : used a fixed ``skip``)
+        first <bool> : If `True` always show first tick, if `False` never show, otherwise use skip
+        last  <bool> : If `True` always show last  tick, if `False` never show, otherwise use skip
+
     """
 
-    if(which == 'x'):
-        scaley = False
-        scalex = True
-    elif(which == 'y'):
-        scaley = True
-        scalex = True
-    elif(which == 'both'):
-        scaley = True
-        scalex = True
+    # Get the correct labels
+    if(axis == 'y'): ax_labels = ax.yaxis.get_ticklabels()
+    elif(axis == 'x'): ax_labels = ax.yaxis.get_ticklabels()
+    else: raise RuntimeError("Unrecognized ``axis`` = '%s'!!" % (axis))
+
+    count = len(ax_labels)
+
+    # Determine ``skip`` to match target number of labels
+    if(num is not None): skip = np.int(np.ceil(1.0*count/num))
+
+    visible = np.zeros(count, dtype=bool)
+
+    # Choose some to be visible
+    visible[::skip] = True
+
+    if(first is True): visible[0] = True
+    elif(first is False): visible[0] = False
+
+    if(last is True): visible[-1] = True
+    elif(last is False): visible[-1] = False
+
+    for label, vis in zip(ax_labels, visible): label.set_visible(vis)
+
+    return
+
+
+def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=True, **kwargs):
+    """Save the given figure(s) to the given filename.
+
+    If ``fig`` is iterable, a multipage pdf is created.  Otherwise a single file is made.
+
+    Arguments
+    ---------
+        fig      <obj>([N]) : one or multiple ``matplotlib.figure.Figure`` objects.
+        fname    <str>      : filename to save to.
+
+        verbose  <bool>     : print verbose output to stdout
+        log      <obj>      : ``logging.Logger`` object to print output to
+        level    <int>      :
+        close    <bool>     : close figures after saving
+        **kwargs <dict>     : additional arguments past to ``savefig()``.
+    """
+
+    # CATCH WRONG ORDER OF ARGUMENTS
+    if(type(fig) == str):
+        warnings.warn("FIRST ARGUMENT SHOULD BE `fig`!!")
+        temp = str(fig)
+        fig = fname
+        fname = temp
+
+    if(log is not None): log.debug("Saving figure...")
+
+    if(not np.iterable(fig)): fig = [fig]
+
+    # Save as multipage PDF
+    if(fname.endswith('pdf') and np.size(fig) > 1):
+        from matplotlib.backends.backend_pdf import PdfPages
+        with PdfPages(fname) as pdf:
+            for ff in fig:
+                pdf.savefig(figure=ff, **kwargs)
+                if(close): plt.close(ff)
+
     else:
-        raise ValueError("Unrecognized ``which`` = '%s'" % str(which))
+        # Save each figure to a different file
+        for ii, ff in enumerate(fig):
+            # On subsequent figures, append the number to the filename
+            if(ii == 0):
+                usefname = str(fname)
+            else:
+                usefname = zio.modifyFilename(fname, append='_%d' % (ii))
+
+            ff.savefig(usefname, **kwargs)
+            if(close): plt.close(ff)
+
+    printStr = "Saved figure to '%s'" % (fname)
+    if(log is not None): log.log(level, printStr)
+    elif(verbose): print printStr
+
+    return
 
 
-    # recompute the ax.dataLim
-    ax.relim()
-    # update ax.viewLim using the new dataLim
-    ax.autoscale_view(tight=True, scaley=scaley, scalex=scalex)
-    plt.draw()
+def strSciNot(val, precman=1, precexp=0):
+    """Convert a scalar into a string with scientific notation (latex formatted).
 
-    return ax
+    Arguments
+    ---------
+        val <flt> : numerical value to convert
+        precman <int> : precision of the mantissa (decimal points)
+        precexp <int> : precision of the exponent (decimal points)
 
-# } rescale()
-'''
+    Returns
+    -------
+        str <str> : scientific notation string using latex formatting.
+
+    """
+    man, exp = zmath.frexp10(val)
+    notStr = "${0:.{2:d}f} \\times \, 10^{{ {1:.{3:d}f} }}$"
+    notStr = notStr.format(man, exp, precman, precexp)
+    return notStr
 
 
 def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None,
                  fill=None, **kwargs):
-    """
-    Given bin edges and histogram-like values, plot a histogram.
+    """Given bin edges and histogram-like values, plot a histogram.
 
     Arguments
     ---------
@@ -522,243 +630,10 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
         ax.set_ylim(ylim)
 
     return line
-# } def plotHistLine
-
-
-def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, contours=True,
-                        pars_scales=None, hist_scales=None, hist_bins=None, names=None):
-    """
-    Plot a grid of correlation graphs, showing histograms of arrays and correlations between pairs.
-
-    Arguments
-    ---------
-        data <scalar>[N][M]        : ``N`` different parameters, with ``M`` values each
-
-        figure      <obj>          : ``matplotlib.figure.Figure`` object on which to plot
-        style       <str>          : what style of correlation plots to make
-                                     - 'scatter'
-
-        confidence  <bool>         : Add confidence intervals to histogram plots
-        contours    <bool>         : Add contour lines to correlation plots
-        pars_scales  <scalar>([N]) : What scale to use for all (or each) parameter {'lin', 'log'}
-        hist_scales <scalar>([N])  : What y-axis scale to use for all (or each) histogram
-        hist_bins   <scalar>([N])  : Number of bins for all (or each) histogram
-
-
-    Returns
-    -------
-        figure <obj>      : ``matplotlib.figure.Figure`` object
-        axes   <obj>[N,N] : array of ``matplotlib.axes`` objects
-
-    """
-
-    LEF = 0.06
-    RIT = 0.95
-    TOP = 0.95
-    BOT = 0.05
-
-    FS = 16
-
-    npars = len(data)
-
-    # Set default scales for each parameter
-    if(pars_scales is None):            pars_scales = ['linear']*npars
-    elif(isinstance(pars_scales, str)): pars_scales = [pars_scales]*npars
-
-    # Set default scales for each histogram (counts)
-    if(hist_scales is None):            hist_scales = ['linear']*npars
-    elif(isinstance(hist_scales, str)): hist_scales = [hist_scales]*npars
-
-    # Convert scaling strings to appropriate formats
-    for ii in xrange(npars):
-        if(pars_scales[ii].startswith('lin')): pars_scales[ii] = 'linear'
-        elif(pars_scales[ii].startswith('log')): pars_scales[ii] = 'log'
-        if(hist_scales[ii].startswith('lin')): hist_scales[ii] = 'linear'
-        elif(hist_scales[ii].startswith('log')): hist_scales[ii] = 'log'
-
-    if(confidence): confInts = CONF_INTS
-    else:           confInts = None
-
-    # Set default bins
-    if(hist_bins is None):                         hist_bins = [40]*npars
-    elif(isinstance(hist_bins, numbers.Integral)): hist_bins = [hist_bins]*npars
-
-    # Setup Figure and Axes
-    # ---------------------
-    # Create Figure
-    if(figure is None): figure = plt.figure()
-
-    # Axes are already on figure
-    if(len(figure.axes) > 0):
-        # Make sure the number of axes is correct
-        if(len(figure.axes) != npars*npars):
-            raise RuntimeError("``figure`` axes must be {0:d}x{0:d}!".format(npars))
-
-    # Create axes
-    else:
-
-        # Divide figure evenly with padding
-        dx = (RIT-LEF)/npars
-        dy = (TOP-BOT)/npars
-
-        # Rows
-        for ii in xrange(npars):
-            # Columns
-            for jj in xrange(npars):
-                ax = figure.add_axes([LEF+jj*dx, TOP-(ii+1)*dy, dx, dy])
-                # Make upper-right half of figure invisible
-                if(jj > ii):
-                    ax.set_visible(False)
-                    continue
-
-            # jj
-        # ii
-
-    axes = np.array(figure.axes)
-    # Reshape to grid for convenience
-    axes = axes.reshape(npars, npars)
-
-
-    # Plot Correlations and Histograms
-    # --------------------------------
-
-    lims = []
-    for ii in xrange(npars):
-        lims.append(zmath.minmax(data[ii]))
-
-        for jj in xrange(npars):
-            if(jj > ii): continue
-
-            # Histograms
-            if(ii == jj):
-                art = plotHistBars(axes[ii, jj], data[ii], bins=hist_bins[ii],
-                                   scalex=pars_scales[ii], conf=True)
-
-            # Correlations
-            else:
-                if(style == 'scatter'):
-                    art = plotScatter(axes[ii, jj], data[jj], data[ii],
-                                      scalex=pars_scales[jj], scaley=pars_scales[ii], cont=contours)
-                else:
-                    raise RuntimeError("``style`` '%s' is not implemented!" % (style))
-
-        # jj
-    # ii
-
-
-
-    # Configure Axes
-    # --------------
-    _config_axes(axes, lims, pars_scales, hist_scales, names, FS)
-
-    return figure, axes
-
-# plotCorrelationGrid()
-
-
-def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
-    """
-    Only label every ``skip`` tick marks.
-
-    Arguments
-    ---------
-        ax    <obj>  : `matplotlib.axes.Axes` object, base axes class
-        axis  <str>  : which axis to modify
-        skip  <int>  : interval which to skip
-        num   <int>  : target number of tick labels (``None`` : used a fixed ``skip``)
-        first <bool> : If `True` always show first tick, if `False` never show, otherwise use skip
-        last  <bool> : If `True` always show last  tick, if `False` never show, otherwise use skip
-
-    """
-
-    # Get the correct labels
-    if(axis == 'y'): ax_labels = ax.yaxis.get_ticklabels()
-    elif(axis == 'x'): ax_labels = ax.yaxis.get_ticklabels()
-    else: raise RuntimeError("Unrecognized ``axis`` = '%s'!!" % (axis))
-
-    count = len(ax_labels)
-
-    # Determine ``skip`` to match target number of labels
-    if(num is not None): skip = np.int(np.ceil(1.0*count/num))
-
-    visible = np.zeros(count, dtype=bool)
-
-    # Choose some to be visible
-    visible[::skip] = True
-
-    if(first is True): visible[0] = True
-    elif(first is False): visible[0] = False
-
-    if(last is True): visible[-1] = True
-    elif(last is False): visible[-1] = False
-
-    for label, vis in zip(ax_labels, visible): label.set_visible(vis)
-
-    return
-
-# skipTicks()
-
-
-def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=True, **kwargs):
-    """
-    Save the given figure(s) to the given filename.
-
-    If ``fig`` is iterable, a multipage pdf is created.  Otherwise a single file is made.
-
-    Arguments
-    ---------
-        fig      <obj>([N]) : one or multiple ``matplotlib.figure.Figure`` objects.
-        fname    <str>      : filename to save to.
-
-        verbose  <bool>     : print verbose output to stdout
-        log      <obj>      : ``logging.Logger`` object to print output to
-        level    <int>      :
-        close    <bool>     : close figures after saving
-        **kwargs <dict>     : additional arguments past to ``savefig()``.
-    """
-
-    # CATCH WRONG ORDER OF ARGUMENTS
-    if(type(fig) == str):
-        warnings.warn("FIRST ARGUMENT SHOULD BE `fig`!!")
-        temp = str(fig)
-        fig = fname
-        fname = temp
-
-    if(log is not None): log.debug("Saving figure...")
-
-    if(not np.iterable(fig)): fig = [fig]
-
-    # Save as multipage PDF
-    if(fname.endswith('pdf') and np.size(fig) > 1):
-        from matplotlib.backends.backend_pdf import PdfPages
-        with PdfPages(fname) as pdf:
-            for ff in fig:
-                pdf.savefig(figure=ff, **kwargs)
-                if(close): plt.close(ff)
-
-    else:
-        # Save each figure to a different file
-        for ii, ff in enumerate(fig):
-            # On subsequent figures, append the number to the filename
-            if(ii == 0):
-                usefname = str(fname)
-            else:
-                usefname = zio.modifyFilename(fname, append='_%d' % (ii))
-
-            ff.savefig(usefname, **kwargs)
-            if(close): plt.close(ff)
-
-    printStr = "Saved figure to '%s'" % (fname)
-    if(log is not None): log.log(level, printStr)
-    elif(verbose): print printStr
-
-    return
-
-# } def saveFigure
 
 
 def plotSegmentedLine(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], lw=3.0, alpha=1.0):
-    """
+    """Draw a line segment by segment.
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
 
     Plot a colored line with coordinates xx and y
@@ -782,161 +657,18 @@ def plotSegmentedLine(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], lw=
 
     return lc
 
-# } def plotSegmentedLine
-
-
-def colormap(args, cmap='jet', scale=None):
-    """
-    Create a colormap from a scalar range to a set of colors.
-
-    Arguments
-    ---------
-       args  <scalar>([N]) : range of valid scalar values to normalize with
-       cmap  <object>      : optional, desired colormap
-       scale <str>         : optional, scaling of colormap {'lin', 'log'}
-
-    Returns
-    -------
-       smap <matplotlib.cm.ScalarMappable> : scalar mappable object which contains the members
-                                             ``norm``, ``cmap``, and the function ``to_rgba``
-
-    """
-
-    if(isinstance(cmap, str)): cmap = plt.get_cmap(cmap)
-
-    if(scale is None):
-        if(np.size(args) > 1): scale = 'log'
-        else:                    scale = 'lin'
-
-    if(scale.startswith('log')): log = True
-    elif(scale.startswith('lin')): log = False
-    else:
-        raise RuntimeError("Unrecognized ``scale`` = '%s'!!" % (scale))
-
-    # Determine minimum and maximum
-    if(np.size(args) > 1): min, max = zmath.minmax(args, nonzero=log, positive=log)
-    else:                  min, max = 0, np.int(args)-1
-
-    # Create normalization
-    if(log): norm = mpl.colors.LogNorm(vmin=min, vmax=max)
-    else:    norm = mpl.colors.Normalize(vmin=min, vmax=max)
-
-    # Create scalar-mappable
-    smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-    # Bug-Fix something something
-    smap._A = []
-
-    return smap
-
-# colormap()
-
-
-def strSciNot(val, precman=1, precexp=0):
-    """
-    Convert the given value into a string with appropriate scientific notation (latex formatted).
-
-    Arguments
-    ---------
-        val <flt> : numerical value to convert
-        precman <int> : precision of the mantissa (decimal points)
-        precexp <int> : precision of the exponent (decimal points)
-
-    Returns
-    -------
-        str <str> : scientific notation string using latex formatting.
-
-    """
-    man, exp = zmath.frexp10(val)
-    notStr = "${0:.{2:d}f} \\times \, 10^{{ {1:.{3:d}f} }}$"
-    notStr = notStr.format(man, exp, precman, precexp)
-    return notStr
-
-# strSciNot()
-
-
-def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
-    """
-
-    """
-
-    FS = 16
-
-    shp = np.shape(axes)
-    assert len(shp) == 2 and shp[0] == shp[1], "``axes`` must have shape NxN!"
-    npars = shp[0]
-
-    for ii in xrange(npars):
-        for jj in xrange(npars):
-
-            if(jj > ii): continue
-
-            ax = axes[ii, jj]
-            for xy in ['x', 'y']: ax.tick_params(axis=xy, which='both', labelsize=fs)
-            ax.grid(True)
-
-            # Setup Scales and Limits
-            # -----------------------
-            ax.set_xscale(par_scales[jj])
-            if(ii == jj):
-                ax.set_yscale(hist_scales[ii])
-                if(hist_scales[ii].startswith('log')): set_lim(ax, lo=0.8)
-                ax.set_xlim(lims[ii])
-            else:
-                ax.set_yscale(par_scales[ii])
-                ax.set_ylim(lims[ii])
-                ax.set_xlim(lims[jj])
-
-            # Add axis labels
-            if(names is not None):
-                if(jj == 0):       ax.set_ylabel(names[ii], fontsize=FS)
-                if(ii == npars-1): ax.set_xlabel(names[jj], fontsize=FS)
-
-            # Setup Ticks
-            # -----------
-
-            # Move histogram ticks to right-side
-            if(ii == jj):
-                ax.yaxis.tick_right()
-            # Remove y-ticks from non-left-most axes
-            elif(jj > 0):
-                ax.set_yticklabels(['' for tick in ax.get_yticks()])
-            # Remove overlapping ticks
-            else:
-
-                if(ii > 0):
-                    ticks = ax.yaxis.get_major_ticks()
-                    ticks[-1].label1.set_visible(False)
-
-            # Remove x-ticks from non-bottom axes
-            if(ii < npars-1):
-                ax.set_xticklabels(['' for tick in ax.get_yticks()])
-            # Remove overlapping ticks
-            else:
-
-                if(jj < npars-1):
-                    ticks = ax.xaxis.get_major_ticks()
-                    ticks[-1].label1.set_visible(False)
-
-        # } for jj
-    # } for ii
-
-    return
-
-# _config_axes()
-
 
 def plotScatter(ax, xx, yy, scalex='log', scaley='log',
                 size=None, cont=False, color=None, alpha=None, **kwargs):
-    """
-
+    """Draw a scatter plot.
     """
     COL = COL_CORR
 
-    if(size  is None): size  = [30, 6]
+    if(size is None): size = [30, 6]
     if(color is None): color = ['0.25', COL]
     if(alpha is None): alpha = [0.5, 0.8]
 
-    ax.scatter(xx, yy, s=size[0], color=color[0] , alpha=alpha[0], **kwargs)
+    ax.scatter(xx, yy, s=size[0], color=color[0], alpha=alpha[0], **kwargs)
     pnts = ax.scatter(xx, yy, s=size[1], color=color[1], alpha=alpha[1], **kwargs)
 
     # Add Contours
@@ -944,29 +676,30 @@ def plotScatter(ax, xx, yy, scalex='log', scaley='log',
         NUM = 4
         CMAP = 'jet'
         res = 0.3*np.sqrt(len(xx))
-        res = np.max([1,res])
+        res = np.max([1, res])
 
         smap = colormap(NUM, CMAP, scale='lin')
         cols = [smap.to_rgba(it) for it in xrange(NUM)]
 
         xi = zmath.spacing(xx, scalex, num=res)
         yi = zmath.spacing(yy, scaley, num=res)
-        hist, xedges, yedges = np.histogram2d(xx, yy, (xi,yi))
+        hist, xedges, yedges = np.histogram2d(xx, yy, (xi, yi))
         gx, gy = np.meshgrid(xedges[1:], yedges[1:])
         ax.contour(gx, gy, hist.T, NUM, colors=cols)
 
     return pnts
 
-# plotScatter()
-
 
 def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwargs):
-    """
-    Plot a histogram bar graph onto the given axes.
+    """Plot a histogram bar graph.
 
     NOTE: For log-y, make sure `yscale` is either not manually set, or include `nonposy='clip'`
     """
     ALPHA = 0.5
+
+    CONF_INTS = [0.95, 0.68]
+    CONF_COLS = ['green', 'orange']
+    # CONF_COLS = ['orange','orangered']
 
     if(scaley.startswith('log')): logy = True
     else:                           logy = False
@@ -978,9 +711,8 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
         # Add average
         ave = np.average(xx)
         ax.axvline(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
-        for ii,(vals,col) in enumerate(zip(cints, CONF_COLS)):
+        for ii, (vals, col) in enumerate(zip(cints, CONF_COLS)):
             ax.axvspan(*vals, color=col, alpha=ALPHA)
-
 
     if(isinstance(bins, numbers.Integral) and scalex is 'log'):
         bins = zmath.spacing(xx, num=bins)
@@ -989,9 +721,6 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
                                rwidth=0.8, color=COL_CORR, zorder=100, **kwargs)
 
     return bars
-
-# plotHistBars()
-
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
@@ -1027,8 +756,6 @@ def _clear_frame(ax=None):
     for spine in ax.spines.itervalues(): spine.set_visible(False)
     return
 
-# } def _clear_frame
-
 
 def _make_segments(x, y):
     """
@@ -1037,10 +764,45 @@ def _make_segments(x, y):
     Create list of line segments from x and y coordinates, in the correct format for LineCollection:
     an array of the form   [numlines, (points per line), 2 (x and y)] array
     """
-
     points = np.array([x, y]).T.reshape(-1, 1, 2)
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
-
     return segments
 
-# _make_segments()
+
+'''
+def rescale(ax, which='both'):
+    """
+    """
+
+    if(which == 'x'):
+        scaley = False
+        scalex = True
+    elif(which == 'y'):
+        scaley = True
+        scalex = True
+    elif(which == 'both'):
+        scaley = True
+        scalex = True
+    else:
+        raise ValueError("Unrecognized ``which`` = '%s'" % str(which))
+
+
+    # recompute the ax.dataLim
+    ax.relim()
+    # update ax.viewLim using the new dataLim
+    ax.autoscale_view(tight=True, scaley=scaley, scalex=scalex)
+    plt.draw()
+
+    return ax
+
+# } rescale()
+'''
+
+
+'''
+def limits(xx, yy, xlims):
+    """
+    """
+    inds = np.where((xx >= np.min(xlims)) & (xx <= np.max(xlims)))[0]
+    return zmath.minmax(yy[inds])
+'''

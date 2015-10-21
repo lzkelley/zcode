@@ -9,8 +9,8 @@ Functions
 import numpy as _np
 import matplotlib.pyplot as _plt
 
-import zcode.Math as _zmath
-import zcode.Plotting as _zplot
+import zcode.math as _zmath
+from . import plot_core as _zplot
 
 __all__ = ['plot2DHist', 'plot2DHistProj']
 
@@ -23,74 +23,6 @@ _CB_WID = 0.03
 _CB_WPAD = 0.08
 
 _COL = '0.5'
-
-
-def _constructFigure(fig, figsize, xproj, yproj, hratio, wratio, scale, histScale, labels, cbar):
-    """
-
-    Returns
-    -------
-    fig : matplotlib.figure.Figure
-        Figure with axes added on (access via ``fig.axes``)
-    xkey : int
-        The index number of the x-proj plot in the ``fig.axes`` array.  `0` for None.
-        e.g. if ``xproj == yproj == True``, then ``xkey = 1`` and ``ykey = 2``.
-    ykey : int
-        The index number of the y-proj plot in the ``fig.axes`` array.  `0` for None.
-
-    """
-    assert 0.0 <= hratio <= 1.0, "`hratio` must be between [0.0,1.0]!"
-    assert 0.0 <= wratio <= 1.0, "`wratio` must be between [0.0,1.0]!"
-
-    # Create figure if needed
-    if(not fig): fig = _plt.figure(figsize=figsize)
-
-    xpax = ypax = cbax = None
-
-    # Determine usable space and axes sizes
-    useable = [1.0-_LEFT-_RIGHT, 1.0-_TOP-_BOTTOM]
-    if(cbar):
-        useable[0] -= _CB_WID + _CB_WPAD
-
-    if(yproj):
-        prim_wid = useable[0]*wratio
-        ypro_wid = useable[0]*(1.0-wratio)
-    else:
-        prim_wid = useable[0]
-
-    if(xproj):
-        prim_hit = useable[1]*hratio
-        xpro_hit = useable[1]*(1.0-hratio)
-    else:
-        prim_hit = useable[1]
-
-    # Create primary axes, at bottom left
-    prax = fig.add_axes([_LEFT, _BOTTOM, prim_wid, prim_hit])
-    prax.set(xscale=scale[0], yscale=scale[1], xlabel=labels[0], ylabel=labels[1])
-    _zplot.setGrid(prax, False)
-
-    # Add x-projection axes on top-left
-    if(xproj):
-        xpax = fig.add_axes([_LEFT, _BOTTOM+prim_hit, prim_wid, xpro_hit])
-        xpax.set(xscale=scale[0], yscale=histScale, ylabel='Counts', xlabel=labels[0])
-        xpax.xaxis.set_label_position('top')
-        _zplot.setGrid(xpax, True, axis='y')
-
-    # Add y-projection axes on bottom-right
-    if(yproj):
-        ypax = fig.add_axes([_LEFT+prim_wid, _BOTTOM, ypro_wid, prim_hit])
-        ypax.set(yscale=scale[1], xscale=histScale, xlabel='Counts', ylabel=labels[1])
-        ypax.yaxis.set_label_position('right')
-        _zplot.setGrid(ypax, True, axis='x')
-
-    # Add color-bar axes on the right
-    if(cbar):
-        cbar_left = _LEFT + prim_wid + _CB_WPAD
-        if(yproj): cbar_left += ypro_wid
-        cbax = fig.add_axes([cbar_left, _BOTTOM, _CB_WID, prim_hit])
-
-    return fig, prax, xpax, ypax, cbax
-# } def _constructFigure
 
 
 def plot2DHistProj(xvals, yvals, bins=10, fig=None, figsize=[18, 12], xproj=True, yproj=True,
@@ -245,3 +177,71 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=_plt.cm.jet
 
     return pcm
 # } def plot2DHist
+
+
+def _constructFigure(fig, figsize, xproj, yproj, hratio, wratio, scale, histScale, labels, cbar):
+    """
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure with axes added on (access via ``fig.axes``)
+    xkey : int
+        The index number of the x-proj plot in the ``fig.axes`` array.  `0` for None.
+        e.g. if ``xproj == yproj == True``, then ``xkey = 1`` and ``ykey = 2``.
+    ykey : int
+        The index number of the y-proj plot in the ``fig.axes`` array.  `0` for None.
+
+    """
+    assert 0.0 <= hratio <= 1.0, "`hratio` must be between [0.0,1.0]!"
+    assert 0.0 <= wratio <= 1.0, "`wratio` must be between [0.0,1.0]!"
+
+    # Create figure if needed
+    if(not fig): fig = _plt.figure(figsize=figsize)
+
+    xpax = ypax = cbax = None
+
+    # Determine usable space and axes sizes
+    useable = [1.0-_LEFT-_RIGHT, 1.0-_TOP-_BOTTOM]
+    if(cbar):
+        useable[0] -= _CB_WID + _CB_WPAD
+
+    if(yproj):
+        prim_wid = useable[0]*wratio
+        ypro_wid = useable[0]*(1.0-wratio)
+    else:
+        prim_wid = useable[0]
+
+    if(xproj):
+        prim_hit = useable[1]*hratio
+        xpro_hit = useable[1]*(1.0-hratio)
+    else:
+        prim_hit = useable[1]
+
+    # Create primary axes, at bottom left
+    prax = fig.add_axes([_LEFT, _BOTTOM, prim_wid, prim_hit])
+    prax.set(xscale=scale[0], yscale=scale[1], xlabel=labels[0], ylabel=labels[1])
+    _zplot.setGrid(prax, False)
+
+    # Add x-projection axes on top-left
+    if(xproj):
+        xpax = fig.add_axes([_LEFT, _BOTTOM+prim_hit, prim_wid, xpro_hit])
+        xpax.set(xscale=scale[0], yscale=histScale, ylabel='Counts', xlabel=labels[0])
+        xpax.xaxis.set_label_position('top')
+        _zplot.setGrid(xpax, True, axis='y')
+
+    # Add y-projection axes on bottom-right
+    if(yproj):
+        ypax = fig.add_axes([_LEFT+prim_wid, _BOTTOM, ypro_wid, prim_hit])
+        ypax.set(yscale=scale[1], xscale=histScale, xlabel='Counts', ylabel=labels[1])
+        ypax.yaxis.set_label_position('right')
+        _zplot.setGrid(ypax, True, axis='x')
+
+    # Add color-bar axes on the right
+    if(cbar):
+        cbar_left = _LEFT + prim_wid + _CB_WPAD
+        if(yproj): cbar_left += ypro_wid
+        cbax = fig.add_axes([cbar_left, _BOTTOM, _CB_WID, prim_hit])
+
+    return fig, prax, xpax, ypax, cbax
+# } def _constructFigure
