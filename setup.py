@@ -1,4 +1,5 @@
 from setuptools import setup
+import version
 
 readme = open('README.rst').read()
 
@@ -6,7 +7,7 @@ requirements = []
 
 setup(
     name="zcode",
-    version="0.0.1",
+    version=version.version,
     author="Luke Zoltan Kelley",
     author_email="lkelley@cfa.harvard.edu",
     description=("General, commonly used functions for other projects."),
