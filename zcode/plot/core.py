@@ -16,7 +16,6 @@ Functions
 #-   rescale              :
 
 -   plotHistLine         : plot a line as a histogram
--   plotCorrelationGrid  : plot a grid of 1D parameter correlations and histograms
 -   plotHistBars         :
 -   plotScatter :
 -   plot2DHist           : Plot a 2D histogram of the given data.
@@ -27,7 +26,6 @@ Functions
 -   colormap             : create a colormap from scalars to colors
 -   strSciNot            : Create a string with appropriate scientific notation (latex formatted).
 
--   _config_axes()
 -   _setAxis_scale       :
 -   _setAxis_label       :
 -   _histLine            : construct a stepped line
@@ -47,7 +45,7 @@ from matplotlib import pyplot as plt
 import zcode.math as zmath
 import zcode.inout as zio
 
-__all__ = ['setAxis', 'twinAxis', 'setGrid', 'set_lim', 'stretchAxes']
+__all__ = ['setAxis', 'twinAxis', 'setGrid', 'setLim', 'stretchAxes']
 
 COL_CORR = 'royalblue'
 
@@ -184,7 +182,7 @@ def twinAxis(ax, axis='x', pos=1.0, **kwargs):
 # } def twinAxes
 
 
-def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
+def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
     """
     Set the limits (range) of the given, target axis.
 
@@ -192,13 +190,13 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
     limit and leave the other bound to its existing value.  When ``range`` is set to `True`, then
     the given axis boumds (``lo``/``hi``) are used as multipliers, i.e.
 
-        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='exactly')
+        >>> Plotting.setLim(ax, lo=0.1, range=True, at='exactly')
         will set the lower bound to be `0.1` times the existing upper bound
 
     The ``at`` keyword determines whether the given bounds are treated as limits to the bounds,
     or as fixed ('exact') values, i.e.
 
-        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='most')
+        >>> Plotting.setLim(ax, lo=0.1, range=True, at='most')
         will set the lower bound to at-'most' `0.1` times the existing upper bound.  If the lower
         bound is already 0.05 times the upper bound, it will not be changed.
 
@@ -215,12 +213,11 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 
     """
 
-    AT_LEAST   = 'least'
-    AT_MOST    = 'most'
+    AT_LEAST = 'least'
+    AT_MOST = 'most'
     AT_EXACTLY = 'exactly'
-    AT_VALID   = [AT_LEAST, AT_EXACTLY, AT_MOST]
+    AT_VALID = [AT_LEAST, AT_EXACTLY, AT_MOST]
     assert at in AT_VALID, "``at`` must be in {'%s'}!" % (str(AT_VALID))
-
 
     if(axis == 'y'):
         get_lim = ax.get_ylim
@@ -262,24 +259,25 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
         elif(data is not None):
             lims[1] = np.max(data)
 
+    # Actually set the axes limits
     set_lim(lims)
     if(invert):
         if(axis == 'x'): ax.invert_xaxis()
-        else:              ax.invert_yaxis()
+        else:            ax.invert_yaxis()
 
     return
 
-# set_lim()
+# setLim()
 
 
 def zoom(ax, loc, axis='x', scale=2.0):
 
     # Choose functions based on target axis
-    if( axis == 'x' ):
+    if(axis == 'x'):
         axScale = ax.get_xscale()
         lim = ax.get_xlim()
         set_lim = ax.set_xlim
-    elif( axis == 'y' ):
+    elif(axis == 'y'):
         axScale = ax.get_yscale()
         lim = ax.get_ylim()
         set_lim = ax.set_ylim
@@ -289,23 +287,23 @@ def zoom(ax, loc, axis='x', scale=2.0):
     lim = np.array(lim)
 
     # Determine axis scaling
-    if(   axScale.startswith('lin') ):
+    if(axScale.startswith('lin')):
         log = False
-    elif( axScale.startswith('log') ):
+    elif(axScale.startswith('log')):
         log = True
     else:
         raise ValueError("``axScale`` '%s' not implemented!" % (str(axScale)))
 
     # Convert to log if appropriate
-    if( log ):
+    if(log):
         lim = np.log10(lim)
         loc = np.log10(loc)
 
     # Find new axis bounds
-    delta = np.diff( zmath.minmax(lim) )[0]
-    lim = np.array([ loc - (0.5/scale)*delta, loc + (0.5/scale)*delta ])
+    delta = np.diff(zmath.minmax(lim))[0]
+    lim = np.array([loc - (0.5/scale)*delta, loc + (0.5/scale)*delta])
     # Convert back to linear if appropriate
-    if( log ): lim = np.power(10.0, lim)
+    if(log): lim = np.power(10.0, lim)
     set_lim(lim)
 
     return lim
@@ -313,13 +311,11 @@ def zoom(ax, loc, axis='x', scale=2.0):
 # } zoom()
 
 
-
 def limits(xx, yy, xlims):
     """
     """
-    inds = np.where( (xx >= np.min(xlims)) & (xx <= np.max(xlims)) )[0]
+    inds = np.where((xx >= np.min(xlims)) & (xx <= np.max(xlims)))[0]
     return zmath.minmax(yy[inds])
-
 
 
 def stretchAxes(ax, xs=1.0, ys=1.0):
@@ -349,23 +345,23 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     ax.set_ylim(ylims)
 
     return ax
-
-# } stretchAxes()
+# } def stretchAxes
 
 
 def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans=None, **kwargs):
-    if( trans is None ): trans = fig.transFigure
-    if( valign == 'upper' ):
+    if(trans is None): trans = fig.transFigure
+    if(valign == 'upper'):
         warnings.warn("Use `'top'` not `'upper'`!")
         valign = 'top'
 
-    if( valign == 'lower' ):
+    if(valign == 'lower'):
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
     txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
     return txt
+# } def text
 
 
 def unifyAxesLimits(axes, axis='y'):
@@ -557,8 +553,7 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
     for label, vis in zip(ax_labels, visible): label.set_visible(vis)
 
     return
-
-# skipTicks()
+# } def skipTicks
 
 
 def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=True, **kwargs):
@@ -723,11 +718,11 @@ def plotScatter(ax, xx, yy, scalex='log', scaley='log',
     """
     COL = COL_CORR
 
-    if(size  is None): size  = [30, 6]
+    if(size is None): size = [30, 6]
     if(color is None): color = ['0.25', COL]
     if(alpha is None): alpha = [0.5, 0.8]
 
-    ax.scatter(xx, yy, s=size[0], color=color[0] , alpha=alpha[0], **kwargs)
+    ax.scatter(xx, yy, s=size[0], color=color[0], alpha=alpha[0], **kwargs)
     pnts = ax.scatter(xx, yy, s=size[1], color=color[1], alpha=alpha[1], **kwargs)
 
     # Add Contours
@@ -735,14 +730,14 @@ def plotScatter(ax, xx, yy, scalex='log', scaley='log',
         NUM = 4
         CMAP = 'jet'
         res = 0.3*np.sqrt(len(xx))
-        res = np.max([1,res])
+        res = np.max([1, res])
 
         smap = colormap(NUM, CMAP, scale='lin')
         cols = [smap.to_rgba(it) for it in xrange(NUM)]
 
         xi = zmath.spacing(xx, scalex, num=res)
         yi = zmath.spacing(yy, scaley, num=res)
-        hist, xedges, yedges = np.histogram2d(xx, yy, (xi,yi))
+        hist, xedges, yedges = np.histogram2d(xx, yy, (xi, yi))
         gx, gy = np.meshgrid(xedges[1:], yedges[1:])
         ax.contour(gx, gy, hist.T, NUM, colors=cols)
 
@@ -785,7 +780,6 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     return bars
 
 # plotHistBars()
-
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
