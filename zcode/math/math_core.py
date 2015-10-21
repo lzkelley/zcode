@@ -1,31 +1,28 @@
 """
-Functions for Math operations.
+General functions for mathematical and numerical operations.
 
 Functions
 ---------
 -   spline                               - Create a general spline interpolation function.
--   logSpline                            - Construct a spline in log-log space
+-   logSpline                            - Construct a spline in log-log space.
 -   logSpline_resample                   - Use a log-log spline to resample the given data
 -   contiguousInds                       - Find the largest segment of contiguous array values
 -   cumtrapz_loglog                      - Perform a cumulative integral in log-log space.
 -   within                               - Test whether a value is within the bounds of another.
--   minmax                               - Find the min and max of given values
+-   minmax                               - Find the min and max of given values.
 -   spacing                              - Create an even spacing between extrema from given data.
 -   sliceForAxis                         - Array slicing object which slices only the target axis.
 -   midpoints                            - Return the midpoints between values in the given array.
--   vecmag                               - find the magnitude/distance of/between vectors
+-   vecmag                               - find the magnitude/distance of/between vectors.
 -   extend                               - Extend the given array by extraplation.
--   renumerate                           - construct a reverse enumeration iterator
+-   renumerate                           - construct a reverse enumeration iterator.
 -   cumstats                             - Calculate a cumulative average and standard deviation.
--   confidenceIntervals
--   frexp10                             -   decompose a float into mantissa and exponent (base 10)
+-   confidenceIntervals                  - Compute the values bounding desired confidence intervals.
+-   frexp10                              - Decompose a float into mantissa and exponent (base 10).
 -   stats                                - Get basic statistics for the given array.
--   groupDigitized                       - Find groups of array indices corresponding to each bin.
+-   groupDigitized                       - Find groups of array indices corresponding given bin.
 -   sampleInverse                        - Find x-sampling to evenly divide a function in y-space.
-
--   smooth
-
-# createSlice
+-   smooth                               - Use convolution to smooth the given array.
 
 """
 
@@ -37,7 +34,9 @@ import warnings
 import numbers
 
 __all__ = ['spline', 'logSpline', 'logSpline_resample', 'contiguousInds', 'cumtrapz_loglog',
-           'within', 'minmax', 'spacing',  ]
+           'within', 'minmax', 'spacing', 'sliceForAxis', 'midpoints', 'vecmag', 'extend',
+           'renumerate', 'cumstats', 'confidenceIntervals', 'frexp10', 'stats', 'groupDigitized',
+           'sampleInverse', 'smooth']
 
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
@@ -358,7 +357,7 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
 
     """
 
-    if(start == stop == step == None):
+    if(start is stop is step is None):
         raise RuntimeError("``start``,``stop``, or ``step`` required!")
 
     ndim = np.ndim(arr)
@@ -368,14 +367,12 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
         #     Create an object to slice all elements of all dims
         cut = [slice(None)]*ndim
         #     Exclude the last element of the last dimension
-        cut[axis] = slice(start,stop,step)
+        cut[axis] = slice(start, stop, step)
     else:
         if(axis != 0 and axis != -1): raise RuntimeError("cannot slice nonexistent axis!")
         cut = slice(start, stop, step)
 
     return cut
-
-# } sliceForAxis()
 
 
 def midpoints(arr, log=False, frac=0.5):
@@ -413,13 +410,9 @@ def midpoints(arr, log=False, frac=0.5):
 
     return mids
 
-# } midpoints()
-
-
 
 def vecmag(r1, r2=None):
-    """
-    Calculate the distance from vector(s) r1 to r2.
+    """Calculate the distance from vector(s) r1 to r2.
 
     Both ``r1`` and ``r2`` can be either single, ``M`` dimensional, vectors or a set of ``N`` of
     them.  If both ``r1`` and ``r2`` are sets of vectors, they must have the same length.
@@ -444,12 +437,9 @@ def vecmag(r1, r2=None):
 
     return dist
 
-# vecmag()
-
 
 def extend(arr, num=1, log=True, append=False):
-    """
-    Extend the given array by extraplation.
+    """Extend the given array by extraplation.
 
     Arguments
     ---------
@@ -467,8 +457,8 @@ def extend(arr, num=1, log=True, append=False):
     if(log): useArr = np.log10(arr)
     else:      useArr = np.array(arr)
 
-    steps = np.arange(1,num+1)
-    left = useArr[ 0] + (useArr[ 0] - useArr[ 1])*steps[::-1].squeeze()
+    steps = np.arange(1, num+1)
+    left = useArr[0] + (useArr[0] - useArr[1])*steps[::-1].squeeze()
     rigt = useArr[-1] + (useArr[-1] - useArr[-2])*steps.squeeze()
 
     if(log):
@@ -476,9 +466,7 @@ def extend(arr, num=1, log=True, append=False):
         rigt = np.power(10.0, rigt)
 
     if(append): return np.hstack([left, arr, rigt])
-    else:         return [left, rigt]
-
-# extend()
+    return [left, rigt]
 
 
 def renumerate(arr):
@@ -487,12 +475,9 @@ def renumerate(arr):
     """
     return itertools.izip(reversed(xrange(len(arr))), reversed(arr))
 
-# renumerate()
-
 
 def cumstats(arr):
-    """
-    Calculate a cumulative average and standard deviation.
+    """Calculate a cumulative average and standard deviation.
 
     Arguments
     ---------
@@ -502,7 +487,6 @@ def cumstats(arr):
     -------
         ave <flt>[N] : cumulative average over ``arr``
         std <flt>[N] : cumulative standard deviation over ``arr``
-
 
     """
 
@@ -520,13 +504,9 @@ def cumstats(arr):
     std[1:] = np.sqrt(std[1:])
     return ave, std
 
-# cumstats()
-
-
 
 def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
-    """
-    Compute the values bounding the target confidence intervals for an array of data.
+    """Compute the values bounding the target confidence intervals for an array of data.
 
     Arguments
     ---------
@@ -540,13 +520,13 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
 
     """
 
-    if(not np.iterable(ci)): ci = [ ci ]
+    if(not np.iterable(ci)): ci = [ci]
     ci = np.asarray(ci)
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
 
-    cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0 ]).T
-    conf = [ [np.percentile(vals, 100.0*cdf[0]), np.percentile(vals, 100.0*cdf[1])]
-             for cdf in cdf_vals ]
+    cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
+    conf = [[np.percentile(vals, 100.0*cdf[0]), np.percentile(vals, 100.0*cdf[1])]
+            for cdf in cdf_vals]
     conf = np.array(conf)
     med = np.percentile(vals, 50.0)
 
@@ -554,12 +534,9 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
 
     return med, conf
 
-# confidenceIntervals()
-
 
 def frexp10(vals):
-    """
-    Return the mantissa and exponent in base 10
+    """Return the mantissa and exponent in base 10
 
     Arguments
     ---------
@@ -576,12 +553,9 @@ def frexp10(vals):
     man = vals / np.power(10.0, exp)
     return man, exp
 
-# frexp10()
-
 
 def stats(vals, median=False):
-    """
-    Get basic statistics for the given array.
+    """Get basic statistics for the given array.
 
     Arguments
     ---------
@@ -603,13 +577,9 @@ def stats(vals, median=False):
 
     return ave, std
 
-# } stats()
-
-
 
 def groupDigitized(arr, bins, edges='right'):
-    """
-    Find groups of array indices corresponding to each bin.
+    """Find groups of array indices corresponding given bin.
 
     Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
     bin, finds the list of array indices which belong in that bin.
@@ -653,12 +623,9 @@ def groupDigitized(arr, bins, edges='right'):
 
     return groups
 
-# } groupDigitized()
-
 
 def sampleInverse(xx, yy, num=100, log=True, sort=False):
-    """
-    Find the x-sampling of a function to evenly divide its results in y-space.
+    """Find the x-sampling of a function to evenly divide its results in y-space.
 
     Input function *must* be strictly monotonic in ``yy``.
 
@@ -703,15 +670,9 @@ def sampleInverse(xx, yy, num=100, log=True, sort=False):
 
     return samples
 
-# } sampleInverse()
-
-
-
-
 
 def smooth(arr, size, width=None, loc=None, mode='same'):
-    """
-    Use convolution to smooth the given array.
+    """Use convolution to smooth the given array.
 
     The ``width``, ``loc`` and ``size`` arguments can be given as integers, in which case they are taken
     as indices in the input array; or they can be floats, in which case they are interpreted as
@@ -751,8 +712,8 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     #    If smoothing only a portion of the array,
     assert mode == 'same', "Other convolution modes not supported for portions of array!"
 
-    ## Smooth portion of array
-    #  -----------------------
+    # Smooth portion of array
+    # -----------------------
 
     if(np.size(width) == 2):
         lef = width[0]
@@ -764,7 +725,6 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     else:
         raise ValueError("``width`` must be one or two scalars!")
 
-
     # Convert fractions to positions, if needed
     lef = _fracToInt(lef, length-1, within=1.0, round='floor')
     rit = _fracToInt(rit, length-1, within=1.0, round='floor')
@@ -775,13 +735,11 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
         lef = loc - lef
         rit = loc + rit
 
-
     mask = np.ones(length, dtype=bool)
     mask[lef:rit] = False
     smArr[mask] = arr[mask]
 
     return smArr
-# } smooth()
 
 
 def _fracToInt(frac, size, within=None, round='floor'):
@@ -820,8 +778,6 @@ def _fracToInt(frac, size, within=None, round='floor'):
     loc = np.int(roundFunc(frac*size))
 
     return loc
-
-# } _fracToInt()
 
 
 '''
@@ -903,8 +859,6 @@ def logSpline_mono(xx, yy, pos=True, extrap=True):
 
 # } logSpline_mono()
 '''
-
-
 
 '''
 def cumtrapz_rev(yy, xx=None, initial=0.0):
