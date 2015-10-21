@@ -1,5 +1,4 @@
-"""
-Specific plotting methods.
+"""Plotting methods.
 """
 
 from . import Hist2D
