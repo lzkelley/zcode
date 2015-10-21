@@ -38,6 +38,7 @@ import scipy as sp
 import scipy.interpolate
 import warnings, numbers
 
+__all__ = []
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
     """
@@ -264,7 +265,7 @@ def cumtrapz_loglog(yy, xx, init=0.0, rev=False):
     nums = len(xx)
     sum = np.zeros(nums)
 
-    if( rev ): 
+    if( rev ):
         xx = xx[::-1]
         yy = yy[::-1]
 
@@ -623,7 +624,7 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
 
     If ``arr`` is a single number, it is taken as the number of dimensions to create the slice for.
     Otherwise, the ndim of ``arr`` is used.
-    
+
     Arguments
     ---------
         arr   <obj>    : integer number of dimensions, or N-Dim array of objects to retrieve ndim
@@ -635,10 +636,10 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     Returns
     -------
         cut   <obj>[N] : list of `slice` objects for each dimension, only slicing on ``axis``
-    
+
     """
 
-    if( start == stop == step == None ): 
+    if( start == stop == step == None ):
         raise RuntimeError("``start``,``stop``, or ``step`` required!")
 
     ndim = np.ndim(arr)
@@ -655,7 +656,7 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
 
     return cut
 
-# } sliceForAxis()    
+# } sliceForAxis()
 
 
 def midpoints(arr, log=False, frac=0.5):
@@ -782,7 +783,7 @@ def cumstats(arr):
     -------
         ave <flt>[N] : cumulative average over ``arr``
         std <flt>[N] : cumulative standard deviation over ``arr``
-        
+
 
     """
 
@@ -1028,7 +1029,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
         return smArr
 
     # Other convolution modes require dealing with differing lengths
-    #    If smoothing only a portion of the array, 
+    #    If smoothing only a portion of the array,
     assert mode == 'same', "Other convolution modes not supported for portions of array!"
 
     ## Smooth portion of array
@@ -1048,14 +1049,14 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     # Convert fractions to positions, if needed
     lef = _fracToInt(lef, length-1, within=1.0, round='floor')
     rit = _fracToInt(rit, length-1, within=1.0, round='floor')
-        
+
     # If ``loc`` is provided, use ``width`` relative to that
     if( loc is not None ):
         loc = _fracToInt(loc, length-1, within=1.0, round='floor')
         lef = loc - lef
         rit = loc + rit
 
-    
+
     mask = np.ones(length, dtype=bool)
     mask[lef:rit] = False
     smArr[mask] = arr[mask]
@@ -1143,4 +1144,3 @@ def createSlice(index, max):
 
 # } createSlice()
 '''
-

@@ -42,6 +42,7 @@ Functions
 import os, sys, logging, inspect, warnings
 import numpy as np
 
+__all__ = []
 
 class StreamCapture(list):
     """
@@ -108,11 +109,11 @@ class _Keys_Meta(type):
     -----
         - Modify the attribute getter to yield more unique responses than
           the values given in the user-defined class.
-          e.g. 
+          e.g.
               class TestKeys(Keys):
                   one = 1
 
-              Then the actual value used should be something like 
+              Then the actual value used should be something like
               ``"TestKeys.one"`` or ``"TestKeys.1"``, to make them more unique
               than just ``"one"`` or ``1``.
 
@@ -379,7 +380,7 @@ def npzToDict(npz):
     newDict = {}
     for key in npz.keys():
         vals = npz[key]
-        if( np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) ): 
+        if( np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) ):
             vals = vals.item()
 
         newDict[key] = vals
@@ -404,7 +405,7 @@ def getProgressBar(maxval, width=100):
         progressbar.Percentage(),
         ' ', progressbar.Bar(),
         ' ' ]
-    
+
     try:
         widgets.append(progressbar.AdaptiveETA())
     except:
@@ -546,7 +547,7 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None, strLevel=None, file
 def defaultLogger(logger=None, verbose=False, debug=False):
     """
     Create a basic ``logging.Logger`` object.  With no arguments, a stream-logger set to Warning.
-    
+
     Arguments
     ---------
         logger  <obj>  : a ``logging`` level (integer), or `None` for default
@@ -580,7 +581,7 @@ def defaultLogger(logger=None, verbose=False, debug=False):
 def pickleSave(obj, name, mode='wb'):
     """
     Use pickle to save the given object.
-    
+
     Arguments
     ---------
         obj  <obj> : pickleable object to save
@@ -589,7 +590,7 @@ def pickleSave(obj, name, mode='wb'):
 
     """
     import cPickle as pickle
-    
+
     with open(name, mode) as pfil:
         pickle.dump(obj,pfil)
 
@@ -601,7 +602,7 @@ def pickleSave(obj, name, mode='wb'):
 def pickleLoad(name, mode='rb'):
     """
     Use pickle to load the given object.
-    
+
     Arguments
     ---------
         name <str> : filename to which to save
@@ -609,7 +610,7 @@ def pickleLoad(name, mode='rb'):
 
     """
     import cPickle as pickle
-    
+
     with open(name, mode) as pfil:
         obj = pickle.load(pfil)
 
@@ -621,7 +622,7 @@ def pickleLoad(name, mode='rb'):
 def dillSave(obj, name, mode='wb'):
     """
     Use dill to save the given object.
-    
+
     Arguments
     ---------
         obj  <obj> : pickleable object to save
@@ -643,7 +644,7 @@ def dillSave(obj, name, mode='wb'):
 def dillLoad(name, mode='rb'):
     """
     Use dill to load the given object.
-    
+
     Arguments
     ---------
         name <str> : filename to which to save
@@ -756,4 +757,3 @@ def modifyFilename(fname, prepend='', append=''):
     return newName
 
 # } modifyFilename()
-

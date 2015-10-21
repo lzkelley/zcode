@@ -44,14 +44,10 @@ import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 
-import Math as zmath
-import InOut as zio
-from . import plotting
-from plotting import *
+import zcode.math as zmath
+import zcode.inout as zio
 
 __all__ = ['setAxis', 'twinAxis', 'setGrid', 'set_lim', 'stretchAxes']
-__all__.append(plotting.__all__)
-
 
 COL_CORR = 'royalblue'
 CONF_INTS = [0.95, 0.68]

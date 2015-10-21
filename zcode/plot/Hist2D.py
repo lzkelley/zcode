@@ -9,8 +9,8 @@ Functions
 import numpy as _np
 import matplotlib.pyplot as _plt
 
-import zcode.Math as _zmath
-import zcode.Plotting as _zplot
+import zcode.math as _zmath
+from . import core as _zplot
 
 __all__ = ['plot2DHist', 'plot2DHistProj']
 
