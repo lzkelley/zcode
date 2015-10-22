@@ -29,7 +29,7 @@ import numpy as np
 
 __all__ = ['StreamCapture', 'Keys', 'bytesString', 'getFileSize', 'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
-           'promptYesNo']
+           'promptYesNo', 'modifyFilename']
 
 
 class StreamCapture(list):
