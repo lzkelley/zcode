@@ -148,7 +148,7 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
             ax.set_xscale(par_scales[jj])
             if(ii == jj):
                 ax.set_yscale(hist_scales[ii])
-                if(hist_scales[ii].startswith('log')): zplot.set_lim(ax, lo=0.8)
+                if(hist_scales[ii].startswith('log')): zplot.setLim(ax, lo=0.8)
                 ax.set_xlim(lims[ii])
             else:
                 ax.set_yscale(par_scales[ii])
