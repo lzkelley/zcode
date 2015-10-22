@@ -12,8 +12,9 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
     """
     Histogram (bin) the given values.
 
-    - Currently ``bins`` must be monotonically increasing!!
-    - When using bounds=='both', you currently can't control which interior bin edges are inclusive
+    Currently `bins` must be monotonically increasing!!
+    When using ``bounds=='both'``, you currently can't control which interior bin edges are
+    inclusive.
 
     Arguments
     ---------
@@ -73,7 +74,6 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
 
     # Prepare Effective bin edges as needed
     # -------------------------------------
-
     rightInclusive = False
 
     # Construct a certain number ``bins`` bins spaced appropriately
@@ -148,7 +148,7 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
     # if a single scaling is provided
     if(np.size(weights) == 1):
         if(cumul): return edges, counts, cumsum, counts*weights
-        else:        return edges, counts, counts*weights
+        else:      return edges, counts, counts*weights
 
     # If ``weights`` has values for each argument ``args``
 
