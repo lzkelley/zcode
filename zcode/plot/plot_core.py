@@ -41,8 +41,8 @@ import zcode.math as zmath
 import zcode.inout as zio
 
 __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'unifyAxesLimits',
-           'colorCycle', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot', 'plotHistLine',
-           'plotSegmentedLine', 'plotScatter', 'plotHistBars']
+           'colorCycle', 'colormap', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
+           'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars']
 
 COL_CORR = 'royalblue'
 
