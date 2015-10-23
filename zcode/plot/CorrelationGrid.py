@@ -11,6 +11,12 @@ from . import plot_core as zplot
 __all__ = ['plotCorrelationGrid']
 
 
+_LEFT = 0.06
+_RIGHT = 0.95
+_TOP = 0.95
+_BOT = 0.05
+
+
 def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, contours=True,
                         pars_scales=None, hist_scales=None, hist_bins=None, names=None, fs=12):
     """
@@ -38,11 +44,6 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
 
     """
 
-    LEF = 0.06
-    RIT = 0.95
-    TOP = 0.95
-    BOT = 0.05
-
     npars = len(data)
 
     # Set default scales for each parameter
@@ -66,7 +67,7 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
 
     # Setup Figure and Axes
     # ---------------------
-    # Create Figure
+    #     Create Figure
     if(figure is None): figure = plt.figure()
 
     # Axes are already on figure
@@ -77,16 +78,15 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
 
     # Create axes
     else:
-
         # Divide figure evenly with padding
-        dx = (RIT-LEF)/npars
-        dy = (TOP-BOT)/npars
+        dx = (_RIGHT-_LEFT)/npars
+        dy = (_TOP-_BOT)/npars
 
         # Rows
         for ii in xrange(npars):
             # Columns
             for jj in xrange(npars):
-                ax = figure.add_axes([LEF+jj*dx, TOP-(ii+1)*dy, dx, dy])
+                ax = figure.add_axes([_LEFT+jj*dx, _TOP-(ii+1)*dy, dx, dy])
                 # Make upper-right half of figure invisible
                 if(jj > ii):
                     ax.set_visible(False)
@@ -98,7 +98,6 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
 
     # Plot Correlations and Histograms
     # --------------------------------
-
     lims = []
     for ii in xrange(npars):
         lims.append(zmath.minmax(data[ii]))
@@ -124,13 +123,8 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
 
     return figure, axes
 
-# } def plotCorrelationGrid
-
 
 def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
-    """
-    """
-
     shp = np.shape(axes)
     assert len(shp) == 2 and shp[0] == shp[1], "``axes`` must have shape NxN!"
     npars = shp[0]
@@ -141,13 +135,13 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
 
             ax = axes[ii, jj]
             for xy in ['x', 'y']: ax.tick_params(axis=xy, which='both', labelsize=fs)
-            ax.grid(True)
+            zplot.setGrid(ax, True)
 
             # Setup Scales and Limits
             # -----------------------
             ax.set_xscale(par_scales[jj])
             if(ii == jj):
-                ax.set_yscale(hist_scales[ii])
+                ax.set_yscale(hist_scales[ii], nonposy='clip')
                 if(hist_scales[ii].startswith('log')): zplot.setLim(ax, lo=0.8)
                 ax.set_xlim(lims[ii])
             else:
