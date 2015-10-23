@@ -408,7 +408,7 @@ def colormap(args, cmap='jet', scale=None):
 
     if(scale is None):
         if(np.size(args) > 1): scale = 'log'
-        else:                    scale = 'lin'
+        else:                  scale = 'lin'
 
     if(scale.startswith('log')): log = True
     elif(scale.startswith('lin')): log = False
