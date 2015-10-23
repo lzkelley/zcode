@@ -122,7 +122,7 @@ def plot2DHistProj(xvals, yvals, bins=10, fig=None, figsize=[18, 12], xproj=True
         _plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
         #     set bounds to bin edges
-        _zplot.set_lim(xpax, 'x', data=xedges)
+        _zplot.setLim(xpax, 'x', data=xedges)
 
     # Plot projection of the y-axis (i.e. ignore 'x')
     if(ypax):
@@ -134,7 +134,7 @@ def plot2DHistProj(xvals, yvals, bins=10, fig=None, figsize=[18, 12], xproj=True
         _plt.setp(ypax.get_yticklabels(), fontsize=fs, rotation=90)
         ypax.yaxis.tick_right()
         #     set bounds to bin edges
-        _zplot.set_lim(ypax, 'y', data=yedges)
+        _zplot.setLim(ypax, 'y', data=yedges)
 
     return fig
 # } def plot2DHistProj
@@ -172,8 +172,8 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=_plt.cm.jet
         cbar.set_label('Counts', fontsize=fs)
         cbar.ax.tick_params(labelsize=fs)
 
-    _zplot.set_lim(ax, 'x', data=xvals)
-    _zplot.set_lim(ax, 'y', data=yvals)
+    _zplot.setLim(ax, 'x', data=xvals)
+    _zplot.setLim(ax, 'y', data=yvals)
 
     return pcm
 # } def plot2DHist
