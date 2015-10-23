@@ -4,8 +4,6 @@ General functions for mathematical and numerical operations.
 Functions
 ---------
 -   spline                               - Create a general spline interpolation function.
--   logSpline                            - Construct a spline in log-log space.
--   logSpline_resample                   - Use a log-log spline to resample the given data
 -   contiguousInds                       - Find the largest segment of contiguous array values
 -   cumtrapz_loglog                      - Perform a cumulative integral in log-log space.
 -   within                               - Test whether a value is within the bounds of another.
@@ -33,33 +31,49 @@ import scipy.interpolate
 import warnings
 import numbers
 
-__all__ = ['spline', 'logSpline', 'logSpline_resample', 'contiguousInds', 'cumtrapz_loglog',
+__all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
            'within', 'minmax', 'spacing', 'sliceForAxis', 'midpoints', 'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'frexp10', 'stats', 'groupDigitized',
            'sampleInverse', 'smooth']
 
 
-def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
-    """Create a general spline interpolation function.
+def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=True):
+    """Create a general, callable spline interpolation function.
 
     Arguments
     ---------
-        xx     <flt>[N] : Input independent variable
-        yy     <flt>[N] : Input   dependent variable
-        order  <int>    : order of interpolation (must be ``3`` if ``mono``)
-        log    <bool>   : interpolate in log-log-space
-        mono   <bool>   : use a specifically monotonic interpolator
-        extrap <bool>   : allow extrapolation outside of range of ``xx``
-        pos    <bool>   : filter to only positive values of ``yy``
+    xx : (N,), array_like scalars
+        Independent variable, must be monotonically increasing -- which `sort`, if `True`, will do.
+    yy : (N,), array_like scalars
+        Dependent variable; the values of the function.
+    order : int
+        Order of interpolation (must be 3` if `mono`).
+    log : bool
+        Interpolate in log-log-space.
+    mono : bool
+        Use an explicitly monotonic interpolator (`scipy.interpolate.PchipInterpolator`).
+    extrap : bool
+        Allow extrapolation outside of range of `xx`.
+    pos : bool
+        Filter to only positive values of `yy` (and corresponding `xx`).
+    sort : bool
+        Sort the input arrays to assure `xx` is monotonically increasing.
 
     Returns
     -------
-        spline <obj>    : callable function returning the interpolated values.
+    spline : obj, callable function
+        Spline interplation function.
 
     """
 
     xp = np.array(xx)
     yp = np.array(yy)
+
+    # Make sure arguments are sorted (by independent variable `xx`)
+    if(sort):
+        inds = np.argsort(xp)
+        xp = xp[inds]
+        yp = yp[inds]
 
     # Select positive y-values
     if(pos):
@@ -90,63 +104,10 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False):
         terp = sp.interpolate.InterpolatedUnivariateSpline(xp, yp, k=order, ext=ext)
 
     # Convert back to normal space, as needed
-    if(log): spline = lambda xx: np.power(10.0, terp(np.log10(xx)))
+    if(log): spline = lambda xx, terp=terp: np.power(10.0, terp(np.log10(xx)))
     else:    spline = terp
 
     return spline
-
-
-def logSpline(xx, yy, order=3, pos=True):
-    """Create a spline interpolant in log-log-space.
-
-    Extrapolates to new values outside of range
-
-    Parameters
-    ----------
-        xx : array, independent variable
-        yy : array, function of ``xx``
-        order : int, order of spline interpolant
-
-    Returns
-    -------
-        spline : callable, spline interpolation function
-
-    """
-
-    if(pos):
-        inds = np.where((xx > 0.0) & (yy > 0.0))
-        xl = np.log10(xx[inds])
-        yl = np.log10(yy[inds])
-        if(len(inds[0]) < order+1):
-            raise RuntimeError("Too few valid valies (%d) for order %d!!" % (len(inds), order))
-
-    else:
-        xl = np.log10(xx)
-        yl = np.log10(yy)
-
-    terp = sp.interpolate.InterpolatedUnivariateSpline(xl, yl, k=order)
-    spline = lambda xx, terp=terp: np.power(10.0, terp(np.log10(xx)))
-
-    return spline
-
-
-def logSpline_resample(xx, yy, newx, order=3):
-    """Use a log-spline to resample the given function at new points.
-
-    Arguments
-    ---------
-       xx   : <scalar>[N], independent variable of original function
-       yy   : <scalar>[N], dependent variable of original function
-       newx : <scalar>[M], new independent variable points at which to resample
-
-    Returns
-    -------
-       newy : <scalar>[M], resampled function values
-
-    """
-    spliner = logSpline(xx, yy, order=order)
-    newy = spliner(newx)
-    return newy
 
 
 def contiguousInds(args):
