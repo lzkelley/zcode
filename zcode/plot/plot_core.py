@@ -89,7 +89,8 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
     # Set Grid Lines
     # ax.grid(grid, which='both', axis=axis)
-    setGrid(ax, grid, axis=axis)
+    # setGrid(ax, grid, axis=axis)
+    setGrid(ax, grid, axis='both')
 
     if(axis == 'x'):
         ax.xaxis.label.set_color(c)
