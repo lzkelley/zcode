@@ -1,8 +1,0 @@
-CHANGES
-=======
-
--   zcode
-    + Restructured module to use subdirectories per topic (e.g. 'math') instead of single files.
-
-
-[0.0.2] - 2015/10/20
