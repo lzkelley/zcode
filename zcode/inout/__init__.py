@@ -2,9 +2,9 @@
 """
 
 from . import inout_core
-from inout_core import *
+from .inout_core import *
 from . import log
-from log import *
+from .log import *
 
 __all__ = []
 __all__.extend(inout_core.__all__)

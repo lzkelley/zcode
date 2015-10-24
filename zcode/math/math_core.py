@@ -23,6 +23,7 @@ Functions
 -   smooth                               - Use convolution to smooth the given array.
 
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import itertools
 import numpy as np
@@ -156,7 +157,7 @@ def cumtrapz_loglog(yy, xx, init=0.0, rev=False):
         yy = yy[::-1]
 
     sum[0] = init
-    for ii in xrange(1, nums):
+    for ii in range(1, nums):
         sum[ii] = sum[ii-1] + _trapezium_loglog(xx[ii-1], yy[ii-1], xx[ii], yy[ii])
 
     if(rev): sum = sum[::-1]
@@ -434,7 +435,7 @@ def renumerate(arr):
     """
     Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
     """
-    return itertools.izip(reversed(xrange(len(arr))), reversed(arr))
+    return zip(reversed(range(len(arr))), reversed(arr))
 
 
 def cumstats(arr):
@@ -579,7 +580,7 @@ def groupDigitized(arr, bins, edges='right'):
 
     groups = []
     # Group indices by bin number
-    for ii in xrange(len(bins)):
+    for ii in range(len(bins)):
         groups.append(np.where(pos == ii)[0])
 
     return groups

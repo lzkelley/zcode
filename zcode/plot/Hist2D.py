@@ -6,6 +6,8 @@ Functions
 -    plot2DHistProj          - Plot a 2D histogram, with projected 1D histograms
 
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as _np
 import matplotlib.pyplot as _plt
 

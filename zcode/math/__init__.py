@@ -2,9 +2,9 @@
 """
 
 from . import math_core
-from math_core import *
+from .math_core import *
 from . import hist
-from hist import *
+from .hist import *
 
 __all__ = []
 __all__.extend(math_core.__all__)

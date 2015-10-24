@@ -38,7 +38,7 @@ def test_smooth_1():
 
     xx = np.linspace(-np.pi/4.0, 3.0*np.pi, num=ARR_SIZE)
     arrs = [ AMP*np.sin(xx) + NOISE*np.random.uniform(-1.0,1.0,size=len(xx))
-             for ii in xrange(len(SMOOTH_LENGTHS)) ]
+             for ii in range(len(SMOOTH_LENGTHS)) ]
 
     smArrs = [ zmath.smooth(arr, smlen)
                for (arr,smlen) in zip(arrs,SMOOTH_LENGTHS) ]
@@ -66,7 +66,7 @@ def test_smooth_1():
 
         fname = PLOT_DIR + "test_smooth_1.png"
         fig.savefig(fname)
-        print "Saved to '%s'" % (fname)
+        print("Saved to '%s'" % (fname))
 
 
     # Variance between smoothed and raw should be decreasing
@@ -117,7 +117,7 @@ def test_smooth_2():
 
         fname = PLOT_DIR + "test_smooth_2.png"
         fig.savefig(fname)
-        print "Saved to '%s'" % (fname)
+        print("Saved to '%s'" % (fname))
 
 
     assert np.all( smArrs[0][:249] == arr[:249] )

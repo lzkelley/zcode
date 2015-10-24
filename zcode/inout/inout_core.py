@@ -21,6 +21,8 @@ Functions
 -   modifyFilename           - Modify the given filename.
 
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
+from six import with_metaclass
 
 import os
 import sys
@@ -42,8 +44,8 @@ class StreamCapture(list):
        >>> print output
 
     """
-    import cStringIO
-    from cStringIO import StringIO
+    import io
+    from io import StringIO
 
     def __init__(self, out=True, err=True):
         self.out = out
@@ -88,7 +90,7 @@ class _Keys_Meta(type):
     # Store all attribute values to list ``__values__`` (if they dont start with '__')
     def __init__(self, name, bases, dict):
         self.__init__(self)
-        self.__values__ = [self.__dict__.values()[ii] for ii, ent in enumerate(self.__dict__)
+        self.__values__ = [list(self.__dict__.values())[ii] for ii, ent in enumerate(self.__dict__)
                            if not ent.startswith('__')]
 
     # Iterate over the list of attributes values
@@ -97,7 +99,7 @@ class _Keys_Meta(type):
             yield val
 
 
-class Keys(object):
+class Keys(with_metaclass(_Keys_Meta)):
     """
     Super class to provide convenience for classes used as enumerated dictionary keys.
 
@@ -118,7 +120,6 @@ class Keys(object):
             if(tt == Test.two): print "Found two!"
 
     """
-    __metaclass__ = _Keys_Meta
 
 
 def bytesString(bytes, precision=1):
@@ -141,11 +142,11 @@ def bytesString(bytes, precision=1):
     """
 
     abbrevs = (
-        (1 << 50L, 'PB'),
-        (1 << 40L, 'TB'),
-        (1 << 30L, 'GB'),
-        (1 << 20L, 'MB'),
-        (1 << 10L, 'kB'),
+        (1 << 50, 'PB'),
+        (1 << 40, 'TB'),
+        (1 << 30, 'GB'),
+        (1 << 20, 'MB'),
+        (1 << 10, 'kB'),
         (1, 'bytes')
     )
 
@@ -255,8 +256,8 @@ def dictToNPZ(dataDict, savefile, verbose=False):
     if(not os.path.exists(savefile)):
         raise RuntimeError("Could not save to file '%s'!!" % (savefile))
 
-    if(verbose): print " - - Saved dictionary to '%s'" % (savefile)
-    if(verbose): print " - - - Size '%s'" % (getFileSize(savefile))
+    if(verbose): print(" - - Saved dictionary to '%s'" % (savefile))
+    if(verbose): print(" - - - Size '%s'" % (getFileSize(savefile)))
     return
 
 
@@ -275,7 +276,7 @@ def npzToDict(npz):
     if(type(npz) is str): npz = np.load(npz)
     # newDict = { key : npz[key] for key in npz.keys() }
     newDict = {}
-    for key in npz.keys():
+    for key in list(npz.keys()):
         vals = npz[key]
         if(np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array)):
             vals = vals.item()
@@ -348,7 +349,7 @@ def combineFiles(inFilenames, outFilename, verbose=False):
     inStr = bytesString(inSize)
     outStr = bytesString(outSize)
 
-    if(verbose): print " - - - Total input size = %s, output size = %s" % (inStr, outStr)
+    if(verbose): print(" - - - Total input size = %s, output size = %s" % (inStr, outStr))
     return
 
 
@@ -400,7 +401,7 @@ def promptYesNo(msg='', default='n'):
     elif(default == 'y'): message += '[y]/n : '
     else: raise RuntimeError("Unrecognized ``default`` '%s'" % (default))
 
-    arg = raw_input(message).strip().lower()
+    arg = input(message).strip().lower()
 
     if(default == 'n'):
         if(arg.startswith('y')): retval = True

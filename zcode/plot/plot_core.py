@@ -28,6 +28,7 @@ Functions
 -   _clear_frame         -
 -   _make_segments       -
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import numbers
@@ -315,8 +316,8 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
     """
 
-    xlog = (ax.get_xscale() == u'log')
-    ylog = (ax.get_yscale() == u'log')
+    xlog = (ax.get_xscale() == 'log')
+    ylog = (ax.get_yscale() == 'log')
 
     xlims = np.array(ax.get_xlim())
     ylims = np.array(ax.get_ylim())
@@ -537,7 +538,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
 
     printStr = "Saved figure to '%s'" % (fname)
     if(log is not None): log.log(level, printStr)
-    elif(verbose): print printStr
+    elif(verbose): print(printStr)
 
     return
 
@@ -680,7 +681,7 @@ def plotScatter(ax, xx, yy, scalex='log', scaley='log',
         res = np.max([1, res])
 
         smap = colormap(NUM, CMAP, scale='lin')
-        cols = [smap.to_rgba(it) for it in xrange(NUM)]
+        cols = [smap.to_rgba(it) for it in range(NUM)]
 
         xi = zmath.spacing(xx, scalex, num=res)
         yi = zmath.spacing(yy, scaley, num=res)
@@ -754,7 +755,7 @@ def _clear_frame(ax=None):
     if ax is None: ax = plt.gca()
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
-    for spine in ax.spines.itervalues(): spine.set_visible(False)
+    for spine in ax.spines.values(): spine.set_visible(False)
     return
 
 

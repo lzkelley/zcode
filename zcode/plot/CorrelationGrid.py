@@ -1,5 +1,6 @@
 """
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -55,7 +56,7 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
     elif(isinstance(hist_scales, str)): hist_scales = [hist_scales]*npars
 
     # Convert scaling strings to appropriate formats
-    for ii in xrange(npars):
+    for ii in range(npars):
         if(pars_scales[ii].startswith('lin')): pars_scales[ii] = 'linear'
         elif(pars_scales[ii].startswith('log')): pars_scales[ii] = 'log'
         if(hist_scales[ii].startswith('lin')): hist_scales[ii] = 'linear'
@@ -83,9 +84,9 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
         dy = (_TOP-_BOT)/npars
 
         # Rows
-        for ii in xrange(npars):
+        for ii in range(npars):
             # Columns
-            for jj in xrange(npars):
+            for jj in range(npars):
                 ax = figure.add_axes([_LEFT+jj*dx, _TOP-(ii+1)*dy, dx, dy])
                 # Make upper-right half of figure invisible
                 if(jj > ii):
@@ -99,10 +100,10 @@ def plotCorrelationGrid(data, figure=None, style='scatter', confidence=True, con
     # Plot Correlations and Histograms
     # --------------------------------
     lims = []
-    for ii in xrange(npars):
+    for ii in range(npars):
         lims.append(zmath.minmax(data[ii]))
 
-        for jj in xrange(npars):
+        for jj in range(npars):
             if(jj > ii): continue
 
             # Histograms
@@ -129,8 +130,8 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
     assert len(shp) == 2 and shp[0] == shp[1], "``axes`` must have shape NxN!"
     npars = shp[0]
 
-    for ii in xrange(npars):
-        for jj in xrange(npars):
+    for ii in range(npars):
+        for jj in range(npars):
             if(jj > ii): continue
 
             ax = axes[ii, jj]

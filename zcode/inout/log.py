@@ -1,12 +1,11 @@
 """Logging related classes and functions.
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import sys
 import inspect
 import numpy as np
-
-# from . import inout_core as zio
 
 __all__ = ['IndentFormatter', 'getLogger', 'defaultLogger']
 

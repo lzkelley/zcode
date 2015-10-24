@@ -2,11 +2,11 @@
 """
 
 from . import plot_core
-from plot_core import *
+from .plot_core import *
 from . import Hist2D
-from Hist2D import *
+from .Hist2D import *
 from . import CorrelationGrid
-from CorrelationGrid import *
+from .CorrelationGrid import *
 
 __all__ = []
 __all__.extend(plot_core.__all__)
