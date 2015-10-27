@@ -338,11 +338,39 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     ax.set_ylim(ylims)
 
     return ax
-# } def stretchAxes
 
 
-def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans=None, **kwargs):
+def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=None, **kwargs):
     """Add text to figure.
+
+    Wrapper for the `matplotlib.figure.Figure.text` method.
+
+    Arguments
+    ---------
+    fig : `matplotlib.figure.Figure` object,
+    pstr : str,
+        String to be printed.
+    x : float,
+        X-position at which to draw the string, relative to the transformation given by `trans`.
+    y : float,
+        Y-position at which to draw the string, relative to the transformation given by `trans`.
+    halign : str, one of {'center', 'left', 'right'},
+        Horizontal alignment of text.
+    valign : str, one of {'center', 'bottom', 'top'},
+        Vertical alignment of text.
+    fs : int,
+        Fontsize.
+    trans : `matplotlib.BboxTransformTo` object, or `None`,
+        Transformation to use for text placement.
+    kwargs : any,
+        Additional named arguments passed to `matplotlib.figure.Figure.text`.
+        For example, ``color='blue'``, or ``rotation=90``.
+
+    Returns
+    -------
+    txt : ``matplotlib.text.Text`` object,
+        Handle storing the drawn text.
+
     """
     if(trans is None): trans = fig.transFigure
     if(valign == 'upper'):
@@ -356,7 +384,6 @@ def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans
     txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
     return txt
-# } def text
 
 
 def unifyAxesLimits(axes, axis='y'):
