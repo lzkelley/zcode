@@ -70,7 +70,10 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
     assert func in ['sum', 'ave', 'min', 'max'], "Invalid ``func`` argument!"
 
     # For anything besides counting ('sum'), we need a weight for each argument
-    if(func is not 'sum' or stdev):
+    if(func != 'sum' or stdev):
+        print("func '%s'" % (func))
+        print("func is not 'sum' = '%s'" % (str(func != 'sum')))
+        print("stdev = '%s'" % str(stdev))
         assert np.shape(weights) == np.shape(args), "Shape of ``weights`` must match ``args``!"
 
     # Prepare Effective bin edges as needed
