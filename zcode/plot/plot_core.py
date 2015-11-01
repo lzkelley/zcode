@@ -778,14 +778,14 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
 
     NOTE: For log-y, make sure `yscale` is either not manually set, or include `nonposy='clip'`
     """
-    ALPHA = 0.5
+    HIST_ALPHA = 0.75
+    CONF_ALPHA = 0.5
 
     CONF_INTS = [0.95, 0.68]
     CONF_COLS = ['green', 'orange']
-    # CONF_COLS = ['orange','orangered']
 
     if(scaley.startswith('log')): logy = True
-    else:                           logy = False
+    else:                         logy = False
 
     # Add Confidence intervals
     if(conf):
@@ -795,13 +795,23 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
         ave = np.average(xx)
         ax.axvline(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
         for ii, (vals, col) in enumerate(zip(cints, CONF_COLS)):
-            ax.axvspan(*vals, color=col, alpha=ALPHA)
+            ax.axvspan(*vals, color=col, alpha=CONF_ALPHA)
 
-    if(isinstance(bins, numbers.Integral) and scalex is 'log'):
-        bins = zmath.spacing(xx, num=bins)
+    # Create a given number of log-spaced bins
+    #     If not log-spaced, then `ax.hist` will do the same
+    if(isinstance(bins, numbers.Integral) and scalex.startswith('log')):
+        bins = zmath.spacing(xx, num=bins, )
 
-    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', log=logy,
+    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', log=logy, alpha=HIST_ALPHA,
                                rwidth=0.8, color=COL_CORR, zorder=100, **kwargs)
+
+    # Dont let lower y-lim be less than 0.8 with log-scaling
+    if(scaley.startswith('log')): 
+        # setLim(ax, 'y', lo=0.8, at='least')   <=== This isn't working for some reason!  FIX
+        ylim = np.array(ax.get_ylim())
+        if(ylim[0] < 0.8):
+            ylim[0] = 0.8
+            ax.set_ylim(ylim)
 
     return bars
 
