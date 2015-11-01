@@ -15,5 +15,6 @@ CHANGES
          -   Enhanced the `spline` function, and removed the secondary functions `logSpline` and
              `logSpline_resample`.  The former is included in the new functionality of `spline`,
              and the latter is too simple to warrant its own function.
+         -   new 'strArray' function which creates a string representation of a numerical array.
 
 [0.0.2] - 2015/10/20
