@@ -286,15 +286,15 @@ def spacing(data, scale='log', num=100, nonzero=None, positive=None):
 
     if(nonzero is None):
         if(log_flag): nonzero = True
-        else:           nonzero = False
+        else:         nonzero = False
 
     if(positive is None):
         if(log_flag): positive = True
-        else:           positive = False
+        else:         positive = False
 
     span = minmax(data, nonzero=nonzero, positive=positive)
     if(log_flag): spacing = np.logspace(*np.log10(span), num=num)
-    else:             spacing = np.linspace(*span,           num=num)
+    else:         spacing = np.linspace(*span,           num=num)
 
     return spacing
 
