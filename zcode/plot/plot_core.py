@@ -9,6 +9,7 @@ Functions
 -   zoom                 - Zoom-in at a certain location on the given axes.
 -   stretchAxes          - Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
 -   text                 - Add text to figure.
+-   legend               - Add a legend to the given figure.
 -   unifyAxesLimits      - Set limits on all given axes to match global extrema.
 -   colorCycle           - Create a range of colors.
 -   colormap             - Create a colormap from scalars to colors.
@@ -41,7 +42,8 @@ from matplotlib import pyplot as plt
 import zcode.math as zmath
 import zcode.inout as zio
 
-__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'unifyAxesLimits',
+__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend', 
+           'unifyAxesLimits',
            'colorCycle', 'colormap', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars']
 
@@ -384,6 +386,58 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
     txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
     return txt
+
+
+def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None, 
+           **kwargs):
+    """Add a legend to the given figure.
+
+    Wrapper for the `matplotlib.pyplot.Legend` method.
+
+    Arguments
+    ---------
+    fig : `matplotlib.figure.Figure` object,
+    keys : array_like of artists, shape (N,)
+        Handles to the legend artists to be included in the legend.
+    names : array_like of str, shape (N,)
+        Names corresponding to each legend artist in `keys`.
+    x : float,
+        X-position at which to draw the legend, relative to the transformation given by `trans`.
+    y : float,
+        Y-position at which to draw the legend, relative to the transformation given by `trans`.
+    halign : str, one of {'center', 'left', 'right'},
+        Horizontal alignment of legend box.
+    valign : str, one of {'center', 'lower', 'upper'},
+        Vertical alignment of legend box.
+    fs : int,
+        Fontsize.
+    trans : `matplotlib.BboxTransformTo` object, or `None`,
+        Transformation to use for legend placement.
+    kwargs : any,
+        Additional named arguments passed to `matplotlib.pyplot.legend`.
+        For example, ``ncol=1`` or ``title='Legend Title'``.
+
+    Returns
+    -------
+    leg : ``matplotlib.legend.Legend`` object,
+        Handle storing the drawn legend.
+
+    """
+    ax = fig.axes[0]
+
+    if(trans is None): trans = fig.transFigure
+    if(valign == 'top'):
+        valign = 'upper'
+
+    if(valign == 'bottom'):
+        valign = 'lower'
+
+    alignStr = valign + " " + halign
+
+    leg = ax.legend(keys, names, prop={'size': fs, 'family': 'monospace'}, 
+                    loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
+
+    return leg
 
 
 def unifyAxesLimits(axes, axis='y'):
