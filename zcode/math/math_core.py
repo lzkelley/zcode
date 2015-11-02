@@ -1,5 +1,4 @@
-"""
-General functions for mathematical and numerical operations.
+"""General functions for mathematical and numerical operations.
 
 Functions
 ---------
@@ -9,6 +8,7 @@ Functions
 -   within                               - Test whether a value is within the bounds of another.
 -   minmax                               - Find the min and max of given values.
 -   spacing                              - Create an even spacing between extrema from given data.
+-   strArray                             - Create a string representation of a numerical array.
 -   sliceForAxis                         - Array slicing object which slices only the target axis.
 -   midpoints                            - Return the midpoints between values in the given array.
 -   vecmag                               - find the magnitude/distance of/between vectors.
@@ -33,7 +33,8 @@ import warnings
 import numbers
 
 __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
-           'within', 'minmax', 'spacing', 'sliceForAxis', 'midpoints', 'vecmag', 'extend',
+           'within', 'minmax', 'spacing', 'strArray', 'sliceForAxis', 'midpoints', 
+           'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'frexp10', 'stats', 'groupDigitized',
            'sampleInverse', 'smooth']
 
@@ -285,17 +286,66 @@ def spacing(data, scale='log', num=100, nonzero=None, positive=None):
 
     if(nonzero is None):
         if(log_flag): nonzero = True
-        else:           nonzero = False
+        else:         nonzero = False
 
     if(positive is None):
         if(log_flag): positive = True
-        else:           positive = False
+        else:         positive = False
 
     span = minmax(data, nonzero=nonzero, positive=positive)
     if(log_flag): spacing = np.logspace(*np.log10(span), num=num)
-    else:             spacing = np.linspace(*span,           num=num)
+    else:         spacing = np.linspace(*span,           num=num)
 
     return spacing
+
+
+def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
+    """Create a string representation of a numerical array.
+
+    Arguments
+    ---------
+    arr : array_like scalars,
+        Array to be converted to string.
+    first : int or None,
+        Number of elements at the beginning of the array to print.
+        `None` means FULL array, while `0` means zero elements.
+    last : int,
+        Number of elements at the end of the array to print.
+    delim : str,
+        Character to delimit elements of string array.
+    format : str,
+        Specification of how each array element should be converted to a str.
+        This is a c-style specification used by ``str.format``.
+
+    Returns
+    -------
+    arrStr : str,
+        Stringified version of input array.
+    
+    """
+
+    if(first is None or last is None):
+        first = None
+        last = 0
+
+    # Create the style specification
+    form = "{:%s}" % (format)
+
+    arrStr = "["
+    # Add the first `first` elements
+    if(first or first is None):
+        arrStr += delim.join([form.format(vv) for vv in arr[:first]])
+
+    # Include separator unless full array is being printed
+    if(first is not None): arrStr += "... "
+
+    # Add the last `last` elements
+    if(last):
+        arrStr += delim.join([form.format(vv) for vv in arr[-last-1:]])
+
+    arrStr += "]"
+
+    return arrStr 
 
 
 def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):

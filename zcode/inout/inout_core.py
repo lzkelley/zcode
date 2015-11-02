@@ -22,7 +22,8 @@ Functions
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from six import with_metaclass
+import six
+# from six import with_metaclass
 
 import os
 import sys
@@ -99,7 +100,7 @@ class _Keys_Meta(type):
             yield val
 
 
-class Keys(with_metaclass(_Keys_Meta)):
+class Keys(six.with_metaclass(_Keys_Meta)):
     """
     Super class to provide convenience for classes used as enumerated dictionary keys.
 
@@ -266,15 +267,18 @@ def npzToDict(npz):
 
     Arguments
     ---------
-       npz <str> or <NpzFile> : input dictionary-like object
+    npz : str or NpzFile,
+        Input dictionary-like object
 
     Returns
     -------
-       newDict <dict> : output dictionary with key-values from npz file.
+    newDict : dict,
+       Output dictionary with key-values from npz file.
 
     """
-    if(type(npz) is str): npz = np.load(npz)
+    if(isinstance(npz, six.string_types)): npz = np.load(npz)
     # newDict = { key : npz[key] for key in npz.keys() }
+
     newDict = {}
     for key in list(npz.keys()):
         vals = npz[key]

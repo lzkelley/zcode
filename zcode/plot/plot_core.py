@@ -9,6 +9,7 @@ Functions
 -   zoom                 - Zoom-in at a certain location on the given axes.
 -   stretchAxes          - Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
 -   text                 - Add text to figure.
+-   legend               - Add a legend to the given figure.
 -   unifyAxesLimits      - Set limits on all given axes to match global extrema.
 -   colorCycle           - Create a range of colors.
 -   colormap             - Create a colormap from scalars to colors.
@@ -41,7 +42,8 @@ from matplotlib import pyplot as plt
 import zcode.math as zmath
 import zcode.inout as zio
 
-__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'unifyAxesLimits',
+__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend', 
+           'unifyAxesLimits',
            'colorCycle', 'colormap', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars']
 
@@ -338,11 +340,39 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     ax.set_ylim(ylims)
 
     return ax
-# } def stretchAxes
 
 
-def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans=None, **kwargs):
+def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=None, **kwargs):
     """Add text to figure.
+
+    Wrapper for the `matplotlib.figure.Figure.text` method.
+
+    Arguments
+    ---------
+    fig : `matplotlib.figure.Figure` object,
+    pstr : str,
+        String to be printed.
+    x : float,
+        X-position at which to draw the string, relative to the transformation given by `trans`.
+    y : float,
+        Y-position at which to draw the string, relative to the transformation given by `trans`.
+    halign : str, one of {'center', 'left', 'right'},
+        Horizontal alignment of text.
+    valign : str, one of {'center', 'bottom', 'top'},
+        Vertical alignment of text.
+    fs : int,
+        Fontsize.
+    trans : `matplotlib.BboxTransformTo` object, or `None`,
+        Transformation to use for text placement.
+    kwargs : any,
+        Additional named arguments passed to `matplotlib.figure.Figure.text`.
+        For example, ``color='blue'``, or ``rotation=90``.
+
+    Returns
+    -------
+    txt : ``matplotlib.text.Text`` object,
+        Handle storing the drawn text.
+
     """
     if(trans is None): trans = fig.transFigure
     if(valign == 'upper'):
@@ -356,7 +386,58 @@ def text(fig, pstr, x=0.98, y=0.1, halign='right', valign='bottom', fs=16, trans
     txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
     return txt
-# } def text
+
+
+def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None, 
+           **kwargs):
+    """Add a legend to the given figure.
+
+    Wrapper for the `matplotlib.pyplot.Legend` method.
+
+    Arguments
+    ---------
+    fig : `matplotlib.figure.Figure` object,
+    keys : array_like of artists, shape (N,)
+        Handles to the legend artists to be included in the legend.
+    names : array_like of str, shape (N,)
+        Names corresponding to each legend artist in `keys`.
+    x : float,
+        X-position at which to draw the legend, relative to the transformation given by `trans`.
+    y : float,
+        Y-position at which to draw the legend, relative to the transformation given by `trans`.
+    halign : str, one of {'center', 'left', 'right'},
+        Horizontal alignment of legend box.
+    valign : str, one of {'center', 'lower', 'upper'},
+        Vertical alignment of legend box.
+    fs : int,
+        Fontsize.
+    trans : `matplotlib.BboxTransformTo` object, or `None`,
+        Transformation to use for legend placement.
+    kwargs : any,
+        Additional named arguments passed to `matplotlib.pyplot.legend`.
+        For example, ``ncol=1`` or ``title='Legend Title'``.
+
+    Returns
+    -------
+    leg : ``matplotlib.legend.Legend`` object,
+        Handle storing the drawn legend.
+
+    """
+    ax = fig.axes[0]
+
+    if(trans is None): trans = fig.transFigure
+    if(valign == 'top'):
+        valign = 'upper'
+
+    if(valign == 'bottom'):
+        valign = 'lower'
+
+    alignStr = valign + " " + halign
+
+    leg = ax.legend(keys, names, prop={'size': fs, 'family': 'monospace'}, 
+                    loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
+
+    return leg
 
 
 def unifyAxesLimits(axes, axis='y'):
@@ -697,14 +778,14 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
 
     NOTE: For log-y, make sure `yscale` is either not manually set, or include `nonposy='clip'`
     """
-    ALPHA = 0.5
+    HIST_ALPHA = 0.75
+    CONF_ALPHA = 0.5
 
     CONF_INTS = [0.95, 0.68]
     CONF_COLS = ['green', 'orange']
-    # CONF_COLS = ['orange','orangered']
 
     if(scaley.startswith('log')): logy = True
-    else:                           logy = False
+    else:                         logy = False
 
     # Add Confidence intervals
     if(conf):
@@ -714,13 +795,23 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
         ave = np.average(xx)
         ax.axvline(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
         for ii, (vals, col) in enumerate(zip(cints, CONF_COLS)):
-            ax.axvspan(*vals, color=col, alpha=ALPHA)
+            ax.axvspan(*vals, color=col, alpha=CONF_ALPHA)
 
-    if(isinstance(bins, numbers.Integral) and scalex is 'log'):
-        bins = zmath.spacing(xx, num=bins)
+    # Create a given number of log-spaced bins
+    #     If not log-spaced, then `ax.hist` will do the same
+    if(isinstance(bins, numbers.Integral) and scalex.startswith('log')):
+        bins = zmath.spacing(xx, num=bins, )
 
-    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', log=logy,
+    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', log=logy, alpha=HIST_ALPHA,
                                rwidth=0.8, color=COL_CORR, zorder=100, **kwargs)
+
+    # Dont let lower y-lim be less than 0.8 with log-scaling
+    if(scaley.startswith('log')): 
+        # setLim(ax, 'y', lo=0.8, at='least')   <=== This isn't working for some reason!  FIX
+        ylim = np.array(ax.get_ylim())
+        if(ylim[0] < 0.8):
+            ylim[0] = 0.8
+            ax.set_ylim(ylim)
 
     return bars
 
