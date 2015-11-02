@@ -18,14 +18,13 @@ Functions
 -   confidenceIntervals                  - Compute the values bounding desired confidence intervals.
 -   frexp10                              - Decompose a float into mantissa and exponent (base 10).
 -   stats                                - Get basic statistics for the given array.
--   groupDigitized                       - Find groups of array indices corresponding given bin.
+-   groupDigitized                       - Get a list of array indices corresponding to each bin.
 -   sampleInverse                        - Find x-sampling to evenly divide a function in y-space.
 -   smooth                               - Use convolution to smooth the given array.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import itertools
 import numpy as np
 import scipy as sp
 import scipy.interpolate
@@ -33,7 +32,7 @@ import warnings
 import numbers
 
 __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
-           'within', 'minmax', 'spacing', 'strArray', 'sliceForAxis', 'midpoints', 
+           'within', 'minmax', 'spacing', 'strArray', 'sliceForAxis', 'midpoints',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'frexp10', 'stats', 'groupDigitized',
            'sampleInverse', 'smooth']
@@ -321,7 +320,7 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
     -------
     arrStr : str,
         Stringified version of input array.
-    
+
     """
 
     if(first is None or last is None):
@@ -345,7 +344,7 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
 
     arrStr += "]"
 
-    return arrStr 
+    return arrStr
 
 
 def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
@@ -591,12 +590,28 @@ def stats(vals, median=False):
 
 
 def groupDigitized(arr, bins, edges='right'):
-    """Find groups of array indices corresponding given bin.
+    """Get a list of array indices corresponding to each bin.
 
     Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
     bin, finds the list of array indices which belong in that bin.
 
-    Example:
+    Arguments
+    ---------
+        arr : array_like of scalars,
+            Values to digitize and group.
+        bins : array_like or scalars, shape (N,)
+            Bin edges to digitize and group by.
+        edges : str, {'right', 'left'}
+            Whether bin edges correspond to 'right' or 'left' side of the bins.
+
+    Returns
+    -------
+        groups : list of int arrays, shape (N,)
+            Each list contains the ``arr`` indices belonging to each corresponding bin.
+
+
+    Examples
+    --------
         >>> arr = [ 0.0, 1.3, 1.8, 2.1 ]
         >>> bins = [ 1.0, 2.0, 3.0 ]
         >>> zcode.Math.groupDigitized(arr, bins, right=True)
@@ -604,15 +619,10 @@ def groupDigitized(arr, bins, edges='right'):
         >>> zcode.Math.groupDigitized(arr, bins, right=False)
         [array([1, 2]), array([3]), array([])]
 
-    Arguments
-    ---------
-        arr   <flt>[N] : array of values to digitize and group
-        bins  <flt>[M] : array of bin edges to digitize and group by
-        edges <str>    : whether bin edges are 'right' or 'left' {'right', 'left'}
-
-    Returns
-    -------
-        groups <int>[M][...] : Each list contains the ``arr`` indices belonging in each bin
+    See Also
+    --------
+    -   ``scipy.stats.binned_statistic``
+    -   ``numpy.digitize``
 
     """
 
@@ -620,7 +630,7 @@ def groupDigitized(arr, bins, edges='right'):
     elif(edges.startswith('l')): right = False
     else: RuntimeError("``edges`` must be 'right' or 'left'!")
 
-    # ``numpy.digitize`` always assumes ``bins`` are right-edges (in effect)
+    # `numpy.digitize` always assumes `bins` are right-edges (in effect)
     shift = 0
     # If we want 'left' bin edges, such shift each bin leftwards
     if(not right): shift = -1
@@ -630,7 +640,7 @@ def groupDigitized(arr, bins, edges='right'):
 
     groups = []
     # Group indices by bin number
-    for ii in range(len(bins)):
+    for ii in xrange(len(bins)):
         groups.append(np.where(pos == ii)[0])
 
     return groups
