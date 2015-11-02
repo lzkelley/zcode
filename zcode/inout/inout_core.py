@@ -108,17 +108,24 @@ class Keys(six.with_metaclass(_Keys_Meta)):
     initializer simply stores a list of the *VALUES* of each attribute (not starting with '__'),
     for later use.  Iterator yields each element of the attributes values, list.
 
+    Note:
+    -   The ordering of entries is *not* preserved, and has *no* meaning.
+
     Example
     -------
-        from InOut import Keys
-        class Test(Keys):
-            one = '1'
-            two = 'two'
-            three = '3.0'
+        >>> from InOut import Keys
+        >>> class Test(Keys):
+        >>>     one = '1'
+        >>>     two = 'two'
+        >>>     three = '3.0'
 
-        for tt in Test:
-            print tt
-            if(tt == Test.two): print "Found two!"
+        >>> for tt in Test:
+        >>>     print tt
+        >>>     if(tt == Test.two): print "Found two!"
+        1
+        3.0
+        two
+        Found two!
 
     """
 
