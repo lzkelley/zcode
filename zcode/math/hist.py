@@ -3,6 +3,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
+import warnings
+
 from . import math_core as zmath
 
 __all__ = ['histogram']
@@ -10,8 +12,7 @@ __all__ = ['histogram']
 
 def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum',
               cumul=False, stdev=False):
-    """
-    Histogram (bin) the given values.
+    """Histogram (bin) the given values.
 
     Currently `bins` must be monotonically increasing!!
     When using ``bounds=='both'``, you currently can't control which interior bin edges are
@@ -68,6 +69,7 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
     """
 
     assert func in ['sum', 'ave', 'min', 'max'], "Invalid ``func`` argument!"
+    warnings.warn("Can you use ``scipy.stats.binned_statistic`` instead?!")
 
     # For anything besides counting ('sum'), we need a weight for each argument
     if(func != 'sum' or stdev):
