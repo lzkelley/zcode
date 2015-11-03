@@ -15,11 +15,15 @@ CHANGES
         -   Enhanced the `spline` function, and removed the secondary functions `logSpline` and
             `logSpline_resample`.  The former is included in the new functionality of `spline`,
             and the latter is too simple to warrant its own function.
-        -   new 'strArray' function which creates a string representation of a numerical array.
+        -   New 'strArray' function which creates a string representation of a numerical array.
 -   plot
     +   plot_core
-        -   new 'legend' method, very similar to 'text' --- just a wrapper for
+        -   New 'legend' method, very similar to 'text' --- just a wrapper for
             `matplotlib.pyplot.legend`.  Seems to be working.
+    +   Hist2D
+        -   Plotted histograms now use the `scipy.stats.binned_statistic` function so that more
+            complicated statistics can be used.  The projected histograms are now colored to match
+            the 2D main histogram.
 
 
 [0.0.2] - 2015/10/20
