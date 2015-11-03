@@ -42,7 +42,7 @@ from matplotlib import pyplot as plt
 import zcode.math as zmath
 import zcode.inout as zio
 
-__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend', 
+__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend',
            'unifyAxesLimits',
            'colorCycle', 'colormap', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars']
@@ -388,7 +388,7 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
     return txt
 
 
-def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None, 
+def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None,
            **kwargs):
     """Add a legend to the given figure.
 
@@ -434,7 +434,7 @@ def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
 
     alignStr = valign + " " + halign
 
-    leg = ax.legend(keys, names, prop={'size': fs, 'family': 'monospace'}, 
+    leg = ax.legend(keys, names, prop={'size': fs, 'family': 'monospace'},
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
 
     return leg
@@ -482,8 +482,9 @@ def colormap(args, cmap='jet', scale=None):
 
     Returns
     -------
-       smap <matplotlib.cm.ScalarMappable> : scalar mappable object which contains the members
-                                             ``norm``, ``cmap``, and the function ``to_rgba``
+       smap : `matplotlib.cm.ScalarMappable`
+           Scalar mappable object which contains the members
+           `norm`, `cmap`, and the function `to_rgba`.
 
     """
 
@@ -777,6 +778,18 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     """Plot a histogram bar graph.
 
     NOTE: For log-y, make sure `yscale` is either not manually set, or include `nonposy='clip'`
+
+    Arguments
+    ---------
+    ax : ``matplotlib.axes.Axes`` object,
+        Axes on which to plot.
+    xx : (N,) array_like scalars,
+        Values to be histogrammed.
+    bins : int or array_like,
+        Either the number of bins for bin-edges to be automatically generated, or the bin-edges
+        themselves.
+    ...
+
     """
     HIST_ALPHA = 0.75
     CONF_ALPHA = 0.5
@@ -806,7 +819,7 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
                                rwidth=0.8, color=COL_CORR, zorder=100, **kwargs)
 
     # Dont let lower y-lim be less than 0.8 with log-scaling
-    if(scaley.startswith('log')): 
+    if(scaley.startswith('log')):
         # setLim(ax, 'y', lo=0.8, at='least')   <=== This isn't working for some reason!  FIX
         ylim = np.array(ax.get_ylim())
         if(ylim[0] < 0.8):
