@@ -161,13 +161,12 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
         elif(axis == 'y'): ax = stretchAxes(ax, ys=stretch)
 
     offt.set_color(c)
-
     return ax
-# } def setAxis
 
 
 def twinAxis(ax, axis='x', pos=1.0, **kwargs):
-
+    """
+    """
     if(axis == 'x'):
         tw = ax.twinx()
         setax = 'y'
@@ -178,14 +177,11 @@ def twinAxis(ax, axis='x', pos=1.0, **kwargs):
         raise RuntimeError("``axis`` must be either {`x` or `y`}!")
 
     tw = setAxis(tw, axis=setax, pos=pos, **kwargs)
-
     return tw
-# } def twinAxes
 
 
 def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
-    """
-    Set the limits (range) of the given, target axis.
+    """Set the limits (range) of the given, target axis.
 
     When only ``lo`` or only ``hi`` is specified, the default behavior is to only set that axis
     limit and leave the other bound to its existing value.  When ``range`` is set to `True`, then
@@ -230,44 +226,56 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
         raise RuntimeError("``axis`` must be either 'x' or 'y'!")
 
     lims = np.array(get_lim())
+    print("LIMS BEFORE = ", lims)
 
     # Set Range/Span of Limits
     if(range):
         if(lo is not None):
-            if(at is AT_EXACTLY): lims[0] = lims[1]/lo
-            elif(at is AT_LEAST): lims[0] = np.min([lims[0], lims[0]/lo])
-            elif(at is AT_MOST): lims[0] = np.max([lims[0], lims[0]/lo])
+            if(at == AT_EXACTLY): lims[0] = lims[1]/lo
+            elif(at == AT_LEAST): lims[0] = np.min([lims[0], lims[0]/lo])
+            elif(at == AT_MOST): lims[0] = np.max([lims[0], lims[0]/lo])
         elif(hi is not None):
-            if(at is AT_EXACTLY): lims[1] = lims[1]*hi
-            elif(at is AT_LEAST): lims[1] = np.min([lims[1], lims[1]*hi])
-            elif(at is AT_MOST): lims[1] = np.max([lims[1], lims[1]*hi])
+            if(at == AT_EXACTLY): lims[1] = lims[1]*hi
+            elif(at == AT_LEAST): lims[1] = np.min([lims[1], lims[1]*hi])
+            elif(at == AT_MOST): lims[1] = np.max([lims[1], lims[1]*hi])
         else:
             raise RuntimeError("``lo`` or ``hi`` must be provided!")
 
     # Set Limits explicitly
     else:
         if(lo is not None):
-            if(at is AT_EXACTLY): lims[0] = lo
-            elif(at is AT_LEAST): lims[0] = np.min([lims[0], lo])
-            elif(at is AT_MOST): lims[0] = np.max([lims[0], lo])
+            if(at == AT_EXACTLY):
+                lims[0] = lo
+            elif(at == AT_LEAST):
+                lims[0] = np.max([lims[0], lo])
+            elif(at == AT_MOST):
+                lims[0] = np.min([lims[0], lo])
+            else:
+                raise ValueError("Unrecognized `at` = '%s'" % (at))
         elif(data is not None):
             lims[0] = np.min(data)
 
         if(hi is not None):
-            if(at is AT_EXACTLY): lims[1] = hi
-            elif(at is AT_LEAST): lims[1] = np.max([lims[1], hi])
-            elif(at is AT_MOST): lims[1] = np.min([lims[1], hi])
+            if(at == AT_EXACTLY):
+                lims[1] = hi
+            elif(at == AT_LEAST):
+                lims[1] = np.min([lims[1], hi])
+            elif(at == AT_MOST):
+                lims[1] = np.max([lims[1], hi])
+            else:
+                raise ValueError("Unrecognized `at` = '%s'" % (at))
         elif(data is not None):
             lims[1] = np.max(data)
 
     # Actually set the axes limits
+    print("LIMS AFTER = ", lims)
+    print("get_lims = ", get_lim())
     set_lim(lims)
     if(invert):
         if(axis == 'x'): ax.invert_xaxis()
         else:            ax.invert_yaxis()
 
     return
-# } def setLim
 
 
 def zoom(ax, loc, axis='x', scale=2.0):
