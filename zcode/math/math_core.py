@@ -516,7 +516,7 @@ def cumstats(arr):
     return ave, std
 
 
-def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
+def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1):
     """Compute the values bounding the target confidence intervals for an array of data.
 
     Arguments
@@ -536,10 +536,11 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
 
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
-    conf = [[np.percentile(vals, 100.0*cdf[0]), np.percentile(vals, 100.0*cdf[1])]
+    conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
+             np.percentile(vals, 100.0*cdf[1], axis=axis)]
             for cdf in cdf_vals]
     conf = np.array(conf)
-    med = np.percentile(vals, 50.0)
+    med = np.percentile(vals, 50.0, axis=axis)
 
     if(len(conf) == 1): conf = conf[0]
 
