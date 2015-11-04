@@ -226,18 +226,23 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
         raise RuntimeError("``axis`` must be either 'x' or 'y'!")
 
     lims = np.array(get_lim())
-    print("LIMS BEFORE = ", lims)
 
     # Set Range/Span of Limits
     if(range):
         if(lo is not None):
-            if(at == AT_EXACTLY): lims[0] = lims[1]/lo
-            elif(at == AT_LEAST): lims[0] = np.min([lims[0], lims[0]/lo])
-            elif(at == AT_MOST): lims[0] = np.max([lims[0], lims[0]/lo])
+            if(at == AT_EXACTLY):
+                lims[0] = lims[1]/lo
+            elif(at == AT_LEAST):
+                lims[0] = np.max([lims[0], lims[0]/lo])
+            elif(at == AT_MOST):
+                lims[0] = np.min([lims[0], lims[0]/lo])
         elif(hi is not None):
-            if(at == AT_EXACTLY): lims[1] = lims[1]*hi
-            elif(at == AT_LEAST): lims[1] = np.min([lims[1], lims[1]*hi])
-            elif(at == AT_MOST): lims[1] = np.max([lims[1], lims[1]*hi])
+            if(at == AT_EXACTLY):
+                lims[1] = lims[1]*hi
+            elif(at == AT_LEAST):
+                lims[1] = np.max([lims[1], lims[1]*hi])
+            elif(at == AT_MOST):
+                lims[1] = np.min([lims[1], lims[1]*hi])
         else:
             raise RuntimeError("``lo`` or ``hi`` must be provided!")
 
@@ -259,17 +264,15 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
             if(at == AT_EXACTLY):
                 lims[1] = hi
             elif(at == AT_LEAST):
-                lims[1] = np.min([lims[1], hi])
-            elif(at == AT_MOST):
                 lims[1] = np.max([lims[1], hi])
+            elif(at == AT_MOST):
+                lims[1] = np.min([lims[1], hi])
             else:
                 raise ValueError("Unrecognized `at` = '%s'" % (at))
         elif(data is not None):
             lims[1] = np.max(data)
 
     # Actually set the axes limits
-    print("LIMS AFTER = ", lims)
-    print("get_lims = ", get_lim())
     set_lim(lims)
     if(invert):
         if(axis == 'x'): ax.invert_xaxis()
