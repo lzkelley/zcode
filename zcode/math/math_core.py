@@ -400,38 +400,47 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
-def midpoints(arr, log=False, frac=0.5):
-    """
-    Return the midpoints between values in the given array.
+def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
+    """Return the midpoints between values in the given array.
 
     If the given array is N-dimensional, midpoints are calculated from the last dimension.
 
     Arguments
     ---------
-        arr <flt>[...,N] : input array of length `N`
-        log <bool>       : find midpoints in log of ``arr``
-        frac <flt>       : fraction of the way between intervals
+        arr : ndarray of scalars,
+            Input array.
+        log : bool,
+            Find midpoints in log-space.
+        frac : float,
+            Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
+        axis : int,
+            Which axis about which to find the midpoints.
 
     Returns
     -------
-        mids <flt>[...,N-1]: midpoints of length `N-1`
+        mids : ndarray of floats,
+            The midpoints of the input array.
+            The resulting shape will be the same as the input array `arr`, except that
+            `mids.shape[axis] == arr.shape[axis]-1`.
 
     """
 
-    if(np.shape(arr)[-1] < 2):
+    if(np.shape(arr)[axis] < 2):
         raise RuntimeError("Input ``arr`` does not have a valid shape!")
 
+    # Convert to log-space
     if(log): user = np.log10(arr)
-    else:      user = np.array(arr)
+    else:    user = np.array(arr)
 
-    diff = np.diff(user)
+    diff = np.diff(user, axis=axis)
 
-    # skip the last element, or the last axis
-    cut = sliceForAxis(user, axis=-1, stop=-1)
+    #     skip the last element, or the last axis
+    cut = sliceForAxis(user, axis=axis, stop=-1)
     start = user[cut]
     mids = start + frac*diff
 
     if(log): mids = np.power(10.0, mids)
+    if(squeeze): mids = mids.squeeze()
 
     return mids
 

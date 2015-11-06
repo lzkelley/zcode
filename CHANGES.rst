@@ -19,6 +19,8 @@ CHANGES
             +   Creates a string representation of a numerical array.
         -   `indsWIthin` [new-function]
             +   Finds the indices of an array within the bounds of the given extrema.
+        -   `midpoints`
+            +   Enhanced to find the midpoints along an arbitrary axis.
 -   plot/
     +   plot_core.py
         -   `legend` [new-method]
