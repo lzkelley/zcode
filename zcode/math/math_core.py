@@ -6,6 +6,7 @@ Functions
 -   contiguousInds                       - Find the largest segment of contiguous array values
 -   cumtrapz_loglog                      - Perform a cumulative integral in log-log space.
 -   within                               - Test whether a value is within the bounds of another.
+-   indsWithin                           - Find the indices within the given extrema.
 -   minmax                               - Find the min and max of given values.
 -   spacing                              - Create an even spacing between extrema from given data.
 -   strArray                             - Create a string representation of a numerical array.
@@ -32,7 +33,7 @@ import warnings
 import numbers
 
 __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
-           'within', 'minmax', 'spacing', 'strArray', 'sliceForAxis', 'midpoints',
+           'within', 'indsWithin', 'minmax', 'spacing', 'strArray', 'sliceForAxis', 'midpoints',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'frexp10', 'stats', 'groupDigitized',
            'sampleInverse', 'smooth']
@@ -210,6 +211,19 @@ def within(vals, extr, edges=True, all=False, inv=False):
     if(inv): retval = np.invert(retval)
 
     return retval
+
+
+def indsWithin(vals, extr, edges=True):
+    """Find the indices of the input array which are within the given extrema.
+    """
+    assert np.ndim(vals) == 1, "Only `ndim = 1` arrays allowed!"
+    bnds = minmax(extr)
+    if(edges):
+        inds = np.where((vals >= bnds[0]) & (vals <= bnds[1]))[0]
+    else:
+        inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
+
+    return inds
 
 
 def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):

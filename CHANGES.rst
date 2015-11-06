@@ -15,7 +15,10 @@ CHANGES
         -   Enhanced the `spline` function, and removed the secondary functions `logSpline` and
             `logSpline_resample`.  The former is included in the new functionality of `spline`,
             and the latter is too simple to warrant its own function.
-        -   New 'strArray' function which creates a string representation of a numerical array.
+        -   `strArray [new-function]
+            +   Creates a string representation of a numerical array.
+        -   `indsWIthin` [new-function]
+            +   Finds the indices of an array within the bounds of the given extrema.
 -   plot/
     +   plot_core.py
         -   `legend` [new-method]
