@@ -32,6 +32,10 @@ CHANGES
         -   Plotted histograms now use the `scipy.stats.binned_statistic` function so that more
             complicated statistics can be used.  The projected histograms are now colored to match
             the 2D main histogram.
-
+-   inout/
+    +   inout_core.py
+        -   `MPI_TAGS` [new-class]
+            +    A `Keys` subclass used for passing tags/status between different processors when
+                 using MPI.  Commonly used in the master-slave(s) paradigm.
 
 [0.0.2] - 2015/10/20
