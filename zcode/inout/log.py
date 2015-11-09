@@ -1,9 +1,18 @@
 """Logging related classes and functions.
+
+Classes
+-------
+-   IndentFormatter          - Sets the log-message indentation level based on the stack depth.
+
+Functions
+---------
+-   getLogger                - Create a logger object which logs to file and or stdout stream.
+-   defaultLogger            - Create a ``logging.Logger`` object which logs to the out stream.
+
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import sys
 import inspect
 import numpy as np
 
@@ -11,6 +20,9 @@ __all__ = ['IndentFormatter', 'getLogger', 'defaultLogger']
 
 
 class IndentFormatter(logging.Formatter):
+    """Logging formatter where the depth of the stack sets the message indentation level.
+    """
+
     def __init__(self, fmt=None, datefmt=None):
         logging.Formatter.__init__(self, fmt, datefmt)
         self.baseline = None
@@ -26,41 +38,51 @@ class IndentFormatter(logging.Formatter):
         return out
 
 
-def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None, strLevel=None, fileLevel=None,
+def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
+              strLevel=logging.WARNING, fileLevel=logging.DEBUG,
               tofile=None, tostr=True):
-    """
-    Create a standard logger object which logs to file and or stdout stream ('str')
+    """Create a standard logger object which logs to file and or stdout stream.
+
+    If logging to output stream (stdout) is enabled, an `IndentFormatter` object is used.
 
     Arguments
     ---------
-        name    <str> : handle for this logger, must be distinct for a distinct logger
-
-        strFmt  <str>  : format of log messages to stream (stdout)
-        fileFmt <str>  : format of log messages to file
-        dateFmt <str>  : format of time stamps to stream and/or file
-        strLevel  <int>  : logging level for stream
-        fileLevel <int>  : logging level for file
-        tofile  <str>  : filename to log to (turned off if `None`)
-        tostr   <bool> : log to stdout stream
+    name : str,
+        Handle for this logger, must be distinct for a distinct logger.
+    strFmt : str or `None`,
+        Format of log messages to stream (stdout).  If `None`, default settings are used.
+    fileFmt : str or `None`,
+        Format of log messages to file.  If `None`, default settings are used.
+    dateFmt : str or `None`
+        Format of time stamps to stream and/or file.  If `None`, default settings are used.
+    strLevel : int,
+        Logging level for stream.
+    fileLevel : int,
+        Logging level for file.
+    tofile : str or `None`,
+        Filename to log to (turned off if `None`).
+    tostr : bool,
+        Log to stdout stream.
 
     Returns
     -------
-        logger  <obj>  : ``logging`` logger object
+    logger : ``logging.Logger`` object,
+        Logger object to use for logging.
 
     """
 
-    if(tofile is None and not tostr): raise RuntimeError("Must log to something")
+    if(tofile is None and not tostr): raise ValueError("Must log to something!")
 
     logger = logging.getLogger(name)
     # Make sure handlers don't get duplicated (ipython issue)
-    while len(logger.handlers) > 0: logger.handlers.pop()
+    while(len(logger.handlers) > 0): logger.handlers.pop()
     # Prevents duplication or something something...
     logger.propagate = 0
 
-    # Determine and Set Logging Level
+    # Determine and Set Logging Levels
     if(fileLevel is None): fileLevel = logging.DEBUG
     if(strLevel is None): strLevel = logging.WARNING
-    # Logger object must be at minimum level
+    #     Logger object must be at minimum level
     logger.setLevel(np.min([fileLevel, strLevel]))
 
     if(dateFmt is None): dateFmt = '%Y/%m/%d %H:%M:%S'
@@ -94,18 +116,22 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None, strLevel=None, file
 
 
 def defaultLogger(logger=None, verbose=False, debug=False):
-    """
-    Create a basic ``logging.Logger`` object.  With no arguments, a stream-logger set to Warning.
+    """Create a basic ``logging.Logger`` object which logs to the out stream.
 
     Arguments
     ---------
-        logger  <obj>  : a ``logging`` level (integer), or `None` for default
-        verbose <bool> : True to set 'verbose' output (`logging.INFO`)
-        debug   <bool> : True to set 'debug'   output (`logging.DEBUG`), overrides ``verbose``
+    logger : ``logging.Logger`` object, int or `None`,
+        This can be an existing logger object (in which case nothing happens),
+        a ``logging`` level (integer), or `None` for default settings.
+    verbose : bool,
+        True to set 'verbose' output (``logging.INFO``)
+    debug : bool
+        True to set 'debug' output (``logging.DEBUG``), overrides `verbose`.
 
     Returns
     -------
-        logger  <obj>  : ``logging.Logger`` object.
+    logger : ``logging.Logger`` object,
+        Resulting logger object.
 
     """
 
@@ -116,9 +142,12 @@ def defaultLogger(logger=None, verbose=False, debug=False):
     if(isinstance(logger, numbers.Integral)):
         level = logger
     else:
-        if(debug): level = logging.DEBUG
-        elif(verbose): level = logging.INFO
-        else:            level = logging.WARNING
+        if(debug):
+            level = logging.DEBUG
+        elif(verbose):
+            level = logging.INFO
+        else:
+            level = logging.WARNING
 
     logger = getLogger(None, strLevel=level, tostr=True)
     return logger
