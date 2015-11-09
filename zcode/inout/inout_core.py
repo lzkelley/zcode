@@ -2,8 +2,8 @@
 
 Classes
 -------
--   StreamCapture            - Class to capture/redirect output to stdout and stderr.
 -   Keys                     - Provide convenience for classes used as enumerated dictionary keys.
+-   StreamCapture            - Class to capture/redirect output to stdout and stderr.
 
 Functions
 ---------
@@ -23,16 +23,83 @@ Functions
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import six
-# from six import with_metaclass
 
 import os
 import sys
 import logging
 import numpy as np
 
-__all__ = ['StreamCapture', 'Keys', 'bytesString', 'getFileSize', 'countLines', 'estimateLines',
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
            'promptYesNo', 'modifyFilename']
+
+
+class _Keys_Meta(type):
+    """Metaclass for the ``Keys`` class.  See, ``InOut.Keys``.
+
+    To-Do
+    -----
+        - Modify the attribute getter to yield more unique responses than
+          the values given in the user-defined class.
+          e.g.
+              class TestKeys(Keys):
+                  one = 1
+
+              Then the actual value used should be something like
+              ``"TestKeys.one"`` or ``"TestKeys.1"``, to make them more unique
+              than just ``"one"`` or ``1``.
+
+
+    """
+
+    # Store all attribute values to list ``__values__`` (if they dont start with '__')
+    def __init__(self, name, bases, dict):
+        self.__init__(self)
+        self.__values__ = [list(self.__dict__.values())[ii] for ii, ent in enumerate(self.__dict__)
+                           if not ent.startswith('__')]
+
+    # Iterate over the list of attributes values
+    def __iter__(self):
+        for val in self.__values__:
+            yield val
+
+
+class Keys(six.with_metaclass(_Keys_Meta)):
+    """Super class to provide convenience for classes used as enumerated dictionary keys.
+
+    Uses the metaclass ``_Key_Meta`` to override the ``__iter__`` and ``__init__`` methods.  The
+    initializer simply stores a list of the *VALUES* of each attribute (not starting with '__'),
+    for later use.  Iterator yields each element of the attributes values, list.
+
+    Note:
+    -   The ordering of entries is *not* preserved, and has *no* meaning.
+
+    Example
+    -------
+        >>> from InOut import Keys
+        >>> class Test(Keys):
+        >>>     one = '1'
+        >>>     two = 'two'
+        >>>     three = '3.0'
+
+        >>> for tt in Test:
+        >>>     print tt
+        >>>     if(tt == Test.two): print "Found two!"
+        1
+        3.0
+        two
+        Found two!
+
+    """
+
+
+class MPI_TAGS(Keys):
+    """Commonly used MPI tags for master-slave paradigm.
+    """
+    READY = 0
+    START = 1
+    DONE  = 2
+    EXIT  = 3
 
 
 class StreamCapture(list):
@@ -67,67 +134,6 @@ class StreamCapture(list):
         self.extend(self._stringio.getvalue().splitlines())
         if(self.out): sys.stdout = self._stdout
         if(self.err): sys.stderr = self._stderr
-
-
-class _Keys_Meta(type):
-    """
-    Metaclass for the ``Keys`` class.  See, ``InOut.Keys``.
-
-    To-Do
-    -----
-        - Modify the attribute getter to yield more unique responses than
-          the values given in the user-defined class.
-          e.g.
-              class TestKeys(Keys):
-                  one = 1
-
-              Then the actual value used should be something like
-              ``"TestKeys.one"`` or ``"TestKeys.1"``, to make them more unique
-              than just ``"one"`` or ``1``.
-
-
-    """
-
-    # Store all attribute values to list ``__values__`` (if they dont start with '__')
-    def __init__(self, name, bases, dict):
-        self.__init__(self)
-        self.__values__ = [list(self.__dict__.values())[ii] for ii, ent in enumerate(self.__dict__)
-                           if not ent.startswith('__')]
-
-    # Iterate over the list of attributes values
-    def __iter__(self):
-        for val in self.__values__:
-            yield val
-
-
-class Keys(six.with_metaclass(_Keys_Meta)):
-    """
-    Super class to provide convenience for classes used as enumerated dictionary keys.
-
-    Uses the metaclass ``_Key_Meta`` to override the ``__iter__`` and ``__init__`` methods.  The
-    initializer simply stores a list of the *VALUES* of each attribute (not starting with '__'),
-    for later use.  Iterator yields each element of the attributes values, list.
-
-    Note:
-    -   The ordering of entries is *not* preserved, and has *no* meaning.
-
-    Example
-    -------
-        >>> from InOut import Keys
-        >>> class Test(Keys):
-        >>>     one = '1'
-        >>>     two = 'two'
-        >>>     three = '3.0'
-
-        >>> for tt in Test:
-        >>>     print tt
-        >>>     if(tt == Test.two): print "Found two!"
-        1
-        3.0
-        two
-        Found two!
-
-    """
 
 
 def bytesString(bytes, precision=1):
