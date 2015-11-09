@@ -1,6 +1,12 @@
 CHANGES
 =======
 
+
+
+
+
+[0.0.3] - 2015/11/09
+----------------------
 -   Overall
     +   Restructured module to use subdirectories per topic (e.g. 'math') instead of single files.
     +   Implemented python3 styles into all files, with backwards compatibility.
@@ -40,3 +46,4 @@ CHANGES
                  using MPI.  Commonly used in the master-slave(s) paradigm.
 
 [0.0.2] - 2015/10/20
+--------------------
