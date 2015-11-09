@@ -6,6 +6,7 @@ Functions
 -   contiguousInds                       - Find the largest segment of contiguous array values
 -   cumtrapz_loglog                      - Perform a cumulative integral in log-log space.
 -   within                               - Test whether a value is within the bounds of another.
+-   indsWithin                           - Find the indices within the given extrema.
 -   minmax                               - Find the min and max of given values.
 -   spacing                              - Create an even spacing between extrema from given data.
 -   strArray                             - Create a string representation of a numerical array.
@@ -18,14 +19,13 @@ Functions
 -   confidenceIntervals                  - Compute the values bounding desired confidence intervals.
 -   frexp10                              - Decompose a float into mantissa and exponent (base 10).
 -   stats                                - Get basic statistics for the given array.
--   groupDigitized                       - Find groups of array indices corresponding given bin.
+-   groupDigitized                       - Get a list of array indices corresponding to each bin.
 -   sampleInverse                        - Find x-sampling to evenly divide a function in y-space.
 -   smooth                               - Use convolution to smooth the given array.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import itertools
 import numpy as np
 import scipy as sp
 import scipy.interpolate
@@ -33,7 +33,7 @@ import warnings
 import numbers
 
 __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
-           'within', 'minmax', 'spacing', 'strArray', 'sliceForAxis', 'midpoints', 
+           'within', 'indsWithin', 'minmax', 'spacing', 'strArray', 'sliceForAxis', 'midpoints',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'frexp10', 'stats', 'groupDigitized',
            'sampleInverse', 'smooth']
@@ -213,6 +213,19 @@ def within(vals, extr, edges=True, all=False, inv=False):
     return retval
 
 
+def indsWithin(vals, extr, edges=True):
+    """Find the indices of the input array which are within the given extrema.
+    """
+    assert np.ndim(vals) == 1, "Only `ndim = 1` arrays allowed!"
+    bnds = minmax(extr)
+    if(edges):
+        inds = np.where((vals >= bnds[0]) & (vals <= bnds[1]))[0]
+    else:
+        inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
+
+    return inds
+
+
 def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
     """Find minimum and maximum of given data, return as numpy array.
 
@@ -321,7 +334,7 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
     -------
     arrStr : str,
         Stringified version of input array.
-    
+
     """
 
     if(first is None or last is None):
@@ -345,7 +358,7 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
 
     arrStr += "]"
 
-    return arrStr 
+    return arrStr
 
 
 def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
@@ -387,38 +400,47 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
-def midpoints(arr, log=False, frac=0.5):
-    """
-    Return the midpoints between values in the given array.
+def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
+    """Return the midpoints between values in the given array.
 
     If the given array is N-dimensional, midpoints are calculated from the last dimension.
 
     Arguments
     ---------
-        arr <flt>[...,N] : input array of length `N`
-        log <bool>       : find midpoints in log of ``arr``
-        frac <flt>       : fraction of the way between intervals
+        arr : ndarray of scalars,
+            Input array.
+        log : bool,
+            Find midpoints in log-space.
+        frac : float,
+            Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
+        axis : int,
+            Which axis about which to find the midpoints.
 
     Returns
     -------
-        mids <flt>[...,N-1]: midpoints of length `N-1`
+        mids : ndarray of floats,
+            The midpoints of the input array.
+            The resulting shape will be the same as the input array `arr`, except that
+            `mids.shape[axis] == arr.shape[axis]-1`.
 
     """
 
-    if(np.shape(arr)[-1] < 2):
+    if(np.shape(arr)[axis] < 2):
         raise RuntimeError("Input ``arr`` does not have a valid shape!")
 
+    # Convert to log-space
     if(log): user = np.log10(arr)
-    else:      user = np.array(arr)
+    else:    user = np.array(arr)
 
-    diff = np.diff(user)
+    diff = np.diff(user, axis=axis)
 
-    # skip the last element, or the last axis
-    cut = sliceForAxis(user, axis=-1, stop=-1)
+    #     skip the last element, or the last axis
+    cut = sliceForAxis(user, axis=axis, stop=-1)
     start = user[cut]
     mids = start + frac*diff
 
     if(log): mids = np.power(10.0, mids)
+    if(squeeze): mids = mids.squeeze()
 
     return mids
 
@@ -517,7 +539,7 @@ def cumstats(arr):
     return ave, std
 
 
-def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
+def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1):
     """Compute the values bounding the target confidence intervals for an array of data.
 
     Arguments
@@ -537,10 +559,11 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997]):
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
 
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
-    conf = [[np.percentile(vals, 100.0*cdf[0]), np.percentile(vals, 100.0*cdf[1])]
+    conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
+             np.percentile(vals, 100.0*cdf[1], axis=axis)]
             for cdf in cdf_vals]
     conf = np.array(conf)
-    med = np.percentile(vals, 50.0)
+    med = np.percentile(vals, 50.0, axis=axis)
 
     if(len(conf) == 1): conf = conf[0]
 
@@ -591,12 +614,28 @@ def stats(vals, median=False):
 
 
 def groupDigitized(arr, bins, edges='right'):
-    """Find groups of array indices corresponding given bin.
+    """Get a list of array indices corresponding to each bin.
 
     Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
     bin, finds the list of array indices which belong in that bin.
 
-    Example:
+    Arguments
+    ---------
+        arr : array_like of scalars,
+            Values to digitize and group.
+        bins : array_like or scalars, shape (N,)
+            Bin edges to digitize and group by.
+        edges : str, {'right', 'left'}
+            Whether bin edges correspond to 'right' or 'left' side of the bins.
+
+    Returns
+    -------
+        groups : list of int arrays, shape (N,)
+            Each list contains the ``arr`` indices belonging to each corresponding bin.
+
+
+    Examples
+    --------
         >>> arr = [ 0.0, 1.3, 1.8, 2.1 ]
         >>> bins = [ 1.0, 2.0, 3.0 ]
         >>> zcode.Math.groupDigitized(arr, bins, right=True)
@@ -604,15 +643,10 @@ def groupDigitized(arr, bins, edges='right'):
         >>> zcode.Math.groupDigitized(arr, bins, right=False)
         [array([1, 2]), array([3]), array([])]
 
-    Arguments
-    ---------
-        arr   <flt>[N] : array of values to digitize and group
-        bins  <flt>[M] : array of bin edges to digitize and group by
-        edges <str>    : whether bin edges are 'right' or 'left' {'right', 'left'}
-
-    Returns
-    -------
-        groups <int>[M][...] : Each list contains the ``arr`` indices belonging in each bin
+    See Also
+    --------
+    -   ``scipy.stats.binned_statistic``
+    -   ``numpy.digitize``
 
     """
 
@@ -620,7 +654,7 @@ def groupDigitized(arr, bins, edges='right'):
     elif(edges.startswith('l')): right = False
     else: RuntimeError("``edges`` must be 'right' or 'left'!")
 
-    # ``numpy.digitize`` always assumes ``bins`` are right-edges (in effect)
+    # `numpy.digitize` always assumes `bins` are right-edges (in effect)
     shift = 0
     # If we want 'left' bin edges, such shift each bin leftwards
     if(not right): shift = -1
@@ -630,7 +664,7 @@ def groupDigitized(arr, bins, edges='right'):
 
     groups = []
     # Group indices by bin number
-    for ii in range(len(bins)):
+    for ii in xrange(len(bins)):
         groups.append(np.where(pos == ii)[0])
 
     return groups

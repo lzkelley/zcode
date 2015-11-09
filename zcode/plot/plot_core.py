@@ -22,6 +22,7 @@ Functions
 -   plotSegmentedLine    - Draw a line segment by segment.
 -   plotScatter          - Draw a scatter plot.
 -   plotHistBars         - Plot a histogram bar graph.
+-   plotConfFill         - Draw a median line and (set of) confidence interval(s).
 
 -   _setAxis_scale       -
 -   _setAxis_label       -
@@ -42,10 +43,10 @@ from matplotlib import pyplot as plt
 import zcode.math as zmath
 import zcode.inout as zio
 
-__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend', 
+__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend',
            'unifyAxesLimits',
            'colorCycle', 'colormap', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
-           'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars']
+           'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill']
 
 COL_CORR = 'royalblue'
 
@@ -161,13 +162,12 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
         elif(axis == 'y'): ax = stretchAxes(ax, ys=stretch)
 
     offt.set_color(c)
-
     return ax
-# } def setAxis
 
 
 def twinAxis(ax, axis='x', pos=1.0, **kwargs):
-
+    """
+    """
     if(axis == 'x'):
         tw = ax.twinx()
         setax = 'y'
@@ -178,14 +178,11 @@ def twinAxis(ax, axis='x', pos=1.0, **kwargs):
         raise RuntimeError("``axis`` must be either {`x` or `y`}!")
 
     tw = setAxis(tw, axis=setax, pos=pos, **kwargs)
-
     return tw
-# } def twinAxes
 
 
 def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
-    """
-    Set the limits (range) of the given, target axis.
+    """Set the limits (range) of the given, target axis.
 
     When only ``lo`` or only ``hi`` is specified, the default behavior is to only set that axis
     limit and leave the other bound to its existing value.  When ``range`` is set to `True`, then
@@ -234,29 +231,45 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
     # Set Range/Span of Limits
     if(range):
         if(lo is not None):
-            if(at is AT_EXACTLY): lims[0] = lims[1]/lo
-            elif(at is AT_LEAST): lims[0] = np.min([lims[0], lims[0]/lo])
-            elif(at is AT_MOST): lims[0] = np.max([lims[0], lims[0]/lo])
+            if(at == AT_EXACTLY):
+                lims[0] = lims[1]/lo
+            elif(at == AT_LEAST):
+                lims[0] = np.max([lims[0], lims[0]/lo])
+            elif(at == AT_MOST):
+                lims[0] = np.min([lims[0], lims[0]/lo])
         elif(hi is not None):
-            if(at is AT_EXACTLY): lims[1] = lims[1]*hi
-            elif(at is AT_LEAST): lims[1] = np.min([lims[1], lims[1]*hi])
-            elif(at is AT_MOST): lims[1] = np.max([lims[1], lims[1]*hi])
+            if(at == AT_EXACTLY):
+                lims[1] = lims[1]*hi
+            elif(at == AT_LEAST):
+                lims[1] = np.max([lims[1], lims[1]*hi])
+            elif(at == AT_MOST):
+                lims[1] = np.min([lims[1], lims[1]*hi])
         else:
             raise RuntimeError("``lo`` or ``hi`` must be provided!")
 
     # Set Limits explicitly
     else:
         if(lo is not None):
-            if(at is AT_EXACTLY): lims[0] = lo
-            elif(at is AT_LEAST): lims[0] = np.min([lims[0], lo])
-            elif(at is AT_MOST): lims[0] = np.max([lims[0], lo])
+            if(at == AT_EXACTLY):
+                lims[0] = lo
+            elif(at == AT_LEAST):
+                lims[0] = np.max([lims[0], lo])
+            elif(at == AT_MOST):
+                lims[0] = np.min([lims[0], lo])
+            else:
+                raise ValueError("Unrecognized `at` = '%s'" % (at))
         elif(data is not None):
             lims[0] = np.min(data)
 
         if(hi is not None):
-            if(at is AT_EXACTLY): lims[1] = hi
-            elif(at is AT_LEAST): lims[1] = np.max([lims[1], hi])
-            elif(at is AT_MOST): lims[1] = np.min([lims[1], hi])
+            if(at == AT_EXACTLY):
+                lims[1] = hi
+            elif(at == AT_LEAST):
+                lims[1] = np.max([lims[1], hi])
+            elif(at == AT_MOST):
+                lims[1] = np.min([lims[1], hi])
+            else:
+                raise ValueError("Unrecognized `at` = '%s'" % (at))
         elif(data is not None):
             lims[1] = np.max(data)
 
@@ -267,7 +280,6 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
         else:            ax.invert_yaxis()
 
     return
-# } def setLim
 
 
 def zoom(ax, loc, axis='x', scale=2.0):
@@ -388,7 +400,7 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
     return txt
 
 
-def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None, 
+def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None,
            **kwargs):
     """Add a legend to the given figure.
 
@@ -434,7 +446,7 @@ def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
 
     alignStr = valign + " " + halign
 
-    leg = ax.legend(keys, names, prop={'size': fs, 'family': 'monospace'}, 
+    leg = ax.legend(keys, names, prop={'size': fs, 'family': 'monospace'},
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
 
     return leg
@@ -482,8 +494,9 @@ def colormap(args, cmap='jet', scale=None):
 
     Returns
     -------
-       smap <matplotlib.cm.ScalarMappable> : scalar mappable object which contains the members
-                                             ``norm``, ``cmap``, and the function ``to_rgba``
+       smap : `matplotlib.cm.ScalarMappable`
+           Scalar mappable object which contains the members
+           `norm`, `cmap`, and the function `to_rgba`.
 
     """
 
@@ -777,6 +790,18 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     """Plot a histogram bar graph.
 
     NOTE: For log-y, make sure `yscale` is either not manually set, or include `nonposy='clip'`
+
+    Arguments
+    ---------
+    ax : ``matplotlib.axes.Axes`` object,
+        Axes on which to plot.
+    xx : (N,) array_like scalars,
+        Values to be histogrammed.
+    bins : int or array_like,
+        Either the number of bins for bin-edges to be automatically generated, or the bin-edges
+        themselves.
+    ...
+
     """
     HIST_ALPHA = 0.75
     CONF_ALPHA = 0.5
@@ -806,7 +831,7 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
                                rwidth=0.8, color=COL_CORR, zorder=100, **kwargs)
 
     # Dont let lower y-lim be less than 0.8 with log-scaling
-    if(scaley.startswith('log')): 
+    if(scaley.startswith('log')):
         # setLim(ax, 'y', lo=0.8, at='least')   <=== This isn't working for some reason!  FIX
         ylim = np.array(ax.get_ylim())
         if(ylim[0] < 0.8):
@@ -814,6 +839,77 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
             ax.set_ylim(ylim)
 
     return bars
+
+
+def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, **kwargs):
+    """Draw a median line and (set of) confidence interval(s).
+
+    The `med` and `conf` values can be obtained from `numpy.percentile` and or
+    `zcode.math.confidenceIntervals`.
+
+    Arguments
+    ---------
+    ax : `matplotlib.axes.Axes` object,
+        Axes on which to plot.
+    rads : (N,) array_like scalars,
+        Radii corresponding to each median and confidence value.
+    med : (N,) array_like scalars,
+        Median values to plot as line.
+    conf : (N,[M,]2,) array_like scalars,
+        Confidence intervals to plot as shaded regions.  There can be `M` different confidence
+        intervals, each with an upper and lower value.  Shape of `(N,2,)` is also allowed for a
+        single confidence interval.
+    col : `matplotlib` color spec,
+        Color for median lines and shaded region.
+    fillalpha : float or (M,) array_like of floats,
+        Alpha (opacity) specification for fill regions; each element must be ``{0.0, 1.0}``.
+        If ``(M,)`` are given, one is used for each confidence-interval.  Otherwise, for
+        confidence interval `i`, the alpha used is ``fillalpha^{i+1}``.
+    lw : float,
+        Line-weight used specifically for the median line (not the filled-regions).
+    **kwargs : additional key-value pairs,
+        Passed to `matplotlib.pyplot.fill_between` controlling `matplotlib.patches.Polygon`
+        properties.  These are included in the `linePatch` objects, but *not* the `confPatches`.
+
+    Returns
+    -------
+    linePatch : `matplotlib.patches.Patch`,
+        Composite patch of median line and shaded region patch (for use on legend).
+    confPatches : (M,) list of `matplotlib.patches.Patch`,
+        A patch for each confidence inteval (for use on legend).
+
+    """
+    ll, = ax.plot(rads, med, '-', color=col, lw=lw)
+    # `conf` has shape ``(num-rads, num-conf-ints, 2)``
+    if(conf.ndim == 2):
+        conf = conf.reshape(len(rads), 1, 2)
+    elif(conf.ndim != 3):
+        raise ValueError("`conf` must be 2 or 3 dimensions!")
+
+    numConf = np.shape(conf)[-2]
+    confPatches = []
+    # Iterate over confidence intervals
+    for jj in xrange(numConf):
+        # Set fill-opacity
+        if(np.size(fillalpha) == numConf):
+            falph = fillalpha
+        else:
+            falph = np.power(fillalpha, jj+1)
+
+        # Create a dummy-patch to return for a legend of confidence-intervals
+        pp = ax.fill(np.nan, np.nan, color=col, alpha=falph)
+        confPatches.append(pp[0])
+
+        # Fill between confidence intervals
+        ax.fill_between(rads, conf[:, jj, 0], conf[:, jj, 1], alpha=falph, color=col, **kwargs)
+
+        # Create dummy-patch for the median-line and fill-color, for a legend
+        if(jj == 0):
+            pp = ax.fill(np.nan, np.nan, color=col, alpha=falph, **kwargs)
+            # Create overlay of lines and patches
+            linePatch = (pp[0], ll)
+
+    return linePatch, confPatches
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
