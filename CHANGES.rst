@@ -9,7 +9,8 @@ CHANGES
 -   MANIFEST.in [new-file]
     +   Track files required for module.
 -   version.py  [new-file]
-    +   Current version information.  Should be expanded to include git commit SHA, etc.
+    +   Current version information loaded from 'zcode.__init__'.
+    +   Should be expanded to include git commit SHA, etc.
 -   math/
     +   math_core.py
         -   Enhanced the `spline` function, and removed the secondary functions `logSpline` and
