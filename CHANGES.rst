@@ -2,11 +2,30 @@ CHANGES
 =======
 
 
+Future / To-Do
+--------------
+-   math/
+    +   math_core.py
+        -   `spacing`
+            +    Add `endpoint` keyword argument to decide whether end-point(s) are included
+                 in returned range.
+
+
+Current
+-------
+-   inout/
+    +   inout_core.py
+        -   `mpiError` [new-method]
+            +   New method to raise an error across an MPI communicator
+    +   log.py
+        -   `getLogger`
+            +   Added the log output filename as a member variable to the newly created
+                logger object.
 
 
 
 [0.0.3] - 2015/11/09
-----------------------
+--------------------
 -   Overall
     +   Restructured module to use subdirectories per topic (e.g. 'math') instead of single files.
     +   Implemented python3 styles into all files, with backwards compatibility.
