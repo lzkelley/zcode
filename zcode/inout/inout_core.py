@@ -19,10 +19,12 @@ Functions
 -   checkURL                 - Check that the given url exists.
 -   promptYesNo              - Prompt the user (via CLI) for yes or no.
 -   modifyFilename           - Modify the given filename.
+-   mpiError                 - Raise an error through MPI and exit all processes.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import six
+from datetime import datetime
 
 import os
 import sys
@@ -31,7 +33,7 @@ import numpy as np
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
-           'promptYesNo', 'modifyFilename']
+           'promptYesNo', 'modifyFilename', 'mpiError']
 
 
 class _Keys_Meta(type):
@@ -112,8 +114,12 @@ class StreamCapture(list):
        >>> print output
 
     """
-    import io
-    from io import StringIO
+    try:
+        # import for python3
+        from io import StringIO
+    except ImportError:
+        # import for python2
+        from cStringIO import StringIO
 
     def __init__(self, out=True, err=True):
         self.out = out
@@ -122,11 +128,11 @@ class StreamCapture(list):
     def __enter__(self):
         if(self.out):
             self._stdout = sys.stdout
-            sys.stdout = self._stringio = StreamCapture.cStringIO.StringIO()
+            sys.stdout = self._stringio = StreamCapture.StringIO()
 
         if(self.err):
             self._stderr = sys.stderr
-            sys.stderr = self._stringio = StreamCapture.cStringIO.StringIO()
+            sys.stderr = self._stringio = StreamCapture.StringIO()
 
         return self
 
@@ -456,3 +462,29 @@ def modifyFilename(fname, prepend='', append=''):
 
     newName = os.path.join(oldPath, newName)
     return newName
+
+
+def mpiError(comm, log=None, err="ERROR"):
+    """Raise an error through MPI and exit all processes.
+
+    Arguments
+    ---------
+       comm <...> : mpi intracommunicator object (e.g. ``MPI.COMM_WORLD``)
+       err  <str> : optional, extra error-string to print
+
+    """
+    rank = comm.rank
+    errStr = "\nERROR: rank %d\n%s\n%s\n" % (rank, str(datetime.now()), err)
+    try:
+        import traceback
+        errStr += "\n" + traceback.format_exc()
+    except:
+        print("Couldn't use `traceback` module!")
+
+    try:
+        log.error(errStr)   #, exc_info=True)
+    except:
+        print(errStr)
+
+    comm.Abort(rank)
+    return
