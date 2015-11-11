@@ -99,6 +99,8 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
         fileHandler.setFormatter(fileFormatter)
         fileHandler.setLevel(fileLevel)
         logger.addHandler(fileHandler)
+        #     Store output filename to `logger` object
+        logger.filename = tofile
 
     # Log To stdout
     # -------------
