@@ -1,7 +1,6 @@
 CHANGES
 =======
 
-
 Future / To-Do
 --------------
 -   General
@@ -15,6 +14,8 @@ Future / To-Do
 
 Current
 -------
+-   General
+    +   Can now run tests through python via ``>>> zcode.test()``.
 -   inout/
     +   inout_core.py
         -   `mpiError` [new-method]

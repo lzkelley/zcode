@@ -9,3 +9,6 @@ from .hist import *
 __all__ = []
 __all__.extend(math_core.__all__)
 __all__.extend(hist.__all__)
+
+from numpy.testing import Tester
+test = Tester().test

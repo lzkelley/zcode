@@ -13,3 +13,6 @@ __email__ = "lkelley@cfa.harvard.edu"
 __status__ = "Development"
 
 __all__ = ['__version__', '__author__', '__email__', '__status__']
+
+from numpy.testing import Tester
+test = Tester().test
