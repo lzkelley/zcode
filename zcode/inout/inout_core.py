@@ -474,6 +474,7 @@ def mpiError(comm, log=None, err="ERROR", exc_info=True):
 
     """
     rank = comm.rank
+    size = comm.size
     errStr = "\nERROR: rank %d\n%s\n%s\n" % (rank, str(datetime.now()), err)
     try:
         import traceback
@@ -486,5 +487,9 @@ def mpiError(comm, log=None, err="ERROR", exc_info=True):
     except:
         print(errStr)
 
-    comm.Abort(rank)
+    if(size > 1):
+        comm.Abort(rank)
+    else:
+        raise RuntimeError(errStr)
+
     return
