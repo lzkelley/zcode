@@ -464,7 +464,7 @@ def modifyFilename(fname, prepend='', append=''):
     return newName
 
 
-def mpiError(comm, log=None, err="ERROR"):
+def mpiError(comm, log=None, err="ERROR", exc_info=True):
     """Raise an error through MPI and exit all processes.
 
     Arguments
@@ -482,7 +482,7 @@ def mpiError(comm, log=None, err="ERROR"):
         print("Couldn't use `traceback` module!")
 
     try:
-        log.error(errStr)   #, exc_info=True)
+        log.error(errStr, exc_info=exc_info)
     except:
         print(errStr)
 
