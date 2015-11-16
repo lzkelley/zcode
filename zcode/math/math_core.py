@@ -22,6 +22,7 @@ Functions
 -   groupDigitized                       - Get a list of array indices corresponding to each bin.
 -   sampleInverse                        - Find x-sampling to evenly divide a function in y-space.
 -   smooth                               - Use convolution to smooth the given array.
+-   mono                                 - Check for monotonicity in the given array.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -36,7 +37,7 @@ __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
            'within', 'indsWithin', 'minmax', 'spacing', 'strArray', 'sliceForAxis', 'midpoints',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'frexp10', 'stats', 'groupDigitized',
-           'sampleInverse', 'smooth']
+           'sampleInverse', 'smooth', 'mono']
 
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=True):
@@ -788,9 +789,41 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     return smArr
 
 
-def _fracToInt(frac, size, within=None, round='floor'):
+def mono(arr, type='g', axis=-1):
+    """Check for monotonicity in the given array.
+
+    Arguments
+    ---------
+    arr : array_like scalars
+        Input array to check.
+    type : str
+        Type of monotonicity to look for:
+        * 'g' :
+
+
+
     """
-    Convert from a float ``frac`` to that fraction of ``size``.
+    good_type = ['g', 'ge', 'l', 'le', 'e']
+    assert type in good_type, "Type '%s' Unrecognized." % (type)
+
+    if(type == 'g'):
+        func = np.greater
+    elif(type == 'ge'):
+        func = np.greater_equal
+    elif(type == 'l'):
+        func = np.less
+    elif(type == 'le'):
+        func = np.less_equal
+    elif(type == 'e'):
+        func = np.equal
+
+    delta = np.diff(arr, axis=axis)
+    retval = np.all(func(delta, 0.0))
+    return retval
+
+
+def _fracToInt(frac, size, within=None, round='floor'):
+    """Convert from a float ``frac`` to that fraction of ``size``.
 
     If ``frac`` is already an integer, do nothing.
 

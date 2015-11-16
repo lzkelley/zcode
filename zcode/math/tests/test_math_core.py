@@ -3,7 +3,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-from numpy.testing import assert_allclose, run_module_suite
+from numpy.testing import run_module_suite
 
 from nose.tools import assert_true, assert_false
 
@@ -18,19 +18,26 @@ class TestMathCore(object):
         cls.SIZE = 100
         cls.r1 = np.random.random(cls.SIZE)
         cls.r2 = np.random.uniform(-1.0, 1.0, size=cls.SIZE)
-        # cls.y = np.random.random(100)
-        # cls.v = np.random.random(100)
-        # cls.X = np.random.random((100, 3))
-        # cls.w = np.random.random(100)
 
     def test_mono(self):
         arr_g = [-1.0, 1.0, 2.0, 3.0]
         arr_ge = [-1.0, 1.0, 1.0, 2.0, 2.5]
+        arr_l = [11.5, 9.2, -2.0, -301.0]
+        arr_le = [11.5, 9.2, -2.0, -2.0, -301.0]
+        arr_e = 11*[1.0]
 
         assert_true(math_core.mono(arr_g, 'g'))
         assert_true(math_core.mono(arr_ge, 'ge'))
         assert_true(math_core.mono(arr_g, 'ge'))
         assert_false(math_core.mono(arr_ge, 'g'))
+
+        assert_true(math_core.mono(arr_l, 'l'))
+        assert_true(math_core.mono(arr_le, 'le'))
+        assert_true(math_core.mono(arr_l, 'le'))
+        assert_false(math_core.mono(arr_le, 'l'))
+
+        assert_true(math_core.mono(arr_e, 'e'))
+        assert_false(math_core.mono(arr_le, 'e'))
 
     def test_smooth(self):
         r2 = self.r2
@@ -45,29 +52,29 @@ class TestMathCore(object):
         smArrs = [math_core.smooth(arr, smlen)
                   for (arr, smlen) in zip(arrs, SMOOTH_LENGTHS)]
 
-        # Variance between smoothed and raw should be decreasing
-        stdDiffs = [np.std(sm-arr) for sm in smArrs]
+        # average derivative should be progressively smaller
+        stdDiffs = [np.mean(np.diff(sm)) for sm in smArrs]
         assert stdDiffs[0] > stdDiffs[1] > stdDiffs[2]
 
         # Smoothing length 1 should have no effect
         assert np.all(smArrs[0] == arrs[0])
 
-        SMOOTH_LENGTHS = [4, 16, 32]
-        WIDTH = [[0.25, 0.75], 100, 100]
-        LOCS  = [None, 800, 0.8]
+        '''
+        SMOOTH_LENGTHS = [1, 4, 8]
+        twid = np.int(np.floot(ARR_SIZE/4))
+        WIDTH = [[0.25, 0.75], 2*twid]
+        LOCS  = [None, 0.5]
 
         arr = AMP*np.sin(xx) + NOISE*r2
         smArrs = [math_core.smooth(arr, smlen, width=wid, loc=loc)
                   for smlen, wid, loc in zip(SMOOTH_LENGTHS, WIDTH, LOCS)]
 
-        assert np.all(smArrs[0][:249] == arr[:249])
-        assert np.all(smArrs[0][751:] == arr[751:])
+        assert np.all(smArrs[0][:twid-2] == arr[:twid-2])
+        assert np.all(smArrs[0][-twid-2:] == arr[-twid-2:])
 
         assert np.all(smArrs[1][:700] == arr[:700])
         assert np.all(smArrs[1][901:] == arr[901:])
-
-        assert np.all(smArrs[2][:699] == arr[:699])
-        assert np.all(smArrs[2][901:] == arr[901:])
+        '''
 
         return
 

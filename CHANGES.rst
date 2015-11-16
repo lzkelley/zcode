@@ -4,6 +4,8 @@ CHANGES
 
 Future / To-Do
 --------------
+-   General
+    +   Implement tests for all modules and functions.
 -   math/
     +   math_core.py
         -   `spacing`
@@ -21,7 +23,15 @@ Current
         -   `getLogger`
             +   Added the log output filename as a member variable to the newly created
                 logger object.
-
+-   math/
+    +   tests/
+        -   test_math_core.py [new-file]
+            +   New location and standard for math tests using 'nose'.
+            +   Moved over one of the tests for 'smooth' from previous location,
+                'zcode/testing/test_Math.py' [deleted], and simplified.
+            +   Implemented tests for new 'mono' function.
+-   testing/ [Deleted]
+    +   Moved and reformatted test into new 'zcode/math/tests/test_math_core.py' file.
 
 
 [0.0.3] - 2015/11/09
