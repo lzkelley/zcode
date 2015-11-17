@@ -8,6 +8,7 @@ Functions
 -   within                               - Test whether a value is within the bounds of another.
 -   indsWithin                           - Find the indices within the given extrema.
 -   minmax                               - Find the min and max of given values.
+-   argextrema                           -
 -   spacing                              - Create an even spacing between extrema from given data.
 -   strArray                             - Create a string representation of a numerical array.
 -   sliceForAxis                         - Array slicing object which slices only the target axis.
@@ -34,9 +35,11 @@ import warnings
 import numbers
 
 __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
-           'within', 'indsWithin', 'minmax', 'spacing', 'strArray', 'sliceForAxis', 'midpoints',
+           'within', 'indsWithin', 'minmax', 'argextrema', 'spacing',
+           'strArray', 'sliceForAxis', 'midpoints',
            'vecmag', 'extend',
-           'renumerate', 'cumstats', 'confidenceIntervals', 'frexp10', 'stats', 'groupDigitized',
+           'renumerate', 'cumstats', 'confidenceIntervals',
+           'frexp10', 'stats', 'groupDigitized',
            'sampleInverse', 'smooth', 'mono']
 
 
@@ -273,6 +276,42 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
         minmax[1] = np.max([minmax[1], prev[1]])
 
     return minmax
+
+
+def argextrema(arr, type, filter=None):
+    """
+    """
+    # Valid filters, NOTE: do *not* include 'e' (equals), doesn't make sense here.
+    good_filter = [None, 'g', 'ge', 'l', 'le']
+    if(filter not in good_filter):
+        raise ValueError("Filter '%s' Unrecognized." % (type))
+    # Make sure `type` is valid
+    good_type = ['min', 'max']
+    if(not np.any([type.startswith(gt) for gt in good_type]):
+        raise ValueError("Type '%s' Unrecognized." % (type))
+    # Make sure input array `arr` is valid (1D)
+    arr = np.asarray(arr)
+    if(arr.ndim != 1):
+        raise ValueError("Only 1D arrays currently supported.")
+
+    if(type.startswith('min')):
+        func = np.argmin
+    elif(type.statswith('max')):
+        func = np.argmax
+
+    # Find whether the `filter` criteria is True
+    if(filter):
+        filterFunc = _comparisonFunction(filter)
+        sel = filterFunc(arr)
+    # If no filter (`None`), all values are valid
+    else:
+        sel = np.ones_like(arr, dtype=bool)
+
+    # Find the extrema within the valid (`sel`) subset
+    ind = func(arr[sel])
+    # Convert to index wrt the full input array
+    ind = np.where(sel)[0][ind]
+    return ind
 
 
 def spacing(data, scale='log', num=100, nonzero=None, positive=None):
@@ -800,27 +839,37 @@ def mono(arr, type='g', axis=-1):
         Type of monotonicity to look for:
         * 'g' :
 
-
+    Returns
+    -------
+    retval : bool
+        Whether the input array is monotonic in the desired sense.
 
     """
     good_type = ['g', 'ge', 'l', 'le', 'e']
     assert type in good_type, "Type '%s' Unrecognized." % (type)
-
-    if(type == 'g'):
-        func = np.greater
-    elif(type == 'ge'):
-        func = np.greater_equal
-    elif(type == 'l'):
-        func = np.less
-    elif(type == 'le'):
-        func = np.less_equal
-    elif(type == 'e'):
-        func = np.equal
-
+    # Retrieve the numpy comparison function (e.g. np.greater) for the given `type` (e.g. 'g')
+    func = _comparisonFunction(type)
     delta = np.diff(arr, axis=axis)
     retval = np.all(func(delta, 0.0))
     return retval
 
+def _comparisonFunction(comp):
+    """Retrieve the comparison function matching the input expression.
+    """
+    if(comp == 'g'):
+        func = np.greater
+    elif(comp == 'ge'):
+        func = np.greater_equal
+    elif(comp == 'l'):
+        func = np.less
+    elif(comp == 'le'):
+        func = np.less_equal
+    elif(comp == 'e'):
+        func = np.equal
+    else:
+        raise ValueError("Unrecognized comparison '%s'." % (comp))
+
+    return func
 
 def _fracToInt(frac, size, within=None, round='floor'):
     """Convert from a float ``frac`` to that fraction of ``size``.
