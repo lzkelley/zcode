@@ -4,8 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 from numpy.testing import run_module_suite
-
-from nose.tools import assert_true, assert_false
+from nose.tools import assert_true, assert_false, assert_equal, assert_raises
 
 from zcode.math import math_core
 
@@ -14,7 +13,7 @@ class TestMathCore(object):
 
     @classmethod
     def setup_class(cls):
-    	np.random.seed(9865)
+        np.random.seed(9865)
         cls.SIZE = 100
         cls.r1 = np.random.random(cls.SIZE)
         cls.r2 = np.random.uniform(-1.0, 1.0, size=cls.SIZE)
@@ -38,6 +37,36 @@ class TestMathCore(object):
 
         assert_true(math_core.mono(arr_e, 'e'))
         assert_false(math_core.mono(arr_le, 'e'))
+
+    def test_argextrema(self):
+        # Basic usage without filtering
+        assert_equal(math_core.argextrema([-1, -5, 2, 10], 'min'), 1)
+        assert_equal(math_core.argextrema([-1, -5, 2, 10], 'max'), 3)
+
+        # Filtering
+        #    min
+        assert_equal(math_core.argextrema([-1, -5, 2, 10, 0], 'min', 'g'), 2)
+        assert_equal(math_core.argextrema([-1, -5, 2, 10, 0], 'min', 'ge'), 4)
+        assert_equal(math_core.argextrema([-1, -5, 0, 2, 10], 'min', 'l'), 1)
+        assert_equal(math_core.argextrema([-1, -5, 0, 2, 10], 'min', 'le'), 1)
+        #    max
+        assert_equal(math_core.argextrema([-1, -5, 2, 10, 0], 'max', 'g'), 3)
+        assert_equal(math_core.argextrema([-1, -5, 2, 10, 0], 'max', 'ge'), 3)
+        assert_equal(math_core.argextrema([-1, -5, 0, 2, 10], 'max', 'l'), 0)
+        assert_equal(math_core.argextrema([-1, -5, 0, 2, 10], 'max', 'le'), 2)
+
+        # Raises appropriate errors
+        #    Incorrect shape input array
+        assert_raises(ValueError, math_core.argextrema(np.arange(4).reshape(2, 2), 'max'))
+        assert_raises(ValueError, math_core.argextrema(0.0, 'max'))
+        #    Invalid `type` argument
+        assert_raises(ValueError, math_core.argextrema([1, 2], 'mex'))
+        #    Invalid `filter` argument
+        assert_raises(ValueError, math_core.argextrema([1, 2], 'max', 'e'))
+        #    Invalid `filter` argument
+        assert_raises(ValueError, math_core.argextrema([1, 2], 'max', 'greater'))
+
+
 
     def test_smooth(self):
         r2 = self.r2
