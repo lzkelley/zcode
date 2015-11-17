@@ -25,12 +25,17 @@ Current
             +   Added the log output filename as a member variable to the newly created
                 logger object.
 -   math/
+    +   math_core.py
+        -   `argextrema` [new-method]
+            +   Method to find the index of the extrema (either 'min' or 'max') with filtering
+                criteria (e.g. 'ge' = filter for values ``>= 0.0``).
     +   tests/
         -   test_math_core.py [new-file]
             +   New location and standard for math tests using 'nose'.
             +   Moved over one of the tests for 'smooth' from previous location,
                 'zcode/testing/test_Math.py' [deleted], and simplified.
-            +   Implemented tests for new 'mono' function.
+            +   `mono` function tests.
+            +   `argextrema` function tests.
 -   testing/ [Deleted]
     +   Moved and reformatted test into new 'zcode/math/tests/test_math_core.py' file.
 
