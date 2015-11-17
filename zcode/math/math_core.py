@@ -2,28 +2,28 @@
 
 Functions
 ---------
--   spline                               - Create a general spline interpolation function.
--   contiguousInds                       - Find the largest segment of contiguous array values
--   cumtrapz_loglog                      - Perform a cumulative integral in log-log space.
--   within                               - Test whether a value is within the bounds of another.
--   indsWithin                           - Find the indices within the given extrema.
--   minmax                               - Find the min and max of given values.
--   argextrema                           -
--   spacing                              - Create an even spacing between extrema from given data.
--   strArray                             - Create a string representation of a numerical array.
--   sliceForAxis                         - Array slicing object which slices only the target axis.
--   midpoints                            - Return the midpoints between values in the given array.
--   vecmag                               - find the magnitude/distance of/between vectors.
--   extend                               - Extend the given array by extraplation.
--   renumerate                           - construct a reverse enumeration iterator.
--   cumstats                             - Calculate a cumulative average and standard deviation.
--   confidenceIntervals                  - Compute the values bounding desired confidence intervals.
--   frexp10                              - Decompose a float into mantissa and exponent (base 10).
--   stats                                - Get basic statistics for the given array.
--   groupDigitized                       - Get a list of array indices corresponding to each bin.
--   sampleInverse                        - Find x-sampling to evenly divide a function in y-space.
--   smooth                               - Use convolution to smooth the given array.
--   mono                                 - Check for monotonicity in the given array.
+-   spline                   - Create a general spline interpolation function.
+-   contiguousInds           - Find the largest segment of contiguous array values
+-   cumtrapz_loglog          - Perform a cumulative integral in log-log space.
+-   within                   - Test whether a value is within the bounds of another.
+-   indsWithin               - Find the indices within the given extrema.
+-   minmax                   - Find the min and max of given values.
+-   argextrema               - Find the index of the extrema in the input array.
+-   spacing                  - Create an even spacing between extrema from given data.
+-   strArray                 - Create a string representation of a numerical array.
+-   sliceForAxis             - Array slicing object which slices only the target axis.
+-   midpoints                - Return the midpoints between values in the given array.
+-   vecmag                   - find the magnitude/distance of/between vectors.
+-   extend                   - Extend the given array by extraplation.
+-   renumerate               - construct a reverse enumeration iterator.
+-   cumstats                 - Calculate a cumulative average and standard deviation.
+-   confidenceIntervals      - Compute the values bounding desired confidence intervals.
+-   frexp10                  - Decompose a float into mantissa and exponent (base 10).
+-   stats                    - Get basic statistics for the given array.
+-   groupDigitized           - Get a list of array indices corresponding to each bin.
+-   sampleInverse            - Find x-sampling to evenly divide a function in y-space.
+-   smooth                   - Use convolution to smooth the given array.
+-   mono                     - Check for monotonicity in the given array.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -279,7 +279,7 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
 
 
 def argextrema(arr, type, filter=None):
-    """
+    """Find the index of the desired type of extrema in the input array.
     """
     # Valid filters, NOTE: do *not* include 'e' (equals), doesn't make sense here.
     good_filter = [None, 'g', 'ge', 'l', 'le']
