@@ -291,7 +291,7 @@ def argextrema(arr, type, filter=None):
         raise ValueError("Type '%s' Unrecognized." % (type))
     # Make sure input array `arr` is valid (1D)
     arr = np.asarray(arr)
-    if(arr.ndim != 1):
+    if(arr.ndim != 1 or arr[0].ndim != 0):
         raise ValueError("Only 1D arrays currently supported.")
 
     if(type.startswith('min')):
@@ -853,6 +853,7 @@ def mono(arr, type='g', axis=-1):
     retval = np.all(func(delta, 0.0))
     return retval
 
+
 def _comparisonFunction(comp):
     """Retrieve the comparison function matching the input expression.
     """
@@ -871,6 +872,7 @@ def _comparisonFunction(comp):
 
     return func
 
+
 def _fracToInt(frac, size, within=None, round='floor'):
     """Convert from a float ``frac`` to that fraction of ``size``.
 
@@ -888,7 +890,6 @@ def _fracToInt(frac, size, within=None, round='floor'):
         loc    <int>  : ``frac`` of ``size`` as rounded integer
 
     """
-
     # If ``frac`` is already an integer, do nothing, return it
     if(isinstance(frac, numbers.Integral)): return frac
 
