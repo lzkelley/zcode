@@ -287,7 +287,7 @@ def argextrema(arr, type, filter=None):
         raise ValueError("Filter '%s' Unrecognized." % (type))
     # Make sure `type` is valid
     good_type = ['min', 'max']
-    if(not np.any([type.startswith(gt) for gt in good_type]):
+    if(not np.any([type.startswith(gt) for gt in good_type])):
         raise ValueError("Type '%s' Unrecognized." % (type))
     # Make sure input array `arr` is valid (1D)
     arr = np.asarray(arr)
@@ -296,13 +296,13 @@ def argextrema(arr, type, filter=None):
 
     if(type.startswith('min')):
         func = np.argmin
-    elif(type.statswith('max')):
+    elif(type.startswith('max')):
         func = np.argmax
 
     # Find whether the `filter` criteria is True
     if(filter):
         filterFunc = _comparisonFunction(filter)
-        sel = filterFunc(arr)
+        sel = filterFunc(arr, 0.0)
     # If no filter (`None`), all values are valid
     else:
         sel = np.ones_like(arr, dtype=bool)
