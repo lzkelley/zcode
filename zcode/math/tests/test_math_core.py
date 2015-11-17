@@ -57,16 +57,14 @@ class TestMathCore(object):
 
         # Raises appropriate errors
         #    Incorrect shape input array
-        assert_raises(ValueError, math_core.argextrema(np.arange(4).reshape(2, 2), 'max'))
-        assert_raises(ValueError, math_core.argextrema(0.0, 'max'))
+        assert_raises(ValueError, math_core.argextrema, np.arange(4).reshape(2, 2), 'max')
+        assert_raises(ValueError, math_core.argextrema, 0.0, 'max')
         #    Invalid `type` argument
-        assert_raises(ValueError, math_core.argextrema([1, 2], 'mex'))
+        assert_raises(ValueError, math_core.argextrema, [1, 2], 'mex')
         #    Invalid `filter` argument
-        assert_raises(ValueError, math_core.argextrema([1, 2], 'max', 'e'))
+        assert_raises(ValueError, math_core.argextrema, [1, 2], 'max', 'e')
         #    Invalid `filter` argument
-        assert_raises(ValueError, math_core.argextrema([1, 2], 'max', 'greater'))
-
-
+        assert_raises(ValueError, math_core.argextrema, [1, 2], 'max', 'greater')
 
     def test_smooth(self):
         r2 = self.r2
