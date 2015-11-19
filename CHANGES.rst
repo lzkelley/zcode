@@ -14,7 +14,11 @@ Future / To-Do
 
 Current
 -------
--
+-   math/
+    +   math_core.py
+        -   `confidenceBands`
+            +    Added `filter` argument to select points based on how their `y` values compare to
+                 zero, e.g. to select for only ``y >= 0.0`` etc.
 
 
 [0.0.4] - 2015/11/19

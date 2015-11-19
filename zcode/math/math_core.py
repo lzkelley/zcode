@@ -28,6 +28,10 @@ Functions
 -   smooth                   - Use convolution to smooth the given array.
 -   mono                     - Check for monotonicity in the given array.
 
+-   _trapezium_loglog
+-   _comparisonFunction
+-   _fracToInt
+
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -718,7 +722,7 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1):
     return med, conf
 
 
-def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95]):
+def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter=None):
     """Bin the given data with respect to `xx` and calculate confidence intervals in `yy`.
 
     Arguments
@@ -739,6 +743,7 @@ def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95]):
     confInt : scalar or array_like of scalar
         The percentage confidence intervals to calculate (e.g. 0.5 for median).
         Must be between {0.0, 1.0}.
+    filter : str or `None`
 
     Returns
     -------
@@ -767,6 +772,13 @@ def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95]):
         errStr = "Shapes of `xx` and `yy` must match ('{}' vs. '{}'."
         errStr = errStr.format(str(xx.shape), str(yy.shape))
         raise ValueError(errStr)
+
+    # Filter based on whether `yy` values match `filter` comparison to 0.0
+    if filter is not None:
+        compFunc = _comparisonFunction(filter)
+        inds = np.where(compFunc(yy, 0.0))[0]
+        xx = xx[inds]
+        yy = yy[inds]
 
     # Create bins
     xbins = asBinEdges(xbins, xx)
