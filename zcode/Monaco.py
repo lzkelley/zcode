@@ -1,3 +1,7 @@
+"""
+"""
+
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -15,7 +19,7 @@ sigmaB = 0.1            # StdDev in step size for B
 xrange = [-1.0, 1.0]     # X-axis range for plots
 yrange = [-0.5, 1.5]     # Y-axis   "    "    "
 arange = [0.2, 1.5]      # A (y-intercept) range for plots
-brange = [0.0, 1.5]      # B (slope)         "    "    " 
+brange = [0.0, 1.5]      # B (slope)         "    "    "
 
 # Initial Guess for line parameters
 a0 = 0.5                 # Y-Inercept
@@ -33,7 +37,7 @@ burnin = 100             # Number of points to consider 'burn-in'
 
 
 
-# linear() - Find linear f(x|a,b) = a + b*x 
+# linear() - Find linear f(x|a,b) = a + b*x
 def linear(x,ta,tb):
     return ta + tb*x
 
@@ -53,9 +57,9 @@ def likelihood(cs1, cs2):
 
 
 
-def main():    
+def main():
 
-    print "\n - Monaco.py - MCMC"
+    print("\n - Monaco.py - MCMC")
 
     num = 100
     SIGMA_X = 0.01
@@ -76,25 +80,25 @@ def main():
 
 
     # ================================================  MCMC  ====================================
-    print "\n - - Beginning MCMC"
-    print " - - - StdDev in sampling distribution: sigmaA, sigmaB = %.3e, %.3e" % (sigmaA, sigmaB)
+    print("\n - - Beginning MCMC")
+    print(" - - - StdDev in sampling distribution: sigmaA, sigmaB = %.3e, %.3e" % (sigmaA, sigmaB))
 
-    # Initialize the current location parameters, calculate chi-squared 
+    # Initialize the current location parameters, calculate chi-squared
     a1 = a0
     b1 = b0
     chiSq1 = chiSquared(inx, iny, sigmaData, a0, b0)
-    print " - - - Guess for a0,b0 = %.3e,%.3e; initial ChiSquared/N = %.3e" % (a0,b0, chiSq1)
+    print(" - - - Guess for a0,b0 = %.3e,%.3e; initial ChiSquared/N = %.3e" % (a0,b0, chiSq1))
 
-    # Store lists of a,b,chi values etc 
+    # Store lists of a,b,chi values etc
     alist = [ a1 ]      # List of current fit for each step (i.e. new value if accepted, old if not)
-    blist = [ b1 ]             
-    chilist = [ chiSq1 ]       
+    blist = [ b1 ]
+    chilist = [ chiSq1 ]
     asteplist = [ a1 ]             # List of all steps attempted (regardless of taken or not)
-    bsteplist = [ b1 ]         
+    bsteplist = [ b1 ]
     ayes = [ a1 ]                  # List of steps taken
-    byes = [ b1 ]              
+    byes = [ b1 ]
     ano = []                        # List of steps not-taken
-    bno = []                   
+    bno = []
     acceptlist = [ True ]               # List of steps accepted or not (True / False)
     likes = []                           # List of likelihoood ratios for all steps
 
@@ -133,8 +137,8 @@ def main():
         blist.append( b1 )
         chilist.append( chiSq1 )
 
-    print " - - - Accepted %d, Rejected %d = %.2f" % (naccept, nsteps-naccept, 1.0*naccept/nsteps)
-    print " Final chi2 = %e" % (chilist[-1])
+    print(" - - - Accepted %d, Rejected %d = %.2f" % (naccept, nsteps-naccept, 1.0*naccept/nsteps))
+    print(" Final chi2 = %e" % (chilist[-1]))
 
     numgood = len(alist[burnin:])
     # Calculate Means
@@ -144,7 +148,7 @@ def main():
     astdev = np.sqrt( np.sum( (alist[burnin:] - amean)**2 )/numgood )
     bstdev = np.sqrt( np.sum( (blist[burnin:] - bmean)**2 )/numgood )
 
-    print " - - - A = %.3e +- %.3e   B = %.3e +- %.3e" % (amean, astdev, bmean, bstdev)
+    print(" - - - A = %.3e +- %.3e   B = %.3e +- %.3e" % (amean, astdev, bmean, bstdev))
 
 
     outx = np.linspace(0.0, 1.0, num=100)
@@ -177,11 +181,4 @@ def main():
 
 # main()
 
-
-
 if __name__ == "__main__": main()
-
-
-
-    # ---------------------------------------------------
-    # -----------------------------------------------------------------------------------------------

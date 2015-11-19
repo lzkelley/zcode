@@ -1,19 +1,19 @@
-import os
 from setuptools import setup
+import version
 
-readme = open('README').read()
+readme = open('README.rst').read()
 
 requirements = []
 
 setup(
-    name = "zcode",
-    version = "0.0.1",
-    author = "Luke Zoltan Kelley",
-    author_email = "lkelley@cfa.harvard.edu",
-    description = ("General, commonly used functions for other projects."),
-    license = "MIT",
-    keywords = "",
-    url = "https://bitbucket.org/lzkelley/zcode/",
+    name="zcode",
+    version=version.version,
+    author="Luke Zoltan Kelley",
+    author_email="lkelley@cfa.harvard.edu",
+    description=("General, commonly used functions for other projects."),
+    license="MIT",
+    keywords="",
+    url="https://bitbucket.org/lzkelley/zcode/",
     packages=['zcode'],
     include_package_data=True,
     install_requires=requirements,
@@ -24,5 +24,5 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Programming Language :: Python :: 2.7',
-        ],
-    )
+    ],
+)
