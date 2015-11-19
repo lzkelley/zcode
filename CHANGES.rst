@@ -29,6 +29,15 @@ Current
         -   `argextrema` [new-method]
             +   Method to find the index of the extrema (either 'min' or 'max') with filtering
                 criteria (e.g. 'ge' = filter for values ``>= 0.0``).
+        -   `really1d` [new-method]
+            +   Test whether a list or array is purely 1D, i.e. make sure it is not a 'jagged'
+                list (or array) of lists (or arrays).
+        -   `asBinEdges` [new-method]
+            +   Convert a bin-specification to a list of bin-edges.  I.e. given either a set of
+                bin-edges, or a number of bins (in N-dimensions), return or create those bin-edges.
+        -   `confidenceIntervals` [new-method]
+            +   For a pair of x and y data, bin the values by x to construct confidence intervals
+                in y.
     +   tests/
         -   test_math_core.py [new-file]
             +   New location and standard for math tests using 'nose'.

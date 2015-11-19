@@ -8,8 +8,10 @@ Functions
 -   within                   - Test whether a value is within the bounds of another.
 -   indsWithin               - Find the indices within the given extrema.
 -   minmax                   - Find the min and max of given values.
+-   really1d                 - Test whether an array_like is really 1D (e.g. not jagged array).
 -   argextrema               - Find the index of the extrema in the input array.
 -   spacing                  - Create an even spacing between extrema from given data.
+-   asBinEdges               - Create bin-edges if the given `bins` do not already give them.
 -   strArray                 - Create a string representation of a numerical array.
 -   sliceForAxis             - Array slicing object which slices only the target axis.
 -   midpoints                - Return the midpoints between values in the given array.
@@ -18,6 +20,7 @@ Functions
 -   renumerate               - construct a reverse enumeration iterator.
 -   cumstats                 - Calculate a cumulative average and standard deviation.
 -   confidenceIntervals      - Compute the values bounding desired confidence intervals.
+-   confidenceBands          - Bin by `xx` to calculate confidence intervals in `yy`.
 -   frexp10                  - Decompose a float into mantissa and exponent (base 10).
 -   stats                    - Get basic statistics for the given array.
 -   groupDigitized           - Get a list of array indices corresponding to each bin.
@@ -28,6 +31,8 @@ Functions
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from six.moves import xrange
+
 import numpy as np
 import scipy as sp
 import scipy.interpolate
@@ -35,10 +40,11 @@ import warnings
 import numbers
 
 __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
-           'within', 'indsWithin', 'minmax', 'argextrema', 'spacing',
+           'within', 'indsWithin', 'minmax', 'really1d',
+           'argextrema', 'spacing', 'asBinEdges',
            'strArray', 'sliceForAxis', 'midpoints',
            'vecmag', 'extend',
-           'renumerate', 'cumstats', 'confidenceIntervals',
+           'renumerate', 'cumstats', 'confidenceIntervals', 'confidenceBands',
            'frexp10', 'stats', 'groupDigitized',
            'sampleInverse', 'smooth', 'mono']
 
@@ -278,6 +284,33 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
     return minmax
 
 
+def really1d(arr):
+    """Test whether an array_like is really 1D (i.e. not a jagged ND array).
+
+    Test whether the input array is uniformly one-dimensional, as apposed to (e.g.) a ``ndim == 1``
+    list or array of irregularly shaped sub-lists/sub-arrays.  True for an empty list `[]`.
+
+    Arguments
+    ---------
+    arr : array_like
+        Array to be tested.
+
+    Returns
+    -------
+    bool
+        Whether `arr` is purely 1D.
+
+    """
+    if np.ndim(arr) != 1:
+        return False
+    # Empty list or array
+    if len(arr) == 0:
+        return True
+    if np.any(np.vectorize(np.ndim)(arr)):
+        return False
+    return True
+
+
 def argextrema(arr, type, filter=None):
     """Find the index of the desired type of extrema in the input array.
     """
@@ -350,6 +383,81 @@ def spacing(data, scale='log', num=100, nonzero=None, positive=None):
     else:         spacing = np.linspace(*span,           num=num)
 
     return spacing
+
+
+def asBinEdges(bins, data, scale='lin'):
+    """Create bin-edges if the given `bins` do not already give them.
+
+    Code based on 'scipy.stats._binned_statistic.binned_statistic_dd'.
+
+    Arguments
+    ---------
+    bins : int, array_like of int, or array_like of scalars
+        Specification for bins.  This must be one of:
+        * int, specifying the number of bins to create with scaling `scale`, in *all* dimensions.
+        * array_like of int, specifying the number of bins to create in *each* dimension.
+        * array_like of scalars, specifying the (left and right) edges for bins of *1D* data.
+        * list of array_like of scalars, specifying the (left and right) edges for bins in
+          each dimension.
+    data : (M,[D]) array_like of scalars
+        Input data with which to construct bin-edges, or determine validity of given bin-edges.
+        This can be one-dimensional with shape (M), or D-dimensional with shape (M,D).
+    scale : str
+        Specification for spacing of bin edges {'lin', 'log'}.  Ignored if bin-edges are given
+        explicitly in `bins`.
+
+    Returns
+    -------
+    bins : list of array_like float
+        For 1D input data, this will be a single array of `N+1` bin edges for `N` bins.
+        If the input data is `D`-Dimensional, then this will be a list of `D` arrays of bin edges,
+        each element of which can have a different number of bins.
+
+    """
+    data = np.asarray(data)
+    ndim = data.ndim
+    edges = ndim * [None]
+
+    try:
+        M = len(bins)
+        if M != ndim:
+            flag_1d = really1d(bins)
+            if flag_1d:
+                bins = [np.asarray(bins, float)]
+
+            if not flag_1d or len(bins) != ndim:
+                raise ValueError('The dimension of bins must be equal '
+                                 'to the dimension of the sample x.')
+    except TypeError:
+        bins = ndim * [bins]
+
+    # If `scale` is a single value for all dimensions
+    if(np.ndim(scale) == 0):
+        scale = ndim * [scale]
+    # otherwise `scale` must be specified for each dimension
+    elif(np.size(scale) != ndim):
+        raise ValueError("`scale` must be a single value or a value for each dimension.")
+
+    # Find range for each dimension
+    smin = np.atleast_1d(np.array(data.min(axis=0), float))
+    smax = np.atleast_1d(np.array(data.max(axis=0), float))
+    # Make sure the bins have a finite width.
+    for i in xrange(len(smin)):
+        if smin[i] == smax[i]:
+            smin[i] = smin[i] - 0.5
+            smax[i] = smax[i] + 0.5
+
+    # Create arrays describing edges of bins
+    for ii in xrange(ndim):
+        if np.isscalar(bins[ii]):
+            edges[ii] = spacing([smin[ii], smax[ii]], scale[ii], num=bins[ii] + 1)
+        else:
+            edges[ii] = np.asarray(bins[ii], float)
+
+    if(ndim == 1):
+        edges = edges[0]
+
+    return edges
 
 
 def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
@@ -608,6 +716,80 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1):
     if(len(conf) == 1): conf = conf[0]
 
     return med, conf
+
+
+def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95]):
+    """Bin the given data with respect to `xx` and calculate confidence intervals in `yy`.
+
+    Arguments
+    ---------
+    xx : array_like scalars
+        Data values for the axis by which to bin.
+    yy : array_like scalars
+        Data values for the axis in which to calculate confidence intervals, with values
+        corresponding to each of the `xx` values.  Must have the same number of elements
+        as `xx`.
+    xbins : int or array_like of scalar
+        Specification for bins in `xx`.  Either a
+        * int, describing the number of bins `N` to create automatically with scale `xscale`.
+        * array_like scalar, describing the `N+1` edges of each bin (left and right).
+    xscale : str
+        Specification of xbin scaling if bins are to be calculated automatically, {'lin', 'log'}.
+        Ignored if bin edges are given explicitly to `xbins`.
+    confInt : scalar or array_like of scalar
+        The percentage confidence intervals to calculate (e.g. 0.5 for median).
+        Must be between {0.0, 1.0}.
+
+    Returns
+    -------
+    (for number of bins `N`)
+    count : (N,) array of int
+        The number of points in each xbin.
+    med : (N,) array of float
+        The median value of points in each bin
+    conf : array or ndarray of float
+        Values describing the confidence intervals.
+        If a single `confInt` is given, this will have shape (N,2);
+        If `M` `confInt` values are given, this will have shape (N,M,2)
+        Where in each case the 0th and 1st element of the last dimension is the lower and upper
+        confidence bounds respectively.
+    xbins : (N+1,) array of float
+        Location of bin edges.
+
+    """
+    squeeze = False
+    if(not np.iterable(confInt)):
+        squeeze = True
+        confInt = [confInt]
+    xx = np.asarray(xx).flatten()
+    yy = np.asarray(yy).flatten()
+    if(xx.shape != yy.shape):
+        errStr = "Shapes of `xx` and `yy` must match ('{}' vs. '{}'."
+        errStr = errStr.format(str(xx.shape), str(yy.shape))
+        raise ValueError(errStr)
+
+    # Create bins
+    xbins = asBinEdges(xbins, xx)
+    nbins = xbins.size - 1
+    # Find the entries corresponding to each bin
+    groups = groupDigitized(xx, xbins[1:], edges='right')
+    # Allocate storage for results
+    med = np.zeros(nbins)
+    conf = np.zeros((nbins, np.size(confInt), 2))
+    count = np.zeros(nbins, dtype=int)
+
+    # Calculate medians and confidence intervals
+    for ii, gg in enumerate(groups):
+        count[ii] = np.size(gg)
+        if(count[ii] == 0): continue
+        mm, cc = confidenceIntervals(yy[gg], ci=confInt)
+        med[ii] = mm
+        conf[ii, ...] = cc[...]
+
+    if squeeze:
+        conf = conf.squeeze()
+
+    return count, med, conf, xbins
 
 
 def frexp10(vals):
