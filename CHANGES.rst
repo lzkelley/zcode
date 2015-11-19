@@ -43,8 +43,8 @@ Current
             +   New location and standard for math tests using 'nose'.
             +   Moved over one of the tests for 'smooth' from previous location,
                 'zcode/testing/test_Math.py' [deleted], and simplified.
-            +   `mono` function tests.
-            +   `argextrema` function tests.
+-   test.sh [new-file]
+    +   Bash script containing the single command to use for running nosetests.
 -   testing/ [Deleted]
     +   Moved and reformatted test into new 'zcode/math/tests/test_math_core.py' file.
 
