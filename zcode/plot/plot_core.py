@@ -708,7 +708,7 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
 
     # Add yerror-bars
     if(yerr is not None):
-        xmid = zmath.mid(edges)
+        xmid = zmath.midpoints(edges)
 
         if(nonzero):
             inds = np.where(hist != 0.0)
