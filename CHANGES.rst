@@ -14,6 +14,11 @@ Future / To-Do
 
 Current
 -------
+-
+
+
+[0.0.4] - 2015/11/19
+--------------------
 -   General
     +   Can now run tests through python via ``>>> zcode.test()``.
 -   inout/
