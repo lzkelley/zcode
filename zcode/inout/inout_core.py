@@ -261,7 +261,7 @@ def checkPath(tpath):
     return path
 
 
-def dictToNPZ(dataDict, savefile, verbose=False):
+def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     """Save a dictionary to the given NPZ filename.
 
     If the path to the given filename doesn't already exist, it is created.
@@ -274,10 +274,18 @@ def dictToNPZ(dataDict, savefile, verbose=False):
     # Save and confirm
     np.savez(savefile, **dataDict)
     if(not os.path.exists(savefile)):
-        raise RuntimeError("Could not save to file '%s'!!" % (savefile))
+        raise RuntimeError("Could not save to file '%s'." % (savefile))
 
-    if(verbose): print(" - - Saved dictionary to '%s'" % (savefile))
-    if(verbose): print(" - - - Size '%s'" % (getFileSize(savefile)))
+    logStr = " - Saved dictionary to '%s'" % (savefile)
+    logStr += " - - Size '%s'" % (getFileSize(savefile))
+    try:
+        log.debug(logStr)
+    except Exception as e:
+        pass
+
+    if verbose:
+        print(logStr)
+
     return
 
 
@@ -301,7 +309,8 @@ def npzToDict(npz):
     newDict = {}
     for key in list(npz.keys()):
         vals = npz[key]
-        if(np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array)):
+        # Extract internal dictionaries??
+        if(np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) and vals.dtype.type is np.object_):
             vals = vals.item()
 
         newDict[key] = vals
