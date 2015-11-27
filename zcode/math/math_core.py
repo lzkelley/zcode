@@ -50,7 +50,8 @@ __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'confidenceBands',
            'frexp10', 'stats', 'groupDigitized',
-           'sampleInverse', 'smooth', 'mono']
+           'sampleInverse', 'smooth', 'mono',
+           '_comparisonFunction']
 
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=True):
@@ -240,7 +241,7 @@ def indsWithin(vals, extr, edges=True):
     return inds
 
 
-def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
+def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=None):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
@@ -263,12 +264,33 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
      - Added an 'axis' argument, remove 'flatten()' to accomodate arbitrary shapes
 
     """
+    good_filter = [None, 'g', 'ge', 'l', 'le']
+    if(filter not in good_filter):
+        raise ValueError("Filter '%s' Unrecognized." % (type))
 
-    useData = np.array(data).flatten()
+    # ---- DEPRECATION SECTION ----
+    # Warn if using deprecated arguments
+    if positive is not None:
+        warnings.warn("Using deprecated parameter `positive`, use `filter` instead.")
+    if nonzero is not None:
+        warnings.warn("Using deprecated parameter `nonzero`, use `filter` instead.")
+    if positive or nonzero:
+        if filter:
+            raise ValueError("Cannot use `positive`/`nonzero` with `filter`.")
+        filter = ''
+        if positive:
+            filter += '>'
+            if not nonzero:
+                filter += '='
+        elif nonzero:
+            filter = '!='
+    # --------------------------------
 
-    # Filter out zeros if desired
-    if(nonzero):  useData = np.array(useData[np.nonzero(useData)])
-    if(positive): useData = np.array(useData[np.where(useData >= 0.0)])
+    # useData = np.array(data).flatten()
+    useData = np.array(data)
+
+    if(filter):
+        useData = _comparisonFilter(useData, filter)
 
     # If there are no elements (left), return ``prev`` (`None` if not provided)
     if(np.size(useData) == 0): return prev
@@ -1051,20 +1073,31 @@ def mono(arr, type='g', axis=-1):
 def _comparisonFunction(comp):
     """Retrieve the comparison function matching the input expression.
     """
-    if(comp == 'g'):
+    if(comp == 'g' or comp == '>'):
         func = np.greater
-    elif(comp == 'ge'):
+    elif(comp == 'ge' or comp == '>='):
         func = np.greater_equal
-    elif(comp == 'l'):
+    elif(comp == 'l' or comp == '<'):
         func = np.less
-    elif(comp == 'le'):
+    elif(comp == 'le' or comp == '<='):
         func = np.less_equal
-    elif(comp == 'e'):
+    elif(comp == 'e' or comp == '=' or comp == '=='):
         func = np.equal
+    elif(comp == 'ne' or comp == '!='):
+        func = np.not_equal
     else:
         raise ValueError("Unrecognized comparison '%s'." % (comp))
 
     return func
+
+
+def _comparisonFilter(data, filter):
+    """
+    """
+    if not callable(filter):
+        filter = _comparisonFunction(filter)
+    sel = np.where(filter(data, 0.0))
+    return data[sel]
 
 
 def _fracToInt(frac, size, within=None, round='floor'):
