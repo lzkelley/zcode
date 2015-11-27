@@ -8,18 +8,29 @@ Future / To-Do
 -   math/
     +   math_core.py
         -   `spacing`
-            +    Add `endpoint` keyword argument to decide whether end-point(s) are included
-                 in returned range.
+            +   Add `endpoint` keyword argument to decide whether end-point(s) are included
+                in returned range.
 
 
 Current
 -------
+-   inout/
+    +   inout_core.py
+        -   `dictToNPZ`
+            +   Added optional `log` parameter for a ``logging.Logger`` object.
 -   math/
     +   math_core.py
         -   `confidenceBands`
-            +    Added `filter` argument to select points based on how their `y` values compare to
-                 zero, e.g. to select for only ``y >= 0.0`` etc.
-
+            +   Added `filter` argument to select points based on how their `y` values compare to
+                zero, e.g. to select for only ``y >= 0.0`` etc.
+        -   `minmax`
+            +   Added a `filter` argument to replace usage of `nonzero` (use `'!='`) and
+                `positive` (use `'>'`).  Left both of the arguments in place, but usage of them
+                will print a deprecation warning.
+-   plot/
+    +   plot_core.py
+        -   `plotConfFill`
+            +   Added a `filter` argument to filter the values to be plotted.
 
 [0.0.4] - 2015/11/19
 --------------------
