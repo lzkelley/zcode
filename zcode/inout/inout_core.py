@@ -271,6 +271,11 @@ def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     # Make sure path to file exists
     checkPath(savefile)
 
+    # Make sure there are no scalars in the input dictionary
+    for key, item in dataDict.items():
+        if np.isscalar(item):
+            raise ValueError("Value '%s' for key '%s' is a scalar.  Not allowed." % (str(item), str(key)))
+
     # Save and confirm
     np.savez(savefile, **dataDict)
     if(not os.path.exists(savefile)):
@@ -304,13 +309,13 @@ def npzToDict(npz):
 
     """
     if(isinstance(npz, six.string_types)): npz = np.load(npz)
-    # newDict = { key : npz[key] for key in npz.keys() }
 
     newDict = {}
     for key in list(npz.keys()):
         vals = npz[key]
-        # Extract internal dictionaries??
-        if(np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) and vals.dtype.type is np.object_):
+        # Extract objects (e.g. dictionaries) packaged into size=1 arrays
+        if(np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) and 
+           vals.dtype.type is np.object_):
             vals = vals.item()
 
         newDict[key] = vals
