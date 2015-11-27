@@ -841,7 +841,7 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     return bars
 
 
-def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, **kwargs):
+def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, filter=None, **kwargs):
     """Draw a median line and (set of) confidence interval(s).
 
     The `med` and `conf` values can be obtained from `numpy.percentile` and or
@@ -886,6 +886,9 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, **kwargs):
     elif(conf.ndim != 3):
         raise ValueError("`conf` must be 2 or 3 dimensions!")
 
+    if filter is not None:
+        filter = zmath._comparisonFunction(filter)
+
     numConf = np.shape(conf)[-2]
     confPatches = []
     # Iterate over confidence intervals
@@ -900,8 +903,17 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, **kwargs):
         pp = ax.fill(np.nan, np.nan, color=col, alpha=falph)
         confPatches.append(pp[0])
 
+        xx = np.array(rads)
+        ylo = np.array(conf[:, jj, 0])
+        yhi = np.array(conf[:, jj, 1])
+        if filter:
+            inds = np.where(filter(ylo, 0.0) & filter(yhi, 0.0))
+            xx = xx[inds]
+            ylo = ylo[inds]
+            yhi = yhi[inds]
+
         # Fill between confidence intervals
-        ax.fill_between(rads, conf[:, jj, 0], conf[:, jj, 1], alpha=falph, color=col, **kwargs)
+        ax.fill_between(xx, ylo, yhi, alpha=falph, color=col, **kwargs)
 
         # Create dummy-patch for the median-line and fill-color, for a legend
         if(jj == 0):
