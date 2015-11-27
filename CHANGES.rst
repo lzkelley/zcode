@@ -18,6 +18,10 @@ Current
     +   inout_core.py
         -   `dictToNPZ`
             +   Added optional `log` parameter for a ``logging.Logger`` object.
+    +   tests/
+        -   `test_inout_core.py` [new-file]
+            +   Tests for the `inout_core.py` submodule.
+            +   Added tests for `npzToDict` and `dictToNPZ`.
 -   math/
     +   math_core.py
         -   `confidenceBands`
