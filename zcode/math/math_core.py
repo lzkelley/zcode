@@ -713,7 +713,7 @@ def cumstats(arr):
     return ave, std
 
 
-def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1):
+def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
     """Compute the values bounding the target confidence intervals for an array of data.
 
     Arguments
@@ -731,6 +731,9 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1):
     if(not np.iterable(ci)): ci = [ci]
     ci = np.asarray(ci)
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
+
+    if filter:
+        vals = _comparisonFilter(vals, filter)
 
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
     conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
