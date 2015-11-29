@@ -718,13 +718,22 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
 
     Arguments
     ---------
-       vals <scalar>[N] : array of sample data points
-       ci   <scalar>[M] : optional, list of confidence intervals as fractions (e.g. `[0.68, 0.95]`)
+    vals : array_like of scalars
+        Data over which to calculate confidence intervals.
+    ci : (M,) array_like of floats
+        List of desired confidence intervals as fractions (e.g. `[0.68, 0.95]`)
+    axis : int
+        Axis over which to calculate confidence intervals.
+    filter : str or `None`
+        Filter the input array with a boolean comparison to zero.
 
     Returns
     -------
-       med  <scalar>      : median of the data
-       conf <scalar>[M,2] : bounds for each confidence interval
+    med : scalar
+        Median of the input data.
+    conf : ndarray of scalar
+        Bounds for each confidence interval.  Shape depends on the number of confidence intervals
+        passed in `ci`, and also the input shape of `vals`.
 
     """
 
