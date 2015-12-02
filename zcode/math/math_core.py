@@ -731,22 +731,24 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
         passed in `ci`, and also the input shape of `vals`.
 
     """
+    ci = np.atleast_1d(ci)
+    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
 
-    if(not np.iterable(ci)): ci = [ci]
-    ci = np.asarray(ci)
-    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
-
+    # Filter input values
     if filter:
         vals = _comparisonFilter(vals, filter)
+        if vals.size == 0:
+            return None, None
 
+    # Calculate confidence-intervals and median
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
     conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
              np.percentile(vals, 100.0*cdf[1], axis=axis)]
             for cdf in cdf_vals]
     conf = np.array(conf)
     med = np.percentile(vals, 50.0, axis=axis)
-
-    if(len(conf) == 1): conf = conf[0]
+    if len(conf) == 1:
+        conf = conf[0]
 
     return med, conf
 
