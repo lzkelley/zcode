@@ -31,10 +31,13 @@ Current
             +   Added a `filter` argument to replace usage of `nonzero` (use `'!='`) and
                 `positive` (use `'>'`).  Left both of the arguments in place, but usage of them
                 will print a deprecation warning.
+        -   `spacing`
+            +   Updated to use `filter` argument.
 -   plot/
     +   plot_core.py
         -   `plotConfFill`
             +   Added a `filter` argument to filter the values to be plotted.
+
 
 [0.0.4] - 2015/11/19
 --------------------
