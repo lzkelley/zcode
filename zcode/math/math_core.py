@@ -268,22 +268,8 @@ def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=Non
     if(filter not in good_filter):
         raise ValueError("Filter '%s' Unrecognized." % (type))
 
-    # ---- DEPRECATION SECTION ----
-    # Warn if using deprecated arguments
-    if positive is not None:
-        warnings.warn("Using deprecated parameter `positive`, use `filter` instead.")
-    if nonzero is not None:
-        warnings.warn("Using deprecated parameter `nonzero`, use `filter` instead.")
-    if positive or nonzero:
-        if filter:
-            raise ValueError("Cannot use `positive`/`nonzero` with `filter`.")
-        filter = ''
-        if positive:
-            filter += '>'
-            if not nonzero:
-                filter += '='
-        elif nonzero:
-            filter = '!='
+    # ---- DEPRECATION SECTION -------
+    filter = _flagsToFilter(positive, nonzero, filter=filter, source='minmax')
     # --------------------------------
 
     # useData = np.array(data).flatten()
@@ -1147,6 +1133,40 @@ def _fracToInt(frac, size, within=None, round='floor'):
 
     return loc
 
+
+def _flagsToFilter(positive, nonzero, filter=None, source=None):
+    """Function to convert from (deprecated) flags to a (new-style) `filter` string.
+
+    Example:
+        # ---- DEPRECATION SECTION -------
+        filter = _flagsToFilter(positive, nonzero, filter=filter, source='minmax')
+        # --------------------------------
+
+    """
+
+    # Warn if using deprecated arguments
+    warnStr = ''
+    if source:
+        warnStr += '`{:s}`: '.format(str(source))
+    warnStr += "Using deprecated parameter `{:s}`; use `filter` instead."
+    if positive is not None:
+        warnings.warn(warnStr.format('positive'), DeprecationWarning, stacklevel=3)
+    if nonzero is not None:
+        warnings.warn(warnStr.format('nonzero'), DeprecationWarning, stacklevel=3)
+
+    # Convert arguments into a `filter` str
+    if positive or nonzero:
+        if filter is not None:
+            raise ValueError("Cannot use `positive`/`nonzero` with `filter`.")
+        filter = ''
+        if positive:
+            filter += '>'
+            if not nonzero:
+                filter += '='
+        elif nonzero:
+            filter = '!='
+
+    return filter
 
 '''
 def createSlice(index, max):
