@@ -28,9 +28,10 @@ Functions
 -   smooth                   - Use convolution to smooth the given array.
 -   mono                     - Check for monotonicity in the given array.
 
--   _trapezium_loglog
--   _comparisonFunction
--   _fracToInt
+-   _trapezium_loglog        -
+-   _comparisonFunction      -
+-   _comparisonFilter        -
+-   _fracToInt               -
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -264,22 +265,18 @@ def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=Non
      - Added an 'axis' argument, remove 'flatten()' to accomodate arbitrary shapes
 
     """
-    good_filter = [None, 'g', 'ge', 'l', 'le']
-    if(filter not in good_filter):
-        raise ValueError("Filter '%s' Unrecognized." % (type))
-
     # ---- DEPRECATION SECTION -------
     filter = _flagsToFilter(positive, nonzero, filter=filter, source='minmax')
     # --------------------------------
 
-    # useData = np.array(data).flatten()
     useData = np.array(data)
 
-    if(filter):
+    if filter:
         useData = _comparisonFilter(useData, filter)
 
-    # If there are no elements (left), return ``prev`` (`None` if not provided)
-    if(np.size(useData) == 0): return prev
+    # If there are no elements (left), return `prev` (`None` if not provided)
+    if np.size(useData) == 0:
+        return prev
 
     # Determine stretch factor
     lef = (1.0-stretch)
@@ -289,7 +286,7 @@ def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=Non
     minmax = np.array([lef*np.min(useData), rit*np.max(useData)])
 
     # Compare to previous extrema, if given
-    if(prev is not None):
+    if prev is not None:
         minmax[0] = np.min([minmax[0], prev[0]])
         minmax[1] = np.max([minmax[1], prev[1]])
 
@@ -359,40 +356,52 @@ def argextrema(arr, type, filter=None):
     return ind
 
 
-def spacing(data, scale='log', num=100, nonzero=None, positive=None):
+def spacing(data, scale='log', num=100, filter=None, nonzero=None, positive=None):
     """Create an evenly spaced array between extrema from the given data.
 
     If ``nonzero`` and ``positive`` are not given, educated guesses are made based on ``scale``.
 
     Arguments
     ---------
-       data     <scalar>[M] : data from which to extract the extrema for bounds
-       scale    <str>       : optional, scaling for spacing, {'lin', 'log'}
-       num      <int>       : optional, number of points, ``N``
-       nonzero  <bool>      : optional, only use '!= 0.0' elements of ``data``
-       positive <bool>      : optional, only use '>= 0.0' elements of ``data``
+    data : array_like of scalar
+        Data from which to extract the extrema for bounds.
+    scale : str
+        Scaling for spacing, {'lin', 'log'}.
+    num : int
+        Number of points to produce, `N`.
+    filter : str or `None`
+        String specifying how to filter the input `data` relative to zero.
+    [Deprecated]
+        nonzero : bool
+            Only use ``!= 0.0`` elements of `data`.
+        positive : bool
+            Only use ``>= 0.0`` elements of `data`.
 
     Returns
     -------
        spacing <scalar>[N] : array of evenly spaced points, with number of elements ``N = num``
 
     """
+    if scale.startswith('log'):
+        log_flag = True
+    elif scale.startswith('lin'):
+        log_flag = False
+    else:
+        raise RuntimeError("``scale`` '%s' unrecognized!" % (scale))
 
-    if(scale.startswith('log')): log_flag = True
-    elif(scale.startswith('lin')): log_flag = False
-    else: raise RuntimeError("``scale`` '%s' unrecognized!" % (scale))
+    # ---- DEPRECATION SECTION -------
+    filter = _flagsToFilter(positive, nonzero, filter=filter, source='spacing')
+    # --------------------------------
 
-    if(nonzero is None):
-        if(log_flag): nonzero = True
-        else:         nonzero = False
+    # If no `filter` is given, and we are log-scaling, use a ``> 0.0`` filter
+    if filter is None and log_flag:
+        filter = '>'
 
-    if(positive is None):
-        if(log_flag): positive = True
-        else:         positive = False
-
-    span = minmax(data, nonzero=nonzero, positive=positive)
-    if(log_flag): spacing = np.logspace(*np.log10(span), num=num)
-    else:         spacing = np.linspace(*span,           num=num)
+    span = minmax(data, filter=filter)
+    if log_flag:
+        spacing = np.logspace(*np.log10(span), num=num)
+    else:
+        spacing = np.linspace(*span, num=num)
 
     return spacing
 
