@@ -18,6 +18,8 @@ Current
     +   inout_core.py
         -   `dictToNPZ`
             +   Added optional `log` parameter for a ``logging.Logger`` object.
+            +   Instead of raising an error for scalar parameters, cast them into arrays and
+                print a warning.
     +   tests/
         -   `test_inout_core.py` [new-file]
             +   Tests for the `inout_core.py` submodule.
