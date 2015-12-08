@@ -32,6 +32,7 @@ Functions
 -   _comparisonFunction      -
 -   _comparisonFilter        -
 -   _fracToInt               -
+-   _infer_scale             - 
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -1178,6 +1179,11 @@ def _flagsToFilter(positive, nonzero, filter=None, source=None):
             filter = '!='
 
     return filter
+
+
+def _infer_scale(args):
+    if np.all(args > 0.0): return 'log'
+    else: return 'lin'
 
 '''
 def createSlice(index, max):
