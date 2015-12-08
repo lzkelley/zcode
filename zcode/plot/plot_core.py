@@ -499,24 +499,28 @@ def colormap(args, cmap='jet', scale=None):
 
     """
 
-    if(isinstance(cmap, str)): cmap = plt.get_cmap(cmap)
+    if isinstance(cmap, str): cmap = plt.get_cmap(cmap)
 
-    if(scale is None):
-        if(np.size(args) > 1): scale = 'log'
-        else:                  scale = 'lin'
+    if scale is None:
+        if np.size(args) > 1 and np.all(args > 0.0):
+            scale = 'log'
+        else:
+            scale = 'lin'
 
-    if(scale.startswith('log')): log = True
-    elif(scale.startswith('lin')): log = False
+    if scale.startswith('log'):
+        log = True
+    elif scale.startswith('lin'):
+        log = False
     else:
         raise RuntimeError("Unrecognized ``scale`` = '%s'!!" % (scale))
 
     # Determine minimum and maximum
-    if(np.size(args) > 1): min, max = zmath.minmax(args, nonzero=log, positive=log)
-    else:                  min, max = 0, np.int(args)-1
+    if np.size(args) > 1: min, max = zmath.minmax(args, nonzero=log, positive=log)
+    else:                 min, max = 0, np.int(args)-1
 
     # Create normalization
-    if(log): norm = mpl.colors.LogNorm(vmin=min, vmax=max)
-    else:    norm = mpl.colors.Normalize(vmin=min, vmax=max)
+    if log: norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+    else:   norm = mpl.colors.Normalize(vmin=min, vmax=max)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
