@@ -1,5 +1,4 @@
-"""
-General plotting functions.
+"""General plotting functions.
 
 Functions
 ---------
