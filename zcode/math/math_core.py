@@ -32,7 +32,7 @@ Functions
 -   _comparisonFunction      -
 -   _comparisonFilter        -
 -   _fracToInt               -
--   _infer_scale             - 
+-   _infer_scale             -
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -53,7 +53,7 @@ __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
            'renumerate', 'cumstats', 'confidenceIntervals', 'confidenceBands',
            'frexp10', 'stats', 'groupDigitized',
            'sampleInverse', 'smooth', 'mono',
-           '_comparisonFunction']
+           '_comparisonFunction', '_infer_scale']
 
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=True):
@@ -1183,7 +1183,7 @@ def _flagsToFilter(positive, nonzero, filter=None, source=None):
 
 def _infer_scale(args):
     if np.all(args > 0.0): return 'log'
-    else: return 'lin'
+    return 'lin'
 
 '''
 def createSlice(index, max):
