@@ -28,6 +28,9 @@ Functions
 -   _histLine            - construct a stepped line
 -   _clear_frame         -
 -   _make_segments       -
+-   _scale_to_log_flag   -
+-   _clean_scale         -
+
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -48,9 +51,7 @@ __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'lege
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill']
 
 COL_CORR = 'royalblue'
-
 LW_CONF = 1.0
-
 VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
 
 
@@ -321,8 +322,6 @@ def zoom(ax, loc, axis='x', scale=2.0):
 
     return lim
 
-# } zoom()
-
 
 def stretchAxes(ax, xs=1.0, ys=1.0):
     """
@@ -507,12 +506,7 @@ def colormap(args, cmap='jet', scale=None):
         else:
             scale = 'lin'
 
-    if scale.startswith('log'):
-        log = True
-    elif scale.startswith('lin'):
-        log = False
-    else:
-        raise RuntimeError("Unrecognized ``scale`` = '%s'!!" % (scale))
+    log = _scale_to_log_flag(scale)
 
     # Determine minimum and maximum
     if np.size(args) > 1: min, max = zmath.minmax(args, nonzero=log, positive=log)
@@ -972,6 +966,23 @@ def _make_segments(x, y):
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
     return segments
 
+
+def _scale_to_log_flag(scale):
+    if scale.startswith('log'):
+        log = True
+    elif scale.startswith('lin'):
+        log = False
+    else:
+        raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
+    return log
+
+
+def _clean_scale(scale):
+    """Cleanup a 'scaling' string to be matplotlib compatible.
+    """
+    scale = scale.lower()
+    if scale.startswith('lin'): scale = 'linear'
+    return scale
 
 '''
 def rescale(ax, which='both'):
