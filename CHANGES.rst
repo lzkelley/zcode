@@ -39,6 +39,12 @@ Current
     +   plot_core.py
         -   `plotConfFill`
             +   Added a `filter` argument to filter the values to be plotted.
+    +   color2d.py [new-file]
+        -   New file with classes and functions to provide color-mappings from 2D parameter spaces
+            to RGB color-space.  `ScalarMappable2D` is the class which handles this mapping,
+            analogous to the `matplotlib.cm.ScalarMappable` class.  Similarly, the function to
+            create an instance is `zplot.color2d.colormap2d`, analogous to the
+            `zcode.plot.plot_core.colormap` function.
 
 
 [0.0.4] - 2015/11/19
