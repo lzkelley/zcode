@@ -12,6 +12,7 @@ Functions
 -   unifyAxesLimits      - Set limits on all given axes to match global extrema.
 -   colorCycle           - Create a range of colors.
 -   colormap             - Create a colormap from scalars to colors.
+-   color_set            - Retrieve a (small) set of color-strings with hand picked values.
 -   setGrid              - Configure the axes' grid.
 -   skipTicks            - skip some tick marks
 -   saveFigure           - Save the given figure(s) to the given filename.
@@ -47,13 +48,15 @@ import zcode.inout as zio
 
 __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend',
            'unifyAxesLimits',
-           'colorCycle', 'colormap', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
+           'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill']
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
 VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
-
+_COLOR_SET = ['black', 'blue', 'red', 'green', 'purple',
+              'orange', 'cyan', 'brown', 'gold', 'pink',
+              'forestgreen', 'grey', 'olive', 'coral', 'yellow']
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None,
             thresh=None, side=None, ts=8, grid=True, lim=None, invert=False, ticks=True,
@@ -384,17 +387,18 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         Handle storing the drawn text.
 
     """
-    if(trans is None): trans = fig.transFigure
-    if(valign == 'upper'):
+    if trans is None: trans = fig.transFigure
+    if valign == 'upper':
         warnings.warn("Use `'top'` not `'upper'`!")
         valign = 'top'
 
-    if(valign == 'lower'):
+    if valign == 'lower':
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
-    txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
+    txt = plt.text(x, y, pstr, size=fs, family='monospace', transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
+
     return txt
 
 
@@ -477,7 +481,7 @@ def colorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     """Create a range of colors.
     """
     cols = [cmap(it) for it in np.linspace(left, right, num)]
-    if(ax is not None): ax.set_color_cycle(cols[::-1])
+    if ax is not None: ax.set_color_cycle(cols[::-1])
     return cols
 
 
@@ -522,6 +526,38 @@ def colormap(args, cmap='jet', scale=None):
     smap._A = []
 
     return smap
+
+
+def color_set(num, black=False):
+    """Retrieve a (small) set of color-strings with hand picked values.
+
+    Arguments
+    ---------
+    num : int
+        Number of colors to retrieve.
+    black : bool
+        Include 'black' as the first color.
+
+    Returns
+    -------
+    cols : (`num`) list of str
+        List of `matplotlib` compatible color-strings.
+
+    """
+    ncol = len(_COLOR_SET)
+    # Make sure enough colors are available
+    if (black and num > ncol) or (not black and num > ncol-1):
+        errStr = "Only have {} colors {}, `num` ({}) is too large."
+        if black: errStr = errStr.format(ncol, "with black", num)
+        else:     errStr = errStr.format(ncol-1, "without black", num)
+        raise ValueError(errStr)
+
+    if black:
+        cols = _COLOR_SET[:num]
+    else:
+        cols = _COLOR_SET[1:num+1]
+
+    return cols
 
 
 def setGrid(ax, val, axis='both', below=True):
@@ -838,7 +874,7 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     return bars
 
 
-def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, filter=None, **kwargs):
+def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0, filter=None, **kwargs):
     """Draw a median line and (set of) confidence interval(s).
 
     The `med` and `conf` values can be obtained from `numpy.percentile` and or
@@ -876,7 +912,9 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, filter=None, **kwa
         A patch for each confidence inteval (for use on legend).
 
     """
+
     ll, = ax.plot(rads, med, '-', color=col, lw=lw)
+
     # `conf` has shape ``(num-rads, num-conf-ints, 2)``
     if(conf.ndim == 2):
         conf = conf.reshape(len(rads), 1, 2)
@@ -891,10 +929,8 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, filter=None, **kwa
     # Iterate over confidence intervals
     for jj in xrange(numConf):
         # Set fill-opacity
-        if(np.size(fillalpha) == numConf):
-            falph = fillalpha
-        else:
-            falph = np.power(fillalpha, jj+1)
+        if(np.size(fillalpha) == numConf): falph = fillalpha
+        else:                              falph = np.power(fillalpha, jj+1)
 
         # Create a dummy-patch to return for a legend of confidence-intervals
         pp = ax.fill(np.nan, np.nan, color=col, alpha=falph)
@@ -918,15 +954,16 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, filter=None, **kwa
             # Create overlay of lines and patches
             linePatch = (pp[0], ll)
 
+    # Plot Median Line
+    ax.plot(rads, med, '-', color='k', lw=2*lw, alpha=0.8)
+    ll, = ax.plot(rads, med, '-', color=col, lw=lw)
+
     return linePatch, confPatches
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
-
     if(scale.startswith('lin')): scale = 'linear'
-
     if(scale == 'symlog'): thresh = 1.0
-
     if(axis == 'x'): ax.set_xscale(scale, linthreshx=thresh)
     elif(axis == 'y'): ax.set_yscale(scale, linthreshy=thresh)
     else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))

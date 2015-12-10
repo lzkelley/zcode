@@ -39,6 +39,10 @@ Current
     +   plot_core.py
         -   `plotConfFill`
             +   Added a `filter` argument to filter the values to be plotted.
+        -   `text`
+            +   [Bug]: fixed issue where regardless of what transformation was passed, only the
+                `figure` transformation was used.  Solution is to call ``plt.text`` instead of
+                ``fig.text``.
     +   color2d.py [new-file]
         -   New file with classes and functions to provide color-mappings from 2D parameter spaces
             to RGB color-space.  `ScalarMappable2D` is the class which handles this mapping,
