@@ -7,6 +7,8 @@ import astropy.constants
 import astropy.cosmology
 from astropy.cosmology import WMAP9 as cosmo
 
+
+
 NWTG = ap.constants.G.cgs.value
 SPLC = ap.constants.c.cgs.value
 MSOL = ap.constants.M_sun.cgs.value
@@ -15,6 +17,7 @@ RSOL = ap.constants.R_sun.cgs.value
 PC = ap.constants.pc.cgs.value
 AU = ap.constants.au.cgs.value
 YR = ap.units.year.to(ap.units.s)
+SIGMA_T = ap.constants.sigma_T.cgs.value
 
 MELC = ap.constants.m_e.cgs.value
 MPRT = ap.constants.m_p.cgs.value
