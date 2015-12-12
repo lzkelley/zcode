@@ -45,6 +45,8 @@ Current
             analogous to the `matplotlib.cm.ScalarMappable` class.  Similarly, the function to
             create an instance is `zplot.color2d.colormap2d`, analogous to the
             `zcode.plot.plot_core.colormap` function.
+-   constants.py
+    +   Added `sigma_T` -- the Thomson-scattering cross-section in units of cm^2.
 
 
 [0.0.4] - 2015/11/19
