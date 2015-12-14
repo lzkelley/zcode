@@ -39,6 +39,8 @@ Current
     +   plot_core.py
         -   `plotConfFill`
             +   Added a `filter` argument to filter the values to be plotted.
+            +   Added an `outline` argument to optional draw a line with a different color
+                behind the median line, to make it more visible.
         -   `text`
             +   [Bug]: fixed issue where regardless of what transformation was passed, only the
                 `figure` transformation was used.  Solution is to call ``plt.text`` instead of

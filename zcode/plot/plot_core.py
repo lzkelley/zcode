@@ -57,6 +57,8 @@ VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
 _COLOR_SET = ['black', 'blue', 'red', 'green', 'purple',
               'orange', 'cyan', 'brown', 'gold', 'pink',
               'forestgreen', 'grey', 'olive', 'coral', 'yellow']
+_LW_OUTLINE = 0.8
+
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None,
             thresh=None, side=None, ts=8, grid=True, lim=None, invert=False, ticks=True,
@@ -874,7 +876,8 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     return bars
 
 
-def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0, filter=None, **kwargs):
+def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0,
+                 filter=None, outline=True, **kwargs):
     """Draw a median line and (set of) confidence interval(s).
 
     The `med` and `conf` values can be obtained from `numpy.percentile` and or
@@ -900,6 +903,11 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0, filter=None, *
         confidence interval `i`, the alpha used is ``fillalpha^{i+1}``.
     lw : float,
         Line-weight used specifically for the median line (not the filled-regions).
+    filter : str or `None`
+        Apply a relative-to-zero filter to the y-data before plotting.
+    outline : str or `None`.
+        Draw a `outline` colored line behind the median line to make it easier to see.
+        If `None`, no outline is drawn.
     **kwargs : additional key-value pairs,
         Passed to `matplotlib.pyplot.fill_between` controlling `matplotlib.patches.Polygon`
         properties.  These are included in the `linePatch` objects, but *not* the `confPatches`.
@@ -955,7 +963,9 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0, filter=None, *
             linePatch = (pp[0], ll)
 
     # Plot Median Line
-    ax.plot(rads, med, '-', color='k', lw=2*lw, alpha=0.8)
+    #    Plot black outline to improve contrast
+    if outline is not None:
+        ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=_LW_OUTLINE)
     ll, = ax.plot(rads, med, '-', color=col, lw=lw)
 
     return linePatch, confPatches
