@@ -13,7 +13,9 @@ Future / To-Do
 
 Current
 -------
-
+-   constants.py
+    +   Bug-fix where `SIGMA_T` wasn't loading properly from astropy.
+    +   Added Electron-Scattering opacity, `KAPPA_ES`.
 
 [0.0.5] - 2015/12/13
 -------
