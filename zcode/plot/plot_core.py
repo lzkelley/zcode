@@ -1,5 +1,4 @@
-"""
-General plotting functions.
+"""General plotting functions.
 
 Functions
 ---------
@@ -13,6 +12,7 @@ Functions
 -   unifyAxesLimits      - Set limits on all given axes to match global extrema.
 -   colorCycle           - Create a range of colors.
 -   colormap             - Create a colormap from scalars to colors.
+-   color_set            - Retrieve a (small) set of color-strings with hand picked values.
 -   setGrid              - Configure the axes' grid.
 -   skipTicks            - skip some tick marks
 -   saveFigure           - Save the given figure(s) to the given filename.
@@ -29,6 +29,9 @@ Functions
 -   _histLine            - construct a stepped line
 -   _clear_frame         -
 -   _make_segments       -
+-   _scale_to_log_flag   -
+-   _clean_scale         -
+
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -45,14 +48,16 @@ import zcode.inout as zio
 
 __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend',
            'unifyAxesLimits',
-           'colorCycle', 'colormap', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
+           'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill']
 
 COL_CORR = 'royalblue'
-
 LW_CONF = 1.0
-
 VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
+_COLOR_SET = ['black', 'blue', 'red', 'green', 'purple',
+              'orange', 'cyan', 'brown', 'gold', 'pink',
+              'forestgreen', 'grey', 'olive', 'coral', 'yellow']
+_LW_OUTLINE = 0.8
 
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None,
@@ -322,8 +327,6 @@ def zoom(ax, loc, axis='x', scale=2.0):
 
     return lim
 
-# } zoom()
-
 
 def stretchAxes(ax, xs=1.0, ys=1.0):
     """
@@ -386,17 +389,18 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         Handle storing the drawn text.
 
     """
-    if(trans is None): trans = fig.transFigure
-    if(valign == 'upper'):
+    if trans is None: trans = fig.transFigure
+    if valign == 'upper':
         warnings.warn("Use `'top'` not `'upper'`!")
         valign = 'top'
 
-    if(valign == 'lower'):
+    if valign == 'lower':
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
-    txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
+    txt = plt.text(x, y, pstr, size=fs, family='monospace', transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
+
     return txt
 
 
@@ -479,7 +483,7 @@ def colorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     """Create a range of colors.
     """
     cols = [cmap(it) for it in np.linspace(left, right, num)]
-    if(ax is not None): ax.set_color_cycle(cols[::-1])
+    if ax is not None: ax.set_color_cycle(cols[::-1])
     return cols
 
 
@@ -500,24 +504,23 @@ def colormap(args, cmap='jet', scale=None):
 
     """
 
-    if(isinstance(cmap, str)): cmap = plt.get_cmap(cmap)
+    if isinstance(cmap, str): cmap = plt.get_cmap(cmap)
 
-    if(scale is None):
-        if(np.size(args) > 1): scale = 'log'
-        else:                  scale = 'lin'
+    if scale is None:
+        if np.size(args) > 1 and np.all(args > 0.0):
+            scale = 'log'
+        else:
+            scale = 'lin'
 
-    if(scale.startswith('log')): log = True
-    elif(scale.startswith('lin')): log = False
-    else:
-        raise RuntimeError("Unrecognized ``scale`` = '%s'!!" % (scale))
+    log = _scale_to_log_flag(scale)
 
     # Determine minimum and maximum
-    if(np.size(args) > 1): min, max = zmath.minmax(args, nonzero=log, positive=log)
-    else:                  min, max = 0, np.int(args)-1
+    if np.size(args) > 1: min, max = zmath.minmax(args, nonzero=log, positive=log)
+    else:                 min, max = 0, np.int(args)-1
 
     # Create normalization
-    if(log): norm = mpl.colors.LogNorm(vmin=min, vmax=max)
-    else:    norm = mpl.colors.Normalize(vmin=min, vmax=max)
+    if log: norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+    else:   norm = mpl.colors.Normalize(vmin=min, vmax=max)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -525,6 +528,38 @@ def colormap(args, cmap='jet', scale=None):
     smap._A = []
 
     return smap
+
+
+def color_set(num, black=False):
+    """Retrieve a (small) set of color-strings with hand picked values.
+
+    Arguments
+    ---------
+    num : int
+        Number of colors to retrieve.
+    black : bool
+        Include 'black' as the first color.
+
+    Returns
+    -------
+    cols : (`num`) list of str
+        List of `matplotlib` compatible color-strings.
+
+    """
+    ncol = len(_COLOR_SET)
+    # Make sure enough colors are available
+    if (black and num > ncol) or (not black and num > ncol-1):
+        errStr = "Only have {} colors {}, `num` ({}) is too large."
+        if black: errStr = errStr.format(ncol, "with black", num)
+        else:     errStr = errStr.format(ncol-1, "without black", num)
+        raise ValueError(errStr)
+
+    if black:
+        cols = _COLOR_SET[:num]
+    else:
+        cols = _COLOR_SET[1:num+1]
+
+    return cols
 
 
 def setGrid(ax, val, axis='both', below=True):
@@ -841,7 +876,8 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     return bars
 
 
-def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, **kwargs):
+def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0,
+                 filter=None, outline=True, **kwargs):
     """Draw a median line and (set of) confidence interval(s).
 
     The `med` and `conf` values can be obtained from `numpy.percentile` and or
@@ -867,6 +903,11 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, **kwargs):
         confidence interval `i`, the alpha used is ``fillalpha^{i+1}``.
     lw : float,
         Line-weight used specifically for the median line (not the filled-regions).
+    filter : str or `None`
+        Apply a relative-to-zero filter to the y-data before plotting.
+    outline : str or `None`.
+        Draw a `outline` colored line behind the median line to make it easier to see.
+        If `None`, no outline is drawn.
     **kwargs : additional key-value pairs,
         Passed to `matplotlib.pyplot.fill_between` controlling `matplotlib.patches.Polygon`
         properties.  These are included in the `linePatch` objects, but *not* the `confPatches`.
@@ -879,29 +920,41 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, **kwargs):
         A patch for each confidence inteval (for use on legend).
 
     """
+
     ll, = ax.plot(rads, med, '-', color=col, lw=lw)
+
     # `conf` has shape ``(num-rads, num-conf-ints, 2)``
     if(conf.ndim == 2):
         conf = conf.reshape(len(rads), 1, 2)
     elif(conf.ndim != 3):
         raise ValueError("`conf` must be 2 or 3 dimensions!")
 
+    if filter is not None:
+        filter = zmath._comparisonFunction(filter)
+
     numConf = np.shape(conf)[-2]
     confPatches = []
     # Iterate over confidence intervals
     for jj in xrange(numConf):
         # Set fill-opacity
-        if(np.size(fillalpha) == numConf):
-            falph = fillalpha
-        else:
-            falph = np.power(fillalpha, jj+1)
+        if(np.size(fillalpha) == numConf): falph = fillalpha
+        else:                              falph = np.power(fillalpha, jj+1)
 
         # Create a dummy-patch to return for a legend of confidence-intervals
         pp = ax.fill(np.nan, np.nan, color=col, alpha=falph)
         confPatches.append(pp[0])
 
+        xx = np.array(rads)
+        ylo = np.array(conf[:, jj, 0])
+        yhi = np.array(conf[:, jj, 1])
+        if filter:
+            inds = np.where(filter(ylo, 0.0) & filter(yhi, 0.0))
+            xx = xx[inds]
+            ylo = ylo[inds]
+            yhi = yhi[inds]
+
         # Fill between confidence intervals
-        ax.fill_between(rads, conf[:, jj, 0], conf[:, jj, 1], alpha=falph, color=col, **kwargs)
+        ax.fill_between(xx, ylo, yhi, alpha=falph, color=col, **kwargs)
 
         # Create dummy-patch for the median-line and fill-color, for a legend
         if(jj == 0):
@@ -909,15 +962,18 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha, lw=1.0, **kwargs):
             # Create overlay of lines and patches
             linePatch = (pp[0], ll)
 
+    # Plot Median Line
+    #    Plot black outline to improve contrast
+    if outline is not None:
+        ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=_LW_OUTLINE)
+    ll, = ax.plot(rads, med, '-', color=col, lw=lw)
+
     return linePatch, confPatches
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
-
     if(scale.startswith('lin')): scale = 'linear'
-
     if(scale == 'symlog'): thresh = 1.0
-
     if(axis == 'x'): ax.set_xscale(scale, linthreshx=thresh)
     elif(axis == 'y'): ax.set_yscale(scale, linthreshy=thresh)
     else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
@@ -957,6 +1013,23 @@ def _make_segments(x, y):
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
     return segments
 
+
+def _scale_to_log_flag(scale):
+    if scale.startswith('log'):
+        log = True
+    elif scale.startswith('lin'):
+        log = False
+    else:
+        raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
+    return log
+
+
+def _clean_scale(scale):
+    """Cleanup a 'scaling' string to be matplotlib compatible.
+    """
+    scale = scale.lower()
+    if scale.startswith('lin'): scale = 'linear'
+    return scale
 
 '''
 def rescale(ax, which='both'):

@@ -20,6 +20,30 @@ class TestMathCore(object):
         cls.r1 = np.random.random(cls.SIZE)
         cls.r2 = np.random.uniform(-1.0, 1.0, size=cls.SIZE)
 
+    def test_spacing(self):
+        from zcode.math.math_core import spacing
+
+        # Linear Spacing
+        ref1 = np.linspace(0.0, 1.0, num=20)
+        spc1 = spacing([0.0, 1.0], scale='lin', num=20)
+        assert_true(np.allclose(ref1, spc1))
+
+        # Logarithmic Spacing
+        ref2 = np.logspace(0.0, 2.5, num=20)
+        spc2 = spacing([np.power(10.0, 0.0), np.power(10.0, 2.5)], scale='log', num=20)
+        assert_true(np.allclose(ref2, spc2))
+
+        # Automatically selects appropriate Range
+        ref3 = np.logspace(1.0, 2.0, num=13)
+        spc3 = spacing([-10.0, 100.0, 0.0, 10.0], scale='log', num=13)
+        assert_true(np.allclose(ref3, spc3))
+
+        # Manually selects appropraite range
+        ref4 = np.linspace(-5.0, -2.5, num=27)
+        spc4 = spacing([3.0, -2.5, -5.0, 0.0], scale='lin', num=27, filter='<')
+        assert_true(np.allclose(ref4, spc4))
+        return
+
     def test_mono(self):
         arr_g = [-1.0, 1.0, 2.0, 3.0]
         arr_ge = [-1.0, 1.0, 1.0, 2.0, 2.5]
@@ -205,23 +229,6 @@ class TestMathCore(object):
 
         # Smoothing length 1 should have no effect
         assert np.all(smArrs[0] == arrs[0])
-
-        '''
-        SMOOTH_LENGTHS = [1, 4, 8]
-        twid = np.int(np.floot(ARR_SIZE/4))
-        WIDTH = [[0.25, 0.75], 2*twid]
-        LOCS  = [None, 0.5]
-
-        arr = AMP*np.sin(xx) + NOISE*r2
-        smArrs = [math_core.smooth(arr, smlen, width=wid, loc=loc)
-                  for smlen, wid, loc in zip(SMOOTH_LENGTHS, WIDTH, LOCS)]
-
-        assert np.all(smArrs[0][:twid-2] == arr[:twid-2])
-        assert np.all(smArrs[0][-twid-2:] == arr[-twid-2:])
-
-        assert np.all(smArrs[1][:700] == arr[:700])
-        assert np.all(smArrs[1][901:] == arr[901:])
-        '''
 
         return
 

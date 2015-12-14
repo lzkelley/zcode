@@ -28,6 +28,12 @@ Functions
 -   smooth                   - Use convolution to smooth the given array.
 -   mono                     - Check for monotonicity in the given array.
 
+-   _trapezium_loglog        -
+-   _comparisonFunction      -
+-   _comparisonFilter        -
+-   _fracToInt               -
+-   _infer_scale             -
+
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -46,7 +52,8 @@ __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'confidenceBands',
            'frexp10', 'stats', 'groupDigitized',
-           'sampleInverse', 'smooth', 'mono']
+           'sampleInverse', 'smooth', 'mono',
+           '_comparisonFunction', '_infer_scale']
 
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=True):
@@ -236,7 +243,7 @@ def indsWithin(vals, extr, edges=True):
     return inds
 
 
-def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
+def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=None):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
@@ -259,15 +266,18 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
      - Added an 'axis' argument, remove 'flatten()' to accomodate arbitrary shapes
 
     """
+    # ---- DEPRECATION SECTION -------
+    filter = _flagsToFilter(positive, nonzero, filter=filter, source='minmax')
+    # --------------------------------
 
-    useData = np.array(data).flatten()
+    useData = np.array(data)
 
-    # Filter out zeros if desired
-    if(nonzero):  useData = np.array(useData[np.nonzero(useData)])
-    if(positive): useData = np.array(useData[np.where(useData >= 0.0)])
+    if filter:
+        useData = _comparisonFilter(useData, filter)
 
-    # If there are no elements (left), return ``prev`` (`None` if not provided)
-    if(np.size(useData) == 0): return prev
+    # If there are no elements (left), return `prev` (`None` if not provided)
+    if np.size(useData) == 0:
+        return prev
 
     # Determine stretch factor
     lef = (1.0-stretch)
@@ -277,7 +287,7 @@ def minmax(data, nonzero=False, positive=False, prev=None, stretch=0.0):
     minmax = np.array([lef*np.min(useData), rit*np.max(useData)])
 
     # Compare to previous extrema, if given
-    if(prev is not None):
+    if prev is not None:
         minmax[0] = np.min([minmax[0], prev[0]])
         minmax[1] = np.max([minmax[1], prev[1]])
 
@@ -347,40 +357,52 @@ def argextrema(arr, type, filter=None):
     return ind
 
 
-def spacing(data, scale='log', num=100, nonzero=None, positive=None):
+def spacing(data, scale='log', num=100, filter=None, nonzero=None, positive=None):
     """Create an evenly spaced array between extrema from the given data.
 
     If ``nonzero`` and ``positive`` are not given, educated guesses are made based on ``scale``.
 
     Arguments
     ---------
-       data     <scalar>[M] : data from which to extract the extrema for bounds
-       scale    <str>       : optional, scaling for spacing, {'lin', 'log'}
-       num      <int>       : optional, number of points, ``N``
-       nonzero  <bool>      : optional, only use '!= 0.0' elements of ``data``
-       positive <bool>      : optional, only use '>= 0.0' elements of ``data``
+    data : array_like of scalar
+        Data from which to extract the extrema for bounds.
+    scale : str
+        Scaling for spacing, {'lin', 'log'}.
+    num : int
+        Number of points to produce, `N`.
+    filter : str or `None`
+        String specifying how to filter the input `data` relative to zero.
+    [Deprecated]
+        nonzero : bool
+            Only use ``!= 0.0`` elements of `data`.
+        positive : bool
+            Only use ``>= 0.0`` elements of `data`.
 
     Returns
     -------
        spacing <scalar>[N] : array of evenly spaced points, with number of elements ``N = num``
 
     """
+    if scale.startswith('log'):
+        log_flag = True
+    elif scale.startswith('lin'):
+        log_flag = False
+    else:
+        raise RuntimeError("``scale`` '%s' unrecognized!" % (scale))
 
-    if(scale.startswith('log')): log_flag = True
-    elif(scale.startswith('lin')): log_flag = False
-    else: raise RuntimeError("``scale`` '%s' unrecognized!" % (scale))
+    # ---- DEPRECATION SECTION -------
+    filter = _flagsToFilter(positive, nonzero, filter=filter, source='spacing')
+    # --------------------------------
 
-    if(nonzero is None):
-        if(log_flag): nonzero = True
-        else:         nonzero = False
+    # If no `filter` is given, and we are log-scaling, use a ``> 0.0`` filter
+    if filter is None and log_flag:
+        filter = '>'
 
-    if(positive is None):
-        if(log_flag): positive = True
-        else:         positive = False
-
-    span = minmax(data, nonzero=nonzero, positive=positive)
-    if(log_flag): spacing = np.logspace(*np.log10(span), num=num)
-    else:         spacing = np.linspace(*span,           num=num)
+    span = minmax(data, filter=filter)
+    if log_flag:
+        spacing = np.logspace(*np.log10(span), num=num)
+    else:
+        spacing = np.linspace(*span, num=num)
 
     return spacing
 
@@ -687,38 +709,52 @@ def cumstats(arr):
     return ave, std
 
 
-def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1):
+def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
     """Compute the values bounding the target confidence intervals for an array of data.
 
     Arguments
     ---------
-       vals <scalar>[N] : array of sample data points
-       ci   <scalar>[M] : optional, list of confidence intervals as fractions (e.g. `[0.68, 0.95]`)
+    vals : array_like of scalars
+        Data over which to calculate confidence intervals.
+    ci : (M,) array_like of floats
+        List of desired confidence intervals as fractions (e.g. `[0.68, 0.95]`)
+    axis : int
+        Axis over which to calculate confidence intervals.
+    filter : str or `None`
+        Filter the input array with a boolean comparison to zero.
 
     Returns
     -------
-       med  <scalar>      : median of the data
-       conf <scalar>[M,2] : bounds for each confidence interval
+    med : scalar
+        Median of the input data.
+    conf : ndarray of scalar
+        Bounds for each confidence interval.  Shape depends on the number of confidence intervals
+        passed in `ci`, and also the input shape of `vals`.
 
     """
+    ci = np.atleast_1d(ci)
+    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
 
-    if(not np.iterable(ci)): ci = [ci]
-    ci = np.asarray(ci)
-    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0,1.0}!"
+    # Filter input values
+    if filter:
+        vals = _comparisonFilter(vals, filter)
+        if vals.size == 0:
+            return None, None
 
+    # Calculate confidence-intervals and median
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
     conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
              np.percentile(vals, 100.0*cdf[1], axis=axis)]
             for cdf in cdf_vals]
     conf = np.array(conf)
     med = np.percentile(vals, 50.0, axis=axis)
-
-    if(len(conf) == 1): conf = conf[0]
+    if len(conf) == 1:
+        conf = conf[0]
 
     return med, conf
 
 
-def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95]):
+def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter=None):
     """Bin the given data with respect to `xx` and calculate confidence intervals in `yy`.
 
     Arguments
@@ -739,6 +775,7 @@ def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95]):
     confInt : scalar or array_like of scalar
         The percentage confidence intervals to calculate (e.g. 0.5 for median).
         Must be between {0.0, 1.0}.
+    filter : str or `None`
 
     Returns
     -------
@@ -767,6 +804,13 @@ def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95]):
         errStr = "Shapes of `xx` and `yy` must match ('{}' vs. '{}'."
         errStr = errStr.format(str(xx.shape), str(yy.shape))
         raise ValueError(errStr)
+
+    # Filter based on whether `yy` values match `filter` comparison to 0.0
+    if filter is not None:
+        compFunc = _comparisonFunction(filter)
+        inds = np.where(compFunc(yy, 0.0))[0]
+        xx = xx[inds]
+        yy = yy[inds]
 
     # Create bins
     xbins = asBinEdges(xbins, xx)
@@ -1039,20 +1083,31 @@ def mono(arr, type='g', axis=-1):
 def _comparisonFunction(comp):
     """Retrieve the comparison function matching the input expression.
     """
-    if(comp == 'g'):
+    if(comp == 'g' or comp == '>'):
         func = np.greater
-    elif(comp == 'ge'):
+    elif(comp == 'ge' or comp == '>='):
         func = np.greater_equal
-    elif(comp == 'l'):
+    elif(comp == 'l' or comp == '<'):
         func = np.less
-    elif(comp == 'le'):
+    elif(comp == 'le' or comp == '<='):
         func = np.less_equal
-    elif(comp == 'e'):
+    elif(comp == 'e' or comp == '=' or comp == '=='):
         func = np.equal
+    elif(comp == 'ne' or comp == '!='):
+        func = np.not_equal
     else:
         raise ValueError("Unrecognized comparison '%s'." % (comp))
 
     return func
+
+
+def _comparisonFilter(data, filter):
+    """
+    """
+    if not callable(filter):
+        filter = _comparisonFunction(filter)
+    sel = np.where(filter(data, 0.0))
+    return data[sel]
 
 
 def _fracToInt(frac, size, within=None, round='floor'):
@@ -1090,6 +1145,45 @@ def _fracToInt(frac, size, within=None, round='floor'):
 
     return loc
 
+
+def _flagsToFilter(positive, nonzero, filter=None, source=None):
+    """Function to convert from (deprecated) flags to a (new-style) `filter` string.
+
+    Example:
+        # ---- DEPRECATION SECTION -------
+        filter = _flagsToFilter(positive, nonzero, filter=filter, source='minmax')
+        # --------------------------------
+
+    """
+
+    # Warn if using deprecated arguments
+    warnStr = ''
+    if source:
+        warnStr += '`{:s}`: '.format(str(source))
+    warnStr += "Using deprecated parameter `{:s}`; use `filter` instead."
+    if positive is not None:
+        warnings.warn(warnStr.format('positive'), DeprecationWarning, stacklevel=3)
+    if nonzero is not None:
+        warnings.warn(warnStr.format('nonzero'), DeprecationWarning, stacklevel=3)
+
+    # Convert arguments into a `filter` str
+    if positive or nonzero:
+        if filter is not None:
+            raise ValueError("Cannot use `positive`/`nonzero` with `filter`.")
+        filter = ''
+        if positive:
+            filter += '>'
+            if not nonzero:
+                filter += '='
+        elif nonzero:
+            filter = '!='
+
+    return filter
+
+
+def _infer_scale(args):
+    if np.all(args > 0.0): return 'log'
+    return 'lin'
 
 '''
 def createSlice(index, max):

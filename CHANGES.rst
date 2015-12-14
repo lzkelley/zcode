@@ -8,13 +8,54 @@ Future / To-Do
 -   math/
     +   math_core.py
         -   `spacing`
-            +    Add `endpoint` keyword argument to decide whether end-point(s) are included
-                 in returned range.
-
+            +   Add `endpoint` keyword argument to decide whether end-point(s) are included
+                in returned range.
 
 Current
 -------
--
+
+
+[0.0.5] - 2015/12/13
+-------
+-   inout/
+    +   inout_core.py
+        -   `dictToNPZ`
+            +   Added optional `log` parameter for a ``logging.Logger`` object.
+            +   Instead of raising an error for scalar parameters, cast them into arrays and
+                print a warning.
+    +   tests/
+        -   `test_inout_core.py` [new-file]
+            +   Tests for the `inout_core.py` submodule.
+            +   Added tests for `npzToDict` and `dictToNPZ`.
+-   math/
+    +   math_core.py
+        -   `confidenceBands`
+            +   Added `filter` argument to select points based on how their `y` values compare to
+                zero, e.g. to select for only ``y >= 0.0`` etc.
+        -   `minmax`
+            +   Added a `filter` argument to replace usage of `nonzero` (use `'!='`) and
+                `positive` (use `'>'`).  Left both of the arguments in place, but usage of them
+                will print a deprecation warning.
+        -   `spacing`
+            +   Updated to use `filter` argument.
+-   plot/
+    +   plot_core.py
+        -   `plotConfFill`
+            +   Added a `filter` argument to filter the values to be plotted.
+            +   Added an `outline` argument to optional draw a line with a different color
+                behind the median line, to make it more visible.
+        -   `text`
+            +   [Bug]: fixed issue where regardless of what transformation was passed, only the
+                `figure` transformation was used.  Solution is to call ``plt.text`` instead of
+                ``fig.text``.
+    +   color2d.py [new-file]
+        -   New file with classes and functions to provide color-mappings from 2D parameter spaces
+            to RGB color-space.  `ScalarMappable2D` is the class which handles this mapping,
+            analogous to the `matplotlib.cm.ScalarMappable` class.  Similarly, the function to
+            create an instance is `zplot.color2d.colormap2d`, analogous to the
+            `zcode.plot.plot_core.colormap` function.
+-   constants.py
+    +   Added `sigma_T` -- the Thomson-scattering cross-section in units of cm^2.
 
 
 [0.0.4] - 2015/11/19

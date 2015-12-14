@@ -29,6 +29,7 @@ from datetime import datetime
 import os
 import sys
 import logging
+import warnings
 import numpy as np
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'countLines', 'estimateLines',
@@ -261,23 +262,36 @@ def checkPath(tpath):
     return path
 
 
-def dictToNPZ(dataDict, savefile, verbose=False):
+def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     """Save a dictionary to the given NPZ filename.
 
     If the path to the given filename doesn't already exist, it is created.
     If ``verbose`` is True, the saved file size is printed out.
     """
-
     # Make sure path to file exists
     checkPath(savefile)
+    # Make sure there are no scalars in the input dictionary
+    for key, item in dataDict.items():
+        if np.isscalar(item):
+            warnStr = "Value '%s' for key '%s' is a scalar." % (str(item), str(key))
+            warnings.warn(warnStr)
+            dataDict[key] = np.array(item)
 
     # Save and confirm
     np.savez(savefile, **dataDict)
-    if(not os.path.exists(savefile)):
-        raise RuntimeError("Could not save to file '%s'!!" % (savefile))
+    if not os.path.exists(savefile):
+        raise RuntimeError("Could not save to file '%s'." % (savefile))
 
-    if(verbose): print(" - - Saved dictionary to '%s'" % (savefile))
-    if(verbose): print(" - - - Size '%s'" % (getFileSize(savefile)))
+    logStr = " - Saved dictionary to '%s'" % (savefile)
+    logStr += " - - Size '%s'" % (getFileSize(savefile))
+    try:
+        log.debug(logStr)
+    except Exception as e:
+        pass
+
+    if verbose:
+        print(logStr)
+
     return
 
 
@@ -296,12 +310,13 @@ def npzToDict(npz):
 
     """
     if(isinstance(npz, six.string_types)): npz = np.load(npz)
-    # newDict = { key : npz[key] for key in npz.keys() }
 
     newDict = {}
     for key in list(npz.keys()):
         vals = npz[key]
-        if(np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array)):
+        # Extract objects (e.g. dictionaries) packaged into size=1 arrays
+        if(np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) and
+           vals.dtype.type is np.object_):
             vals = vals.item()
 
         newDict[key] = vals
