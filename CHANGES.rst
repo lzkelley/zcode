@@ -11,8 +11,11 @@ Future / To-Do
             +   Add `endpoint` keyword argument to decide whether end-point(s) are included
                 in returned range.
 
-
 Current
+-------
+
+
+[0.0.5] - 2015/12/13
 -------
 -   inout/
     +   inout_core.py
