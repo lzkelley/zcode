@@ -16,6 +16,11 @@ Current
 -   constants.py
     +   Bug-fix where `SIGMA_T` wasn't loading properly from astropy.
     +   Added Electron-Scattering opacity, `KAPPA_ES`.
+-   plot/
+    +   plot_core.py
+        -   `plotConfFill`
+            +   [Bug]: fixed default value of `outline` which was still set to a boolean instead of
+                       a color string.  Caused failure when trying to save images.
 
 [0.0.5] - 2015/12/13
 -------
