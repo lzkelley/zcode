@@ -20,6 +20,9 @@ Current
     +   inout_core.py
         -   `ascii_table` [new-function]
             +   New function which prints a table of values to the given output.
+            +   Added `linewise` and `prepend` arguments, allowing the table to be printed
+                line-by-line or as a single block, and for the print to be prepended with
+                an additional string.
 -   plot/
     +   plot_core.py
         -   `plotConfFill`
