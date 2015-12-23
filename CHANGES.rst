@@ -16,6 +16,11 @@ Current
 -   constants.py
     +   Bug-fix where `SIGMA_T` wasn't loading properly from astropy.
     +   Added Electron-Scattering opacity, `KAPPA_ES`.
+-   inout/
+    +   inout_core.py
+        -   `ascii_table` [new-function]
+            +   New function which prints a table of values to the given output.
+
 
 [0.0.5] - 2015/12/13
 -------

@@ -20,6 +20,7 @@ Functions
 -   promptYesNo              - Prompt the user (via CLI) for yes or no.
 -   modifyFilename           - Modify the given filename.
 -   mpiError                 - Raise an error through MPI and exit all processes.
+-   ascii_table              - Print a table with the given contents to output.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -34,8 +35,7 @@ import numpy as np
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
-           'promptYesNo', 'modifyFilename', 'mpiError']
-
+           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table']
 
 class _Keys_Meta(type):
     """Metaclass for the ``Keys`` class.  See, ``InOut.Keys``.
@@ -507,4 +507,85 @@ def mpiError(comm, log=None, err="ERROR", exc_info=True):
     else:
         raise RuntimeError(errStr)
 
+    return
+
+
+def ascii_table(table, rows=None, cols=None, title=None, out=print):
+    """Print a table with the given contents to output.
+    
+    Arguments
+    ---------
+    table : (nx,ny) array_like of str
+        2D matrix of cell values to be printed.  Must be strings.
+    rows : (nx,) array_like of str or `None`
+        Labels for each row.
+    cols : (ny,) array_like of str or `None`
+        Labels for each column.
+    title : str or `None`
+        Title for the whole table.  Placed in top-left corner.
+    out : callable
+        Method to call for output, defaults to `print`, but could also be
+        for example: ``logging.Logger.debug``.
+
+    """
+    table = np.atleast_2d(table)
+    nx, ny = table.shape
+    if title is None: title = ''
+
+    rows_len = 0
+    if rows is not None:
+        rows = np.atleast_1d(rows)
+        if rows.size != nx:
+            out("Length of input `rows` must match `table` shape.")
+            return
+        # Find longest string in `rows`
+        rows_len = len(max(rows, key=len))
+    # Labels must be at least as wide as title
+    rows_len = len(title) if len(title) > rows_len else rows_len
+
+    cols_len = 0
+    if cols is not None:
+        cols = np.atleast_1d(cols)
+        if cols.size != ny:
+            out("Length of input `cols` must match `table` shape.")
+            return
+        # Find longest string in `cols`
+        cols_len = len(max(cols, key=len))
+
+    # Cells must be at least as wide as headers (`cols`)
+    cell_len = cols_len
+    # Find length of longest cell
+    for ii, cel in np.ndenumerate(table):
+        cell_len = len(cel) if len(cel) > cell_len else cell_len
+
+    cell_len += 1
+    if rows_len > 0: rows_len += 1
+
+    def format_cell(content, width):
+        return "{1:{0}s}".format(width, content)
+
+    # Draw Table
+    # ----------
+    # Construct title row
+    if len(title) > 0 or cols is not None:
+        if cols is None: cols = ['']*ny
+        row_str = format_cell(title, rows_len) + "|"
+        row_str += "".join([format_cell(cc, cell_len) for cc in cols])
+        row_str += "|"
+        out(row_str)
+
+    # Construct top bar
+    bar_str = rows_len*"-" + "|" + ny*cell_len*"-" + "|"
+    out(bar_str)
+
+    # Construct strings for each row
+    for ii, trow in enumerate(table):
+        row_str = ""
+        if rows is not None:
+            row_str += "{1:{0}s}|".format(rows_len, rows[ii])
+        row_str += "".join(["{1:{0}s}".format(cell_len, rr) for rr in trow])
+        row_str += "|"
+        out(row_str)
+
+    out(bar_str)
     return
