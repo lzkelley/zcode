@@ -1,4 +1,4 @@
-"""
+"""Methods for plotting 2D histograms with optional 1D projected histograms for each axis.
 
 Functions
 ---------
@@ -6,6 +6,12 @@ Functions
 -    plot2DHist              - Plot the given 2D histogram of data.
 
 -    _constructFigure        - Add the required axes to the given figure object.
+
+To-do
+-----
+-   `plot2DHistProj` and `plot2DHist` use different styles of input data, specifically
+    `plot2DHist` requires a 2D histogram of data to be passed, while `plot2DHistProj` accepts
+    separate arrays of x and y data to be histogrammed using ``scipy.stats.binned_statistic_2d``.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
