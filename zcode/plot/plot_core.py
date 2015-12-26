@@ -499,7 +499,7 @@ def colormap(args, cmap='jet', scale=None):
     Returns
     -------
        smap : `matplotlib.cm.ScalarMappable`
-           Scalar mappable object which contains the members
+           Scalar mappable object which contains the members:
            `norm`, `cmap`, and the function `to_rgba`.
 
     """

@@ -167,19 +167,27 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
 
     Arguments
     ---------
-        ax     <obj>      : <matplotlib.axes.Axes> object on which to plot.
-        xvals  <flt>[N]   : positions (edges) of x values, assumed to be the same for all rows of ``data``
-
-        cbax   <obj>      : <matplotlib.axes.Axes> object on which to add a colorbar.
-        cscale <str>      : scale to use for the colormap {'linear','log'}
-        cmap   <obj>      : <matplotlib.colors.Colormap> object to use as colormap
-        ...
+        ax : ``matplotlib.axes.Axes`` object
+            Axes object on which to plot.
+        xvals : (N,) array of scalars
+            Positions (edges) of x values, assumed to be the same for all rows of
+            the input data `hist`.
+        yvals : (M,) array of scalars
+            Positions (edges) of y values, assumed to be the same for all columns of
+            the input data `hist`.
+        cbax : ``matplotlib.axes.Axes`` object
+            Axes object on which to add a colorbar.
+        cscale : str
+            Scale to use for the colormap {'linear', 'log'}.
+        cmap : ``matplotlib.colors.Colormap`` object
+            Matplotlib colormap to use for coloring histogram.
 
     Returns
     -------
-        pcm : `matplotlib.collections.QuadMesh` object,
-            ...
-        smap :
+        pcm : ``matplotlib.collections.QuadMesh`` object
+            The resulting plotted object, returned by ``ax.pcolormesh``.
+        smap : ``matplotlib.cm.ScalarMappable`` object
+            Colormap and color-scaling information.  See: ``zcode.plot.plot_core.colormap``.
 
     """
 
