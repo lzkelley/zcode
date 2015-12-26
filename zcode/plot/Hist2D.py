@@ -55,31 +55,31 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         e.g. {'count', 'sum', 'mean'}.
         If `None`, then either 'sum' or 'count' is used depending on if `weights` are
         provieded or not.
-    bins : int or [int, int] or array_like or [array, array], optional
+    bins : int or [int, int] or array_like or [array, array],
         Specification for bin sizes.  integer values are treated as the number of bins to use,
         while arrays are used as the bin edges themselves.  If a tuple of two values is given, it
         is assumed that the first is for the x-axis and the second for the y-axis.
-    fig : matplotlib.figure.figure, optional
+    fig : ``matplotlib.figure.figure``,
         Figure instance to which axes are added for plotting.  One is created if not given.
-    xproj : bool, optional
+    xproj : bool,
         Whether to also plot the projection of the x-axis (i.e. histogram ignoring y-values).
-    yproj : bool, optional
+    yproj : bool,
         Whether to also plot the projection of the y-axis (i.e. histogram ignoring x-values).
-    hratio : float, optional
+    hratio : float,
         Fraction of the total available height-space to use for the primary axes object (2D hist)
-    wratio : float, optional
+    wratio : float,
         Fraction of the total available width-space to use for the primary axes object (2D hist)
     pad : float,
         Padding between central axis and the projected ones.
-    fs : int, optional
+    fs : int,
         Font-size
-    scale : str or [str,str], optional
+    scale : str or [str, str],
         Specification for the axes scaling {'log','lin'}.  If two values are given, the first is
         used for the x-axis and the second for the y-axis.
-    histScale : str, optional
+    histScale : str,
         Scaling to use for the histograms {'log','lin'}-- the color scale on the 2D histogram,
         or the Counts axis on the 1D histograms.
-    cbar : bool, optional
+    cbar : bool,
         Add a colorbar.
 
     Returns
@@ -106,16 +106,16 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     # Create bins
     # -----------
     #     `bins` is a single scalar value -- apply to both
-    if(np.ndim(bins) == 0):
+    if np.isscalar(bins) == 0:
         xbins = bins
         ybins = bins
     else:
         #     `bins` is a pair of bin specifications, separate and apply
-        if(len(bins) == 2):
+        if len(bins) == 2:
             xbins = bins[0]
             ybins = bins[1]
         #     `bins` is a single array -- apply to both
-        elif(len(bins) > 2):
+        elif len(bins) > 2:
             xbins = bins
             ybins = bins
         #     unrecognized option -- error
@@ -123,10 +123,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
             raise ValueError("Unrecognized shape of ``bins`` = %s" % (str(np.shape(bins))))
 
     # If a number of bins is given, create an appropriate spacing
-    if(np.ndim(xbins) == 0):
+    if np.ndim(xbins) == 0:
         xbins = zmath.spacing(xvals, num=xbins+1, scale=scale[0])
 
-    if(np.ndim(ybins) == 0):
+    if np.ndim(ybins) == 0:
         ybins = zmath.spacing(yvals, num=ybins+1, scale=scale[1])
 
     # Plot 2D Histogram and Projections
@@ -137,7 +137,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     pcm, smap = plot2DHist(prax, xedges, yedges, hist, cbax=cbax, labels=labels)
 
     # Plot projection of the x-axis (i.e. ignore 'y')
-    if(xpax):
+    if xpax:
         islog = scale[0].startswith('log')
         #     create and plot histogram
         hist, edges, bins = sp.stats.binned_statistic(
@@ -150,7 +150,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         zplot.setLim(xpax, 'x', data=xedges)
 
     # Plot projection of the y-axis (i.e. ignore 'x')
-    if(ypax):
+    if ypax:
         islog = scale[1].startswith('log')
         #    create and plot histogram
         hist, edges, bins = sp.stats.binned_statistic(
