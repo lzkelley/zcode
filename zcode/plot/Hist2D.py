@@ -22,7 +22,7 @@ import scipy.stats
 import matplotlib.pyplot as plt
 
 import zcode.math as zmath
-from . import plot_core as zplot
+from . import plot_core
 
 __all__ = ['plot2DHist', 'plot2DHistProj']
 
@@ -88,16 +88,17 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         Figure object containing plots.
 
     """
-    if(np.size(scale) == 1):
+    if np.size(scale) == 1:
         scale = [scale, scale]
-    elif(np.size(scale) != 2):
+    elif np.size(scale) != 2:
         raise ValueError("`scale` must be one or two scaling specifications!")
 
-    if(not labels): labels = ['', '']
+    if not labels: labels = ['', '']
+    scale = [plot_core._clean_scale(sc) for sc in scale]
 
-    if(statistic is None):
-        if(weights is None): statistic = 'count'
-        else:                statistic = 'sum'
+    if statistic is None:
+        if weights is None: statistic = 'count'
+        else:               statistic = 'sum'
 
     # Create and initializae figure and axes
     fig, prax, xpax, ypax, cbax = _constructFigure(fig, xproj, yproj, hratio, wratio, pad,
@@ -106,7 +107,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     # Create bins
     # -----------
     #     `bins` is a single scalar value -- apply to both
-    if np.isscalar(bins) == 0:
+    if np.isscalar(bins):
         xbins = bins
         ybins = bins
     else:
@@ -147,7 +148,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
         #     set bounds to bin edges
-        zplot.setLim(xpax, 'x', data=xedges)
+        plot_core.setLim(xpax, 'x', data=xedges)
 
     # Plot projection of the y-axis (i.e. ignore 'x')
     if ypax:
@@ -160,7 +161,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         plt.setp(ypax.get_yticklabels(), fontsize=fs, rotation=90)
         ypax.yaxis.tick_right()
         #     set bounds to bin edges
-        zplot.setLim(ypax, 'y', data=yedges)
+        plot_core.setLim(ypax, 'y', data=yedges)
 
     return fig
 
@@ -206,7 +207,7 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
         cblab = 'Counts'
 
     # Plot
-    smap = zplot.colormap(extrema, cmap=cmap, scale=cscale)
+    smap = plot_core.colormap(extrema, cmap=cmap, scale=cscale)
     pcm = ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap, **kwargs)
 
     # Add color bar
@@ -215,8 +216,8 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
         cbar.set_label(cblab, fontsize=fs)
         cbar.ax.tick_params(labelsize=fs)
 
-    zplot.setLim(ax, 'x', data=xvals)
-    zplot.setLim(ax, 'y', data=yvals)
+    plot_core.setLim(ax, 'x', data=xvals)
+    plot_core.setLim(ax, 'y', data=yvals)
 
     return pcm, smap
 
@@ -271,7 +272,7 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
     #    d
     prax = fig.add_axes([_LEFT, _BOTTOM, prim_wid, prim_hit])
     prax.set(xscale=scale[0], yscale=scale[1], xlabel=labels[0], ylabel=labels[1])
-    zplot.setGrid(prax, False)
+    plot_core.setGrid(prax, False)
 
     if(len(labels) > 2): histLab = labels[2]
     else:                histLab = 'Counts'
@@ -281,14 +282,14 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
         xpax = fig.add_axes([_LEFT, _BOTTOM+prim_hit+pad, prim_wid, xpro_hit-pad])
         xpax.set(xscale=scale[0], yscale=histScale, ylabel=histLab, xlabel=labels[0])
         xpax.xaxis.set_label_position('top')
-        zplot.setGrid(xpax, True, axis='y')
+        plot_core.setGrid(xpax, True, axis='y')
 
     # Add y-projection axes on bottom-right
     if(yproj):
         ypax = fig.add_axes([_LEFT+prim_wid+pad, _BOTTOM, ypro_wid-pad, prim_hit])
         ypax.set(yscale=scale[1], xscale=histScale, xlabel=histLab, ylabel=labels[1])
         ypax.yaxis.set_label_position('right')
-        zplot.setGrid(ypax, True, axis='x')
+        plot_core.setGrid(ypax, True, axis='x')
 
     # Add color-bar axes on the right
     if(cbar):
