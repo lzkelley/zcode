@@ -510,7 +510,7 @@ def mpiError(comm, log=None, err="ERROR", exc_info=True):
     return
 
 
-def ascii_table(table, rows=None, cols=None, title=None, out=print):
+def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=False, prepend=""):
     """Print a table with the given contents to output.
     
     Arguments
@@ -526,6 +526,12 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print):
     out : callable
         Method to call for output, defaults to `print`, but could also be
         for example: ``logging.Logger.debug``.
+    linewise : bool
+        If `True`, call the `out` comment (e.g. `print`) line-by-line.  Otherwise, call `out` on
+        a single str for the entire table.
+    prepend : str
+        Print the given str before the table.  If ``linewise == True``, this happens for each line,
+        otherwise it happens once for the entire table.
 
     """
     table = np.atleast_2d(table)
@@ -566,17 +572,18 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print):
 
     # Draw Table
     # ----------
+    ascii = []
     # Construct title row
     if len(title) > 0 or cols is not None:
         if cols is None: cols = ['']*ny
         row_str = format_cell(title, rows_len) + "|"
         row_str += "".join([format_cell(cc, cell_len) for cc in cols])
         row_str += "|"
-        out(row_str)
+        ascii.append(row_str)
 
     # Construct top bar
     bar_str = rows_len*"-" + "|" + ny*cell_len*"-" + "|"
-    out(bar_str)
+    ascii.append(bar_str)
 
     # Construct strings for each row
     for ii, trow in enumerate(table):
@@ -585,7 +592,14 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print):
             row_str += "{1:{0}s}|".format(rows_len, rows[ii])
         row_str += "".join(["{1:{0}s}".format(cell_len, rr) for rr in trow])
         row_str += "|"
-        out(row_str)
+        ascii.append(row_str)
 
-    out(bar_str)
+    ascii.append(bar_str)
+    
+    if linewise:
+        for line in ascii:
+            out(prepend + line)
+    else:
+        out(prepend + "\n".join(ascii))
+
     return
