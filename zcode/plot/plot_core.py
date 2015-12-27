@@ -492,15 +492,19 @@ def colormap(args, cmap='jet', scale=None):
 
     Arguments
     ---------
-       args  <scalar>([N]) : range of valid scalar values to normalize with
-       cmap  <object>      : optional, desired colormap
-       scale <str>         : optional, scaling of colormap {'lin', 'log'}
+    args : scalar or array_like of scalar
+        Range of valid scalar values to normalize with
+    cmap : ``matplotlib.colors.Colormap`` object
+        Colormap to use.
+    scale : str or `None`
+        Scaling specification of colormap {'lin', 'log', `None`}.
+        If `None`, scaling is inferred based on input `args`.
 
     Returns
     -------
-       smap : `matplotlib.cm.ScalarMappable`
-           Scalar mappable object which contains the members:
-           `norm`, `cmap`, and the function `to_rgba`.
+   smap : ``matplotlib.cm.ScalarMappable``
+       Scalar mappable object which contains the members:
+       `norm`, `cmap`, and the function `to_rgba`.
 
     """
 
@@ -1015,12 +1019,11 @@ def _make_segments(x, y):
 
 
 def _scale_to_log_flag(scale):
-    if scale.startswith('log'):
-        log = True
-    elif scale.startswith('lin'):
-        log = False
-    else:
-        raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
+    # Check formatting of `scale` str
+    scale = _clean_scale(scale)
+    if scale.startswith('log'): log = True
+    elif scale.startswith('lin'): log = False
+    else: raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
     return log
 
 
