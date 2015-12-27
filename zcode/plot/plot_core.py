@@ -985,8 +985,8 @@ def _setAxis_scale(ax, axis, scale, thresh=None):
 
 
 def _setAxis_label(ax, axis, label, fs=12, c='black'):
-    if(axis == 'x'): ax.set_xlabel(label, size=fs, color=c)
-    elif(axis == 'y'): ax.set_ylabel(label, size=fs, color=c)
+    if axis == 'x': ax.set_xlabel(label, size=fs, color=c)
+    elif axis == 'y': ax.set_ylabel(label, size=fs, color=c)
     else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
     return
 
