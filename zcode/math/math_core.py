@@ -885,25 +885,29 @@ def groupDigitized(arr, bins, edges='right'):
     Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
     bin, finds the list of array indices which belong in that bin.
 
+    The specification for `bins` can be either monotonically increasing or decreasing, following
+    the rules of ``numpy.digitize`` (which is used internally).
+
     Arguments
     ---------
-        arr : array_like of scalars,
-            Values to digitize and group.
-        bins : array_like or scalars, shape (N,)
-            Bin edges to digitize and group by.
-        edges : str, {'right', 'left'}
-            Whether bin edges correspond to 'right' or 'left' side of the bins.
+    arr : array_like of scalars
+        Values to digitize and group.
+    bins : (N,) array_like or scalars
+        Bin edges to digitize and group by.
+    edges : str, {'[r]ight', '[l]eft'}
+        Whether bin edges correspond to 'right' or 'left' side of the bins.
+        Only the first letter is tested, and either case (lower/upper) is allowed.
 
     Returns
     -------
-        groups : list of int arrays, shape (N,)
-            Each list contains the ``arr`` indices belonging to each corresponding bin.
+    groups : (N,) list of int arrays
+        Each list contains the ``arr`` indices belonging to each corresponding bin.
 
 
     Examples
     --------
-        >>> arr = [ 0.0, 1.3, 1.8, 2.1 ]
-        >>> bins = [ 1.0, 2.0, 3.0 ]
+        >>> arr = [0.0, 1.3, 1.8, 2.1]
+        >>> bins = [1.0, 2.0, 3.0]
         >>> zcode.Math.groupDigitized(arr, bins, right=True)
         [array([0]), array([1, 2]), array([3])]
         >>> zcode.Math.groupDigitized(arr, bins, right=False)
@@ -915,15 +919,15 @@ def groupDigitized(arr, bins, edges='right'):
     -   ``numpy.digitize``
 
     """
-
-    if(edges.startswith('r')): right = True
-    elif(edges.startswith('l')): right = False
+    edges = edges.lower()
+    if edges.startswith('r'): right = True
+    elif edges.startswith('l'): right = False
     else: RuntimeError("``edges`` must be 'right' or 'left'!")
 
     # `numpy.digitize` always assumes `bins` are right-edges (in effect)
     shift = 0
     # If we want 'left' bin edges, such shift each bin leftwards
-    if(not right): shift = -1
+    if not right: shift = -1
 
     # Find in which bin each element of arr belongs
     pos = np.digitize(arr, bins, right=right) + shift

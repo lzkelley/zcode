@@ -14,7 +14,7 @@ Future / To-Do
 Current
 -------
 -   constants.py
-    +   Bug-fix where `SIGMA_T` wasn't loading properly from astropy.
+    +   Bug-fix where `SIGMA_T` wasn't loading properly from `astropy`.
     +   Added Electron-Scattering opacity, `KAPPA_ES`.
 -   inout/
     +   inout_core.py
@@ -23,6 +23,10 @@ Current
             +   Added `linewise` and `prepend` arguments, allowing the table to be printed
                 line-by-line or as a single block, and for the print to be prepended with
                 an additional string.
+-   math/
+    +   math_core.py
+        -   `groupDigitized`
+            +   [Docs]: improved documentation clarifying input parameters.
 -   plot/
     +   plot_core.py
         -   `plotConfFill`
@@ -31,7 +35,7 @@ Current
 
 
 [0.0.5] - 2015/12/13
--------
+--------------------
 -   inout/
     +   inout_core.py
         -   `dictToNPZ`
