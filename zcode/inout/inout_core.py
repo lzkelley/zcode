@@ -21,6 +21,7 @@ Functions
 -   modifyFilename           - Modify the given filename.
 -   mpiError                 - Raise an error through MPI and exit all processes.
 -   ascii_table              - Print a table with the given contents to output.
+-
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -456,23 +457,27 @@ def modifyFilename(fname, prepend='', append=''):
 
     Arguments
     ---------
-        fname   <str> : filename to modify.
-        prepend <str> : string to prepend to beginning of filename;
-                        added after the terminal slash, otherwise at the beginning.
-        append  <str> : string to appended to end of filename;
-                        added before the terminal '.' if it exists, otherwise at the end.
+    fname : str
+        Filename to modify.
+    prepend : str
+        String to prepend to beginning of filename.
+        Added after the terminal slash, otherwise at the beginning.
+    append : str
+        String to appended to end of filename.
+        Added before the terminal '.' if it exists, otherwise at the end.
 
     Returns
     -------
-        newName <str> : new filename
+    newName : str
+        New filename, with modifications.
 
     """
     oldPath, oldName = os.path.split(fname)
     newName = prepend + oldName
-    if(len(append) > 0):
+    if len(append) > 0:
         oldSplit = newName.split('.')
-        if(len(oldSplit) >= 2): oldSplit[-2] += append
-        else:                     oldSplit[-1] += append
+        if len(oldSplit) >= 2: oldSplit[-2] += append
+        else:                  oldSplit[-1] += append
         newName = '.'.join(oldSplit)
 
     newName = os.path.join(oldPath, newName)
@@ -512,7 +517,7 @@ def mpiError(comm, log=None, err="ERROR", exc_info=True):
 
 def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=False, prepend=""):
     """Print a table with the given contents to output.
-    
+
     Arguments
     ---------
     table : (nx,ny) array_like of str
@@ -595,7 +600,7 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=Fal
         ascii.append(row_str)
 
     ascii.append(bar_str)
-    
+
     if linewise:
         for line in ascii:
             out(prepend + line)
