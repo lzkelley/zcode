@@ -492,15 +492,19 @@ def colormap(args, cmap='jet', scale=None):
 
     Arguments
     ---------
-       args  <scalar>([N]) : range of valid scalar values to normalize with
-       cmap  <object>      : optional, desired colormap
-       scale <str>         : optional, scaling of colormap {'lin', 'log'}
+    args : scalar or array_like of scalar
+        Range of valid scalar values to normalize with
+    cmap : ``matplotlib.colors.Colormap`` object
+        Colormap to use.
+    scale : str or `None`
+        Scaling specification of colormap {'lin', 'log', `None`}.
+        If `None`, scaling is inferred based on input `args`.
 
     Returns
     -------
-       smap : `matplotlib.cm.ScalarMappable`
-           Scalar mappable object which contains the members:
-           `norm`, `cmap`, and the function `to_rgba`.
+   smap : ``matplotlib.cm.ScalarMappable``
+       Scalar mappable object which contains the members:
+       `norm`, `cmap`, and the function `to_rgba`.
 
     """
 
@@ -981,8 +985,8 @@ def _setAxis_scale(ax, axis, scale, thresh=None):
 
 
 def _setAxis_label(ax, axis, label, fs=12, c='black'):
-    if(axis == 'x'): ax.set_xlabel(label, size=fs, color=c)
-    elif(axis == 'y'): ax.set_ylabel(label, size=fs, color=c)
+    if axis == 'x': ax.set_xlabel(label, size=fs, color=c)
+    elif axis == 'y': ax.set_ylabel(label, size=fs, color=c)
     else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
     return
 
@@ -1015,12 +1019,11 @@ def _make_segments(x, y):
 
 
 def _scale_to_log_flag(scale):
-    if scale.startswith('log'):
-        log = True
-    elif scale.startswith('lin'):
-        log = False
-    else:
-        raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
+    # Check formatting of `scale` str
+    scale = _clean_scale(scale)
+    if scale.startswith('log'): log = True
+    elif scale.startswith('lin'): log = False
+    else: raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
     return log
 
 

@@ -22,19 +22,17 @@ import scipy.stats
 import matplotlib.pyplot as plt
 
 import zcode.math as zmath
-from . import plot_core as zplot
+from . import plot_core
 
 __all__ = ['plot2DHist', 'plot2DHistProj']
 
-_LEFT = 0.08
-_RIGHT = 0.06
-_BOTTOM = 0.08
+_LEFT = 0.09
+_RIGHT = 0.08
+_BOTTOM = 0.09
 _TOP = 0.12
 
-_CB_WID = 0.03
+_CB_WID = 0.02
 _CB_WPAD = 0.08
-
-_COL = '0.5'
 
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
@@ -88,16 +86,19 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         Figure object containing plots.
 
     """
-    if(np.size(scale) == 1):
+    if np.size(scale) == 1:
         scale = [scale, scale]
-    elif(np.size(scale) != 2):
+    elif np.size(scale) != 2:
         raise ValueError("`scale` must be one or two scaling specifications!")
 
-    if(not labels): labels = ['', '']
+    if not labels: labels = ['', '']
+    # Make sure scale strings are matplotlib-compliant
+    scale = [plot_core._clean_scale(sc) for sc in scale]
 
-    if(statistic is None):
-        if(weights is None): statistic = 'count'
-        else:                statistic = 'sum'
+    # Infer default statistic 
+    if statistic is None:
+        if weights is None: statistic = 'count'
+        else:               statistic = 'sum'
 
     # Create and initializae figure and axes
     fig, prax, xpax, ypax, cbax = _constructFigure(fig, xproj, yproj, hratio, wratio, pad,
@@ -106,7 +107,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     # Create bins
     # -----------
     #     `bins` is a single scalar value -- apply to both
-    if np.isscalar(bins) == 0:
+    if np.isscalar(bins):
         xbins = bins
         ybins = bins
     else:
@@ -142,16 +143,19 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         #     create and plot histogram
         hist, edges, bins = sp.stats.binned_statistic(
             xvals, weights, statistic=statistic, bins=xbins)
-        xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))
+
+        # BUG ERROR FIX
+        # xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))  # breaks
+        xpax.bar(edges[:-1], hist, color=len(hist)*['0.5'], log=islog, width=np.diff(edges)) # works
         #     set tick-labels to the top
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
         #     set bounds to bin edges
-        zplot.setLim(xpax, 'x', data=xedges)
+        plot_core.setLim(xpax, 'x', data=xedges)
 
     # Plot projection of the y-axis (i.e. ignore 'x')
     if ypax:
-        islog = scale[1].startswith('log')
+        islog = plot_core._scale_to_log_flag(scale[1])
         #    create and plot histogram
         hist, edges, bins = sp.stats.binned_statistic(
             yvals, weights, statistic=statistic, bins=ybins)
@@ -160,7 +164,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         plt.setp(ypax.get_yticklabels(), fontsize=fs, rotation=90)
         ypax.yaxis.tick_right()
         #     set bounds to bin edges
-        zplot.setLim(ypax, 'y', data=yedges)
+        plot_core.setLim(ypax, 'y', data=yedges)
 
     return fig
 
@@ -173,50 +177,58 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
 
     Arguments
     ---------
-        ax : ``matplotlib.axes.Axes`` object
-            Axes object on which to plot.
-        xvals : (N,) array of scalars
-            Positions (edges) of x values, assumed to be the same for all rows of
-            the input data `hist`.
-        yvals : (M,) array of scalars
-            Positions (edges) of y values, assumed to be the same for all columns of
-            the input data `hist`.
-        cbax : ``matplotlib.axes.Axes`` object
-            Axes object on which to add a colorbar.
-        cscale : str
-            Scale to use for the colormap {'linear', 'log'}.
-        cmap : ``matplotlib.colors.Colormap`` object
-            Matplotlib colormap to use for coloring histogram.
+    ax : ``matplotlib.axes.Axes`` object
+        Axes object on which to plot.
+    xvals : (N,) array of scalars
+        Positions (edges) of x values, assumed to be the same for all rows of
+        the input data `hist`.
+    yvals : (M,) array of scalars
+        Positions (edges) of y values, assumed to be the same for all columns of
+        the input data `hist`.
+    hist : (N,M) ndarray of scalars
+        Grid of data-points to plot.
+    cbax : ``matplotlib.axes.Axes`` object
+        Axes object on which to add a colorbar.
+    cscale : str
+        Scale to use for the colormap {'linear', 'log'}.
+    cmap : ``matplotlib.colors.Colormap`` object
+        Matplotlib colormap to use for coloring histogram.
+    fs : int
+        Fontsize specification.
+    extrema : (2,) array_like of scalars
+        Minimum and maximum values for colormap scaling.
+    labels : 
 
     Returns
     -------
-        pcm : ``matplotlib.collections.QuadMesh`` object
-            The resulting plotted object, returned by ``ax.pcolormesh``.
-        smap : ``matplotlib.cm.ScalarMappable`` object
-            Colormap and color-scaling information.  See: ``zcode.plot.plot_core.colormap``.
+    pcm : ``matplotlib.collections.QuadMesh`` object
+        The resulting plotted object, returned by ``ax.pcolormesh``.
+    smap : ``matplotlib.cm.ScalarMappable`` object
+        Colormap and color-scaling information.  See: ``zcode.plot.plot_core.colormap``.
 
     """
-
+    cblab = 'Counts'
     xgrid, ygrid = np.meshgrid(xvals, yvals)
-
-    if(extrema is None): extrema = zmath.minmax(hist, nonzero=(cscale.startswith('log')))
-    if(labels is not None and np.size(labels) > 2):
-        cblab = labels[2]
-    else:
-        cblab = 'Counts'
+    if extrema is None: extrema = zmath.minmax(hist, nonzero=plot_core._scale_to_log_flag(cscale))
+    if labels is not None:
+        if np.size(labels) >= 2:
+            ax.set_xlabel(labels[0], size=fs)
+            ax.set_ylabel(labels[1], size=fs)
+        if np.size(labels) > 2:
+            cblab = labels[2]
 
     # Plot
-    smap = zplot.colormap(extrema, cmap=cmap, scale=cscale)
+    smap = plot_core.colormap(extrema, cmap=cmap, scale=cscale)
     pcm = ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap, **kwargs)
 
     # Add color bar
-    if(cbax is not None):
+    if cbax is not None:
         cbar = plt.colorbar(smap, cax=cbax)
         cbar.set_label(cblab, fontsize=fs)
         cbar.ax.tick_params(labelsize=fs)
 
-    zplot.setLim(ax, 'x', data=xvals)
-    zplot.setLim(ax, 'y', data=yvals)
+    plot_core.setLim(ax, 'x', data=xvals)
+    plot_core.setLim(ax, 'y', data=yvals)
 
     return pcm, smap
 
@@ -252,16 +264,16 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
 
     # Determine usable space and axes sizes
     useable = [1.0-_LEFT-_RIGHT, 1.0-_TOP-_BOTTOM]
-    if(cbar):
+    if cbar:
         useable[0] -= _CB_WID + _CB_WPAD
 
-    if(yproj):
+    if yproj:
         prim_wid = useable[0]*wratio
         ypro_wid = useable[0]*(1.0-wratio)
     else:
         prim_wid = useable[0]
 
-    if(xproj):
+    if xproj:
         prim_hit = useable[1]*hratio
         xpro_hit = useable[1]*(1.0-hratio)
     else:
@@ -271,29 +283,29 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
     #    d
     prax = fig.add_axes([_LEFT, _BOTTOM, prim_wid, prim_hit])
     prax.set(xscale=scale[0], yscale=scale[1], xlabel=labels[0], ylabel=labels[1])
-    zplot.setGrid(prax, False)
+    plot_core.setGrid(prax, False)
 
-    if(len(labels) > 2): histLab = labels[2]
+    if len(labels) > 2: histLab = labels[2]
     else:                histLab = 'Counts'
 
     # Add x-projection axes on top-left
-    if(xproj):
+    if xproj:
         xpax = fig.add_axes([_LEFT, _BOTTOM+prim_hit+pad, prim_wid, xpro_hit-pad])
         xpax.set(xscale=scale[0], yscale=histScale, ylabel=histLab, xlabel=labels[0])
         xpax.xaxis.set_label_position('top')
-        zplot.setGrid(xpax, True, axis='y')
+        plot_core.setGrid(xpax, True, axis='y')
 
     # Add y-projection axes on bottom-right
-    if(yproj):
+    if yproj:
         ypax = fig.add_axes([_LEFT+prim_wid+pad, _BOTTOM, ypro_wid-pad, prim_hit])
         ypax.set(yscale=scale[1], xscale=histScale, xlabel=histLab, ylabel=labels[1])
         ypax.yaxis.set_label_position('right')
-        zplot.setGrid(ypax, True, axis='x')
+        plot_core.setGrid(ypax, True, axis='x')
 
     # Add color-bar axes on the right
-    if(cbar):
+    if cbar:
         cbar_left = _LEFT + prim_wid + _CB_WPAD
-        if(yproj): cbar_left += ypro_wid
+        if yproj: cbar_left += ypro_wid
         cbax = fig.add_axes([cbar_left, _BOTTOM, _CB_WID, prim_hit])
 
     return fig, prax, xpax, ypax, cbax
