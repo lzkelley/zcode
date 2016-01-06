@@ -29,7 +29,7 @@ class IndentFormatter(logging.Formatter):
 
     def format(self, rec):
         stack = inspect.stack()
-        if(self.baseline is None): self.baseline = len(stack)
+        if self.baseline is None: self.baseline = len(stack)
         indent = (len(stack)-self.baseline)
         addSpace = ((indent > 0) & (not rec.msg.startswith(" -")))
         rec.indent = ' -'*indent + ' '*addSpace
@@ -71,26 +71,26 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
 
     """
 
-    if(tofile is None and not tostr): raise ValueError("Must log to something!")
+    if tofile is None and not tostr: raise ValueError("Must log to something!")
 
     logger = logging.getLogger(name)
     # Make sure handlers don't get duplicated (ipython issue)
-    while(len(logger.handlers) > 0): logger.handlers.pop()
+    while len(logger.handlers) > 0: logger.handlers.pop()
     # Prevents duplication or something something...
     logger.propagate = 0
 
     # Determine and Set Logging Levels
-    if(fileLevel is None): fileLevel = logging.DEBUG
-    if(strLevel is None): strLevel = logging.WARNING
+    if fileLevel is None: fileLevel = logging.DEBUG
+    if strLevel is None: strLevel = logging.WARNING
     #     Logger object must be at minimum level
     logger.setLevel(np.min([fileLevel, strLevel]))
 
-    if(dateFmt is None): dateFmt = '%Y/%m/%d %H:%M:%S'
+    if dateFmt is None: dateFmt = '%Y/%m/%d %H:%M:%S'
 
     # Log to file
     # -----------
-    if(tofile is not None):
-        if(fileFmt is None):
+    if tofile is not None:
+        if fileFmt is None:
             fileFmt = "%(asctime)s %(levelname)8.8s [%(filename)20.20s:"
             fileFmt += "%(funcName)-20.20s]%(indent)s%(message)s"
 
@@ -104,8 +104,8 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
 
     # Log To stdout
     # -------------
-    if(tostr):
-        if(strFmt is None):
+    if tostr:
+        if strFmt is None:
             strFmt = "%(indent)s%(message)s"
 
         strFormatter = IndentFormatter(strFmt, datefmt=dateFmt)
@@ -137,16 +137,16 @@ def defaultLogger(logger=None, verbose=False, debug=False):
 
     """
 
-    if(isinstance(logger, logging.Logger)): return logger
+    if isinstance(logger, logging.Logger): return logger
 
     import numbers
 
-    if(isinstance(logger, numbers.Integral)):
+    if isinstance(logger, numbers.Integral):
         level = logger
     else:
-        if(debug):
+        if debug:
             level = logging.DEBUG
-        elif(verbose):
+        elif verbose:
             level = logging.INFO
         else:
             level = logging.WARNING

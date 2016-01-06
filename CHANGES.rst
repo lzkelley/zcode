@@ -23,6 +23,9 @@ Current
             +   Added `linewise` and `prepend` arguments, allowing the table to be printed
                 line-by-line or as a single block, and for the print to be prepended with
                 an additional string.
+        -   `modify_exists` [new-function]
+            +   Function which modifies the given filename if it already exists.  The modifications
+                is appending an integer to the filename.
 -   math/
     +   math_core.py
         -   `groupDigitized`

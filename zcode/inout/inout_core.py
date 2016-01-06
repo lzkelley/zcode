@@ -30,6 +30,7 @@ from datetime import datetime
 
 import os
 import sys
+import re
 import logging
 import warnings
 import numpy as np
@@ -37,7 +38,7 @@ import numpy as np
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize',
            'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
-           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table']
+           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists']
 
 
 class _Keys_Meta(type):
@@ -612,10 +613,18 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=Fal
     return
 
 
-def modify_exists(fname, max=100):
+def modify_exists(fname, max=100, warn=True):
     """If the given filename already exists, return a modified version.
 
-    Filename is modified by appending a 0-padded integer to the filename.
+    Returns a filename, modified by appending a 0-padded integer to the input `fname`.
+    For example, if the input is 'some_dir/some_filename.txt' (assuming it already exists),
+    the modified filename would be 'some_dir/some_filename_01.txt', or if that already exists,
+    then 'some_dir/some_filename_02.txt' (or higher if needed, up to ``max-1``).
+
+    Returns `None` on errors:
+    -   Unable to parse existing files with modified names.
+    -   The next modified filename exceeds the allowed maximum `max` number.
+    -   The new, modified filename already exists (shouldn't happen).
 
     Arguments
     ---------
@@ -623,13 +632,56 @@ def modify_exists(fname, max=100):
         Filename to be checked and modified.
     max : int or `None`
         Maximum number of modified filenames to try.  `None` means no limit.
+    warn : bool
+        If `True`, raise an explanatory warning (using ``warnings.warn``) if an error occurs.
+        The return value is `None` on error, regardless of the boolean `warn` value.
+
+    Returns
+    -------
+    newName : {str, `None`}
+        The input filename `fname` if it does not exist, or an appropriately modified version
+        otherwise.  If an error occurs (see above) then `None` is returned.
 
     """
     # If file doesnt already exist, do nothing - return filename
     if not os.path.exists(fname):
         return fname
 
-    # See if filename has already been modified
+    # Determine number of digits for modified filenames to allow up to `max` files
+    prec = np.int(np.ceil(np.log10(max)))
 
+    # Look for existing, modified filenames
+    # -------------------------------------
+    num = 0
+    path, filename = os.path.split(fname)
+    # construct regex for modified files
+    regex = modifyFilename(filename, append='_([0-9])+')
+    matches = sorted([ff for ff in os.listdir(path) if re.search(regex, ff)])
+    # If there are matches, find the highest file-number in the matches
+    if len(matches):
+        mat = matches[-1]
+        mat = mat.split("_")[-1]
+        mat = mat.split(".")[0]
+        # Try to convert to integer, return `None` on failure.
+        try:
+            num = np.int(mat)+1
+        except:
+            warnStr = "Could not match integer from last match = '{}', mat = '{}'.".format(
+                matches[-1], mat)
+            if warn: warnings.warn(warnStr)
+            return None
 
-    return fname
+    # If the new filename number is larger than allowed `max`, return `None`
+    if num >= max:
+        if warn: warnings.warn("Next number ({}) exceeds maximum ({})".format(num, max))
+        return None
+
+    # Construct new filename
+    # ----------------------
+    newName = modifyFilename(fname, append='_{0:0{1:d}d}'.format(num, prec))
+    # New filename shouldnt exist; if it does, return `None`
+    if os.path.exists(newName):
+        if warn: warnings.warn("New filename '{}' already exists.".format(newName))
+        return None
+
+    return newName
