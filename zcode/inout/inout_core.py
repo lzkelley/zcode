@@ -613,7 +613,7 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=Fal
     return
 
 
-def modify_exists(fname, max=100, warn=True):
+def modify_exists(fname, max=100):
     """If the given filename already exists, return a modified version.
 
     Returns a filename, modified by appending a 0-padded integer to the input `fname`.
@@ -621,26 +621,31 @@ def modify_exists(fname, max=100, warn=True):
     the modified filename would be 'some_dir/some_filename_01.txt', or if that already exists,
     then 'some_dir/some_filename_02.txt' (or higher if needed, up to ``max-1``).
 
-    Returns `None` on errors:
-    -   Unable to parse existing files with modified names.
-    -   The next modified filename exceeds the allowed maximum `max` number.
-    -   The new, modified filename already exists (shouldn't happen).
-
     Arguments
     ---------
     fname : str
         Filename to be checked and modified.
     max : int or `None`
         Maximum number of modified filenames to try.  `None` means no limit.
-    warn : bool
-        If `True`, raise an explanatory warning (using ``warnings.warn``) if an error occurs.
-        The return value is `None` on error, regardless of the boolean `warn` value.
 
     Returns
     -------
     newName : {str, `None`}
         The input filename `fname` if it does not exist, or an appropriately modified version
-        otherwise.  If an error occurs (see above) then `None` is returned.
+        otherwise.  If the number for the new file exceeds the maximum `max`, then a warning is
+        raise and `None` is returned.
+
+
+    Errors
+    ------
+    RuntimeError is raised if:
+    -   Unable to parse existing files with modified names.
+    -   The new, modified filename already exists.
+
+    Warnings
+    --------
+    -   The next modified filename exceeds the allowed maximum `max` number.
+        In this case, `None` is returned.
 
     """
     # If file doesnt already exist, do nothing - return filename
@@ -662,26 +667,24 @@ def modify_exists(fname, max=100, warn=True):
         mat = matches[-1]
         mat = mat.split("_")[-1]
         mat = mat.split(".")[0]
-        # Try to convert to integer, return `None` on failure.
+        # Try to convert to integer, raise error on failure
         try:
             num = np.int(mat)+1
         except:
-            warnStr = "Could not match integer from last match = '{}', mat = '{}'.".format(
+            errStr = "Could not match integer from last match = '{}', mat = '{}'.".format(
                 matches[-1], mat)
-            if warn: warnings.warn(warnStr)
-            return None
+            raise RuntimeError(errStr)
 
     # If the new filename number is larger than allowed `max`, return `None`
     if num >= max:
-        if warn: warnings.warn("Next number ({}) exceeds maximum ({})".format(num, max))
+        warnings.warn("Next number ({}) exceeds maximum ({})".format(num, max))
         return None
 
     # Construct new filename
     # ----------------------
     newName = modifyFilename(fname, append='_{0:0{1:d}d}'.format(num, prec))
-    # New filename shouldnt exist; if it does, return `None`
+    # New filename shouldnt exist; if it does, raise error
     if os.path.exists(newName):
-        if warn: warnings.warn("New filename '{}' already exists.".format(newName))
-        return None
+        raise RuntimeError("New filename '{}' already exists.".format(newName))
 
     return newName
