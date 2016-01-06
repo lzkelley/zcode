@@ -26,6 +26,7 @@ Current
         -   `modify_exists` [new-function]
             +   Function which modifies the given filename if it already exists.  The modifications
                 is appending an integer to the filename.
+            +   Added tests for this function.
 -   math/
     +   math_core.py
         -   `groupDigitized`
