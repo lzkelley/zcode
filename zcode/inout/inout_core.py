@@ -21,7 +21,7 @@ Functions
 -   modifyFilename           - Modify the given filename.
 -   mpiError                 - Raise an error through MPI and exit all processes.
 -   ascii_table              - Print a table with the given contents to output.
--
+-   modify_exists            - Modify the given filename if it already exists.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -34,9 +34,11 @@ import logging
 import warnings
 import numpy as np
 
-__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'countLines', 'estimateLines',
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize',
+           'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
            'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table']
+
 
 class _Keys_Meta(type):
     """Metaclass for the ``Keys`` class.  See, ``InOut.Keys``.
@@ -608,3 +610,26 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=Fal
         out(prepend + "\n".join(ascii))
 
     return
+
+
+def modify_exists(fname, max=100):
+    """If the given filename already exists, return a modified version.
+
+    Filename is modified by appending a 0-padded integer to the filename.
+
+    Arguments
+    ---------
+    fname : str
+        Filename to be checked and modified.
+    max : int or `None`
+        Maximum number of modified filenames to try.  `None` means no limit.
+
+    """
+    # If file doesnt already exist, do nothing - return filename
+    if not os.path.exists(fname):
+        return fname
+
+    # See if filename has already been modified
+
+
+    return fname
