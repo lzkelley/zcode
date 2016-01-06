@@ -16,6 +16,8 @@ Current
 -   constants.py
     +   Bug-fix where `SIGMA_T` wasn't loading properly from `astropy`.
     +   Added Electron-Scattering opacity, `KAPPA_ES`.
+-   README.rst
+    +   Added more information about contents and structure of package.
 -   inout/
     +   inout_core.py
         -   `ascii_table` [new-function]
