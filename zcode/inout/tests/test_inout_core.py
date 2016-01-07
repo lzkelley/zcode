@@ -79,8 +79,8 @@ class TestInoutCore(object):
         fdir = self.test_dir_0
         fname = self.test_file_0
         num_files = 4
-        max_files = 20
-        rem_files = []
+        max_files = 20   # This must be between [11, 100]
+        self.rem_files = []
         from zcode.inout.inout_core import modify_exists, modifyFilename
 
         # Create test directory if needed, store boolean whether to later remove it.
@@ -95,11 +95,20 @@ class TestInoutCore(object):
         if os.path.exists(fname):
             raise RuntimeError("Test filename '{}' already exists.".format(fname))
 
+        # Create files that should *not* interfere with 'modify_exists'
+        #    'modify_exists' should only look for 2-digit appended numbers
+        fname_distract_1 = modifyFilename(fname, append='_6')
+        fname_distract_2 = modifyFilename(fname, append='_123')
+        print("Interference filenames = '{}', '{}'".format(fname_distract_1, fname_distract_2))
+        for ff in [fname_distract_1, fname_distract_2]:
+            open(ff, 'a')
+            rem_files.append(ff)
+
         # Test that filenames are appropriately modified
         # ----------------------------------------------
         print("fname = '{}'".format(fname))
         for ii in range(num_files):
-            newName = modify_exists(fname, max=max_files, debug=True)
+            newName = modify_exists(fname, max=max_files)
             print(ii, "newName = ", newName)
             assert_false(os.path.exists(newName))
             # Create file
@@ -117,7 +126,7 @@ class TestInoutCore(object):
 
         # Make sure filenames dont exceed maximum, and raises warning
         with warnings.catch_warnings(True) as ww:
-            assert_equal(modify_exists(fname, max=num_files-1, debug=True), None)
+            assert_equal(modify_exists(fname, max=num_files-1), None)
             assert_true(len(ww) > 0)
 
         # Remove created files

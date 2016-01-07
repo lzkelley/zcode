@@ -620,6 +620,8 @@ def modify_exists(fname, max=100):
     For example, if the input is 'some_dir/some_filename.txt' (assuming it already exists),
     the modified filename would be 'some_dir/some_filename_01.txt', or if that already exists,
     then 'some_dir/some_filename_02.txt' (or higher if needed, up to ``max-1``).
+    Suffix numbers with the incorrect number of digits (e.g. 'some_dir/some_filename_002.txt) will
+    be ignored.
 
     Arguments
     ---------
@@ -659,8 +661,11 @@ def modify_exists(fname, max=100):
     # -------------------------------------
     num = 0
     path, filename = os.path.split(fname)
+    if len(path) == 0:
+        path = './'
     # construct regex for modified files
-    regex = modifyFilename(filename, append='_([0-9])+')
+    #     look specifically for `prec`-digit numbers at the end of the filename
+    regex = modifyFilename(filename, append='_([0-9]){{{:d}}}'.format(prec))
     matches = sorted([ff for ff in os.listdir(path) if re.search(regex, ff)])
     # If there are matches, find the highest file-number in the matches
     if len(matches):
