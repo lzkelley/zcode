@@ -95,7 +95,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     # Make sure scale strings are matplotlib-compliant
     scale = [plot_core._clean_scale(sc) for sc in scale]
 
-    # Infer default statistic 
+    # Infer default statistic
     if statistic is None:
         if weights is None: statistic = 'count'
         else:               statistic = 'sum'
@@ -145,8 +145,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
             xvals, weights, statistic=statistic, bins=xbins)
 
         # BUG ERROR FIX
-        # xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))  # breaks
-        xpax.bar(edges[:-1], hist, color=len(hist)*['0.5'], log=islog, width=np.diff(edges)) # works
+        # breaks:
+        #     xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))
+        # works:
+        xpax.bar(edges[:-1], hist, color=len(hist)*['0.5'], log=islog, width=np.diff(edges))
         #     set tick-labels to the top
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
@@ -197,7 +199,7 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
         Fontsize specification.
     extrema : (2,) array_like of scalars
         Minimum and maximum values for colormap scaling.
-    labels : 
+    labels :
 
     Returns
     -------
