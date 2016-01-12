@@ -290,7 +290,7 @@ def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     logStr += " - - Size '%s'" % (getFileSize(savefile))
     try:
         log.debug(logStr)
-    except Exception as e:
+    except Exception:
         pass
 
     if verbose:

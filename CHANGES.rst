@@ -37,7 +37,7 @@ Current
     +   plot_core.py
         -   `plotConfFill`
             +   [Bug]: fixed default value of `outline` which was still set to a boolean instead of
-                       a color string.  Caused failure when trying to save images.
+                a color string.  Caused failure when trying to save images.
 
 
 [0.0.5] - 2015/12/13
