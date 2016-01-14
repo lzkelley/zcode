@@ -507,7 +507,7 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
 
     """
 
-    if(first is None or last is None):
+    if first is None or last is None:
         first = None
         last = 0
 
@@ -516,14 +516,15 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
 
     arrStr = "["
     # Add the first `first` elements
-    if(first or first is None):
+    if first or first is None:
         arrStr += delim.join([form.format(vv) for vv in arr[:first]])
 
     # Include separator unless full array is being printed
-    if(first is not None): arrStr += "... "
+    if first is not None:
+        arrStr += "... "
 
     # Add the last `last` elements
-    if(last):
+    if last:
         arrStr += delim.join([form.format(vv) for vv in arr[-last-1:]])
 
     arrStr += "]"
