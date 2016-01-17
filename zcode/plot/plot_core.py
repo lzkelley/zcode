@@ -10,7 +10,7 @@ Functions
 -   text                 - Add text to figure.
 -   legend               - Add a legend to the given figure.
 -   unifyAxesLimits      - Set limits on all given axes to match global extrema.
--   colorCycle           - Create a range of colors.
+-   color_cycle          - Create a range of colors.
 -   colormap             - Create a colormap from scalars to colors.
 -   color_set            - Retrieve a (small) set of color-strings with hand picked values.
 -   setGrid              - Configure the axes' grid.
@@ -47,7 +47,7 @@ import zcode.math as zmath
 import zcode.inout as zio
 
 __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend',
-           'unifyAxesLimits',
+           'unifyAxesLimits', 'color_cycle',
            'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill']
 
@@ -479,8 +479,36 @@ def unifyAxesLimits(axes, axis='y'):
     return np.array([lo, hi])
 
 
-def colorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
+def colorCycle(args, **kwargs):
+    """Create a range of colors.  DEPRECATED: use `color_cycle`.
+    """
+    warnings.warn("Use `color_cycle` function.", DeprecationWarning, stacklevel=3)
+    return color_cycle(args, **kwargs)
+
+
+def color_cycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     """Create a range of colors.
+
+    Arguments
+    ---------
+    num : int
+        Number of colors to put in cycle.
+    ax : ``matplotlib.axes.Axes`` object or `None`
+        Axes on which to set the colors.  If given, then subsequent calls to ``ax.plot`` will use
+        the different colors of the color-cycle.  If `None`, then the created colorcycle is only
+        returned.
+    cmap : ``matplotlib.colors.Colormap`` object
+        Colormap from which to select colors.
+    left : float {0.0, 1.0}
+        Start colors this fraction of the way into the colormap (to avoid black/white).
+    right : float {0.0, 1.0}
+        Stop colors at this fraction of the way through the colormap (to avoid black/white).
+
+    Returns
+    -------
+    cols : (`num`,) array_like of RGBA color tuples
+        Colors forming the color cycle.
+
     """
     cols = [cmap(it) for it in np.linspace(left, right, num)]
     if ax is not None: ax.set_color_cycle(cols[::-1])
