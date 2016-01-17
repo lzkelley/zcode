@@ -38,6 +38,11 @@ Current
         -   `plotConfFill`
             +   [Bug]: fixed default value of `outline` which was still set to a boolean instead of
                 a color string.  Caused failure when trying to save images.
+        -   `colorCycle` [DEPRECATED] ---> `color_cycle` [new-function]
+            +   [Docs]: added method documentation.
+    +   Hist2D.py
+        -   `plot2DHistProj`
+            +   [ENH]: Check to make input arguments are the correct (consistent) shapes.
 
 
 [0.0.5] - 2015/12/13
