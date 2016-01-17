@@ -28,3 +28,7 @@ Contents:
 
 Each subdirectory (e.g. 'math/') contains a 'tests/' directory which includes methods for internal
 diagnostics and testing.  These can all be run using the `test.sh` script.
+
+Deprecations:
+When deprecating a function/object/method, use a warning like:
+``warnings.warn(warnStr.format('positive'), DeprecationWarning, stacklevel=3)``
