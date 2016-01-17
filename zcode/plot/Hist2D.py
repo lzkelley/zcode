@@ -86,6 +86,15 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         Figure object containing plots.
 
     """
+    # Make sure shapes of input arrays are valid
+    if np.shape(xvals) != np.shape(yvals):
+        raise ValueError("Shape of `xvals` ({}) must match `yvals` ({}).".format(
+                np.shape(xvals), np.shape(yvals)))
+    if weights is not None and np.shape(weights) != np.shape(xvals):
+        raise ValueError("Shape of `wieghts` ({}) must match `xvals` and `yvals` ({}).".format(
+                np.shape(weights), np.shape(xvals)))
+
+    # Make sure the given `scale` is valid
     if np.size(scale) == 1:
         scale = [scale, scale]
     elif np.size(scale) != 2:
