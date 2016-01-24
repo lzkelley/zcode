@@ -29,6 +29,10 @@ Current
             +   Function which modifies the given filename if it already exists.  The modifications
                 is appending an integer to the filename.
             +   Added tests for this function.
+    +   tests/
+        -   test_inout_core.py
+            +   Fixed some issues with cleaning up (deleting) files/directories created for the
+                tests.
 -   math/
     +   math_core.py
         -   `groupDigitized`
