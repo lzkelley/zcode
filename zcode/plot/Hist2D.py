@@ -153,7 +153,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         hist, edges, bins = sp.stats.binned_statistic(
             xvals, weights, statistic=statistic, bins=xbins)
 
-        # BUG ERROR FIX
+        # BUG ERROR FIX (breaks during saving, not execution)
         # breaks:
         #     xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))
         # works:
