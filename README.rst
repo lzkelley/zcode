@@ -4,8 +4,8 @@ Python package for general purpose utility code for a variety of (scientific/com
 applications.
 
 Package Organization
---------------------
-Contents:
+-----------------------
+### Contents:
 -   zcode/                        - Actual source code.
     +   inout/                    - IO.
         -   inout_core.py         - Basics.
@@ -26,9 +26,10 @@ Contents:
 -   setup.sh                      - Standard installation for package.
 -   version.py                    - Version file for setup-script (superfluous?).
 
+#### Tests:
 Each subdirectory (e.g. 'math/') contains a 'tests/' directory which includes methods for internal
-diagnostics and testing.  These can all be run using the `test.sh` script.
+diagnostics and testing.  These can all be run using the `zcode/test.sh` script.
 
-Deprecations:
+#### Deprecations:
 When deprecating a function/object/method, use a warning like:
 ``warnings.warn(warnStr.format('positive'), DeprecationWarning, stacklevel=3)``
