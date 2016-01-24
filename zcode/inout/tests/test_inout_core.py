@@ -8,9 +8,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import warnings
+import shutil
 from numpy.testing import run_module_suite
 import numpy as np
-from nose.tools import assert_true, assert_false, assert_equal, assert_raises
+from nose.tools import assert_true, assert_false, assert_equal
 
 
 class TestInoutCore(object):
@@ -21,10 +22,30 @@ class TestInoutCore(object):
         cls.fname_npz_subdir = os.path.join('./subdir', cls.fname_npz)
         cls.test_dir_0 = '_test_inout_core_dir'
         cls.test_file_0 = '_test_filename.txt'
+        cls._kill_test_files()
 
     @classmethod
     def teardown_class(cls):
-        pass
+        cls._kill_test_files()
+
+    @classmethod
+    def _kill_test_files(cls):
+        # Remove created directories
+        if os.path.exists(cls.test_dir_0):
+            print("removing '{}'".format(cls.test_dir_0))
+            shutil.rmtree(cls.test_dir_0)
+        # Remove created files
+        if os.path.exists(cls.fname_npz_subdir):
+            print("removing '{}'".format(cls.fname_npz_subdir))
+            os.remove(cls.fname_npz_subdir)
+        if os.path.exists(cls.fname_npz):
+            print("removing '{}'".format(cls.fname_npz))
+            os.remove(cls.fname_npz)
+        if os.path.exists(cls.test_file_0):
+            print("removing '{}'".format(cls.test_file_0))
+            os.remove(cls.test_file_0)
+
+        return
 
     def test_dictToNPZ_npzToDict(self):
         fname = self.fname_npz
@@ -61,33 +82,33 @@ class TestInoutCore(object):
             assert_equal(type(subloaded[key]), type(item))
 
         # Delete temp file
-        if os.path.exists(fname):
-            os.remove(fname)
-        assert_false(os.path.exists(fname))
+        # if os.path.exists(fname):
+        #     os.remove(fname)
+        # assert_false(os.path.exists(fname))
 
         # Make sure subdirectories are created if needed
         dictToNPZ(data, fname_subdir)
         assert_true(os.path.exists(fname_subdir))
 
         # Delete temp file
-        if os.path.exists(fname_subdir):
-            os.remove(fname_subdir)
-            os.rmdir(os.path.dirname(fname_subdir))
-        assert_false(os.path.exists(fname_subdir))
+        # if os.path.exists(fname_subdir):
+        #     os.remove(fname_subdir)
+        #     os.rmdir(os.path.dirname(fname_subdir))
+        # assert_false(os.path.exists(fname_subdir))
 
     def test_modify_exists(self):
         fdir = self.test_dir_0
         fname = self.test_file_0
         num_files = 4
         max_files = 20   # This must be between [11, 100]
-        self.rem_files = []
+        # self.rem_files = []
         from zcode.inout.inout_core import modify_exists, modifyFilename
 
         # Create test directory if needed, store boolean whether to later remove it.
-        kill_dir = False
+        # kill_dir = False
         if not os.path.exists(fdir):
             os.makedirs(fdir)
-            kill_dir = True
+            # kill_dir = True
 
         # Create test filename
         fname = os.path.join(fdir, fname)
@@ -102,7 +123,7 @@ class TestInoutCore(object):
         print("Interference filenames = '{}', '{}'".format(fname_distract_1, fname_distract_2))
         for ff in [fname_distract_1, fname_distract_2]:
             open(ff, 'a')
-            rem_files.append(ff)
+            # rem_files.append(ff)
 
         # Test that filenames are appropriately modified
         # ----------------------------------------------
@@ -120,22 +141,22 @@ class TestInoutCore(object):
 
             print("\tshould be = ", intended_name)
             assert_true(os.path.exists(intended_name))
-            rem_files.append(newName)
+            # rem_files.append(newName)
             if not os.path.exists(newName):
                 raise RuntimeError("New file should have been created '{}'.".format(newName))
 
         # Make sure filenames dont exceed maximum, and raises warning
-        with warnings.catch_warnings(True) as ww:
+        with warnings.catch_warnings(record=True) as ww:
             assert_equal(modify_exists(fname, max=num_files-1), None)
             assert_true(len(ww) > 0)
 
-        # Remove created files
-        for fil in rem_files:
-            os.remove(fil)
-
-        # Remove created directories
-        if kill_dir:
-            os.rmdir(fdir)
+        # # Remove created files
+        # for fil in rem_files:
+        #     os.remove(fil)
+        #
+        # # Remove created directories
+        # if kill_dir:
+        #     os.rmdir(fdir)
 
 
 
