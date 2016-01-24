@@ -3,7 +3,7 @@ import version
 
 readme = open('README.rst').read()
 
-requirements = []
+requirements = ['progressbar', 'enum34']
 
 setup(
     name="zcode",
