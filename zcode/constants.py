@@ -5,7 +5,8 @@ import numpy as np
 import astropy as ap
 import astropy.constants
 import astropy.cosmology
-from astropy.cosmology import WMAP9 as cosmo
+# from astropy.cosmology import WMAP9 as cosmo
+cosmo = astropy.cosmology.WMAP9
 
 # Fundamental Constants
 # ---------------------
