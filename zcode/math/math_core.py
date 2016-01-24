@@ -1085,6 +1085,30 @@ def mono(arr, type='g', axis=-1):
     return retval
 
 
+'''
+def percentiles_str(names, data, percs=[50, 68, 95, 100], out=print, title='', format='.1f'):
+    """Print the target percentiles of the given arrays.
+    """
+    names = np.atleast_1d(names)
+    percs = np.atleast_1d(percs)
+    if names.size != len(data):
+        errStr = "``names.size = {} != len(data) = {}``.".format(names.size, len(data))
+        out(errStr)
+        raise RuntimeError(errStr)
+
+    # Calculate percentiles
+    vals = [np.percentile(row, percs) for row in data]
+    # Convert percentiles to strings
+    vals = [["{val:{form:s}}".format(val=rr, form=format) for rr in row] for row in vals]
+    # Construct column labels with the target percentages
+    cols = ["{:.1f}".format(cc) for cc in percs]
+    # Print a table with the results
+    zio.ascii_table(vals, rows=names, cols=cols, title=title, out=out,
+                    linewise=False, prepend="\n")
+    return
+'''
+
+
 def _comparisonFunction(comp):
     """Retrieve the comparison function matching the input expression.
     """
