@@ -43,6 +43,11 @@ Current
     +   Hist2D.py
         -   `plot2DHistProj`
             +   [ENH]: Check to make input arguments are the correct (consistent) shapes.
+            +   [ENH]: Added flag 'write_counts' which overlays a string of the number of values in
+                each bin of the 2D histogram.  Uses the new `counts` parameter of `plot2DHist`.
+        -   `plot2DHist`
+            +   [ENH]: Added parameter 'counts' for numbers to be overlaid on each bin, used by
+                the `write_counts` of `plot2DHistProj`.
 
 
 [0.0.5] - 2015/12/13
