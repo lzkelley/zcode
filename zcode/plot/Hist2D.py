@@ -89,10 +89,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     # Make sure shapes of input arrays are valid
     if np.shape(xvals) != np.shape(yvals):
         raise ValueError("Shape of `xvals` ({}) must match `yvals` ({}).".format(
-                np.shape(xvals), np.shape(yvals)))
+            np.shape(xvals), np.shape(yvals)))
     if weights is not None and np.shape(weights) != np.shape(xvals):
         raise ValueError("Shape of `wieghts` ({}) must match `xvals` and `yvals` ({}).".format(
-                np.shape(weights), np.shape(xvals)))
+            np.shape(weights), np.shape(xvals)))
 
     # Make sure the given `scale` is valid
     if np.size(scale) == 1:
@@ -139,8 +139,9 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     if np.ndim(ybins) == 0:
         ybins = zmath.spacing(yvals, num=ybins+1, scale=scale[1])
 
-    # Plot 2D Histogram and Projections
-    # ---------------------------------
+    # Plot Histograms and Projections
+    # -------------------------------
+    # Plot 2D Histogram
     hist, xedges, yedges, binnums = sp.stats.binned_statistic_2d(
         xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
     hist = np.nan_to_num(hist)
@@ -154,10 +155,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
             xvals, weights, statistic=statistic, bins=xbins)
 
         # BUG ERROR FIX (breaks during saving, not execution)
-        # breaks:
-        #     xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))
-        # works:
-        xpax.bar(edges[:-1], hist, color=len(hist)*['0.5'], log=islog, width=np.diff(edges))
+        # breaks (sometimes?)
+        xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))
+        # works (always)
+        # xpax.bar(edges[:-1], hist, color=len(hist)*['0.5'], log=islog, width=np.diff(edges))
         #     set tick-labels to the top
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
