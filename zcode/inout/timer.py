@@ -14,6 +14,40 @@ __all__ = ['Timer']
 
 class Timer(object):
 
+    def __init__(self, name=None):
+        self.name = name
+        self._start = None
+        self._ave = 0.0
+        self._num = 0
+        self._durations = []
+
+    def start(self, restart=False):
+        # If there is already a `_start` value
+        if self._start is not None:
+            # If we are *not* restarting (i.e. new start, without a duration)
+            if not restart:
+                self.stop()
+        # If there is no `_start` yet, or we are restarting
+        self._start = datetime.now()
+
+    def stop(self):
+        if self._start is None:
+            return
+        durat = datetime.now() - self._start
+        self._durations.append(durat.total_seconds())
+        self._num += 1
+        # Increment cumulative average
+        self._ave = self._ave + (durat - self._ave)/self._num
+
+    def ave(self):
+        return self._ave
+
+    def durations(self):
+        return np.array(self._durations)
+
+
+class Timings(object):
+
     def __init__(self, errors=False):
         self.names = np.array([])
         self.durations = []
