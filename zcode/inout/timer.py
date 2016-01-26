@@ -1,7 +1,7 @@
 """Submodule for timing components of a code.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from six.moves import xrange
+# from six.moves import xrange
 
 from datetime import datetime
 import numpy as np
@@ -16,9 +16,19 @@ class Timer(object):
 
     def __init__(self, errors=False):
         self.names = np.array([])
-        self.durations = np.array([])
-        self.starts = np.array([])
+        self.durations = []
+        self.starts = []
         self._errors = errors
+
+    def __len__(self):
+        if len(self.names) != (self.durations) or len(self.names) != len(self.starts):
+            err_str = "lengths dont matchup, names: {}, durations: {}, starts: {}".format(
+                len(self.names), len(self.durations), len(self.starts))
+            if self._errors:
+                raise RuntimeError(err_str)
+            else:
+                warnings.warn(err_str)
+        return len(self.names)
 
     def start(self, name):
         ind = np.where(self.names == name)[0]
@@ -26,13 +36,13 @@ class Timer(object):
         if ind.size == 1:
             # If start was already set, store duration before resetting
             if self.starts[ind] is not None:
-                self.durations[ind].append(datetime.now() - self.starts[ind])
-            # Reset start
+                self.stop(name)
+            # Reset new start
             self.starts[ind] = datetime.now()
 
         # Create new timer
         else:
-            self.names.append(name)
+            self.names = np.append(self.names, name)
             self.starts.append(datetime.now())
             self.durations.append([])
             if _DEBUG:
@@ -53,7 +63,8 @@ class Timer(object):
                 self.durations[ind].append(0.0)
             # If it was started, store duration, reset start
             else:
-                self.durations[ind].append(datetime.now() - self.starts[ind])
+                delta = datetime.now() - self.starts[ind]
+                self.durations[ind].append(delta.total_seconds())
                 self.starts[ind] = None
 
         # Error matching name
@@ -63,3 +74,19 @@ class Timer(object):
                 raise RuntimeError(err_str)
             else:
                 warnings.warn(err_str)
+
+    def average(self, name=None):
+        if name is None:
+            aves = [np.average(durs) for durs in self.durations]
+        else:
+            ind = np.where(self.names == name)[0]
+            if ind.size == 1:
+                aves = np.average(self.durations[ind])
+            else:
+                err_str = "No timer for '{}' found.".format(name)
+                if self._errors:
+                    raise RuntimeError(err_str)
+                else:
+                    warnings.warn(err_str)
+                aves = 0.0
+        return aves
