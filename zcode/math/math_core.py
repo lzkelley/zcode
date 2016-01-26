@@ -1134,7 +1134,7 @@ def _comparisonFilter(data, filter):
     """
     if not callable(filter):
         filter = _comparisonFunction(filter)
-    sel = np.where(filter(data, 0.0))
+    sel = np.where(filter(data, 0.0) & np.isfinite(data))
     return data[sel]
 
 

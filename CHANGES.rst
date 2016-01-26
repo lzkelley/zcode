@@ -33,6 +33,8 @@ Current
     +   math_core.py
         -   `groupDigitized`
             +   [Docs]: improved documentation clarifying input parameters.
+        -   `_comparisonFilter`
+            +   [ENH]: always filter for finite values (regardless of the function arguments).
 -   plot/
     +   plot_core.py
         -   `plotConfFill`
