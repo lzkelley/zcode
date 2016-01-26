@@ -7,12 +7,12 @@ from datetime import datetime
 import numpy as np
 import warnings
 
-_DEBUG = False
-
-__all__ = ['Timer']
+__all__ = ['Timer', 'Timings']
 
 
 class Timer(object):
+    """Class for timing a single series of events.
+    """
 
     def __init__(self, name=None):
         self.name = name
@@ -22,105 +22,88 @@ class Timer(object):
         self._durations = []
 
     def start(self, restart=False):
+        """Start, or restart, the timer.
+        """
+        durat = None
         # If there is already a `_start` value
         if self._start is not None:
             # If we are *not* restarting (i.e. new start, without a duration)
             if not restart:
-                self.stop()
+                durat = self.stop()
         # If there is no `_start` yet, or we are restarting
         self._start = datetime.now()
+        return durat
 
     def stop(self):
+        """Stop the (already started) timer.
+        """
         if self._start is None:
-            return
+            return None
         durat = datetime.now() - self._start
         self._durations.append(durat.total_seconds())
         self._num += 1
         # Increment cumulative average
         self._ave = self._ave + (durat - self._ave)/self._num
+        return durat
 
     def ave(self):
+        """Return the cumulative average of previously calculated durations.
+        """
         return self._ave
 
     def durations(self):
+        """Return an array of all previously calculated durations.
+        """
         return np.array(self._durations)
+
+    def last(self):
+        """Return the last (most recent) calculated duration.
+        """
+        if self._num:
+            return self._durations[-1]
+        else:
+            return None
 
 
 class Timings(object):
+    """Class for timing a set of different events, managing invidivual timers for each.
+    """
 
     def __init__(self, errors=False):
-        self.names = np.array([])
-        self.durations = []
-        self.starts = []
-        self._errors = errors
+        self._names = np.array([])
+        self._timers = []
 
-    def __len__(self):
-        if len(self.names) != (self.durations) or len(self.names) != len(self.starts):
-            err_str = "lengths dont matchup, names: {}, durations: {}, starts: {}".format(
-                len(self.names), len(self.durations), len(self.starts))
-            if self._errors:
-                raise RuntimeError(err_str)
+    def _ind_for_name(self, name, create=True):
+        # No timer with this name exists
+        if name not in self._names:
+            # Create a new one
+            if create:
+                self.names = np.append(self.names, name)
+                self._timers.append(Timer(name))
             else:
-                warnings.warn(err_str)
-        return len(self.names)
+                return None
 
-    def start(self, name):
-        ind = np.where(self.names == name)[0]
-        # Timer already exists
-        if ind.size == 1:
-            # If start was already set, store duration before resetting
-            if self.starts[ind] is not None:
-                self.stop(name)
-            # Reset new start
-            self.starts[ind] = datetime.now()
+        ind = np.where(self._names == name)[0]
+        # Should be a single matching name
+        if ind.size != 1:
+            raise RuntimeError("Name '{}' matched {} times.  Names = '{}'".format(
+                name, ind.size, self.names))
+        # Make sure internal name matches array name
+        if self._timers[ind].name != name:
+            raise RuntimeError("Names mismatch, name = '{}', timers[{}].name = '{}'".format(
+                name, ind, self._timers[ind].name))
 
-        # Create new timer
-        else:
-            self.names = np.append(self.names, name)
-            self.starts.append(datetime.now())
-            self.durations.append([])
-            if _DEBUG:
-                print("<Timer>: lengths = {}, {}, {}".format(
-                    len(self.names), len(self.starts), len(self.durations)))
+        return ind
+
+    def start(self, name, restart=False):
+        ind = self._ind_for_name(name, create=True)
+        self._timers[ind].start(restart=restart)
 
     def stop(self, name):
-        ind = np.where(self.names == name)[0]
-        # If there is a matching timer
-        if ind.size == 1:
-            # If this timer wasnt started, store zero and raise warning.
-            if self.starts[ind] is None:
-                err_str = "timer for '{}' was not started, storing zero duration.".format(name)
-                if self._errors:
-                    raise RuntimeError(err_str)
-                else:
-                    warnings.warn(err_str)
-                self.durations[ind].append(0.0)
-            # If it was started, store duration, reset start
-            else:
-                delta = datetime.now() - self.starts[ind]
-                self.durations[ind].append(delta.total_seconds())
-                self.starts[ind] = None
-
-        # Error matching name
-        else:
-            err_str = "no timer for '{}'.".format(name)
-            if self._errors:
-                raise RuntimeError(err_str)
-            else:
-                warnings.warn(err_str)
-
-    def average(self, name=None):
-        if name is None:
-            aves = [np.average(durs) for durs in self.durations]
-        else:
-            ind = np.where(self.names == name)[0]
-            if ind.size == 1:
-                aves = np.average(self.durations[ind])
-            else:
-                err_str = "No timer for '{}' found.".format(name)
-                if self._errors:
-                    raise RuntimeError(err_str)
-                else:
-                    warnings.warn(err_str)
-                aves = 0.0
-        return aves
+        ind = self._ind_for_name(name, create=False)
+        if not ind:
+            raise ValueError("Timer '{}' does not exist.".format(name))
+        durat = self._timers[ind].stop()
+        if not durat:
+            warnings.warn("Timer '{}' was not started.".format(name))
+        return
