@@ -1109,6 +1109,9 @@ def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True, format=''):
     """
     data = np.asarray(data)
     percs = np.atleast_1d(percs)
+    percs_flag = False
+    if percs is not None and len(percs): percs_flag = True
+
     out = "Statistics: "
     form = "{{{}}}".format(format)
     if ave:
@@ -1117,12 +1120,12 @@ def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True, format=''):
             out += ", "
     if std:
         out += "std = " + form.format(np.std(data))
-        if percs:
+        if percs_flag:
             out += ", "
-    if percs:
+    if percs_flag:
         tiles = np.percentile(data, percs)
         out += "percentiles: [" + ", ".join(form.format(tt) for tt in tiles) + "]"
-        out += ", for (" + ", ".join(form.format(pp) + "%" for pp in percs) + ")"
+        out += ", for (" + ", ".join("{:.1f}%".format(pp) for pp in percs) + ")"
 
     return out
 
