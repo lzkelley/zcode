@@ -33,6 +33,8 @@ Current
     +   math_core.py
         -   `groupDigitized`
             +   [Docs]: improved documentation clarifying input parameters.
+        -   `stats_str` [new-function]
+            +   [ENH]: Return a string with the statistics of the given array.
         -   `_comparisonFilter`
             +   [ENH]: always filter for finite values (regardless of the function arguments).
 -   plot/

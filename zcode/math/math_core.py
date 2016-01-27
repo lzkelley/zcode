@@ -27,6 +27,7 @@ Functions
 -   sampleInverse            - Find x-sampling to evenly divide a function in y-space.
 -   smooth                   - Use convolution to smooth the given array.
 -   mono                     - Check for monotonicity in the given array.
+-   stats_str                - Return a string with the statistics of the given array.
 
 -   _trapezium_loglog        -
 -   _comparisonFunction      -
@@ -51,7 +52,7 @@ __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'confidenceBands',
            'frexp10', 'stats', 'groupDigitized',
-           'sampleInverse', 'smooth', 'mono',
+           'sampleInverse', 'smooth', 'mono', 'stats_str',
            '_comparisonFunction', '_infer_scale']
 
 
@@ -1083,6 +1084,47 @@ def mono(arr, type='g', axis=-1):
     retval = np.all(func(delta, 0.0))
     return retval
 
+
+def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True, format=''):
+    """Return a string with the statistics of the given array.
+
+    Arguments
+    ---------
+    data : ndarray of scalar
+        Input data from which to calculate statistics.
+    percs : array_like of scalars in {0, 100}
+        Which percentiles to calculate.
+    ave : bool
+        Include average value in output.
+    std : bool
+        Include standard-deviation in output.
+    format : str
+        Formatting for all numerical output, (e.g. `":.2f"`).
+
+    Output
+    ------
+    out : str
+        Single-line string of the desired statistics.
+
+    """
+    data = np.asarray(data)
+    percs = np.atleast_1d(percs)
+    out = "Statistics: "
+    form = "{{{}}}".format(format)
+    if ave:
+        out += "ave = " + form.format(np.average(data))
+        if std or percs:
+            out += ", "
+    if std:
+        out += "std = " + form.format(np.std(data))
+        if percs:
+            out += ", "
+    if percs:
+        tiles = np.percentile(data, percs)
+        out += "percentiles: [" + ", ".join(form.format(tt) for tt in tiles) + "]"
+        out += ", for (" + ", ".join(form.format(pp) + "%" for pp in percs) + ")"
+
+    return out
 
 '''
 def percentiles_str(names, data, percs=[50, 68, 95, 100], out=print, title='', format='.1f'):
