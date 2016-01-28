@@ -1072,7 +1072,7 @@ def _get_cmap(cmap):
     """
     if isinstance(cmap, six.string_types):
         return mpl.cm.get_cmap(cmap)
-    elif issubclass(cmap, mpl.colors.Colormap):
+    elif isinstance(cmap, mpl.colors.Colormap):
         return cmap
     else:
         raise ValueError("`cmap` '{}' is not a valid colormap or colormap name".format(cmap))
