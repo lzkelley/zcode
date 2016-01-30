@@ -596,9 +596,10 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=Fal
     # Construct strings for each row
     for ii, trow in enumerate(table):
         row_str = ""
+        # Add row label if provided
         if rows is not None:
-            row_str += "{1:{0}s}|".format(rows_len, rows[ii])
-        row_str += "".join(["{1:{0}s}".format(cell_len, rr) for rr in trow])
+            row_str += "{1:{0}s}".format(rows_len, rows[ii])
+        row_str += "|" + "".join(["{1:{0}s}".format(cell_len, rr) for rr in trow])
         row_str += "|"
         ascii.append(row_str)
 
