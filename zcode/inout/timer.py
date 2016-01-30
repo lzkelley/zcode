@@ -31,6 +31,8 @@ class Timer(object):
         self._start = None
         self._ave = 0.0
         self._total = 0.0
+        # Variance (standard-deviation squared)
+        self._var = 0.0
         self._num = 0
         self._durations = []
 
@@ -49,6 +51,9 @@ class Timer(object):
 
     def stop(self):
         """Stop this (already started) timer, store the duration.
+
+        See: `https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance` for calculating the
+             variance using an 'online algorithm'.
         """
         if self._start is None:
             return None
@@ -57,7 +62,10 @@ class Timer(object):
         self._durations.append(durat)
         self._num += 1
         # Increment cumulative average
+        prev_ave = self._ave
         self._ave = self._ave + (durat - self._ave)/self._num
+        # Calculate the variance using an 'online algorithm'
+        self._var = ((self._num - 1)*self._var + (durat - prev_ave)*(durat - self._ave))/self._num
         self._total += durat
         return durat
 
@@ -65,6 +73,12 @@ class Timer(object):
         """Return the cumulative average of previously calculated durations.
         """
         return self._ave
+
+    def std(self):
+        """Return the cumulative standard-deviation of the previously calculated durations.
+        """
+        # Standard-deviation is the square root of the variance
+        return np.sqrt(self._var)
 
     def durations(self):
         """Return an array of all previously calculated durations.
@@ -155,18 +169,21 @@ class Timings(object):
             warnings.warn("No timers exist.")
             return
         totals = np.array([tim.total() for tim in self._timers])
+        aves = np.array([tim.ave() for tim in self._timers])
         cum_tot = np.sum(totals)
         fracs = totals/cum_tot
+        # Convert statistics to strings for printing
         str_fracs = np.append(fracs, np.sum(fracs))
         str_fracs = ["{:.4f}".format(fr) for fr in str_fracs]
         str_tots = np.append(totals, np.sum(totals))
         str_tots = ["{}".format(tt) for tt in str_tots]
+        # Construct 2D array of results suitable for `ascii_table`
         data = np.c_[str_fracs, str_tots]
         rows = np.append(self._names, "Total")
         cols = ['Fraction', 'Total']
-        inout_core.ascii_table(data, rows=rows, cols=cols)
+        # Print reuslts as table
+        inout_core.ascii_table(data, rows=rows, cols=cols, title='Timing Results')
         return
-
 
     def _create_timer(self, name):
         """Create a new timer with the given name.
