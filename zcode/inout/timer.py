@@ -9,6 +9,8 @@ import warnings
 
 __all__ = ['Timer', 'Timings']
 
+from . import inout_core
+
 
 class Timer(object):
     """Class for timing a single series of events.
@@ -51,7 +53,8 @@ class Timer(object):
         if self._start is None:
             return None
         durat = datetime.now() - self._start
-        self._durations.append(durat.total_seconds())
+        durat = durat.total_seconds()
+        self._durations.append(durat)
         self._num += 1
         # Increment cumulative average
         self._ave = self._ave + (durat - self._ave)/self._num
@@ -121,10 +124,10 @@ class Timings(object):
         If the timer exists, but was not yet started, a warning is raised.
         """
         ind = self._ind_for_name(name, create=False)
-        if not ind:
+        if ind is None:
             raise ValueError("Timer '{}' does not exist.".format(name))
         durat = self._timers[ind].stop()
-        if not durat:
+        if durat is None:
             warnings.warn("Timer '{}' was not started.".format(name))
         return
 
@@ -145,13 +148,25 @@ class Timings(object):
 
     def report(self):
         """Report the collected durations from all timers.
+
+        If no internal timers exist, a warning is raised.
         """
+        if self._num == 0:
+            warnings.warn("No timers exist.")
+            return
+        totals = np.array([tim.total() for tim in self._timers])
+        cum_tot = np.sum(totals)
+        fracs = totals/cum_tot
+        data = np.hstack([fracs, totals])
+        data = np.vstack([data, [1.0, cum_tot]])
+        inout_core.ascii_table(data)
+        return
 
 
     def _create_timer(self, name):
         """Create a new timer with the given name.
         """
-        self.names = np.append(self.names, name)
+        self._names = np.append(self._names, name)
         self._timers.append(Timer(name))
         self._num += len(self._timers)
         return
@@ -174,7 +189,7 @@ class Timings(object):
         # Should be a single matching name
         if ind.size != 1:
             raise RuntimeError("Name '{}' matched {} times.  Names = '{}'".format(
-                name, ind.size, self.names))
+                name, ind.size, self._names))
         # Make sure internal name matches array name
         if self._timers[ind].name != name:
             raise RuntimeError("Names mismatch, name = '{}', timers[{}].name = '{}'".format(
