@@ -15,8 +15,63 @@ Current
 -------
 
 
+[0.0.6] - 2016/01/30
+--------------------
+-   constants.py
+    +   Bug-fix where `SIGMA_T` wasn't loading properly from `astropy`.
+    +   Added Electron-Scattering opacity, `KAPPA_ES`.
+-   README.rst
+    +   Added more information about contents and structure of package.
+-   inout/
+    +   inout_core.py
+        -   `ascii_table` [new-function]
+            +   New function which prints a table of values to the given output.
+            +   Added `linewise` and `prepend` arguments, allowing the table to be printed
+                line-by-line or as a single block, and for the print to be prepended with
+                an additional string.
+        -   `modify_exists` [new-function]
+            +   Function which modifies the given filename if it already exists.  The modifications
+                is appending an integer to the filename.
+            +   Added tests for this function.
+    +   timer.py [new-file]
+        -   Provides the classes `Timer` and `Timings` which are used to time code execution and
+            provided summaries of the results.  The `Timer` class is used to calculate repeated
+            durations of execution for the same (type of) calculation, while the `Timings` class
+            will manage the timing of many different calculations/chunks of code.
+    +   tests/
+        -   test_inout_core.py
+            +   Fixed some issues with cleaning up (deleting) files/directories created for the
+                tests.
+        -   test_timer.py [new-file]
+            +   Test for the classes in the new `inout/timer.py` file.  Basics tests in place.
+
+-   math/
+    +   math_core.py
+        -   `groupDigitized`
+            +   [Docs]: improved documentation clarifying input parameters.
+        -   `stats_str` [new-function]
+            +   [ENH]: Return a string with the statistics of the given array.
+        -   `_comparisonFilter`
+            +   [ENH]: always filter for finite values (regardless of the function arguments).
+-   plot/
+    +   plot_core.py
+        -   `plotConfFill`
+            +   [Bug]: fixed default value of `outline` which was still set to a boolean instead of
+                a color string.  Caused failure when trying to save images.
+        -   `colorCycle` [DEPRECATED] ---> `color_cycle` [new-function]
+            +   [Docs]: added method documentation.
+    +   Hist2D.py
+        -   `plot2DHistProj`
+            +   [ENH]: Check to make input arguments are the correct (consistent) shapes.
+            +   [ENH]: Added flag 'write_counts' which overlays a string of the number of values in
+                each bin of the 2D histogram.  Uses the new `counts` parameter of `plot2DHist`.
+        -   `plot2DHist`
+            +   [ENH]: Added parameter 'counts' for numbers to be overlaid on each bin, used by
+                the `write_counts` of `plot2DHistProj`.
+
+
 [0.0.5] - 2015/12/13
--------
+--------------------
 -   inout/
     +   inout_core.py
         -   `dictToNPZ`

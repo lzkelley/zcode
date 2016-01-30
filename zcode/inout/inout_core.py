@@ -20,6 +20,8 @@ Functions
 -   promptYesNo              - Prompt the user (via CLI) for yes or no.
 -   modifyFilename           - Modify the given filename.
 -   mpiError                 - Raise an error through MPI and exit all processes.
+-   ascii_table              - Print a table with the given contents to output.
+-   modify_exists            - Modify the given filename if it already exists.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -28,13 +30,15 @@ from datetime import datetime
 
 import os
 import sys
+import re
 import logging
 import warnings
 import numpy as np
 
-__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'countLines', 'estimateLines',
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize',
+           'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
-           'promptYesNo', 'modifyFilename', 'mpiError']
+           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists']
 
 
 class _Keys_Meta(type):
@@ -286,7 +290,7 @@ def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     logStr += " - - Size '%s'" % (getFileSize(savefile))
     try:
         log.debug(logStr)
-    except Exception as e:
+    except Exception:
         pass
 
     if verbose:
@@ -456,23 +460,27 @@ def modifyFilename(fname, prepend='', append=''):
 
     Arguments
     ---------
-        fname   <str> : filename to modify.
-        prepend <str> : string to prepend to beginning of filename;
-                        added after the terminal slash, otherwise at the beginning.
-        append  <str> : string to appended to end of filename;
-                        added before the terminal '.' if it exists, otherwise at the end.
+    fname : str
+        Filename to modify.
+    prepend : str
+        String to prepend to beginning of filename.
+        Added after the terminal slash, otherwise at the beginning.
+    append : str
+        String to appended to end of filename.
+        Added before the terminal '.' if it exists, otherwise at the end.
 
     Returns
     -------
-        newName <str> : new filename
+    newName : str
+        New filename, with modifications.
 
     """
     oldPath, oldName = os.path.split(fname)
     newName = prepend + oldName
-    if(len(append) > 0):
+    if len(append) > 0:
         oldSplit = newName.split('.')
-        if(len(oldSplit) >= 2): oldSplit[-2] += append
-        else:                     oldSplit[-1] += append
+        if len(oldSplit) >= 2: oldSplit[-2] += append
+        else:                  oldSplit[-1] += append
         newName = '.'.join(oldSplit)
 
     newName = os.path.join(oldPath, newName)
@@ -508,3 +516,181 @@ def mpiError(comm, log=None, err="ERROR", exc_info=True):
         raise RuntimeError(errStr)
 
     return
+
+
+def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=False, prepend=""):
+    """Print a table with the given contents to output.
+
+    Arguments
+    ---------
+    table : (nx,ny) array_like of str
+        2D matrix of cell values to be printed.  Must be strings.
+    rows : (nx,) array_like of str or `None`
+        Labels for each row.
+    cols : (ny,) array_like of str or `None`
+        Labels for each column.
+    title : str or `None`
+        Title for the whole table.  Placed in top-left corner.
+    out : callable
+        Method to call for output, defaults to `print`, but could also be
+        for example: ``logging.Logger.debug``.
+    linewise : bool
+        If `True`, call the `out` comment (e.g. `print`) line-by-line.  Otherwise, call `out` on
+        a single str for the entire table.
+    prepend : str
+        Print the given str before the table.  If ``linewise == True``, this happens for each line,
+        otherwise it happens once for the entire table.
+
+    """
+    table = np.atleast_2d(table)
+    nx, ny = table.shape
+    if title is None: title = ''
+
+    rows_len = 0
+    if rows is not None:
+        rows = np.atleast_1d(rows)
+        if rows.size != nx:
+            out("Length of input `rows` must match `table` shape.")
+            return
+        # Find longest string in `rows`
+        rows_len = len(max(rows, key=len))
+    # Labels must be at least as wide as title
+    rows_len = len(title) if len(title) > rows_len else rows_len
+
+    cols_len = 0
+    if cols is not None:
+        cols = np.atleast_1d(cols)
+        if cols.size != ny:
+            out("Length of input `cols` must match `table` shape.")
+            return
+        # Find longest string in `cols`
+        cols_len = len(max(cols, key=len))
+
+    # Cells must be at least as wide as headers (`cols`)
+    cell_len = cols_len
+    # Find length of longest cell
+    for ii, cel in np.ndenumerate(table):
+        cell_len = len(cel) if len(cel) > cell_len else cell_len
+
+    cell_len += 1
+    if rows_len > 0: rows_len += 1
+
+    def format_cell(content, width):
+        return "{1:{0}s}".format(width, content)
+
+    # Draw Table
+    # ----------
+    ascii = []
+    # Construct title row
+    if len(title) > 0 or cols is not None:
+        if cols is None: cols = ['']*ny
+        row_str = format_cell(title, rows_len) + "|"
+        row_str += "".join([format_cell(cc, cell_len) for cc in cols])
+        row_str += "|"
+        ascii.append(row_str)
+
+    # Construct top bar
+    bar_str = rows_len*"-" + "|" + ny*cell_len*"-" + "|"
+    ascii.append(bar_str)
+
+    # Construct strings for each row
+    for ii, trow in enumerate(table):
+        row_str = ""
+        # Add row label if provided
+        if rows is not None:
+            row_str += "{1:{0}s}".format(rows_len, rows[ii])
+        row_str += "|" + "".join(["{1:{0}s}".format(cell_len, rr) for rr in trow])
+        row_str += "|"
+        ascii.append(row_str)
+
+    ascii.append(bar_str)
+
+    if linewise:
+        for line in ascii:
+            out(prepend + line)
+    else:
+        out(prepend + "\n".join(ascii))
+
+    return
+
+
+def modify_exists(fname, max=100):
+    """If the given filename already exists, return a modified version.
+
+    Returns a filename, modified by appending a 0-padded integer to the input `fname`.
+    For example, if the input is 'some_dir/some_filename.txt' (assuming it already exists),
+    the modified filename would be 'some_dir/some_filename_01.txt', or if that already exists,
+    then 'some_dir/some_filename_02.txt' (or higher if needed, up to ``max-1``).
+    Suffix numbers with the incorrect number of digits (e.g. 'some_dir/some_filename_002.txt) will
+    be ignored.
+
+    Arguments
+    ---------
+    fname : str
+        Filename to be checked and modified.
+    max : int or `None`
+        Maximum number of modified filenames to try.  `None` means no limit.
+
+    Returns
+    -------
+    newName : {str, `None`}
+        The input filename `fname` if it does not exist, or an appropriately modified version
+        otherwise.  If the number for the new file exceeds the maximum `max`, then a warning is
+        raise and `None` is returned.
+
+
+    Errors
+    ------
+    RuntimeError is raised if:
+    -   Unable to parse existing files with modified names.
+    -   The new, modified filename already exists.
+
+    Warnings
+    --------
+    -   The next modified filename exceeds the allowed maximum `max` number.
+        In this case, `None` is returned.
+
+    """
+    # If file doesnt already exist, do nothing - return filename
+    if not os.path.exists(fname):
+        return fname
+
+    # Determine number of digits for modified filenames to allow up to `max` files
+    prec = np.int(np.ceil(np.log10(max)))
+
+    # Look for existing, modified filenames
+    # -------------------------------------
+    num = 0
+    path, filename = os.path.split(fname)
+    if len(path) == 0:
+        path = './'
+    # construct regex for modified files
+    #     look specifically for `prec`-digit numbers at the end of the filename
+    regex = modifyFilename(filename, append='_([0-9]){{{:d}}}'.format(prec))
+    matches = sorted([ff for ff in os.listdir(path) if re.search(regex, ff)])
+    # If there are matches, find the highest file-number in the matches
+    if len(matches):
+        mat = matches[-1]
+        mat = mat.split("_")[-1]
+        mat = mat.split(".")[0]
+        # Try to convert to integer, raise error on failure
+        try:
+            num = np.int(mat)+1
+        except:
+            errStr = "Could not match integer from last match = '{}', mat = '{}'.".format(
+                matches[-1], mat)
+            raise RuntimeError(errStr)
+
+    # If the new filename number is larger than allowed `max`, return `None`
+    if num >= max:
+        warnings.warn("Next number ({}) exceeds maximum ({})".format(num, max))
+        return None
+
+    # Construct new filename
+    # ----------------------
+    newName = modifyFilename(fname, append='_{0:0{1:d}d}'.format(num, prec))
+    # New filename shouldnt exist; if it does, raise error
+    if os.path.exists(newName):
+        raise RuntimeError("New filename '{}' already exists.".format(newName))
+
+    return newName

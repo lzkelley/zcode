@@ -10,7 +10,7 @@ Functions
 -   text                 - Add text to figure.
 -   legend               - Add a legend to the given figure.
 -   unifyAxesLimits      - Set limits on all given axes to match global extrema.
--   colorCycle           - Create a range of colors.
+-   color_cycle          - Create a range of colors.
 -   colormap             - Create a colormap from scalars to colors.
 -   color_set            - Retrieve a (small) set of color-strings with hand picked values.
 -   setGrid              - Configure the axes' grid.
@@ -31,9 +31,12 @@ Functions
 -   _make_segments       -
 -   _scale_to_log_flag   -
 -   _clean_scale         -
+-   _get_cmap            - Retrieve a colormap with the given name if it is not already a colormap.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+import six
+from six.moves import xrange
 
 import logging
 import numbers
@@ -47,7 +50,7 @@ import zcode.math as zmath
 import zcode.inout as zio
 
 __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend',
-           'unifyAxesLimits',
+           'unifyAxesLimits', 'color_cycle',
            'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill']
 
@@ -479,9 +482,38 @@ def unifyAxesLimits(axes, axis='y'):
     return np.array([lo, hi])
 
 
-def colorCycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
-    """Create a range of colors.
+def colorCycle(args, **kwargs):
+    """Create a range of colors.  DEPRECATED: use `color_cycle`.
     """
+    warnings.warn("Use `color_cycle` function.", DeprecationWarning, stacklevel=3)
+    return color_cycle(args, **kwargs)
+
+
+def color_cycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
+    """Create a range of colors.
+
+    Arguments
+    ---------
+    num : int
+        Number of colors to put in cycle.
+    ax : ``matplotlib.axes.Axes`` object or `None`
+        Axes on which to set the colors.  If given, then subsequent calls to ``ax.plot`` will use
+        the different colors of the color-cycle.  If `None`, then the created colorcycle is only
+        returned.
+    cmap : ``matplotlib.colors.Colormap`` object
+        Colormap from which to select colors.
+    left : float {0.0, 1.0}
+        Start colors this fraction of the way into the colormap (to avoid black/white).
+    right : float {0.0, 1.0}
+        Stop colors at this fraction of the way through the colormap (to avoid black/white).
+
+    Returns
+    -------
+    cols : (`num`,) array_like of RGBA color tuples
+        Colors forming the color cycle.
+
+    """
+    cmap = _get_cmap(cmap)
     cols = [cmap(it) for it in np.linspace(left, right, num)]
     if ax is not None: ax.set_color_cycle(cols[::-1])
     return cols
@@ -492,15 +524,19 @@ def colormap(args, cmap='jet', scale=None):
 
     Arguments
     ---------
-       args  <scalar>([N]) : range of valid scalar values to normalize with
-       cmap  <object>      : optional, desired colormap
-       scale <str>         : optional, scaling of colormap {'lin', 'log'}
+    args : scalar or array_like of scalar
+        Range of valid scalar values to normalize with
+    cmap : ``matplotlib.colors.Colormap`` object
+        Colormap to use.
+    scale : str or `None`
+        Scaling specification of colormap {'lin', 'log', `None`}.
+        If `None`, scaling is inferred based on input `args`.
 
     Returns
     -------
-       smap : `matplotlib.cm.ScalarMappable`
-           Scalar mappable object which contains the members
-           `norm`, `cmap`, and the function `to_rgba`.
+   smap : ``matplotlib.cm.ScalarMappable``
+       Scalar mappable object which contains the members:
+       `norm`, `cmap`, and the function `to_rgba`.
 
     """
 
@@ -876,8 +912,8 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     return bars
 
 
-def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0,
-                 filter=None, outline=True, **kwargs):
+def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
+                 filter=None, outline='0.5', **kwargs):
     """Draw a median line and (set of) confidence interval(s).
 
     The `med` and `conf` values can be obtained from `numpy.percentile` and or
@@ -895,7 +931,7 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0,
         Confidence intervals to plot as shaded regions.  There can be `M` different confidence
         intervals, each with an upper and lower value.  Shape of `(N,2,)` is also allowed for a
         single confidence interval.
-    col : `matplotlib` color spec,
+    color : `matplotlib` color spec,
         Color for median lines and shaded region.
     fillalpha : float or (M,) array_like of floats,
         Alpha (opacity) specification for fill regions; each element must be ``{0.0, 1.0}``.
@@ -921,7 +957,7 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0,
 
     """
 
-    ll, = ax.plot(rads, med, '-', color=col, lw=lw)
+    ll, = ax.plot(rads, med, '-', color=color, lw=lw)
 
     # `conf` has shape ``(num-rads, num-conf-ints, 2)``
     if(conf.ndim == 2):
@@ -941,7 +977,7 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0,
         else:                              falph = np.power(fillalpha, jj+1)
 
         # Create a dummy-patch to return for a legend of confidence-intervals
-        pp = ax.fill(np.nan, np.nan, color=col, alpha=falph)
+        pp = ax.fill(np.nan, np.nan, color=color, alpha=falph)
         confPatches.append(pp[0])
 
         xx = np.array(rads)
@@ -954,11 +990,11 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0,
             yhi = yhi[inds]
 
         # Fill between confidence intervals
-        ax.fill_between(xx, ylo, yhi, alpha=falph, color=col, **kwargs)
+        ax.fill_between(xx, ylo, yhi, alpha=falph, color=color, **kwargs)
 
         # Create dummy-patch for the median-line and fill-color, for a legend
         if(jj == 0):
-            pp = ax.fill(np.nan, np.nan, color=col, alpha=falph, **kwargs)
+            pp = ax.fill(np.nan, np.nan, color=color, alpha=falph, **kwargs)
             # Create overlay of lines and patches
             linePatch = (pp[0], ll)
 
@@ -966,7 +1002,7 @@ def plotConfFill(ax, rads, med, conf, col, fillalpha=0.5, lw=1.0,
     #    Plot black outline to improve contrast
     if outline is not None:
         ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=_LW_OUTLINE)
-    ll, = ax.plot(rads, med, '-', color=col, lw=lw)
+    ll, = ax.plot(rads, med, '-', color=color, lw=lw)
 
     return linePatch, confPatches
 
@@ -981,8 +1017,8 @@ def _setAxis_scale(ax, axis, scale, thresh=None):
 
 
 def _setAxis_label(ax, axis, label, fs=12, c='black'):
-    if(axis == 'x'): ax.set_xlabel(label, size=fs, color=c)
-    elif(axis == 'y'): ax.set_ylabel(label, size=fs, color=c)
+    if axis == 'x': ax.set_xlabel(label, size=fs, color=c)
+    elif axis == 'y': ax.set_ylabel(label, size=fs, color=c)
     else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
     return
 
@@ -1015,12 +1051,11 @@ def _make_segments(x, y):
 
 
 def _scale_to_log_flag(scale):
-    if scale.startswith('log'):
-        log = True
-    elif scale.startswith('lin'):
-        log = False
-    else:
-        raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
+    # Check formatting of `scale` str
+    scale = _clean_scale(scale)
+    if scale.startswith('log'): log = True
+    elif scale.startswith('lin'): log = False
+    else: raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
     return log
 
 
@@ -1030,6 +1065,17 @@ def _clean_scale(scale):
     scale = scale.lower()
     if scale.startswith('lin'): scale = 'linear'
     return scale
+
+
+def _get_cmap(cmap):
+    """Retrieve a colormap with the given name if it is not already a colormap.
+    """
+    if isinstance(cmap, six.string_types):
+        return mpl.cm.get_cmap(cmap)
+    elif isinstance(cmap, mpl.colors.Colormap):
+        return cmap
+    else:
+        raise ValueError("`cmap` '{}' is not a valid colormap or colormap name".format(cmap))
 
 '''
 def rescale(ax, which='both'):

@@ -27,6 +27,7 @@ Functions
 -   sampleInverse            - Find x-sampling to evenly divide a function in y-space.
 -   smooth                   - Use convolution to smooth the given array.
 -   mono                     - Check for monotonicity in the given array.
+-   stats_str                - Return a string with the statistics of the given array.
 
 -   _trapezium_loglog        -
 -   _comparisonFunction      -
@@ -36,7 +37,6 @@ Functions
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-
 from six.moves import xrange
 
 import numpy as np
@@ -52,7 +52,7 @@ __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'confidenceBands',
            'frexp10', 'stats', 'groupDigitized',
-           'sampleInverse', 'smooth', 'mono',
+           'sampleInverse', 'smooth', 'mono', 'stats_str',
            '_comparisonFunction', '_infer_scale']
 
 
@@ -507,7 +507,7 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
 
     """
 
-    if(first is None or last is None):
+    if first is None or last is None:
         first = None
         last = 0
 
@@ -516,14 +516,15 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
 
     arrStr = "["
     # Add the first `first` elements
-    if(first or first is None):
+    if first or first is None:
         arrStr += delim.join([form.format(vv) for vv in arr[:first]])
 
     # Include separator unless full array is being printed
-    if(first is not None): arrStr += "... "
+    if first is not None:
+        arrStr += "... "
 
     # Add the last `last` elements
-    if(last):
+    if last:
         arrStr += delim.join([form.format(vv) for vv in arr[-last-1:]])
 
     arrStr += "]"
@@ -885,25 +886,29 @@ def groupDigitized(arr, bins, edges='right'):
     Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
     bin, finds the list of array indices which belong in that bin.
 
+    The specification for `bins` can be either monotonically increasing or decreasing, following
+    the rules of ``numpy.digitize`` (which is used internally).
+
     Arguments
     ---------
-        arr : array_like of scalars,
-            Values to digitize and group.
-        bins : array_like or scalars, shape (N,)
-            Bin edges to digitize and group by.
-        edges : str, {'right', 'left'}
-            Whether bin edges correspond to 'right' or 'left' side of the bins.
+    arr : array_like of scalars
+        Values to digitize and group.
+    bins : (N,) array_like or scalars
+        Bin edges to digitize and group by.
+    edges : str, {'[r]ight', '[l]eft'}
+        Whether bin edges correspond to 'right' or 'left' side of the bins.
+        Only the first letter is tested, and either case (lower/upper) is allowed.
 
     Returns
     -------
-        groups : list of int arrays, shape (N,)
-            Each list contains the ``arr`` indices belonging to each corresponding bin.
+    groups : (N,) list of int arrays
+        Each list contains the ``arr`` indices belonging to each corresponding bin.
 
 
     Examples
     --------
-        >>> arr = [ 0.0, 1.3, 1.8, 2.1 ]
-        >>> bins = [ 1.0, 2.0, 3.0 ]
+        >>> arr = [0.0, 1.3, 1.8, 2.1]
+        >>> bins = [1.0, 2.0, 3.0]
         >>> zcode.Math.groupDigitized(arr, bins, right=True)
         [array([0]), array([1, 2]), array([3])]
         >>> zcode.Math.groupDigitized(arr, bins, right=False)
@@ -915,15 +920,15 @@ def groupDigitized(arr, bins, edges='right'):
     -   ``numpy.digitize``
 
     """
-
-    if(edges.startswith('r')): right = True
-    elif(edges.startswith('l')): right = False
+    edges = edges.lower()
+    if edges.startswith('r'): right = True
+    elif edges.startswith('l'): right = False
     else: RuntimeError("``edges`` must be 'right' or 'left'!")
 
     # `numpy.digitize` always assumes `bins` are right-edges (in effect)
     shift = 0
     # If we want 'left' bin edges, such shift each bin leftwards
-    if(not right): shift = -1
+    if not right: shift = -1
 
     # Find in which bin each element of arr belongs
     pos = np.digitize(arr, bins, right=right) + shift
@@ -1080,6 +1085,74 @@ def mono(arr, type='g', axis=-1):
     return retval
 
 
+def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True, format=''):
+    """Return a string with the statistics of the given array.
+
+    Arguments
+    ---------
+    data : ndarray of scalar
+        Input data from which to calculate statistics.
+    percs : array_like of scalars in {0, 100}
+        Which percentiles to calculate.
+    ave : bool
+        Include average value in output.
+    std : bool
+        Include standard-deviation in output.
+    format : str
+        Formatting for all numerical output, (e.g. `":.2f"`).
+
+    Output
+    ------
+    out : str
+        Single-line string of the desired statistics.
+
+    """
+    data = np.asarray(data)
+    percs = np.atleast_1d(percs)
+    percs_flag = False
+    if percs is not None and len(percs): percs_flag = True
+
+    out = "Statistics: "
+    form = "{{{}}}".format(format)
+    if ave:
+        out += "ave = " + form.format(np.average(data))
+        if std or percs:
+            out += ", "
+    if std:
+        out += "std = " + form.format(np.std(data))
+        if percs_flag:
+            out += ", "
+    if percs_flag:
+        tiles = np.percentile(data, percs)
+        out += "percentiles: [" + ", ".join(form.format(tt) for tt in tiles) + "]"
+        out += ", for (" + ", ".join("{:.1f}%".format(pp) for pp in percs) + ")"
+
+    return out
+
+'''
+def percentiles_str(names, data, percs=[50, 68, 95, 100], out=print, title='', format='.1f'):
+    """Print the target percentiles of the given arrays.
+    """
+    names = np.atleast_1d(names)
+    percs = np.atleast_1d(percs)
+    if names.size != len(data):
+        errStr = "``names.size = {} != len(data) = {}``.".format(names.size, len(data))
+        out(errStr)
+        raise RuntimeError(errStr)
+
+    # Calculate percentiles
+    vals = [np.percentile(row, percs) for row in data]
+    # Convert percentiles to strings
+    vals = [["{val:{form:s}}".format(val=rr, form=format) for rr in row] for row in vals]
+    # Construct column labels with the target percentages
+    cols = ["{:.1f}".format(cc) for cc in percs]
+    # Print a table with the results
+    zio.ascii_table(vals, rows=names, cols=cols, title=title, out=out,
+                    linewise=False, prepend="\n")
+    return
+'''
+
+
 def _comparisonFunction(comp):
     """Retrieve the comparison function matching the input expression.
     """
@@ -1106,7 +1179,7 @@ def _comparisonFilter(data, filter):
     """
     if not callable(filter):
         filter = _comparisonFunction(filter)
-    sel = np.where(filter(data, 0.0))
+    sel = np.where(filter(data, 0.0) & np.isfinite(data))
     return data[sel]
 
 

@@ -1,4 +1,4 @@
-"""
+"""Methods for plotting 2D histograms with optional 1D projected histograms for each axis.
 
 Functions
 ---------
@@ -7,8 +7,15 @@ Functions
 
 -    _constructFigure        - Add the required axes to the given figure object.
 
+To-do
+-----
+-   `plot2DHistProj` and `plot2DHist` use different styles of input data, specifically
+    `plot2DHist` requires a 2D histogram of data to be passed, while `plot2DHistProj` accepts
+    separate arrays of x and y data to be histogrammed using ``scipy.stats.binned_statistic_2d``.
+
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from six.moves import xrange
 
 import numpy as np
 import scipy as sp
@@ -16,24 +23,22 @@ import scipy.stats
 import matplotlib.pyplot as plt
 
 import zcode.math as zmath
-from . import plot_core as zplot
+from . import plot_core
 
 __all__ = ['plot2DHist', 'plot2DHistProj']
 
-_LEFT = 0.08
-_RIGHT = 0.06
-_BOTTOM = 0.08
+_LEFT = 0.09
+_RIGHT = 0.08
+_BOTTOM = 0.09
 _TOP = 0.12
 
-_CB_WID = 0.03
+_CB_WID = 0.02
 _CB_WPAD = 0.08
-
-_COL = '0.5'
 
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0,
-                   fs=12, scale='log', histScale='log', labels=None, cbar=True):
+                   fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False):
     """Plot a 2D histogram with projections of one or both axes.
 
     Arguments
@@ -49,32 +54,34 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         e.g. {'count', 'sum', 'mean'}.
         If `None`, then either 'sum' or 'count' is used depending on if `weights` are
         provieded or not.
-    bins : int or [int, int] or array_like or [array, array], optional
+    bins : int or [int, int] or array_like or [array, array],
         Specification for bin sizes.  integer values are treated as the number of bins to use,
         while arrays are used as the bin edges themselves.  If a tuple of two values is given, it
         is assumed that the first is for the x-axis and the second for the y-axis.
-    fig : matplotlib.figure.figure, optional
+    fig : ``matplotlib.figure.figure``,
         Figure instance to which axes are added for plotting.  One is created if not given.
-    xproj : bool, optional
+    xproj : bool,
         Whether to also plot the projection of the x-axis (i.e. histogram ignoring y-values).
-    yproj : bool, optional
+    yproj : bool,
         Whether to also plot the projection of the y-axis (i.e. histogram ignoring x-values).
-    hratio : float, optional
+    hratio : float,
         Fraction of the total available height-space to use for the primary axes object (2D hist)
-    wratio : float, optional
+    wratio : float,
         Fraction of the total available width-space to use for the primary axes object (2D hist)
     pad : float,
         Padding between central axis and the projected ones.
-    fs : int, optional
+    fs : int,
         Font-size
-    scale : str or [str,str], optional
+    scale : str or [str, str],
         Specification for the axes scaling {'log','lin'}.  If two values are given, the first is
         used for the x-axis and the second for the y-axis.
-    histScale : str, optional
+    histScale : str,
         Scaling to use for the histograms {'log','lin'}-- the color scale on the 2D histogram,
         or the Counts axis on the 1D histograms.
-    cbar : bool, optional
+    cbar : bool,
         Add a colorbar.
+    write_counts : bool
+        Print a str on each bin writing the number of values included in that bin.
 
     Returns
     -------
@@ -82,16 +89,28 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         Figure object containing plots.
 
     """
-    if(np.size(scale) == 1):
+    # Make sure shapes of input arrays are valid
+    if np.shape(xvals) != np.shape(yvals):
+        raise ValueError("Shape of `xvals` ({}) must match `yvals` ({}).".format(
+            np.shape(xvals), np.shape(yvals)))
+    if weights is not None and np.shape(weights) != np.shape(xvals):
+        raise ValueError("Shape of `wieghts` ({}) must match `xvals` and `yvals` ({}).".format(
+            np.shape(weights), np.shape(xvals)))
+
+    # Make sure the given `scale` is valid
+    if np.size(scale) == 1:
         scale = [scale, scale]
-    elif(np.size(scale) != 2):
+    elif np.size(scale) != 2:
         raise ValueError("`scale` must be one or two scaling specifications!")
 
-    if(not labels): labels = ['', '']
+    if not labels: labels = ['', '']
+    # Make sure scale strings are matplotlib-compliant
+    scale = [plot_core._clean_scale(sc) for sc in scale]
 
-    if(statistic is None):
-        if(weights is None): statistic = 'count'
-        else:                statistic = 'sum'
+    # Infer default statistic
+    if statistic is None:
+        if weights is None: statistic = 'count'
+        else:               statistic = 'sum'
 
     # Create and initializae figure and axes
     fig, prax, xpax, ypax, cbax = _constructFigure(fig, xproj, yproj, hratio, wratio, pad,
@@ -100,16 +119,16 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     # Create bins
     # -----------
     #     `bins` is a single scalar value -- apply to both
-    if(np.ndim(bins) == 0):
+    if np.isscalar(bins):
         xbins = bins
         ybins = bins
     else:
         #     `bins` is a pair of bin specifications, separate and apply
-        if(len(bins) == 2):
+        if len(bins) == 2:
             xbins = bins[0]
             ybins = bins[1]
         #     `bins` is a single array -- apply to both
-        elif(len(bins) > 2):
+        elif len(bins) > 2:
             xbins = bins
             ybins = bins
         #     unrecognized option -- error
@@ -117,35 +136,46 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
             raise ValueError("Unrecognized shape of ``bins`` = %s" % (str(np.shape(bins))))
 
     # If a number of bins is given, create an appropriate spacing
-    if(np.ndim(xbins) == 0):
+    if np.ndim(xbins) == 0:
         xbins = zmath.spacing(xvals, num=xbins+1, scale=scale[0])
 
-    if(np.ndim(ybins) == 0):
+    if np.ndim(ybins) == 0:
         ybins = zmath.spacing(yvals, num=ybins+1, scale=scale[1])
 
-    # Plot 2D Histogram and Projections
-    # ---------------------------------
+    # Plot Histograms and Projections
+    # -------------------------------
+    # Plot 2D Histogram
+    counts = None
+    # If we should overlay strings labeling the num values in each bin, calculate those `counts`
+    if write_counts:
+        counts, xedges, yedges, binnums = sp.stats.binned_statistic_2d(
+            xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
     hist, xedges, yedges, binnums = sp.stats.binned_statistic_2d(
         xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
     hist = np.nan_to_num(hist)
-    pcm, smap = plot2DHist(prax, xedges, yedges, hist, cbax=cbax, labels=labels)
+    pcm, smap = plot2DHist(prax, xedges, yedges, hist, cbax=cbax, labels=labels, counts=counts)
 
     # Plot projection of the x-axis (i.e. ignore 'y')
-    if(xpax):
+    if xpax:
         islog = scale[0].startswith('log')
         #     create and plot histogram
         hist, edges, bins = sp.stats.binned_statistic(
             xvals, weights, statistic=statistic, bins=xbins)
+
+        # BUG ERROR FIX (breaks during saving, not execution)
+        # breaks (sometimes?)
         xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))
+        # works (always)
+        # xpax.bar(edges[:-1], hist, color=len(hist)*['0.5'], log=islog, width=np.diff(edges))
         #     set tick-labels to the top
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
         #     set bounds to bin edges
-        zplot.setLim(xpax, 'x', data=xedges)
+        plot_core.setLim(xpax, 'x', data=xedges)
 
     # Plot projection of the y-axis (i.e. ignore 'x')
-    if(ypax):
-        islog = scale[1].startswith('log')
+    if ypax:
+        islog = plot_core._scale_to_log_flag(scale[1])
         #    create and plot histogram
         hist, edges, bins = sp.stats.binned_statistic(
             yvals, weights, statistic=statistic, bins=ybins)
@@ -154,56 +184,90 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         plt.setp(ypax.get_yticklabels(), fontsize=fs, rotation=90)
         ypax.yaxis.tick_right()
         #     set bounds to bin edges
-        zplot.setLim(ypax, 'y', data=yedges)
+        plot_core.setLim(ypax, 'y', data=yedges)
 
     return fig
 
 
 def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet, fs=12,
-               extrema=None, labels=None, **kwargs):
+               extrema=None, labels=None, counts=None, **kwargs):
     """Plot the given 2D histogram of data.
 
     Use with (e.g.) ``numpy.histogram2d``,
 
     Arguments
     ---------
-        ax     <obj>      : <matplotlib.axes.Axes> object on which to plot.
-        xvals  <flt>[N]   : positions (edges) of x values, assumed to be the same for all rows of ``data``
-
-        cbax   <obj>      : <matplotlib.axes.Axes> object on which to add a colorbar.
-        cscale <str>      : scale to use for the colormap {'linear','log'}
-        cmap   <obj>      : <matplotlib.colors.Colormap> object to use as colormap
-        ...
+    ax : ``matplotlib.axes.Axes`` object
+        Axes object on which to plot.
+    xvals : (N,) array of scalars
+        Positions (edges) of x values, assumed to be the same for all rows of
+        the input data `hist`.
+    yvals : (M,) array of scalars
+        Positions (edges) of y values, assumed to be the same for all columns of
+        the input data `hist`.
+    hist : (N,M) ndarray of scalars
+        Grid of data-points to plot.
+    cbax : ``matplotlib.axes.Axes`` object
+        Axes object on which to add a colorbar.
+    cscale : str
+        Scale to use for the colormap {'linear', 'log'}.
+    cmap : ``matplotlib.colors.Colormap`` object
+        Matplotlib colormap to use for coloring histogram.
+    fs : int
+        Fontsize specification.
+    extrema : (2,) array_like of scalars
+        Minimum and maximum values for colormap scaling.
+    labels :
+    counts : (N,M) ndarray of int or `None`
+        Number of elements in each bin if overlaid-text is desired.
 
     Returns
     -------
-        pcm : `matplotlib.collections.QuadMesh` object,
-            ...
-        smap :
+    pcm : ``matplotlib.collections.QuadMesh`` object
+        The resulting plotted object, returned by ``ax.pcolormesh``.
+    smap : ``matplotlib.cm.ScalarMappable`` object
+        Colormap and color-scaling information.  See: ``zcode.plot.plot_core.colormap``.
 
     """
-
+    cblab = 'Counts'
     xgrid, ygrid = np.meshgrid(xvals, yvals)
-
-    if(extrema is None): extrema = zmath.minmax(hist, nonzero=(cscale.startswith('log')))
-    if(labels is not None and np.size(labels) > 2):
-        cblab = labels[2]
-    else:
-        cblab = 'Counts'
+    hist = np.asarray(hist)
+    if extrema is None: extrema = zmath.minmax(hist, nonzero=plot_core._scale_to_log_flag(cscale))
+    if labels is not None:
+        if np.size(labels) >= 2:
+            ax.set_xlabel(labels[0], size=fs)
+            ax.set_ylabel(labels[1], size=fs)
+        if np.size(labels) > 2:
+            cblab = labels[2]
 
     # Plot
-    smap = zplot.colormap(extrema, cmap=cmap, scale=cscale)
+    smap = plot_core.colormap(extrema, cmap=cmap, scale=cscale)
     pcm = ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap, **kwargs)
 
     # Add color bar
-    if(cbax is not None):
+    if cbax is not None:
         cbar = plt.colorbar(smap, cax=cbax)
         cbar.set_label(cblab, fontsize=fs)
         cbar.ax.tick_params(labelsize=fs)
 
-    zplot.setLim(ax, 'x', data=xvals)
-    zplot.setLim(ax, 'y', data=yvals)
+    # Add counts overlay
+    if counts is not None:
+        counts = np.asarray(counts).astype(int)
+        # Make sure sizes are correct
+        if counts.shape != hist.shape:
+            raise ValueError("shape of `counts` ({}) must match `hist` ({})".format(
+                counts.shape, hist.shape))
 
+        # Remember these are transposes
+        for ii in xrange(xgrid.shape[0] - 1):
+            for jj in xrange(xgrid.shape[1] - 1):
+                xx = np.sqrt(xgrid[jj, ii] * xgrid[jj, ii+1])
+                yy = np.sqrt(ygrid[jj, ii] * ygrid[jj+1, ii])
+                ax.text(xx, yy, "{:d}".format(counts.T[jj, ii]), ha='center', va='center',
+                        fontsize=8, bbox=dict(facecolor='white', alpha=0.2, edgecolor='none'))
+
+    plot_core.setLim(ax, 'x', data=xvals)
+    plot_core.setLim(ax, 'y', data=yvals)
     return pcm, smap
 
 
@@ -238,16 +302,16 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
 
     # Determine usable space and axes sizes
     useable = [1.0-_LEFT-_RIGHT, 1.0-_TOP-_BOTTOM]
-    if(cbar):
+    if cbar:
         useable[0] -= _CB_WID + _CB_WPAD
 
-    if(yproj):
+    if yproj:
         prim_wid = useable[0]*wratio
         ypro_wid = useable[0]*(1.0-wratio)
     else:
         prim_wid = useable[0]
 
-    if(xproj):
+    if xproj:
         prim_hit = useable[1]*hratio
         xpro_hit = useable[1]*(1.0-hratio)
     else:
@@ -257,29 +321,29 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
     #    d
     prax = fig.add_axes([_LEFT, _BOTTOM, prim_wid, prim_hit])
     prax.set(xscale=scale[0], yscale=scale[1], xlabel=labels[0], ylabel=labels[1])
-    zplot.setGrid(prax, False)
+    plot_core.setGrid(prax, False)
 
-    if(len(labels) > 2): histLab = labels[2]
+    if len(labels) > 2: histLab = labels[2]
     else:                histLab = 'Counts'
 
     # Add x-projection axes on top-left
-    if(xproj):
+    if xproj:
         xpax = fig.add_axes([_LEFT, _BOTTOM+prim_hit+pad, prim_wid, xpro_hit-pad])
         xpax.set(xscale=scale[0], yscale=histScale, ylabel=histLab, xlabel=labels[0])
         xpax.xaxis.set_label_position('top')
-        zplot.setGrid(xpax, True, axis='y')
+        plot_core.setGrid(xpax, True, axis='y')
 
     # Add y-projection axes on bottom-right
-    if(yproj):
+    if yproj:
         ypax = fig.add_axes([_LEFT+prim_wid+pad, _BOTTOM, ypro_wid-pad, prim_hit])
         ypax.set(yscale=scale[1], xscale=histScale, xlabel=histLab, ylabel=labels[1])
         ypax.yaxis.set_label_position('right')
-        zplot.setGrid(ypax, True, axis='x')
+        plot_core.setGrid(ypax, True, axis='x')
 
     # Add color-bar axes on the right
-    if(cbar):
+    if cbar:
         cbar_left = _LEFT + prim_wid + _CB_WPAD
-        if(yproj): cbar_left += ypro_wid
+        if yproj: cbar_left += ypro_wid
         cbax = fig.add_axes([cbar_left, _BOTTOM, _CB_WID, prim_hit])
 
     return fig, prax, xpax, ypax, cbax
