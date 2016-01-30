@@ -26,11 +26,11 @@ class TestTimer(object):
     def teardown_class(cls):
         pass
 
-    def test_dictToNPZ_npzToDict(self):
-        from zcode.inout.timer import Timer
+    def test_timer(self):
+        from zcode.inout.timer import Timings
 
         # Create `Timer` object
-        times = Timer()
+        times = Timings()
 
         for ii in xrange(self.NUM_ITER):
             times.start('one')
@@ -60,13 +60,16 @@ class TestTimer(object):
             np.sort(np.random.permutation(np.arange(1000000)))
             times.stop('three')
 
-        for ii in xrange(len(times)):
-            print(times.names[ii])
-            for jj in times.durations[ii]:
-                print(jj, end=' ')
-            print("\n")
+        # for ii in xrange(len(times)):
+        #     names = times.names()
+        #     print(names[ii])
+        #     for jj in times.durations[ii]:
+        #         print(jj, end=' ')
+        #     print("\n")
+        #
+        # print("Averages = ", times.average())
 
-        print("Averages = ", times.average())
+        times.report()
 
         # raise RuntimeError()
 
