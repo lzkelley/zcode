@@ -29,10 +29,18 @@ Current
             +   Function which modifies the given filename if it already exists.  The modifications
                 is appending an integer to the filename.
             +   Added tests for this function.
+    +   timer.py [new-file]
+        -   Provides the classes `Timer` and `Timings` which are used to time code execution and
+            provided summaries of the results.  The `Timer` class is used to calculate repeated
+            durations of execution for the same (type of) calculation, while the `Timings` class
+            will manage the timing of many different calculations/chunks of code.
     +   tests/
         -   test_inout_core.py
             +   Fixed some issues with cleaning up (deleting) files/directories created for the
                 tests.
+        -   test_timer.py [new-file]
+            +   Test for the classes in the new `inout/timer.py` file.  Basics tests in place.
+
 -   math/
     +   math_core.py
         -   `groupDigitized`
