@@ -15,6 +15,7 @@ To-do
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from six.moves import xrange
 
 import numpy as np
 import scipy as sp
@@ -37,7 +38,7 @@ _CB_WPAD = 0.08
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0,
-                   fs=12, scale='log', histScale='log', labels=None, cbar=True):
+                   fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False):
     """Plot a 2D histogram with projections of one or both axes.
 
     Arguments
@@ -79,6 +80,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         or the Counts axis on the 1D histograms.
     cbar : bool,
         Add a colorbar.
+    write_counts : bool
+        Print a str on each bin writing the number of values included in that bin.
 
     Returns
     -------
@@ -89,10 +92,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     # Make sure shapes of input arrays are valid
     if np.shape(xvals) != np.shape(yvals):
         raise ValueError("Shape of `xvals` ({}) must match `yvals` ({}).".format(
-                np.shape(xvals), np.shape(yvals)))
+            np.shape(xvals), np.shape(yvals)))
     if weights is not None and np.shape(weights) != np.shape(xvals):
         raise ValueError("Shape of `wieghts` ({}) must match `xvals` and `yvals` ({}).".format(
-                np.shape(weights), np.shape(xvals)))
+            np.shape(weights), np.shape(xvals)))
 
     # Make sure the given `scale` is valid
     if np.size(scale) == 1:
@@ -139,12 +142,18 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     if np.ndim(ybins) == 0:
         ybins = zmath.spacing(yvals, num=ybins+1, scale=scale[1])
 
-    # Plot 2D Histogram and Projections
-    # ---------------------------------
+    # Plot Histograms and Projections
+    # -------------------------------
+    # Plot 2D Histogram
+    counts = None
+    # If we should overlay strings labeling the num values in each bin, calculate those `counts`
+    if write_counts:
+        counts, xedges, yedges, binnums = sp.stats.binned_statistic_2d(
+            xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
     hist, xedges, yedges, binnums = sp.stats.binned_statistic_2d(
         xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
     hist = np.nan_to_num(hist)
-    pcm, smap = plot2DHist(prax, xedges, yedges, hist, cbax=cbax, labels=labels)
+    pcm, smap = plot2DHist(prax, xedges, yedges, hist, cbax=cbax, labels=labels, counts=counts)
 
     # Plot projection of the x-axis (i.e. ignore 'y')
     if xpax:
@@ -154,10 +163,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
             xvals, weights, statistic=statistic, bins=xbins)
 
         # BUG ERROR FIX (breaks during saving, not execution)
-        # breaks:
-        #     xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))
-        # works:
-        xpax.bar(edges[:-1], hist, color=len(hist)*['0.5'], log=islog, width=np.diff(edges))
+        # breaks (sometimes?)
+        xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))
+        # works (always)
+        # xpax.bar(edges[:-1], hist, color=len(hist)*['0.5'], log=islog, width=np.diff(edges))
         #     set tick-labels to the top
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
@@ -181,7 +190,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
 
 
 def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet, fs=12,
-               extrema=None, labels=None, **kwargs):
+               extrema=None, labels=None, counts=None, **kwargs):
     """Plot the given 2D histogram of data.
 
     Use with (e.g.) ``numpy.histogram2d``,
@@ -209,6 +218,8 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
     extrema : (2,) array_like of scalars
         Minimum and maximum values for colormap scaling.
     labels :
+    counts : (N,M) ndarray of int or `None`
+        Number of elements in each bin if overlaid-text is desired.
 
     Returns
     -------
@@ -220,6 +231,7 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
     """
     cblab = 'Counts'
     xgrid, ygrid = np.meshgrid(xvals, yvals)
+    hist = np.asarray(hist)
     if extrema is None: extrema = zmath.minmax(hist, nonzero=plot_core._scale_to_log_flag(cscale))
     if labels is not None:
         if np.size(labels) >= 2:
@@ -238,9 +250,24 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
         cbar.set_label(cblab, fontsize=fs)
         cbar.ax.tick_params(labelsize=fs)
 
+    # Add counts overlay
+    if counts is not None:
+        counts = np.asarray(counts).astype(int)
+        # Make sure sizes are correct
+        if counts.shape != hist.shape:
+            raise ValueError("shape of `counts` ({}) must match `hist` ({})".format(
+                counts.shape, hist.shape))
+
+        # Remember these are transposes
+        for ii in xrange(xgrid.shape[0] - 1):
+            for jj in xrange(xgrid.shape[1] - 1):
+                xx = np.sqrt(xgrid[jj, ii] * xgrid[jj, ii+1])
+                yy = np.sqrt(ygrid[jj, ii] * ygrid[jj+1, ii])
+                ax.text(xx, yy, "{:d}".format(counts.T[jj, ii]), ha='center', va='center',
+                        fontsize=8, bbox=dict(facecolor='white', alpha=0.2, edgecolor='none'))
+
     plot_core.setLim(ax, 'x', data=xvals)
     plot_core.setLim(ax, 'y', data=yvals)
-
     return pcm, smap
 
 

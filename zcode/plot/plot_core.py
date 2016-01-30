@@ -31,9 +31,12 @@ Functions
 -   _make_segments       -
 -   _scale_to_log_flag   -
 -   _clean_scale         -
+-   _get_cmap            - Retrieve a colormap with the given name if it is not already a colormap.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+import six
+from six.moves import xrange
 
 import logging
 import numbers
@@ -510,6 +513,7 @@ def color_cycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
         Colors forming the color cycle.
 
     """
+    cmap = _get_cmap(cmap)
     cols = [cmap(it) for it in np.linspace(left, right, num)]
     if ax is not None: ax.set_color_cycle(cols[::-1])
     return cols
@@ -1061,6 +1065,17 @@ def _clean_scale(scale):
     scale = scale.lower()
     if scale.startswith('lin'): scale = 'linear'
     return scale
+
+
+def _get_cmap(cmap):
+    """Retrieve a colormap with the given name if it is not already a colormap.
+    """
+    if isinstance(cmap, six.string_types):
+        return mpl.cm.get_cmap(cmap)
+    elif isinstance(cmap, mpl.colors.Colormap):
+        return cmap
+    else:
+        raise ValueError("`cmap` '{}' is not a valid colormap or colormap name".format(cmap))
 
 '''
 def rescale(ax, which='both'):
