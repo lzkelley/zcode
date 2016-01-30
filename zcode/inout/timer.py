@@ -170,17 +170,25 @@ class Timings(object):
             return
         totals = np.array([tim.total() for tim in self._timers])
         aves = np.array([tim.ave() for tim in self._timers])
+        stds = np.array([tim.std() for tim in self._timers])
         cum_tot = np.sum(totals)
         fracs = totals/cum_tot
         # Convert statistics to strings for printing
+        #    Add the total fraction (1.0)
         str_fracs = np.append(fracs, np.sum(fracs))
         str_fracs = ["{:.4f}".format(fr) for fr in str_fracs]
-        str_tots = np.append(totals, np.sum(totals))
+        #    Add the total duration
+        str_tots = np.append(totals, cum_tot)
         str_tots = ["{}".format(tt) for tt in str_tots]
+        str_aves = ["{}".format(av) for av in aves]
+        str_stds = ["{}".format(st) for st in stds]
+        #    Add empty elements for overall average and standard deviation
+        str_aves.append("")
+        str_stds.append("")
         # Construct 2D array of results suitable for `ascii_table`
-        data = np.c_[str_fracs, str_tots]
-        rows = np.append(self._names, "Total")
-        cols = ['Fraction', 'Total']
+        data = np.c_[str_fracs, str_tots, str_aves, str_stds]
+        cols = ['Fraction', 'Total', 'Average', 'StdDev']
+        rows = np.append(self._names, "Overall")
         # Print reuslts as table
         inout_core.ascii_table(data, rows=rows, cols=cols, title='Timing Results')
         return
