@@ -157,9 +157,14 @@ class Timings(object):
         totals = np.array([tim.total() for tim in self._timers])
         cum_tot = np.sum(totals)
         fracs = totals/cum_tot
-        data = np.hstack([fracs, totals])
-        data = np.vstack([data, [1.0, cum_tot]])
-        inout_core.ascii_table(data)
+        str_fracs = np.append(fracs, np.sum(fracs))
+        str_fracs = ["{:.4f}".format(fr) for fr in str_fracs]
+        str_tots = np.append(totals, np.sum(totals))
+        str_tots = ["{}".format(tt) for tt in str_tots]
+        data = np.c_[str_fracs, str_tots]
+        rows = np.append(self._names, "Total")
+        cols = ['Fraction', 'Total']
+        inout_core.ascii_table(data, rows=rows, cols=cols)
         return
 
 
