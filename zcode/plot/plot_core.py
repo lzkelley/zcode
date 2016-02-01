@@ -465,7 +465,7 @@ def unifyAxesLimits(axes, axis='y'):
 
     assert axis in ['x', 'y'], "``axis`` must be either 'x' or 'y' !!"
 
-    if(axis == 'y'):
+    if axis == 'y':
         lims = np.array([ax.get_ylim() for ax in axes])
     else:
         lims = np.array([ax.get_xlim() for ax in axes])
@@ -474,7 +474,7 @@ def unifyAxesLimits(axes, axis='y'):
     hi = np.max(lims[:, 1])
 
     for ax in axes:
-        if(axis == 'y'):
+        if axis == 'y':
             ax.set_ylim([lo, hi])
         else:
             ax.set_xlim([lo, hi])
@@ -601,14 +601,11 @@ def color_set(num, black=False):
 def setGrid(ax, val, axis='both', below=True):
     """Configure the axes' grid.
     """
-
     ax.grid(False, which='both', axis='both')
     ax.set_axisbelow(below)
-
-    if(val):
+    if val:
         ax.grid(True, which='major', axis=axis, c='0.50', ls='-')
         ax.grid(True, which='minor', axis=axis, c='0.75', ls='-')
-
     return
 
 
@@ -628,25 +625,25 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
     """
 
     # Get the correct labels
-    if(axis == 'y'): ax_labels = ax.yaxis.get_ticklabels()
-    elif(axis == 'x'): ax_labels = ax.yaxis.get_ticklabels()
+    if axis == 'y': ax_labels = ax.yaxis.get_ticklabels()
+    elif axis == 'x': ax_labels = ax.yaxis.get_ticklabels()
     else: raise RuntimeError("Unrecognized ``axis`` = '%s'!!" % (axis))
 
     count = len(ax_labels)
 
     # Determine ``skip`` to match target number of labels
-    if(num is not None): skip = np.int(np.ceil(1.0*count/num))
+    if num is not None: skip = np.int(np.ceil(1.0*count/num))
 
     visible = np.zeros(count, dtype=bool)
 
     # Choose some to be visible
     visible[::skip] = True
 
-    if(first is True): visible[0] = True
-    elif(first is False): visible[0] = False
+    if first is True: visible[0] = True
+    elif first is False: visible[0] = False
 
-    if(last is True): visible[-1] = True
-    elif(last is False): visible[-1] = False
+    if last is True: visible[-1] = True
+    elif last is False: visible[-1] = False
 
     for label, vis in zip(ax_labels, visible): label.set_visible(vis)
 
