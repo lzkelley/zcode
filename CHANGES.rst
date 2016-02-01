@@ -13,6 +13,13 @@ Future / To-Do
 
 Current
 -------
+-   inout/
+    +   singleton.py [new-file]
+        -   Implements a class `Singleton` which makes sure that all created instances of an object
+            actually point to the same object.
+    +   tests/
+        -   test_singleton.py [new-file]
+            +   New tests for the 'Singleton' class.
 
 
 [0.0.6] - 2016/01/30
