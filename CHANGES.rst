@@ -13,6 +13,10 @@ Future / To-Do
 
 Current
 -------
+-   plot/
+    +   Hist2D.py
+        +   `plot2DHistProj`
+            -   [ENH] added parameters to adjust the size / location of axes composing plots.
 
 
 [0.0.6] - 2016/01/30

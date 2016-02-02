@@ -28,9 +28,9 @@ from . import plot_core
 __all__ = ['plot2DHist', 'plot2DHistProj']
 
 _LEFT = 0.09
-_RIGHT = 0.08
+_RIGHT = 0.92     # Location of right of plots
 _BOTTOM = 0.09
-_TOP = 0.12
+_TOP = 0.80       # Location of top of plots
 
 _CB_WID = 0.02
 _CB_WPAD = 0.08
@@ -38,7 +38,8 @@ _CB_WPAD = 0.08
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0,
-                   fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False):
+                   fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False,
+                   left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP):
     """Plot a 2D histogram with projections of one or both axes.
 
     Arguments
@@ -82,6 +83,14 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         Add a colorbar.
     write_counts : bool
         Print a str on each bin writing the number of values included in that bin.
+    left : float {0.0, 1.0}
+        Location of the left edge of axes relative to the figure.
+    bottom : float {0.0, 1.0}
+        Location of the bottom edge of axes relative to the figure.
+    right : float {0.0, 1.0}
+        Location of the right edge of axes relative to the figure.
+    top : float {0.0, 1.0}
+        Location of the top edge of axes relative to the figure.
 
     Returns
     -------
@@ -114,7 +123,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
 
     # Create and initializae figure and axes
     fig, prax, xpax, ypax, cbax = _constructFigure(fig, xproj, yproj, hratio, wratio, pad,
-                                                   scale, histScale, labels, cbar)
+                                                   scale, histScale, labels, cbar,
+                                                   left, bottom, right, top)
 
     # Create bins
     # -----------
@@ -271,7 +281,8 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
     return pcm, smap
 
 
-def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, labels, cbar):
+def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, labels, cbar,
+                     left, bottom, right, top):
     """Add the required axes to the given figure object.
 
     Arguments
@@ -296,12 +307,12 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
     assert 0.0 <= wratio <= 1.0, "`wratio` must be between [0.0, 1.0]!"
 
     # Create figure if needed
-    if(not fig): fig = plt.figure()
+    if not fig: fig = plt.figure()
 
     xpax = ypax = cbax = None
 
     # Determine usable space and axes sizes
-    useable = [1.0-_LEFT-_RIGHT, 1.0-_TOP-_BOTTOM]
+    useable = [right-left, top-bottom]
     if cbar:
         useable[0] -= _CB_WID + _CB_WPAD
 
@@ -319,31 +330,31 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
 
     # Create primary axes, at bottom left
     #    d
-    prax = fig.add_axes([_LEFT, _BOTTOM, prim_wid, prim_hit])
+    prax = fig.add_axes([left, bottom, prim_wid, prim_hit])
     prax.set(xscale=scale[0], yscale=scale[1], xlabel=labels[0], ylabel=labels[1])
     plot_core.setGrid(prax, False)
 
     if len(labels) > 2: histLab = labels[2]
-    else:                histLab = 'Counts'
+    else:               histLab = 'Counts'
 
     # Add x-projection axes on top-left
     if xproj:
-        xpax = fig.add_axes([_LEFT, _BOTTOM+prim_hit+pad, prim_wid, xpro_hit-pad])
+        xpax = fig.add_axes([left, bottom+prim_hit+pad, prim_wid, xpro_hit-pad])
         xpax.set(xscale=scale[0], yscale=histScale, ylabel=histLab, xlabel=labels[0])
         xpax.xaxis.set_label_position('top')
         plot_core.setGrid(xpax, True, axis='y')
 
     # Add y-projection axes on bottom-right
     if yproj:
-        ypax = fig.add_axes([_LEFT+prim_wid+pad, _BOTTOM, ypro_wid-pad, prim_hit])
+        ypax = fig.add_axes([left+prim_wid+pad, bottom, ypro_wid-pad, prim_hit])
         ypax.set(yscale=scale[1], xscale=histScale, xlabel=histLab, ylabel=labels[1])
         ypax.yaxis.set_label_position('right')
         plot_core.setGrid(ypax, True, axis='x')
 
     # Add color-bar axes on the right
     if cbar:
-        cbar_left = _LEFT + prim_wid + _CB_WPAD
+        cbar_left = left + prim_wid + _CB_WPAD
         if yproj: cbar_left += ypro_wid
-        cbax = fig.add_axes([cbar_left, _BOTTOM, _CB_WID, prim_hit])
+        cbax = fig.add_axes([cbar_left, bottom, _CB_WID, prim_hit])
 
     return fig, prax, xpax, ypax, cbax
