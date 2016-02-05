@@ -104,14 +104,14 @@ class Timings(object):
 
     Methods
     -------
-    -    start               - Start the `timer` with the given name.
-    -    stop                - Stop the timer with the given name.
-    -    names               - Return an array with all of the names of the different timers.
-    -    durations           - Returns an array of all the durations of the target timer.
+    -   start                - Start the `timer` with the given name.
+    -   stop                 - Stop the timer with the given name.
+    -   names                - Return an array with all of the names of the different timers.
+    -   durations            - Returns an array of all the durations of the target timer.
+    -   report               - Report results of durations.
     Internal:
-    -    _create_timer       - Create a new timer with the given name.
-    -    _ind_for_name       - The return the index corresponding to the timer of the given name.
-
+    -   _create_timer       - Create a new timer with the given name.
+    -   _ind_for_name       - The return the index corresponding to the timer of the given name.
 
     """
 
@@ -160,10 +160,16 @@ class Timings(object):
             raise ValueError("Timer '{}' does not exist.".format(name))
         return self._timers[ind].durations()
 
-    def report(self):
+    def report(self, out=print):
         """Report the collected durations from all timers.
 
         If no internal timers exist, a warning is raised.
+        If `out` is a function (e.g. `print`), then the results are outputted using that function.
+        If `out` is `None`, then the results are returned as a string.
+
+        Returns
+        -------
+
         """
         if self._num == 0:
             warnings.warn("No timers exist.")
@@ -190,8 +196,8 @@ class Timings(object):
         cols = ['Fraction', 'Total', 'Average', 'StdDev']
         rows = np.append(self._names, "Overall")
         # Print reuslts as table
-        inout_core.ascii_table(data, rows=rows, cols=cols, title='Timing Results')
-        return
+        rep = inout_core.ascii_table(data, rows=rows, cols=cols, title='Timing Results', out=out)
+        return rep
 
     def _create_timer(self, name):
         """Create a new timer with the given name.

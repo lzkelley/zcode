@@ -22,6 +22,9 @@ Current
         -   `ascii_table`
             +   [ENH] passing ``out = None`` will make the function return a string version of the
                 table.
+    +   timer.py
+        -   [ENH] `Timings.report()` will return the results as a string if the parameter,
+            ``out = None``.
 -   plot/
     +   Hist2D.py
         +   `plot2DHistProj`
