@@ -256,12 +256,31 @@ def estimateLines(files):
     return numLines
 
 
-def checkPath(tpath):
+def checkPath(tpath, create=True):
     """Create the given filepath if it doesn't already exist.
+
+    Arguments
+    ---------
+    tpath : str
+        Path to check.
+    create : bool
+        Create the path if it doesnt already exist.
+        If `False`, and the path does *not* exist, `None` is returned
+
+    Returns
+    -------
+    path : str or `None`
+        If the path exists, or is created, this is the name of the directory portion of the path.
+        If the path does not exist, `None` is returned
+
     """
     path, name = os.path.split(tpath)
-    if(len(path) > 0):
-        if(not os.path.isdir(path)): os.makedirs(path)
+    if len(path) > 0:
+        if not os.path.isdir(path):
+            if create:
+                os.makedirs(path)
+            else:
+                return None
 
     return path
 
