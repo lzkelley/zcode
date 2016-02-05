@@ -13,6 +13,12 @@ Future / To-Do
 
 Current
 -------
+-   inout/
+    +   inout_core.py
+        -   `checkPath`
+            +   [ENH] added parameter `create` to choose whether missing directories are created
+                or not.
+            +   [DOC] added docstrings.
 -   plot/
     +   Hist2D.py
         +   `plot2DHistProj`
