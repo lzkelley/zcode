@@ -7,9 +7,9 @@ from datetime import datetime
 import numpy as np
 import warnings
 
-__all__ = ['Timer', 'Timings']
-
 from . import inout_core
+
+__all__ = ['Timer', 'Timings']
 
 
 class Timer(object):
