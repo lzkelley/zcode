@@ -723,14 +723,17 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
         Axis over which to calculate confidence intervals.
     filter : str or `None`
         Filter the input array with a boolean comparison to zero.
+        If no values remain after filtering, ``None, None`` is returned.
 
     Returns
     -------
     med : scalar
         Median of the input data.
+        `None` if there are no values (e.g. after filtering).
     conf : ndarray of scalar
         Bounds for each confidence interval.  Shape depends on the number of confidence intervals
         passed in `ci`, and also the input shape of `vals`.
+        `None` if there are no values (e.g. after filtering).
 
     """
     ci = np.atleast_1d(ci)
