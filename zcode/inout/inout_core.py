@@ -550,15 +550,21 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=Fal
         Labels for each column.
     title : str or `None`
         Title for the whole table.  Placed in top-left corner.
-    out : callable
+    out : callable or `None`
         Method to call for output, defaults to `print`, but could also be
         for example: ``logging.Logger.debug``.
+        If `None`, the table is returned as a string.
     linewise : bool
         If `True`, call the `out` comment (e.g. `print`) line-by-line.  Otherwise, call `out` on
         a single str for the entire table.
     prepend : str
         Print the given str before the table.  If ``linewise == True``, this happens for each line,
         otherwise it happens once for the entire table.
+
+    Returns
+    -------
+    table : str or `None`
+        If `out` is `None`, then the table is returned as a string.  Otherwise `None` is returned.
 
     """
     table = np.atleast_2d(table)
@@ -624,11 +630,17 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=Fal
 
     ascii.append(bar_str)
 
+    table = prepend + "\n".join(ascii)
+    # Return table as string
+    if out is None:
+        return table
+
+    # Print table to some output
     if linewise:
         for line in ascii:
             out(prepend + line)
     else:
-        out(prepend + "\n".join(ascii))
+        out(table)
 
     return
 

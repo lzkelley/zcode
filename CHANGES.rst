@@ -19,6 +19,9 @@ Current
             +   [ENH] added parameter `create` to choose whether missing directories are created
                 or not.
             +   [DOC] added docstrings.
+        -   `ascii_table`
+            +   [ENH] passing ``out = None`` will make the function return a string version of the
+                table.
 -   plot/
     +   Hist2D.py
         +   `plot2DHistProj`
