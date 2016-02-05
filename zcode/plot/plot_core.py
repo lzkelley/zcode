@@ -401,7 +401,7 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
-    txt = plt.text(x, y, pstr, size=fs, family='monospace', transform=trans,
+    txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
@@ -654,6 +654,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     """Save the given figure(s) to the given filename.
 
     If ``fig`` is iterable, a multipage pdf is created.  Otherwise a single file is made.
+    Does *not* make sure path exists.
 
     Arguments
     ---------
@@ -668,40 +669,39 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     """
 
     # CATCH WRONG ORDER OF ARGUMENTS
-    if(type(fig) == str):
+    if type(fig) == str:
         warnings.warn("FIRST ARGUMENT SHOULD BE `fig`!!")
         temp = str(fig)
         fig = fname
         fname = temp
 
-    if(log is not None): log.debug("Saving figure...")
+    if log is not None: log.debug("Saving figure...")
 
-    if(not np.iterable(fig)): fig = [fig]
+    if not np.iterable(fig): fig = [fig]
 
     # Save as multipage PDF
-    if(fname.endswith('pdf') and np.size(fig) > 1):
+    if fname.endswith('pdf') and np.size(fig) > 1:
         from matplotlib.backends.backend_pdf import PdfPages
         with PdfPages(fname) as pdf:
             for ff in fig:
                 pdf.savefig(figure=ff, **kwargs)
-                if(close): plt.close(ff)
+                if close: plt.close(ff)
 
     else:
         # Save each figure to a different file
         for ii, ff in enumerate(fig):
             # On subsequent figures, append the number to the filename
-            if(ii == 0):
+            if ii == 0:
                 usefname = str(fname)
             else:
                 usefname = zio.modifyFilename(fname, append='_%d' % (ii))
 
             ff.savefig(usefname, **kwargs)
-            if(close): plt.close(ff)
+            if close: plt.close(ff)
 
     printStr = "Saved figure to '%s'" % (fname)
-    if(log is not None): log.log(level, printStr)
-    elif(verbose): print(printStr)
-
+    if log is not None: log.log(level, printStr)
+    elif verbose: print(printStr)
     return
 
 
