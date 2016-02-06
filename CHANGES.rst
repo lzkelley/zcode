@@ -34,6 +34,8 @@ Current
         -   `_comparisonFilter` [DEPRECATED] ---> `comparison_filter` [new-function]
             +   [ENH] Added options to return indices (instead of values), compare with non-zero
                 comparison values, and check for finite (or not).
+        -   `stats_str`
+            +   [ENH] Added parameter `label` to prepend to the output string.
     +   tests/
         -   test_math_core.py
             +   [ENH] Added *some* tests for `_comparison_function` and `_comparison_filter`.
