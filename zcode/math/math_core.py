@@ -1157,19 +1157,25 @@ def percentiles_str(names, data, percs=[50, 68, 95, 100], out=print, title='', f
 
 
 def _comparisonFunction(comp):
-    """Retrieve the comparison function matching the input expression.
+    """[DEPRECATED]Retrieve the comparison function matching the input expression.
     """
-    if(comp == 'g' or comp == '>'):
+    # ---- DECPRECATION SECTION ----
+    warnStr = ("Using deprecated function '_comparisonFunction'.  "
+               "Use '_comparison_function' instead.")
+    warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
+    # ------------------------------
+
+    if comp == 'g' or comp == '>':
         func = np.greater
-    elif(comp == 'ge' or comp == '>='):
+    elif comp == 'ge' or comp == '>=':
         func = np.greater_equal
-    elif(comp == 'l' or comp == '<'):
+    elif comp == 'l' or comp == '<':
         func = np.less
-    elif(comp == 'le' or comp == '<='):
+    elif comp == 'le' or comp == '<=':
         func = np.less_equal
-    elif(comp == 'e' or comp == '=' or comp == '=='):
+    elif comp == 'e' or comp == '=' or comp == '==':
         func = np.equal
-    elif(comp == 'ne' or comp == '!='):
+    elif comp == 'ne' or comp == '!=':
         func = np.not_equal
     else:
         raise ValueError("Unrecognized comparison '%s'." % (comp))
@@ -1177,15 +1183,78 @@ def _comparisonFunction(comp):
     return func
 
 
+def _comparison_function(comp, value=0.0):
+    """Retrieve the comparison function matching the input expression.
+
+    Arguments
+    ---------
+    comp : str
+        Key describing the type of comparison.
+    value : scalar
+        Value with which to compare.
+
+    Returns
+    -------
+    comp_func : callable
+        Comparison function which returns a or an-array-or bool matching the input
+        shape, describing how the input values compare  to `value`.
+
+    """
+    if comp == 'g' or comp == '>':
+        func = np.greater
+    elif comp == 'ge' or comp == '>=':
+        func = np.greater_equal
+    elif comp == 'l' or comp == '<':
+        func = np.less
+    elif comp == 'le' or comp == '<=':
+        func = np.less_equal
+    elif comp == 'e' or comp == '=' or comp == '==':
+        func = np.equal
+    elif comp == 'ne' or comp == '!=':
+        func = np.not_equal
+    else:
+        raise ValueError("Unrecognized comparison '{}'.".format(comp))
+
+    def comp_func(xx):
+        return func(xx, value)
+
+    return comp_func
+
+
 def _comparisonFilter(data, filter):
     """
     """
+    # ---- DECPRECATION SECTION ----
+    warnStr = ("Using deprecated function '_comparisonFilter'.  "
+               "Use '_comparison_filter' instead.")
+    warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
+    # ------------------------------
     if filter is None:
         return data
     if not callable(filter):
         filter = _comparisonFunction(filter)
     sel = np.where(filter(data, 0.0) & np.isfinite(data))
     return data[sel]
+
+
+def _comparison_filter(data, filter, inds=False, value=0.0, finite=True):
+    """
+    """
+    if filter is None:
+        return data
+    if not callable(filter):
+        filter = _comparison_function(filter, value=value)
+
+    # Include is-finite check
+    if finite:
+        sel = np.where(filter(data) & np.isfinite(data))
+    else:
+        sel = np.where(filter(data))
+
+    if inds:
+        return sel
+    else:
+        return np.asarray(data)[sel]
 
 
 def _fracToInt(frac, size, within=None, round='floor'):

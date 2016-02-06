@@ -25,10 +25,22 @@ Current
     +   timer.py
         -   [ENH] `Timings.report()` will return the results as a string if the parameter,
             ``out = None``.
+-   math/
+    +   math_core.py
+        -   `_comparisonFunction` [DEPRECATED] ---> `_comparison_function` [new-function]
+            +   [ENH] Returned function takes a single parameter, instead of needing the comparison
+                value in each call.  Instead the comparison value is passed once to
+                `_comparison_function`, just during initialization.
+        -   `_comparisonFilter` [DEPRECATED] ---> `_comparison_filter` [new-function]
+            +   [ENH] Added options to return indices (instead of values), compare with non-zero
+                comparison values, and check for finite (or not).
+    +   tests/
+        -   test_math_core.py
+            +   [ENH] Added *some* tests for `_comparison_function` and `_comparison_filter`.
 -   plot/
     +   Hist2D.py
-        +   `plot2DHistProj`
-            -   [ENH] added parameters to adjust the size / location of axes composing plots.
+        -   `plot2DHistProj`
+            +   [ENH] added parameters to adjust the size / location of axes composing plots.
 
 
 [0.0.6] - 2016/01/30
