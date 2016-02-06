@@ -196,7 +196,10 @@ class Timings(object):
         cols = ['Fraction', 'Total', 'Average', 'StdDev']
         rows = np.append(self._names, "Overall")
         # Print reuslts as table
-        rep = inout_core.ascii_table(data, rows=rows, cols=cols, title='Timing Results', out=out)
+        if out is None: prepend = ""
+        else: prepend = "\n"
+        rep = inout_core.ascii_table(data, rows=rows, cols=cols, title='Timing Results',
+                                     out=out, prepend=prepend)
         return rep
 
     def _create_timer(self, name):
