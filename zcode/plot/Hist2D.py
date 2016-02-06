@@ -36,7 +36,7 @@ _CB_WID = 0.02
 _CB_WPAD = 0.08
 
 
-def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
+def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0,
                    fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False,
                    left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP):
@@ -59,6 +59,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
         Specification for bin sizes.  integer values are treated as the number of bins to use,
         while arrays are used as the bin edges themselves.  If a tuple of two values is given, it
         is assumed that the first is for the x-axis and the second for the y-axis.
+    filter : str or `None`, or [2,] tuple of str or `None`
+        String specifying how to filter the input `data` relative to zero.
+        If this is a single value, it is applies to both `xvals` and `yvals`.
+        If this is a tuple/list of two values, they correspond to `xvals` and `yvals` respectively.
     fig : ``matplotlib.figure.figure``,
         Figure instance to which axes are added for plotting.  One is created if not given.
     xproj : bool,
@@ -120,6 +124,23 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10,
     if statistic is None:
         if weights is None: statistic = 'count'
         else:               statistic = 'sum'
+
+    # Filter input data
+    if filter is not None:
+        # Make sure `filter` is an iterable pair
+        if not np.iterable(filter): filter = [filter, filter]
+        elif len(filter) == 1: filter = [filter[0], filter[0]]
+        # Filter `xvals`
+        if filter[0] is not None:
+            inds = zmath._comparison_filter(xvals, filter[0], inds=True)
+            xvals = xvals[inds]
+            yvals = yvals[inds]
+        # Filter `yvals`
+        if filter[1] is not None:
+            inds = zmath._comparison_filter(yvals, filter[1], inds=True)
+            xvals = xvals[inds]
+            yvals = yvals[inds]
+
 
     # Create and initializae figure and axes
     fig, prax, xpax, ypax, cbax = _constructFigure(fig, xproj, yproj, hratio, wratio, pad,
