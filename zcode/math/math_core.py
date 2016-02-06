@@ -1180,6 +1180,8 @@ def _comparisonFunction(comp):
 def _comparisonFilter(data, filter):
     """
     """
+    if filter is None:
+        return data
     if not callable(filter):
         filter = _comparisonFunction(filter)
     sel = np.where(filter(data, 0.0) & np.isfinite(data))
