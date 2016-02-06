@@ -562,6 +562,8 @@ def colormap(args, cmap='jet', scale=None):
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     # Bug-Fix something something
     smap._A = []
+    # Store type of mapping
+    smap.log = log
 
     return smap
 
