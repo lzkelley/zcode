@@ -957,9 +957,9 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
     ll, = ax.plot(rads, med, '-', color=color, lw=lw)
 
     # `conf` has shape ``(num-rads, num-conf-ints, 2)``
-    if(conf.ndim == 2):
+    if conf.ndim == 2:
         conf = conf.reshape(len(rads), 1, 2)
-    elif(conf.ndim != 3):
+    elif conf.ndim != 3:
         raise ValueError("`conf` must be 2 or 3 dimensions!")
 
     if filter is not None:
@@ -970,8 +970,8 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
     # Iterate over confidence intervals
     for jj in xrange(numConf):
         # Set fill-opacity
-        if(np.size(fillalpha) == numConf): falph = fillalpha
-        else:                              falph = np.power(fillalpha, jj+1)
+        if np.size(fillalpha) == numConf: falph = fillalpha
+        else:                             falph = np.power(fillalpha, jj+1)
 
         # Create a dummy-patch to return for a legend of confidence-intervals
         pp = ax.fill(np.nan, np.nan, color=color, alpha=falph)
@@ -980,11 +980,16 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
         xx = np.array(rads)
         ylo = np.array(conf[:, jj, 0])
         yhi = np.array(conf[:, jj, 1])
+        # if filter:
+        #     inds = np.where(filter(ylo, 0.0) & filter(yhi, 0.0))
+        #     xx = xx[inds]
+        #     ylo = ylo[inds]
+        #     yhi = yhi[inds]
+        # ylo = np.ma.masked_less_equal(conf[:, jj, 0], 0.0)
+        # yhi = np.ma.masked_less_equal(conf[:, jj, 1], 0.0)
         if filter:
-            inds = np.where(filter(ylo, 0.0) & filter(yhi, 0.0))
-            xx = xx[inds]
-            ylo = ylo[inds]
-            yhi = yhi[inds]
+            ylo = np.ma.masked_where(~filter(ylo, 0.0), ylo)
+            yhi = np.ma.masked_where(~filter(yhi, 0.0), yhi)
 
         # Fill between confidence intervals
         ax.fill_between(xx, ylo, yhi, alpha=falph, color=color, **kwargs)
@@ -1000,7 +1005,6 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
     if outline is not None:
         ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=_LW_OUTLINE)
     ll, = ax.plot(rads, med, '-', color=color, lw=lw)
-
     return linePatch, confPatches
 
 
