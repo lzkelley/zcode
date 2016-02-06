@@ -52,8 +52,8 @@ __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'confidenceBands',
            'frexp10', 'stats', 'groupDigitized',
-           'sampleInverse', 'smooth', 'mono', 'stats_str',
-           '_comparisonFunction', '_infer_scale']
+           'sampleInverse', 'smooth', 'mono', 'stats_str', 'comparison_filter',
+           '_comparisonFunction', '_comparison_function', '_infer_scale']
 
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=True):
@@ -1237,7 +1237,7 @@ def _comparisonFilter(data, filter):
     return data[sel]
 
 
-def _comparison_filter(data, filter, inds=False, value=0.0, finite=True):
+def comparison_filter(data, filter, inds=False, value=0.0, finite=True):
     """
     """
     if filter is None:
