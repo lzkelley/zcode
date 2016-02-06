@@ -132,15 +132,19 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         elif len(filter) == 1: filter = [filter[0], filter[0]]
         # Filter `xvals`
         if filter[0] is not None:
-            inds = zmath._comparison_filter(xvals, filter[0], inds=True)
+            inds = zmath.comparison_filter(xvals, filter[0], inds=True)
             xvals = xvals[inds]
             yvals = yvals[inds]
         # Filter `yvals`
         if filter[1] is not None:
-            inds = zmath._comparison_filter(yvals, filter[1], inds=True)
+            inds = zmath.comparison_filter(yvals, filter[1], inds=True)
             xvals = xvals[inds]
             yvals = yvals[inds]
 
+        if np.shape(xvals) != np.shape(yvals) or not np.size(xvals):
+            err_str = "Something went wrong with filtering.  `xvals`.shape = {}; `yvals`.shape = {}"
+            err_str = err_str.format(np.shape(xvals), np.shape(yvals))
+            raise ValueError(err_str)
 
     # Create and initializae figure and axes
     fig, prax, xpax, ypax, cbax = _constructFigure(fig, xproj, yproj, hratio, wratio, pad,
@@ -173,6 +177,14 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     if np.ndim(ybins) == 0:
         ybins = zmath.spacing(yvals, num=ybins+1, scale=scale[1])
 
+    # Make sure bins look okay
+    for arr, name in zip([xbins, ybins], ['xbins', 'ybins']):
+        delta = np.diff(arr)
+        if np.any(~np.isfinite(delta) | (delta == 0.0)):
+            raise ValueError("Error constructing `{}` = {}, delta = {}".format(name, arr, delta))
+        
+
+
     # Plot Histograms and Projections
     # -------------------------------
     # Plot 2D Histogram
@@ -195,7 +207,12 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
         # BUG ERROR FIX (breaks during saving, not execution)
         # breaks (sometimes?)
-        xpax.bar(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, width=np.diff(edges))
+        colhist = np.array(hist)
+        # Enforce positive values for colors in log-plots.
+        if smap.log:
+            min, max = zmath.minmax(colhist, filter='g')
+            colhist = np.maximum(colhist, min)
+        xpax.bar(edges[:-1], hist, color=smap.to_rgba(colhist), log=islog, width=np.diff(edges))
         # works (always)
         # xpax.bar(edges[:-1], hist, color=len(hist)*['0.5'], log=islog, width=np.diff(edges))
         #     set tick-labels to the top

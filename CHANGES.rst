@@ -31,7 +31,7 @@ Current
             +   [ENH] Returned function takes a single parameter, instead of needing the comparison
                 value in each call.  Instead the comparison value is passed once to
                 `_comparison_function`, just during initialization.
-        -   `_comparisonFilter` [DEPRECATED] ---> `_comparison_filter` [new-function]
+        -   `_comparisonFilter` [DEPRECATED] ---> `comparison_filter` [new-function]
             +   [ENH] Added options to return indices (instead of values), compare with non-zero
                 comparison values, and check for finite (or not).
     +   tests/
@@ -41,6 +41,8 @@ Current
     +   Hist2D.py
         -   `plot2DHistProj`
             +   [ENH] added parameters to adjust the size / location of axes composing plots.
+            +   [BUG] fixed issue where log-color-scales projected axes with zero values would
+                fail.  Seems to be working fine.
 
 
 [0.0.6] - 2016/01/30
