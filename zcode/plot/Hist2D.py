@@ -59,10 +59,11 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         Specification for bin sizes.  integer values are treated as the number of bins to use,
         while arrays are used as the bin edges themselves.  If a tuple of two values is given, it
         is assumed that the first is for the x-axis and the second for the y-axis.
-    filter : str or `None`, or [2,] tuple of str or `None`
+    filter : str or `None`, or [2,] tuple of str or `None`, or [3,] tubple of str or `None`
         String specifying how to filter the input `data` relative to zero.
         If this is a single value, it is applies to both `xvals` and `yvals`.
         If this is a tuple/list of two values, they correspond to `xvals` and `yvals` respectively.
+        If `weights` are provided, the tuple/list should have three values. 
     fig : ``matplotlib.figure.figure``,
         Figure instance to which axes are added for plotting.  One is created if not given.
     xproj : bool,
@@ -107,7 +108,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         raise ValueError("Shape of `xvals` ({}) must match `yvals` ({}).".format(
             np.shape(xvals), np.shape(yvals)))
     if weights is not None and np.shape(weights) != np.shape(xvals):
-        raise ValueError("Shape of `wieghts` ({}) must match `xvals` and `yvals` ({}).".format(
+        raise ValueError("Shape of `weights` ({}) must match `xvals` and `yvals` ({}).".format(
             np.shape(weights), np.shape(xvals)))
 
     # Make sure the given `scale` is valid
@@ -128,23 +129,35 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     # Filter input data
     if filter is not None:
         # Make sure `filter` is an iterable pair
-        if not np.iterable(filter): filter = [filter, filter]
-        elif len(filter) == 1: filter = [filter[0], filter[0]]
+        if weights is None: num = 2
+        else:               num = 3
+
+        if not np.iterable(filter): filter = num*[filter]
+        elif len(filter) == 1: filter = num*[filter[0]]
+
+        if len(filter) != num:
+            raise ValueError("If `weights` are provided, number of `filter` values must match.")
+
         # Filter `xvals`
         if filter[0] is not None:
             inds = zmath.comparison_filter(xvals, filter[0], inds=True)
             xvals = xvals[inds]
             yvals = yvals[inds]
+            if weights is not None:
+                weights = weights[inds]
         # Filter `yvals`
         if filter[1] is not None:
             inds = zmath.comparison_filter(yvals, filter[1], inds=True)
             xvals = xvals[inds]
             yvals = yvals[inds]
+            if weights is not None:
+                weights = weights[inds]
 
-        if np.shape(xvals) != np.shape(yvals) or not np.size(xvals):
-            err_str = "Something went wrong with filtering.  `xvals`.shape = {}; `yvals`.shape = {}"
-            err_str = err_str.format(np.shape(xvals), np.shape(yvals))
-            raise ValueError(err_str)
+        if weights is not None and filter[2] is not None:
+            inds = zmath.comparison_filter(yvals, filter[2], inds=True)
+            xvals = xvals[inds]
+            yvals = yvals[inds]
+            weights = weights[inds]
 
     # Create and initializae figure and axes
     fig, prax, xpax, ypax, cbax = _constructFigure(fig, xproj, yproj, hratio, wratio, pad,
@@ -195,6 +208,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
             xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
     hist, xedges, yedges, binnums = sp.stats.binned_statistic_2d(
         xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
+
     hist = np.nan_to_num(hist)
     pcm, smap = plot2DHist(prax, xedges, yedges, hist, cbax=cbax, labels=labels, counts=counts)
 
@@ -205,8 +219,6 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         hist, edges, bins = sp.stats.binned_statistic(
             xvals, weights, statistic=statistic, bins=xbins)
 
-        # BUG ERROR FIX (breaks during saving, not execution)
-        # breaks (sometimes?)
         colhist = np.array(hist)
         # Enforce positive values for colors in log-plots.
         if smap.log:
