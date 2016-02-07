@@ -247,23 +247,31 @@ def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=Non
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
+    To compare with only a previous minimum or maximum, pass the other as `None`, e.g.
+    ``prev = [None, 2.5]`` to compare only with a maximum of `2.5`.
 
     Arguments
     ---------
-       data     <scalar>[...] : arbitrarily shaped data to find minumum and maximum of.
-       nonzero  <bool>        : ignore zero values in input ``data``
-       positive <bool>        : select values '>= 0.0' in input ``data``
-       prev     <scalar>[2]   : also find min/max against prev[0] and prev[1] respectively.
-       stretch  <flt>         : factor by which to stretch min and max by (1 +- ``stretch``)
+    data : [...] ndarray of scalar of any shape
+        Arbitrarily shaped data to find minumum and maximum of.
+    prev : `None` or (2,) array_like of scalar and/or `None`
+        Also find min/max against prev[0] and prev[1] respectively.  If `prev` is `None`,
+        or if either of the elements of `prev` are `None`, then they are not compared.
+    filter : str or `None`,
+        Key describing how to filter the input data, or `None` for no filter.
+        See, ``comparison_filter``.
+    stretch : flt
+        Factor by which to stretch min and max by (``1.0 +- stretch``).
 
     Returns
     -------
-       minmax <scalar>[2] : minimum and maximum of given data (and ``prev`` if provided).
-                            Returned data type will match the input ``data`` (and ``prev``).
+    minmax : (2,) array of scalar, or `None`
+        Minimum and maximum of given data (and ``prev`` if provided).  If the input data is empty,
+        then `prev` is returned --- even if that is `None`.
 
     To-Do
     -----
-     - Added an 'axis' argument, remove 'flatten()' to accomodate arbitrary shapes
+    -   Add an 'axis' argument.
 
     """
     # ---- DEPRECATION SECTION -------
@@ -288,8 +296,8 @@ def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=Non
 
     # Compare to previous extrema, if given
     if prev is not None:
-        minmax[0] = np.min([minmax[0], prev[0]])
-        minmax[1] = np.max([minmax[1], prev[1]])
+        if prev[0] is not None: minmax[0] = np.min([minmax[0], prev[0]])
+        if prev[1] is not None: minmax[1] = np.max([minmax[1], prev[1]])
 
     return minmax
 
