@@ -44,10 +44,15 @@ Current
             +   [ENH] Added *some* tests for `_comparison_function` and `_comparison_filter`.
 -   plot/
     +   Hist2D.py
+        -   `plot2DHist`
+            +   [ENH] Added options for overplotting contour lines.  Basics work, might need some
+                fine tuning.
         -   `plot2DHistProj`
             +   [ENH] added parameters to adjust the size / location of axes composing plots.
             +   [BUG] fixed issue where log-color-scales projected axes with zero values would
                 fail.  Seems to be working fine.
+            +   [BUG] fixed issue in right projection where the x-axis scaling would be set
+                incorrectly.
     +   plot_core.py
         -   `legend`
             +   [BUG] fixed issue where 'center' could be repeated for `valign` and `halign`.

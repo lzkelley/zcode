@@ -63,7 +63,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         String specifying how to filter the input `data` relative to zero.
         If this is a single value, it is applies to both `xvals` and `yvals`.
         If this is a tuple/list of two values, they correspond to `xvals` and `yvals` respectively.
-        If `weights` are provided, the tuple/list should have three values. 
+        If `weights` are provided, the tuple/list should have three values.
     fig : ``matplotlib.figure.figure``,
         Figure instance to which axes are added for plotting.  One is created if not given.
     xproj : bool,
@@ -195,8 +195,6 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         delta = np.diff(arr)
         if np.any(~np.isfinite(delta) | (delta == 0.0)):
             raise ValueError("Error constructing `{}` = {}, delta = {}".format(name, arr, delta))
-        
-
 
     # Plot Histograms and Projections
     # -------------------------------
@@ -210,7 +208,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
 
     hist = np.nan_to_num(hist)
-    pcm, smap = plot2DHist(prax, xedges, yedges, hist, cbax=cbax, labels=labels, counts=counts)
+    pcm, smap = plot2DHist(prax, xedges, yedges, hist, cscale=histScale, cbax=cbax,
+                           labels=labels, counts=counts)
 
     # Plot projection of the x-axis (i.e. ignore 'y')
     if xpax:
@@ -225,8 +224,6 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
             min, max = zmath.minmax(colhist, filter='g')
             colhist = np.maximum(colhist, min)
         xpax.bar(edges[:-1], hist, color=smap.to_rgba(colhist), log=islog, width=np.diff(edges))
-        # works (always)
-        # xpax.bar(edges[:-1], hist, color=len(hist)*['0.5'], log=islog, width=np.diff(edges))
         #     set tick-labels to the top
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
@@ -235,7 +232,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
     # Plot projection of the y-axis (i.e. ignore 'x')
     if ypax:
-        islog = plot_core._scale_to_log_flag(scale[1])
+        islog = plot_core._scale_to_log_flag(histScale)
         #    create and plot histogram
         hist, edges, bins = sp.stats.binned_statistic(
             yvals, weights, statistic=statistic, bins=ybins)
@@ -245,12 +242,14 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         ypax.yaxis.tick_right()
         #     set bounds to bin edges
         plot_core.setLim(ypax, 'y', data=yedges)
+        ypax.locator_params(axis='x', tight=True, nbins=4)
 
     return fig
 
 
-def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet, fs=12,
-               extrema=None, labels=None, counts=None, **kwargs):
+def plot2DHist(ax, xvals, yvals, hist, cax=None, cbax=None, cscale='log', cmap=plt.cm.jet, fs=12,
+               contours=None, clabel={}, rasterized=True,
+               title=None, smap=None, extrema=None, labels=None, counts=None, **kwargs):
     """Plot the given 2D histogram of data.
 
     Use with (e.g.) ``numpy.histogram2d``,
@@ -267,14 +266,22 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
         the input data `hist`.
     hist : (N,M) ndarray of scalars
         Grid of data-points to plot.
-    cbax : ``matplotlib.axes.Axes`` object
+    cax : `matplotlib.axes.Axes` object
         Axes object on which to add a colorbar.
+        See the `cax` parameter of `plt.colorbar`.
+    cbax : `matplotlib.axes.Axes` object(s)
+        Axes object from which to make space for a colorbar axis.
+        See the `ax` parameter of `plt.colorbar`.
     cscale : str
         Scale to use for the colormap {'linear', 'log'}.
     cmap : ``matplotlib.colors.Colormap`` object
         Matplotlib colormap to use for coloring histogram.
     fs : int
         Fontsize specification.
+    title : str or `None`
+        Title to add to top of axes.
+    smap : `matplotlib.cm.ScalarMappable` object or `None`
+        A scalar-mappable object to use for colormaps, or `None` for one to be created.
     extrema : (2,) array_like of scalars
         Minimum and maximum values for colormap scaling.
     labels :
@@ -283,9 +290,9 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
 
     Returns
     -------
-    pcm : ``matplotlib.collections.QuadMesh`` object
+    pcm : `matplotlib.collections.QuadMesh` object
         The resulting plotted object, returned by ``ax.pcolormesh``.
-    smap : ``matplotlib.cm.ScalarMappable`` object
+    smap : `matplotlib.cm.ScalarMappable` object
         Colormap and color-scaling information.  See: ``zcode.plot.plot_core.colormap``.
 
     """
@@ -300,15 +307,26 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
         if np.size(labels) > 2:
             cblab = labels[2]
 
+    # Create scalar-mappable if needed
+    if smap is None:
+        smap = plot_core.colormap(extrema, cmap=cmap, scale=cscale)
+
     # Plot
-    smap = plot_core.colormap(extrema, cmap=cmap, scale=cscale)
-    pcm = ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap, **kwargs)
+    pcm = ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap, linewidth=0,
+                        rasterized=rasterized, **kwargs)
+    pcm.set_edgecolor('face')
 
     # Add color bar
-    if cbax is not None:
-        cbar = plt.colorbar(smap, cax=cbax)
+    if cbax is not None or cax is not None:
+        cbar = plt.colorbar(smap, cax=cax, ax=cbax)
         cbar.set_label(cblab, fontsize=fs)
         cbar.ax.tick_params(labelsize=fs)
+
+    if fs is not None:
+        ax.tick_params(labelsize=fs)
+
+    if title is not None:
+        ax.set_title(title, size=fs)
 
     # Add counts overlay
     if counts is not None:
@@ -325,6 +343,22 @@ def plot2DHist(ax, xvals, yvals, hist, cbax=None, cscale='log', cmap=plt.cm.jet,
                 yy = np.sqrt(ygrid[jj, ii] * ygrid[jj+1, ii])
                 ax.text(xx, yy, "{:d}".format(counts.T[jj, ii]), ha='center', va='center',
                         fontsize=8, bbox=dict(facecolor='white', alpha=0.2, edgecolor='none'))
+
+    # Add contour lines
+    if contours is not None:
+        if isinstance(contours, bool) and contours:
+            levels = None
+        else:
+            levels = np.array(contours)
+
+        xg, yg = np.meshgrid(zmath.midpoints(xvals, log=True), zmath.midpoints(yvals, log=True))
+        cs = ax.contour(xg, yg, hist[:-1, :-1].T, colors='0.25', norm=smap.norm,
+                        levels=levels, linewidths=4.0, antialiased=True)
+        ax.contour(xg, yg, hist[:-1, :-1].T, cmap=smap.cmap, norm=smap.norm,
+                   levels=levels, linewidths=1.5, antialiased=True)
+        # plt.clabel(cs, inline=1, fontsize=fs, fmt='%.0e')
+        if levels is not None and clabel is not None:
+            plt.clabel(cs, inline=1, **clabel)
 
     plot_core.setLim(ax, 'x', data=xvals)
     plot_core.setLim(ax, 'y', data=yvals)
