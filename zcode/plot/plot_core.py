@@ -443,19 +443,18 @@ def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
 
     """
     ax = fig.axes[0]
-
-    if(trans is None): trans = fig.transFigure
-    if(valign == 'top'):
+    if trans is None: trans = fig.transFigure
+    if valign == 'top':
         valign = 'upper'
-
-    if(valign == 'bottom'):
+    if valign == 'bottom':
         valign = 'lower'
 
-    alignStr = valign + " " + halign
+    alignStr = valign
+    if not (valign == 'center' and halign == 'center'):
+        alignStr += " " + halign
 
     leg = ax.legend(keys, names, prop={'size': fs, 'family': 'monospace'},
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
-
     return leg
 
 
@@ -712,13 +711,17 @@ def strSciNot(val, precman=1, precexp=0):
 
     Arguments
     ---------
-        val <flt> : numerical value to convert
-        precman <int> : precision of the mantissa (decimal points)
-        precexp <int> : precision of the exponent (decimal points)
+    val : scalar
+        Numerical value to convert.
+    precman : int
+        Precision of the mantissa (decimal points).
+    precexp : int
+        Precision of the exponent (decimal points).
 
     Returns
     -------
-        str <str> : scientific notation string using latex formatting.
+    notStr : str
+        Scientific notation string using latex formatting.
 
     """
     man, exp = zmath.frexp10(val)

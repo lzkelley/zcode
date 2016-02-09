@@ -48,6 +48,9 @@ Current
             +   [ENH] added parameters to adjust the size / location of axes composing plots.
             +   [BUG] fixed issue where log-color-scales projected axes with zero values would
                 fail.  Seems to be working fine.
+    +   plot_core.py
+        -   `legend`
+            +   [BUG] fixed issue where 'center' could be repeated for `valign` and `halign`.
 
 
 [0.0.6] - 2016/01/30
