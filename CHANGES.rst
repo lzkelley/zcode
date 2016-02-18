@@ -53,9 +53,14 @@ Current
                 fail.  Seems to be working fine.
             +   [BUG] fixed issue in right projection where the x-axis scaling would be set
                 incorrectly.
+            +   [BUG] fixed issue with trying to set numerous axes variables in coloarbar.
     +   plot_core.py
         -   `legend`
             +   [BUG] fixed issue where 'center' could be repeated for `valign` and `halign`.
+        -   `saveFigure`
+            +   [ENH] check that figures saved properly.
+        -   `strSciNot`
+            +   [ENH] enable `None` precision --- i.e. dont show mantissa or exponent.
 
 
 [0.0.6] - 2016/01/30

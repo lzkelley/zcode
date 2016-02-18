@@ -38,6 +38,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import six
 from six.moves import xrange
 
+import os
 import logging
 import numbers
 import warnings
@@ -679,6 +680,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     if log is not None: log.debug("Saving figure...")
 
     if not np.iterable(fig): fig = [fig]
+    saved_names = []
 
     # Save as multipage PDF
     if fname.endswith('pdf') and np.size(fig) > 1:
@@ -687,6 +689,11 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
             for ff in fig:
                 pdf.savefig(figure=ff, **kwargs)
                 if close: plt.close(ff)
+                # Make sure file now exists
+                if os.path.exists(fname):
+                    saved_names.append(fname)
+                else:
+                    raise RuntimeError("Figure '{}' did not save.".format(fname))
 
     else:
         # Save each figure to a different file
@@ -699,24 +706,39 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
 
             ff.savefig(usefname, **kwargs)
             if close: plt.close(ff)
+            if os.path.exists(usefname):
+                saved_names.append(usefname)
+            else:
+                raise RuntimeError("Figure '{}' did not save.".format(usefname))
 
-    printStr = "Saved figure to '%s'" % (fname)
-    if log is not None: log.log(level, printStr)
-    elif verbose: print(printStr)
+    # No files saved or Some files were not saved
+    if not len(saved_names) or len(saved_names) != len(fig):
+        warn_str = "Error saving figures..."
+        if log is None: warnings.warn(warn_str)
+        else: log.warning(warn_str)
+
+    # Things look good.
+    else:
+        printStr = "Saved figure to '%s'" % (fname)
+        if log is not None: log.log(level, printStr)
+        elif verbose: print(printStr)
+
     return
 
 
-def strSciNot(val, precman=1, precexp=0):
+def strSciNot(val, precman=0, precexp=0, dollar=True):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
     ---------
     val : scalar
         Numerical value to convert.
-    precman : int
-        Precision of the mantissa (decimal points).
-    precexp : int
-        Precision of the exponent (decimal points).
+    precman : int or `None`
+        Precision of the mantissa (decimal points); or `None` for omit mantissa.
+    precexp : int or `None`
+        Precision of the exponent (decimal points); or `None` for omit exponent.
+    dollar : bool
+        Include dollar-signs ('$') around returned expression.
 
     Returns
     -------
@@ -725,8 +747,14 @@ def strSciNot(val, precman=1, precexp=0):
 
     """
     man, exp = zmath.frexp10(val)
-    notStr = "${0:.{2:d}f} \\times \, 10^{{ {1:.{3:d}f} }}$"
-    notStr = notStr.format(man, exp, precman, precexp)
+    if precman is not None: manStr = "{0:.{1:d}f}".format(man, precman)
+    else:                   manStr = ""
+    if precexp is not None: expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
+    else:                   expStr = ""
+    notStr = "$"*dollar + manStr
+    if len(manStr) and len(expStr):
+        notStr += " \\times"
+    notStr += expStr + "$"*dollar
     return notStr
 
 
