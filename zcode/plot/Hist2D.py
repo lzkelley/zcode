@@ -242,7 +242,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         ypax.yaxis.tick_right()
         #     set bounds to bin edges
         plot_core.setLim(ypax, 'y', data=yedges)
-        ypax.locator_params(axis='x', tight=True, nbins=4)
+        try:
+            ypax.locator_params(axis='x', tight=True, nbins=4)
+        except:
+            ypax.locator_params(axis='x', tight=True)
 
     return fig
 
@@ -318,7 +321,10 @@ def plot2DHist(ax, xvals, yvals, hist, cax=None, cbax=None, cscale='log', cmap=p
 
     # Add color bar
     if cbax is not None or cax is not None:
-        cbar = plt.colorbar(smap, cax=cax, ax=cbax)
+        if cbax is not None:
+            cbar = plt.colorbar(smap, cax=cbax)
+        else:
+            cbar = plt.colorbar(smap, ax=cax)
         cbar.set_label(cblab, fontsize=fs)
         cbar.ax.tick_params(labelsize=fs)
 
