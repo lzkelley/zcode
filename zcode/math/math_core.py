@@ -1096,7 +1096,8 @@ def mono(arr, type='g', axis=-1):
     return retval
 
 
-def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True, format='', label=''):
+def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True,
+              format='', label='Statistics: '):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -1126,8 +1127,6 @@ def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True, format='', l
     if percs is not None and len(percs): percs_flag = True
 
     out = label
-    if len(label): out += " "
-    out += "Statistics: "
     form = "{{{}}}".format(format)
     if ave:
         out += "ave = " + form.format(np.average(data))

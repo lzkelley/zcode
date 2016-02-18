@@ -38,7 +38,7 @@ Current
             +   [ENH] Extend the `prev` argument to allow for either minimum of maximum comparison
                 to be `None`.
         -   `stats_str`
-            +   [ENH] Added parameter `label` to prepend to the output string.
+            +   [ENH] Added parameter `label` to give to the output string.
     +   tests/
         -   test_math_core.py
             +   [ENH] Added *some* tests for `_comparison_function` and `_comparison_filter`.
