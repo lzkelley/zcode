@@ -849,20 +849,23 @@ def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter
 
 
 def frexp10(vals):
-    """Return the mantissa and exponent in base 10
+    """Return the mantissa and exponent in base 10.
 
     Arguments
     ---------
-        vals <flt>(N) : values to be converted
+    vals : (N,) array_like of float
+        Values to be converted.
 
     Returns
     -------
-        man <flt>(N) : mantissa
-        exp <flt>(N) : exponent
-
+    man : (N,) array_like of float
+        Mantissa.
+    exp : (N,) array_like of float
+        Exponent
     """
-
-    exp = np.int(np.floor(np.log10(vals)))
+    # Find exponent of absolute value
+    exp = np.floor(np.log10(np.fabs(vals)))
+    # Positive/negative is still included here
     man = vals / np.power(10.0, exp)
     return man, exp
 
