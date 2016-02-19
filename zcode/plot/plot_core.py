@@ -747,10 +747,25 @@ def strSciNot(val, precman=0, precexp=0, dollar=True):
 
     """
     man, exp = zmath.frexp10(val)
-    if precman is not None: manStr = "{0:.{1:d}f}".format(man, precman)
-    else:                   manStr = ""
-    if precexp is not None: expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
-    else:                   expStr = ""
+    use_man = (precman is not None and np.isfinite(exp))
+    if use_man: manStr = "{0:.{1:d}f}".format(man, precman)
+    else:       manStr = ""
+    # if precexp is not None: expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
+    # else:                   expStr = ""
+    if precexp is not None:
+        # Try to convert `exp` to integer, fails if 'inf' or 'nan'
+        try:
+            exp = np.int(exp)
+            expStr = "10^{{ {:d} }}".format(exp)
+        except:
+            expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
+
+        # Add negative sign if needed
+        if not use_man and (man < 0.0 or val == -np.inf):
+            expStr = "-" + expStr
+    else:
+        expStr = ""
+
     notStr = "$"*dollar + manStr
     if len(manStr) and len(expStr):
         notStr += " \\times"

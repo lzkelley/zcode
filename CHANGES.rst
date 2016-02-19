@@ -34,6 +34,8 @@ Current
         -   `_comparisonFilter` [DEPRECATED] ---> `comparison_filter` [new-function]
             +   [ENH] Added options to return indices (instead of values), compare with non-zero
                 comparison values, and check for finite (or not).
+        -   `frexp10`
+            +   [ENH] Updated to work with negative and non-finite values.
         -   `minmax`
             +   [ENH] Extend the `prev` argument to allow for either minimum of maximum comparison
                 to be `None`.
@@ -61,6 +63,7 @@ Current
             +   [ENH] check that figures saved properly.
         -   `strSciNot`
             +   [ENH] enable `None` precision --- i.e. dont show mantissa or exponent.
+            +   [ENH] Updated to work with negative and non-finite values.
 
 
 [0.0.6] - 2016/01/30
