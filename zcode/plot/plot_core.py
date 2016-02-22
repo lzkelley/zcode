@@ -23,6 +23,7 @@ Functions
 -   plotScatter          - Draw a scatter plot.
 -   plotHistBars         - Plot a histogram bar graph.
 -   plotConfFill         - Draw a median line and (set of) confidence interval(s).
+-   vline_label          - Plot a vertical line, and give it a label outside the axes.
 
 -   _setAxis_scale       -
 -   _setAxis_label       -
@@ -53,7 +54,8 @@ import zcode.inout as zio
 __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend',
            'unifyAxesLimits', 'color_cycle',
            'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
-           'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill']
+           'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
+           'vline_label']
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -1028,13 +1030,6 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
         xx = np.array(rads)
         ylo = np.array(conf[:, jj, 0])
         yhi = np.array(conf[:, jj, 1])
-        # if filter:
-        #     inds = np.where(filter(ylo, 0.0) & filter(yhi, 0.0))
-        #     xx = xx[inds]
-        #     ylo = ylo[inds]
-        #     yhi = yhi[inds]
-        # ylo = np.ma.masked_less_equal(conf[:, jj, 0], 0.0)
-        # yhi = np.ma.masked_less_equal(conf[:, jj, 1], 0.0)
         if filter:
             ylo = np.ma.masked_where(~filter(ylo, 0.0), ylo)
             yhi = np.ma.masked_where(~filter(yhi, 0.0), yhi)
@@ -1054,6 +1049,54 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
         ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=_LW_OUTLINE)
     ll, = ax.plot(rads, med, '-', color=color, lw=lw)
     return linePatch, confPatches
+
+
+def vline_label(ax, xx, label, top=True, line_kwargs={}, text_kwargs={}, dashes=None):
+    """Plot a vertical line, and give it a label outside the axes.
+
+    Arguments
+    ---------
+    ax : `matplotlib.axes.Axes` object
+        Axes on which to plot.
+    xx : float
+        Location (in data coordinated) to place the line.
+    label : str
+        Label to place with the vertical line.
+    top : bool
+        Place the label above the axes ('True'), as apposed to below ('False').
+    line_kwargs : dict
+        Additional parameters for the line, passed to `ax.axvline`.
+    text_kwargs : dict
+        Additional parameters for the text, passed to `plot_core.text`.
+    dashes : array_like of float or `None`
+        Specification for dash/dots pattern for the line, passed to `set_dashes`.
+
+    Returns
+    -------
+    ll : `matplotlib.lines.Line2D`
+        Added line object.
+    txt : `matplotlib.text.Text`
+        Added text object.
+
+    """
+    PAD = 0.01
+    # Add vertical line
+    ll = ax.axvline(xx, **line_kwargs)
+    if dashes:
+        ll.set_dashes(dashes)
+    # Create blended transformation
+    trans = mpl.transforms.blended_transform_factory(ax.transData, ax.transAxes)
+    #    Place above axes
+    if top:
+        yy = 1.0 + PAD
+        va = 'bottom'
+    #    Place below axes
+    else:
+        yy = 0.0 - PAD
+        va = 'bottom'
+
+    txt = text(ax, label, x=xx, y=yy, halign='center', valign=va, trans=trans, **text_kwargs)
+    return ll, txt
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
