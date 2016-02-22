@@ -61,6 +61,8 @@ Current
     +   plot_core.py
         -   `legend`
             +   [BUG] fixed issue where 'center' could be repeated for `valign` and `halign`.
+        -   `line_label` [new-function]
+            +   Function which draws a vertical or horizontal line, and adds an annotation to it.
         -   `saveFigure`
             +   [ENH] check that figures saved properly.
         -   `strSciNot`
