@@ -23,7 +23,7 @@ Functions
 -   plotScatter          - Draw a scatter plot.
 -   plotHistBars         - Plot a histogram bar graph.
 -   plotConfFill         - Draw a median line and (set of) confidence interval(s).
--   vline_label          - Plot a vertical line, and give it a label outside the axes.
+-   line_label           - Plot a vertical line, and give it a label outside the axes.
 
 -   _setAxis_scale       -
 -   _setAxis_label       -
@@ -55,7 +55,7 @@ __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'lege
            'unifyAxesLimits', 'color_cycle',
            'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
-           'vline_label']
+           'line_label']
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -1051,7 +1051,8 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
     return linePatch, confPatches
 
 
-def vline_label(ax, xx, label, top=True, line_kwargs={}, text_kwargs={}, dashes=None):
+def line_label(ax, pos, label, dir='v', loc='top',
+               line_kwargs={}, text_kwargs={}, dashes=None, rot=None):
     """Plot a vertical line, and give it a label outside the axes.
 
     Arguments
@@ -1080,22 +1081,72 @@ def vline_label(ax, xx, label, top=True, line_kwargs={}, text_kwargs={}, dashes=
 
     """
     PAD = 0.01
-    # Add vertical line
-    ll = ax.axvline(xx, **line_kwargs)
-    if dashes:
-        ll.set_dashes(dashes)
-    # Create blended transformation
-    trans = mpl.transforms.blended_transform_factory(ax.transData, ax.transAxes)
-    #    Place above axes
-    if top:
-        yy = 1.0 + PAD
-        va = 'bottom'
-    #    Place below axes
-    else:
-        yy = 0.0 - PAD
-        va = 'bottom'
+    tdir = dir.lower()[:1]
+    if tdir.startswith('v'):   VERT = True
+    elif tdir.startswith('h'): VERT = False
+    else: raise ValueError("`dir` ('{}') must start with {{'v', 'h'}}".format(dir))
+    tloc = loc.lower()[:1]
+    valid_locs = ['t', 'b', 'l', 'r']
+    if tloc not in valid_locs:
+        raise ValueError("`loc` ('{}') must start with '{}'".format(loc, valid_locs))
 
-    txt = text(ax, label, x=xx, y=yy, halign='center', valign=va, trans=trans, **text_kwargs)
+    # Set default rotation
+    if rot is None:
+        rot = 0
+        # If to 'l'eft or 'r'ight, rotate 90-degrees
+        if tloc.startswith('l'): rot = 90
+        elif tloc.startswith('r'): rot = -90
+
+    # Set alignment
+    if tloc.startswith('l'):
+        ha = 'right'
+        va = 'center'
+    elif tloc.startswith('r'):
+        ha = 'left'
+        va = 'center'
+    elif tloc.startswith('t'):
+        ha = 'center'
+        va = 'bottom'
+    elif tloc.startswith('b'):
+        ha = 'center'
+        va = 'top'
+
+    # Add vertical line
+    if VERT:
+        ll = ax.axvline(pos, **line_kwargs)
+        trans = mpl.transforms.blended_transform_factory(ax.transData, ax.transAxes)
+        if tloc.startswith('l'):
+            xx = pos
+            yy = 0.5
+        elif tloc.startswith('r'):
+            xx = pos
+            yy = 0.5
+        elif tloc.startswith('t'):
+            xx = pos
+            yy = 1.0 + PAD
+        elif tloc.startswith('b'):
+            xx = pos
+            yy = 0.0 - PAD
+    # Add horizontal line
+    else:
+        ll = ax.axhline(pos, **line_kwargs)
+        trans = mpl.transforms.blended_transform_factory(ax.transAxes, ax.transData)
+        if tloc.startswith('l'):
+            xx = 0.0 - PAD
+            yy = pos
+        elif tloc.startswith('r'):
+            xx = 1.0 + PAD
+            yy = pos
+        elif tloc.startswith('t'):
+            xx = 0.5
+            yy = pos
+        elif tloc.startswith('b'):
+            xx = 0.5
+            yy = pos
+
+    if dashes: ll.set_dashes(dashes)
+
+    txt = text(ax, label, x=xx, y=yy, halign=ha, valign=va, trans=trans, **text_kwargs)
     return ll, txt
 
 
