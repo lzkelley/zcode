@@ -15,13 +15,15 @@ Current
 -------
 -   inout/
     +   inout_core.py
+        -   `ascii_table`
+            +   [ENH] passing ``out = None`` will make the function return a string version of the
+                table.
         -   `checkPath`
             +   [ENH] added parameter `create` to choose whether missing directories are created
                 or not.
             +   [DOC] added docstrings.
-        -   `ascii_table`
-            +   [ENH] passing ``out = None`` will make the function return a string version of the
-                table.
+        -   `iterable_notstring` [new-function]
+            +   Return 'True' if the argument is an iterable and not a string type.
     +   timer.py
         -   [ENH] `Timings.report()` will return the results as a string if the parameter,
             ``out = None``.

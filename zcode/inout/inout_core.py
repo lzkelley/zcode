@@ -22,6 +22,7 @@ Functions
 -   mpiError                 - Raise an error through MPI and exit all processes.
 -   ascii_table              - Print a table with the given contents to output.
 -   modify_exists            - Modify the given filename if it already exists.
+-   iterable_notstring       - Return True' if the argument is an iterable and not a string type.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -34,11 +35,13 @@ import re
 import logging
 import warnings
 import numpy as np
+import collections
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize',
            'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
-           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists']
+           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
+           'iterable_notstring']
 
 
 class _Keys_Meta(type):
@@ -725,3 +728,9 @@ def modify_exists(fname, max=100):
         raise RuntimeError("New filename '{}' already exists.".format(newName))
 
     return newName
+
+
+def iterable_notstring(var):
+    """Return True' if the argument is an iterable and not a string type.
+    """
+    return not isinstance(var, six.string_types) and isinstance(var, collections.Iterable)
