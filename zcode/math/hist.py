@@ -10,7 +10,7 @@ from . import math_core as zmath
 __all__ = ['histogram']
 
 
-def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum',
+def histogram(args, bins, scale=None, bounds='both', weights=None, func='sum',
               cumul=False, stdev=False):
     """Histogram (bin) the given values.
 
@@ -23,8 +23,8 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
        args     <scalar>[N]   : data to be histogrammed.
        bins     <scalar>([M]) : Positions of bin edges or number of bins to construct automatically.
                                 If a single ``bins`` value is given, it is assumed to be a number of
-                                bins to create with a scaling given by ``binScale`` (see desc).
-       binScale <str>         : scaling to use when creating bins automatically.
+                                bins to create with a scaling given by ``scale`` (see desc).
+       scale <str>            : scaling to use when creating bins automatically.
                                 If `None`, the extrema of ``args`` are used to make an selection.
        bounds    <str>        : optional, how to treat the given ``bins`` values, i.e. which 'edges'
                                 these represent.  Must be one of {`left`, `both`, `right`}.
@@ -82,7 +82,7 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
     # Construct a certain number ``bins`` bins spaced appropriately
     if(np.size(bins) == 1):
         extr = zmath.minmax(args)
-        useScale = binScale
+        useScale = scale
         # If no bin scaling is given, make an appropriate choice
         if(useScale is None):
             useScale = 'log'
@@ -183,7 +183,7 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
         std = [np.std(weights[digits == ii]) for ii in range(1, len(edges))]
         # Fix last bin to include values which equal the right-most edge
         if(bounds == 'both'):
-            std[-1] = np.std(weights[(digits == ii) | (args == edges[-1])])
+            std[-1] = np.std(weights[(digits == len(edges)-1) | (args == edges[-1])])
 
         std = np.array(std)
 
