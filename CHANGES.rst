@@ -39,8 +39,10 @@ Current
         -   `frexp10`
             +   [ENH] Updated to work with negative and non-finite values.
         -   `minmax`
-            +   [ENH] Extend the `prev` argument to allow for either minimum of maximum comparison
+            +   [ENH] Extend the `prev` argument to allow for either minimum or maximum comparison
                 to be `None`.
+            +   [ENH] Added `limit` keyword argument to place limits on low/high extrema.
+            +   [MAINT] Fully deprecated (removed) `positive`, `nonzero` keywords.
         -   `stats_str`
             +   [ENH] Added parameter `label` to give to the output string.
     +   tests/

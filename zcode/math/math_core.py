@@ -243,7 +243,7 @@ def indsWithin(vals, extr, edges=True):
     return inds
 
 
-def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=None):
+def minmax(data, prev=None, stretch=0.0, filter=None, limit=None):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
@@ -274,9 +274,10 @@ def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=Non
     -   Add an 'axis' argument.
 
     """
-    # ---- DEPRECATION SECTION -------
-    filter = _flagsToFilter(positive, nonzero, filter=filter, source='minmax')
-    # --------------------------------
+    if prev is not None:
+        assert len(prev) == 2, "`prev` must have length 2."
+    if limit is not None:
+        assert len(limit) == 2, "`limit` must have length 2."
 
     useData = np.array(data)
 
@@ -298,6 +299,11 @@ def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=Non
     if prev is not None:
         if prev[0] is not None: minmax[0] = np.min([minmax[0], prev[0]])
         if prev[1] is not None: minmax[1] = np.max([minmax[1], prev[1]])
+
+    # Compare to limits, if given
+    if limit is not None:
+        if limit[0] is not None: minmax[0] = np.max([minmax[0], limit[0]])
+        if limit[1] is not None: minmax[1] = np.min([minmax[1], limit[1]])
 
     return minmax
 
