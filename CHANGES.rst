@@ -65,6 +65,11 @@ Current
             +   [BUG] fixed issue where 'center' could be repeated for `valign` and `halign`.
         -   `line_label` [new-function]
             +   Function which draws a vertical or horizontal line, and adds an annotation to it.
+        -   `plotConfFill`
+            +   [ENH] Added `edges` argument to control drawing the edges of each confidence
+                interval explicitly.
+        -   `plotHistLine`
+            +   [ENH] Added `invert` argument to allow switching the x and y data.
         -   `saveFigure`
             +   [ENH] check that figures saved properly.
         -   `strSciNot`

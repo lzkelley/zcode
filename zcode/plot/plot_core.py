@@ -776,7 +776,7 @@ def strSciNot(val, precman=0, precexp=0, dollar=True):
 
 
 def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None,
-                 fill=None, **kwargs):
+                 fill=None, invert=False, **kwargs):
     """Given bin edges and histogram-like values, plot a histogram.
 
     Arguments
@@ -799,13 +799,13 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
 
     # Determine color if included in ``kwargs``
     col = 'black'
-    if(kwargs.get('color') is not None): col = kwargs.get('color')
-    elif(kwargs.get('c') is not None): col = kwargs.get('c')
+    if kwargs.get('color') is not None: col = kwargs.get('color')
+    elif kwargs.get('c') is not None: col = kwargs.get('c')
 
     # Extend bin edges if needed
-    if(len(edges) != len(hist)+1):
-        if(extend == 'left'): edges = np.concatenate([[zmath.extend(edges)[0]], edges])
-        elif(extend == 'right'): edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
+    if len(edges) != len(hist)+1:
+        if extend == 'left': edges = np.concatenate([[zmath.extend(edges)[0]], edges])
+        elif extend == 'right': edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
         else: raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend`` given")
 
     # Construct plot points to manually create a step-plot
@@ -820,6 +820,11 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
     if(positive):
         xval = np.ma.masked_where(yval < 0.0, xval)
         yval = np.ma.masked_where(yval < 0.0, yval)
+
+    if invert:
+        temp = np.array(xval)
+        xval = yval
+        yval = temp
 
     # Plot Histogram
     line, = ax.plot(xval, yval, **kwargs)
@@ -959,8 +964,8 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     return bars
 
 
-def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
-                 filter=None, outline='0.5', **kwargs):
+def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, linealpha=0.8,
+                 filter=None, outline='0.5', edges=True, **kwargs):
     """Draw a median line and (set of) confidence interval(s).
 
     The `med` and `conf` values can be obtained from `numpy.percentile` and or
@@ -1024,7 +1029,7 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
         else:                             falph = np.power(fillalpha, jj+1)
 
         # Create a dummy-patch to return for a legend of confidence-intervals
-        pp = ax.fill(np.nan, np.nan, color=color, alpha=falph)
+        pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
         confPatches.append(pp[0])
 
         xx = np.array(rads)
@@ -1035,19 +1040,24 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
             yhi = np.ma.masked_where(~filter(yhi, 0.0), yhi)
 
         # Fill between confidence intervals
-        ax.fill_between(xx, ylo, yhi, alpha=falph, color=color, **kwargs)
+        pp = ax.fill_between(xx, ylo, yhi, alpha=falph, facecolor=color, **kwargs)
+
+        # Plot edges of confidence intervals
+        if edges:
+            ax.plot(rads, ylo, color=color, alpha=0.5*linealpha, lw=0.5*lw)
+            ax.plot(rads, yhi, color=color, alpha=0.5*linealpha, lw=0.5*lw)
 
         # Create dummy-patch for the median-line and fill-color, for a legend
-        if(jj == 0):
-            pp = ax.fill(np.nan, np.nan, color=color, alpha=falph, **kwargs)
+        if jj == 0:
+            # pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
             # Create overlay of lines and patches
-            linePatch = (pp[0], ll)
+            linePatch = (pp, ll)
 
     # Plot Median Line
     #    Plot black outline to improve contrast
     if outline is not None:
         ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=_LW_OUTLINE)
-    ll, = ax.plot(rads, med, '-', color=color, lw=lw)
+    ll, = ax.plot(rads, med, '-', color=color, lw=lw, alpha=linealpha)
     return linePatch, confPatches
 
 
