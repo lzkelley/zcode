@@ -141,9 +141,15 @@ def colormap2d(xargs, yargs, cmap=None, scale=None):
     if scale[1] is None: scale[1] = zmath._infer_scale(yargs)
 
     xlog = zplot._scale_to_log_flag(scale[0])
+    if xlog: xfilter = 'g'
+    else:    xfilter = None
+
     ylog = zplot._scale_to_log_flag(scale[1])
-    xmin, xmax = zmath.minmax(xargs, nonzero=xlog, positive=xlog)
-    ymin, ymax = zmath.minmax(yargs, nonzero=ylog, positive=ylog)
+    if ylog: yfilter = 'g'
+    else:    yfilter = None
+
+    xmin, xmax = zmath.minmax(xargs, filter=xfilter)
+    ymin, ymax = zmath.minmax(yargs, filter=yfilter)
 
     if xlog: xnorm = mpl.colors.LogNorm(vmin=xmin, vmax=xmax)
     else:    xnorm = mpl.colors.Normalize(vmin=xmin, vmax=xmax)

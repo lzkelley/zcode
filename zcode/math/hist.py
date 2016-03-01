@@ -100,7 +100,7 @@ def histogram(args, bins, scale=None, bounds='both', weights=None, func='sum',
         # Try to go just after right-most value
         useMax = 1.01*np.max([np.max(edges), np.max(args)])
         # Deal with right-most being 0.0
-        shiftMax = zmath.minmax(np.fabs(args), nonzero=True)
+        shiftMax = zmath.minmax(np.fabs(args), filter='!=')
         #     If there are no, nonzero values ``None`` is returned
         if(shiftMax is None): shiftMax = 1.0
         else:                   shiftMax = 0.1*shiftMax[0]
@@ -111,7 +111,7 @@ def histogram(args, bins, scale=None, bounds='both', weights=None, func='sum',
         # Try to go just before left-most value
         useMin = 0.99*np.min([np.min(edges), np.min(args)])
         # Deal with left-most being 0.0
-        shiftMin = zmath.minmax(np.fabs(args), nonzero=True)
+        shiftMin = zmath.minmax(np.fabs(args), filter='!=')
         #     If there are no, nonzero values ``None`` is returned
         if(shiftMin is None): shiftMin = 1.0
         else:                   shiftMin = 0.1*shiftMin[0]

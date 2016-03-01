@@ -302,7 +302,9 @@ def plot2DHist(ax, xvals, yvals, hist, cax=None, cbax=None, cscale='log', cmap=p
     cblab = 'Counts'
     xgrid, ygrid = np.meshgrid(xvals, yvals)
     hist = np.asarray(hist)
-    if extrema is None: extrema = zmath.minmax(hist, nonzero=plot_core._scale_to_log_flag(cscale))
+    if plot_core._scale_to_log_flag(cscale): filter = 'g'
+    else:                                    filter = None
+    if extrema is None: extrema = zmath.minmax(hist, filter=filter)
     if labels is not None:
         if np.size(labels) >= 2:
             ax.set_xlabel(labels[0], size=fs)
