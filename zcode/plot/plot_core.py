@@ -24,6 +24,8 @@ Functions
 -   plotHistBars         - Plot a histogram bar graph.
 -   plotConfFill         - Draw a median line and (set of) confidence interval(s).
 -   line_label           - Plot a vertical line, and give it a label outside the axes.
+-   full_extent
+-   backdrop
 
 -   _setAxis_scale       -
 -   _setAxis_label       -
@@ -55,7 +57,7 @@ __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'lege
            'unifyAxesLimits', 'color_cycle',
            'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
-           'line_label']
+           'line_label', 'full_extent', 'backdrop']
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -551,9 +553,13 @@ def colormap(args, cmap='jet', scale=None):
             scale = 'lin'
 
     log = _scale_to_log_flag(scale)
+    if log:
+        filter = 'g'
+    else:
+        filter = None
 
     # Determine minimum and maximum
-    if np.size(args) > 1: min, max = zmath.minmax(args, nonzero=log, positive=log)
+    if np.size(args) > 1: min, max = zmath.minmax(args, filter=filter)
     else:                 min, max = 0, np.int(args)-1
 
     # Create normalization
@@ -1158,6 +1164,60 @@ def line_label(ax, pos, label, dir='v', loc='top',
 
     txt = text(ax, label, x=xx, y=yy, halign=ha, valign=va, trans=trans, **text_kwargs)
     return ll, txt
+
+
+def full_extent(ax, pad=0.0, invert=None):
+    """Get the full extent of an axes, including axes labels, tick labels, and titles.
+
+    From: 'stackoverflow.com/questions/14712665/'
+    """
+    # For text objects, we need to draw the figure first, otherwise the extents
+    # are undefined.
+    ax.figure.canvas.draw()
+    items = ax.get_xticklabels() + ax.get_yticklabels()
+    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
+    items += [ax, ax.title]
+    bbox = mpl.transforms.Bbox.union([item.get_window_extent() for item in items])
+    bbox = bbox.expanded(1.0 + pad, 1.0 + pad)
+    # return bbox.expanded(1.0 + pad, 1.0 + pad)
+    if invert:
+        bbox = bbox.transformed(invert.inverted())
+
+    return bbox
+
+
+def _extents(ax, pad=0.0, invert=None):
+    """Get the extents of an axes, including axes labels, tick labels, and titles.
+
+    Adapted From: 'stackoverflow.com/questions/14712665/'
+    """
+    # For text objects, we need to draw the figure first, otherwise the extents
+    # are undefined.
+    ax.figure.canvas.draw()
+    items = ax.get_xticklabels() + ax.get_yticklabels()
+    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
+    items += [ax, ax.title]
+    bboxes = [it.get_window_extent().expanded(1.0 + pad, 1.0 + pad) for it in items]
+    if invert:
+        bboxes = [bb.transformed(invert.inverted()) for bb in bboxes]
+
+    return bboxes
+
+
+def backdrop(fig, ax, pad=0.0, union=False, **kwargs):
+    if union:
+        bboxes = [full_extent(ax, pad=pad, invert=fig.transFigure)]
+    else:
+        bboxes = _extents(ax, pad=pad, invert=fig.transFigure)
+
+    pats = []
+    for bbox in bboxes:
+        rect = mpl.patches.Rectangle([bbox.xmin, bbox.ymin], bbox.width, bbox.height,
+                                     transform=fig.transFigure, **kwargs)
+        fig.patches.append(rect)
+        pats.append(rect)
+
+    return pats
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):

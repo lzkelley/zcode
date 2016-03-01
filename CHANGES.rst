@@ -61,6 +61,10 @@ Current
                 incorrectly.
             +   [BUG] fixed issue with trying to set numerous axes variables in coloarbar.
     +   plot_core.py
+        -   `backdrop` [new-function]
+            +   [ENH] Add rectangular patches behind the content of the given axes.
+        -   `full_extent` [new-function]
+            +   [ENH] Find the bbox (or set of bbox) which contain the given axes and its contents.
         -   `legend`
             +   [BUG] fixed issue where 'center' could be repeated for `valign` and `halign`.
         -   `line_label` [new-function]
