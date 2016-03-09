@@ -57,7 +57,7 @@ __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'lege
            'unifyAxesLimits', 'color_cycle',
            'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
-           'line_label', 'full_extent', 'backdrop']
+           'line_label', 'full_extent', 'backdrop', '_histLine']
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -406,13 +406,13 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
-    txt = fig.text(x, y, pstr, size=fs, family='monospace', transform=trans,
+    txt = fig.text(x, y, pstr, size=fs, transform=trans,  #  family='monospace',
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
 
 
-def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None,
+def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None,
            **kwargs):
     """Add a legend to the given figure.
 
@@ -420,7 +420,7 @@ def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
 
     Arguments
     ---------
-    fig : `matplotlib.figure.Figure` object,
+    art : `matplotlib.figure.Figure` pr `matplotlib.axes.Axes` object,
     keys : array_like of artists, shape (N,)
         Handles to the legend artists to be included in the legend.
     names : array_like of str, shape (N,)
@@ -447,8 +447,13 @@ def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
         Handle storing the drawn legend.
 
     """
-    ax = fig.axes[0]
-    if trans is None: trans = fig.transFigure
+    if isinstance(art, mpl.figure.Figure):
+        ax = art.axes[0]
+        if trans is None: trans = art.transFigure
+    elif isinstance(art, mpl.axes.Axes):
+        ax = art
+        if trans is None: trans = ax.transAxes
+
     if valign == 'top':
         valign = 'upper'
     if valign == 'bottom':
@@ -938,11 +943,20 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     CONF_INTS = [0.95, 0.68]
     CONF_COLS = ['green', 'orange']
 
-    if(scaley.startswith('log')): logy = True
-    else:                         logy = False
+    if scaley.startswith('log'): logy = True
+    else:                        logy = False
+
+    if 'color' not in kwargs and 'c' not in kwargs:
+        kwargs['color'] = COL_CORR
+    if 'alpha' not in kwargs:
+        kwargs['alpha'] = HIST_ALPHA
+    if 'rwidth' not in kwargs:
+        kwargs['rwidth'] = 0.8
+    if 'zorder' not in kwargs:
+        kwargs['zorder'] = 100
 
     # Add Confidence intervals
-    if(conf):
+    if conf:
         med, cints = zmath.confidenceIntervals(xx, ci=CONF_INTS)
         ax.axvline(med, color='red', ls='--', lw=LW_CONF, zorder=101)
         # Add average
@@ -953,17 +967,16 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
 
     # Create a given number of log-spaced bins
     #     If not log-spaced, then `ax.hist` will do the same
-    if(isinstance(bins, numbers.Integral) and scalex.startswith('log')):
-        bins = zmath.spacing(xx, num=bins, )
+    if isinstance(bins, numbers.Integral) and scalex.startswith('log'):
+        bins = zmath.spacing(xx, num=bins, scale='log')
 
-    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', log=logy, alpha=HIST_ALPHA,
-                               rwidth=0.8, color=COL_CORR, zorder=100, **kwargs)
+    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', log=logy, **kwargs)
 
     # Dont let lower y-lim be less than 0.8 with log-scaling
-    if(scaley.startswith('log')):
+    if scaley.startswith('log'):
         # setLim(ax, 'y', lo=0.8, at='least')   <=== This isn't working for some reason!  FIX
         ylim = np.array(ax.get_ylim())
-        if(ylim[0] < 0.8):
+        if ylim[0] < 0.8:
             ylim[0] = 0.8
             ax.set_ylim(ylim)
 

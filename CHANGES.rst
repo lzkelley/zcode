@@ -77,6 +77,8 @@ Current
         -   `plotConfFill`
             +   [ENH] Added `edges` argument to control drawing the edges of each confidence
                 interval explicitly.
+        -   `plotHistBars`
+            +   [ENH] Added improved default parameters for bar plot.  Missing parameter bug fix.
         -   `plotHistLine`
             +   [ENH] Added `invert` argument to allow switching the x and y data.
         -   `saveFigure`
