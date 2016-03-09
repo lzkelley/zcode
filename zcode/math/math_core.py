@@ -282,7 +282,7 @@ def minmax(data, prev=None, stretch=0.0, filter=None, limit=None):
     useData = np.array(data)
 
     if filter:
-        useData = _comparisonFilter(useData, filter)
+        useData = comparison_filter(useData, filter)
 
     # If there are no elements (left), return `prev` (`None` if not provided)
     if np.size(useData) == 0:
@@ -755,7 +755,7 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
 
     # Filter input values
     if filter:
-        vals = _comparisonFilter(vals, filter)
+        vals = comparison_filter(vals, filter)
         if vals.size == 0:
             return None, None
 
@@ -1019,7 +1019,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     ---------
         arr   <flt>[N] : input array to be smoothed
         size  <obj>    : size of smoothing window
-        width <obj>    : scalar specifying the region to be smoothed, of twp values are given
+        width <obj>    : scalar specifying the region to be smoothed, if two values are given
                          they are taken as left and right bounds
         loc   <flt>    : int or float specifying to center position of smoothing,
                          ``width`` is used relative to this position, if provided.
@@ -1034,7 +1034,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     length = np.size(arr)
     size = _fracToInt(size, length, within=1.0, round='floor')
 
-    assert size <= length, "``size`` must be less than length of input array!"
+    assert size <= length, "`size` must be less than length of input array!"
 
     window = np.ones(int(size))/float(size)
 
@@ -1042,7 +1042,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     smArr = np.convolve(arr, window, mode=mode)
 
     # Return full smoothed array if no bounds given
-    if(width is None):
+    if width is None:
         return smArr
 
     # Other convolution modes require dealing with differing lengths
@@ -1052,11 +1052,11 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     # Smooth portion of array
     # -----------------------
 
-    if(np.size(width) == 2):
+    if np.size(width) == 2:
         lef = width[0]
         rit = width[1]
-    elif(np.size(width) == 1):
-        if(loc is None): raise ValueError("For a singular ``width``, ``pos`` must be provided!")
+    elif np.size(width) == 1:
+        if loc is None: raise ValueError("For a singular ``width``, ``pos`` must be provided!")
         lef = width
         rit = width
     else:
@@ -1067,7 +1067,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     rit = _fracToInt(rit, length-1, within=1.0, round='floor')
 
     # If ``loc`` is provided, use ``width`` relative to that
-    if(loc is not None):
+    if loc is not None:
         loc = _fracToInt(loc, length-1, within=1.0, round='floor')
         lef = loc - lef
         rit = loc + rit
