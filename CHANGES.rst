@@ -5,6 +5,9 @@ Future / To-Do
 --------------
 -   General
     +   Implement tests for all modules and functions.
+    +   Update all situations to use 'filter' instead of 'positive'/'nonzero'
+    +   More tests.  For plotting stuff, add tests just to make sure nothing breaks.
+    +   Setup automatic testing (e.g. nightly?)
 -   math/
     +   math_core.py
         -   `spacing`
@@ -59,7 +62,8 @@ Current
                 fail.  Seems to be working fine.
             +   [BUG] fixed issue in right projection where the x-axis scaling would be set
                 incorrectly.
-            +   [BUG] fixed issue with trying to set numerous axes variables in coloarbar.
+            +   [BUG] fixed issue with trying to set numerous axes variables in colorbar.
+            +   [ENH] updated with `cmap` and `smap` parameters passed to `plot2DHist`.
     +   plot_core.py
         -   `backdrop` [new-function]
             +   [ENH] Add rectangular patches behind the content of the given axes.
@@ -67,6 +71,7 @@ Current
             +   [ENH] Find the bbox (or set of bbox) which contain the given axes and its contents.
         -   `legend`
             +   [BUG] fixed issue where 'center' could be repeated for `valign` and `halign`.
+            +   [ENH] change the argument `fig` to be `art` -- either an axes or fig object.
         -   `line_label` [new-function]
             +   Function which draws a vertical or horizontal line, and adds an annotation to it.
         -   `plotConfFill`

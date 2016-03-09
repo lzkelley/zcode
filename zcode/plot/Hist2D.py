@@ -38,6 +38,7 @@ _CB_WPAD = 0.08
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0,
+                   cmap=plt.cm.jet, smap=None,
                    fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False,
                    left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP):
     """Plot a 2D histogram with projections of one or both axes.
@@ -76,6 +77,11 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         Fraction of the total available width-space to use for the primary axes object (2D hist)
     pad : float,
         Padding between central axis and the projected ones.
+    cmap : ``matplotlib.colors.Colormap`` object
+        Matplotlib colormap to use for coloring histogram.
+        Overridden if `smap` is provided.
+    smap : `matplotlib.cm.ScalarMappable` object or `None`
+        A scalar-mappable object to use for colormaps, or `None` for one to be created.
     fs : int,
         Font-size
     scale : str or [str, str],
@@ -204,12 +210,13 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     if write_counts:
         counts, xedges, yedges, binnums = sp.stats.binned_statistic_2d(
             xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
+
     hist, xedges, yedges, binnums = sp.stats.binned_statistic_2d(
         xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
 
     hist = np.nan_to_num(hist)
     pcm, smap = plot2DHist(prax, xedges, yedges, hist, cscale=histScale, cbax=cbax,
-                           labels=labels, counts=counts)
+                           labels=labels, counts=counts, cmap=cmap, smap=smap)
 
     # Plot projection of the x-axis (i.e. ignore 'y')
     if xpax:
@@ -250,9 +257,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     return fig
 
 
-def plot2DHist(ax, xvals, yvals, hist, cax=None, cbax=None, cscale='log', cmap=plt.cm.jet, fs=12,
-               contours=None, clabel={}, rasterized=True,
-               title=None, smap=None, extrema=None, labels=None, counts=None, **kwargs):
+def plot2DHist(ax, xvals, yvals, hist,
+               cax=None, cbax=None, cscale='log', cmap=plt.cm.jet, smap=None, extrema=None,
+               contours=None, clabel={}, fs=12, rasterized=True,
+               title=None, labels=None, counts=None, **kwargs):
     """Plot the given 2D histogram of data.
 
     Use with (e.g.) ``numpy.histogram2d``,
@@ -277,8 +285,10 @@ def plot2DHist(ax, xvals, yvals, hist, cax=None, cbax=None, cscale='log', cmap=p
         See the `ax` parameter of `plt.colorbar`.
     cscale : str
         Scale to use for the colormap {'linear', 'log'}.
+        Overridden if `smap` is provided.
     cmap : ``matplotlib.colors.Colormap`` object
         Matplotlib colormap to use for coloring histogram.
+        Overridden if `smap` is provided.
     fs : int
         Fontsize specification.
     title : str or `None`
@@ -287,7 +297,9 @@ def plot2DHist(ax, xvals, yvals, hist, cax=None, cbax=None, cscale='log', cmap=p
         A scalar-mappable object to use for colormaps, or `None` for one to be created.
     extrema : (2,) array_like of scalars
         Minimum and maximum values for colormap scaling.
-    labels :
+    labels : (2,) or (3,) array_like of strings
+        The first two string are the 'x' and 'y' axis labels respectively.  If a third string is
+        provided it is used as the colorbar label.
     counts : (N,M) ndarray of int or `None`
         Number of elements in each bin if overlaid-text is desired.
 
