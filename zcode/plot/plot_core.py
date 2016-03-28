@@ -23,6 +23,10 @@ Functions
 -   plotScatter          - Draw a scatter plot.
 -   plotHistBars         - Plot a histogram bar graph.
 -   plotConfFill         - Draw a median line and (set of) confidence interval(s).
+-   line_label           - Plot a vertical line, and give it a label outside the axes.
+-   full_extent          -
+-   position_to_extent   -
+-   backdrop             -
 
 -   _setAxis_scale       -
 -   _setAxis_label       -
@@ -38,6 +42,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import six
 from six.moves import xrange
 
+import os
 import logging
 import numbers
 import warnings
@@ -52,7 +57,8 @@ import zcode.inout as zio
 __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend',
            'unifyAxesLimits', 'color_cycle',
            'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
-           'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill']
+           'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
+           'line_label', 'full_extent', 'position_to_extent', 'backdrop', '_histLine']
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -61,6 +67,9 @@ _COLOR_SET = ['black', 'blue', 'red', 'green', 'purple',
               'orange', 'cyan', 'brown', 'gold', 'pink',
               'forestgreen', 'grey', 'olive', 'coral', 'yellow']
 _LW_OUTLINE = 0.8
+
+# Default length for lines in legend handles; in units of font-size
+_HANDLE_LENGTH = 2.5
 
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None,
@@ -401,13 +410,13 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
-    txt = plt.text(x, y, pstr, size=fs, family='monospace', transform=trans,
+    txt = fig.text(x, y, pstr, size=fs, transform=trans,  #  family='monospace',
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
 
 
-def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None,
+def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None,
            **kwargs):
     """Add a legend to the given figure.
 
@@ -415,7 +424,7 @@ def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
 
     Arguments
     ---------
-    fig : `matplotlib.figure.Figure` object,
+    art : `matplotlib.figure.Figure` pr `matplotlib.axes.Axes` object,
     keys : array_like of artists, shape (N,)
         Handles to the legend artists to be included in the legend.
     names : array_like of str, shape (N,)
@@ -432,6 +441,8 @@ def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
         Fontsize.
     trans : `matplotlib.BboxTransformTo` object, or `None`,
         Transformation to use for legend placement.
+        If `None`, then it defaults to `transFigure` or `transAxes` if `art` is a 'Figure' or 'Axes'
+        respectively.
     kwargs : any,
         Additional named arguments passed to `matplotlib.pyplot.legend`.
         For example, ``ncol=1`` or ``title='Legend Title'``.
@@ -442,20 +453,27 @@ def legend(fig, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
         Handle storing the drawn legend.
 
     """
-    ax = fig.axes[0]
+    if isinstance(art, mpl.figure.Figure):
+        ax = art.axes[0]
+        if trans is None: trans = art.transFigure
+    elif isinstance(art, mpl.axes.Axes):
+        ax = art
+        if trans is None: trans = ax.transAxes
 
-    if(trans is None): trans = fig.transFigure
-    if(valign == 'top'):
+    if 'handlelength' not in kwargs:
+        kwargs['handlelength'] = _HANDLE_LENGTH
+
+    if valign == 'top':
         valign = 'upper'
-
-    if(valign == 'bottom'):
+    if valign == 'bottom':
         valign = 'lower'
 
-    alignStr = valign + " " + halign
+    alignStr = valign
+    if not (valign == 'center' and halign == 'center'):
+        alignStr += " " + halign
 
-    leg = ax.legend(keys, names, prop={'size': fs, 'family': 'monospace'},
+    leg = ax.legend(keys, names, prop={'size': fs},  # 'family': 'monospace'},
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
-
     return leg
 
 
@@ -465,7 +483,7 @@ def unifyAxesLimits(axes, axis='y'):
 
     assert axis in ['x', 'y'], "``axis`` must be either 'x' or 'y' !!"
 
-    if(axis == 'y'):
+    if axis == 'y':
         lims = np.array([ax.get_ylim() for ax in axes])
     else:
         lims = np.array([ax.get_xlim() for ax in axes])
@@ -474,7 +492,7 @@ def unifyAxesLimits(axes, axis='y'):
     hi = np.max(lims[:, 1])
 
     for ax in axes:
-        if(axis == 'y'):
+        if axis == 'y':
             ax.set_ylim([lo, hi])
         else:
             ax.set_xlim([lo, hi])
@@ -519,7 +537,7 @@ def color_cycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     return cols
 
 
-def colormap(args, cmap='jet', scale=None):
+def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
@@ -531,16 +549,24 @@ def colormap(args, cmap='jet', scale=None):
     scale : str or `None`
         Scaling specification of colormap {'lin', 'log', `None`}.
         If `None`, scaling is inferred based on input `args`.
+    under : str or `None`
+        Color specification for values below range.
+    over : str or `None`
+        Color specification for values above range.
 
     Returns
     -------
-   smap : ``matplotlib.cm.ScalarMappable``
-       Scalar mappable object which contains the members:
-       `norm`, `cmap`, and the function `to_rgba`.
+    smap : ``matplotlib.cm.ScalarMappable``
+        Scalar mappable object which contains the members:
+        `norm`, `cmap`, and the function `to_rgba`.
 
     """
 
-    if isinstance(cmap, str): cmap = plt.get_cmap(cmap)
+    if cmap is None: cmap = 'jet'
+
+    if isinstance(cmap, six.string_types): cmap = plt.get_cmap(cmap)
+    if under is not None: cmap.set_under(under)
+    if over is not None: cmap.set_over(over)
 
     if scale is None:
         if np.size(args) > 1 and np.all(args > 0.0):
@@ -549,9 +575,13 @@ def colormap(args, cmap='jet', scale=None):
             scale = 'lin'
 
     log = _scale_to_log_flag(scale)
+    if log:
+        filter = 'g'
+    else:
+        filter = None
 
     # Determine minimum and maximum
-    if np.size(args) > 1: min, max = zmath.minmax(args, nonzero=log, positive=log)
+    if np.size(args) > 1: min, max = zmath.minmax(args, filter=filter)
     else:                 min, max = 0, np.int(args)-1
 
     # Create normalization
@@ -562,6 +592,8 @@ def colormap(args, cmap='jet', scale=None):
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     # Bug-Fix something something
     smap._A = []
+    # Store type of mapping
+    smap.log = log
 
     return smap
 
@@ -601,14 +633,11 @@ def color_set(num, black=False):
 def setGrid(ax, val, axis='both', below=True):
     """Configure the axes' grid.
     """
-
     ax.grid(False, which='both', axis='both')
     ax.set_axisbelow(below)
-
-    if(val):
+    if val:
         ax.grid(True, which='major', axis=axis, c='0.50', ls='-')
         ax.grid(True, which='minor', axis=axis, c='0.75', ls='-')
-
     return
 
 
@@ -628,25 +657,25 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
     """
 
     # Get the correct labels
-    if(axis == 'y'): ax_labels = ax.yaxis.get_ticklabels()
-    elif(axis == 'x'): ax_labels = ax.yaxis.get_ticklabels()
+    if axis == 'y': ax_labels = ax.yaxis.get_ticklabels()
+    elif axis == 'x': ax_labels = ax.yaxis.get_ticklabels()
     else: raise RuntimeError("Unrecognized ``axis`` = '%s'!!" % (axis))
 
     count = len(ax_labels)
 
     # Determine ``skip`` to match target number of labels
-    if(num is not None): skip = np.int(np.ceil(1.0*count/num))
+    if num is not None: skip = np.int(np.ceil(1.0*count/num))
 
     visible = np.zeros(count, dtype=bool)
 
     # Choose some to be visible
     visible[::skip] = True
 
-    if(first is True): visible[0] = True
-    elif(first is False): visible[0] = False
+    if first is True: visible[0] = True
+    elif first is False: visible[0] = False
 
-    if(last is True): visible[-1] = True
-    elif(last is False): visible[-1] = False
+    if last is True: visible[-1] = True
+    elif last is False: visible[-1] = False
 
     for label, vis in zip(ax_labels, visible): label.set_visible(vis)
 
@@ -657,6 +686,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     """Save the given figure(s) to the given filename.
 
     If ``fig`` is iterable, a multipage pdf is created.  Otherwise a single file is made.
+    Does *not* make sure path exists.
 
     Arguments
     ---------
@@ -671,65 +701,110 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     """
 
     # CATCH WRONG ORDER OF ARGUMENTS
-    if(type(fig) == str):
+    if type(fig) == str:
         warnings.warn("FIRST ARGUMENT SHOULD BE `fig`!!")
         temp = str(fig)
         fig = fname
         fname = temp
 
-    if(log is not None): log.debug("Saving figure...")
+    if log is not None: log.debug("Saving figure...")
 
-    if(not np.iterable(fig)): fig = [fig]
+    if not np.iterable(fig): fig = [fig]
+    saved_names = []
 
     # Save as multipage PDF
-    if(fname.endswith('pdf') and np.size(fig) > 1):
+    if fname.endswith('pdf') and np.size(fig) > 1:
         from matplotlib.backends.backend_pdf import PdfPages
         with PdfPages(fname) as pdf:
             for ff in fig:
                 pdf.savefig(figure=ff, **kwargs)
-                if(close): plt.close(ff)
+                if close: plt.close(ff)
+                # Make sure file now exists
+                if os.path.exists(fname):
+                    saved_names.append(fname)
+                else:
+                    raise RuntimeError("Figure '{}' did not save.".format(fname))
 
     else:
         # Save each figure to a different file
         for ii, ff in enumerate(fig):
             # On subsequent figures, append the number to the filename
-            if(ii == 0):
+            if ii == 0:
                 usefname = str(fname)
             else:
                 usefname = zio.modifyFilename(fname, append='_%d' % (ii))
 
             ff.savefig(usefname, **kwargs)
-            if(close): plt.close(ff)
+            if close: plt.close(ff)
+            if os.path.exists(usefname):
+                saved_names.append(usefname)
+            else:
+                raise RuntimeError("Figure '{}' did not save.".format(usefname))
 
-    printStr = "Saved figure to '%s'" % (fname)
-    if(log is not None): log.log(level, printStr)
-    elif(verbose): print(printStr)
+    # No files saved or Some files were not saved
+    if not len(saved_names) or len(saved_names) != len(fig):
+        warn_str = "Error saving figures..."
+        if log is None: warnings.warn(warn_str)
+        else: log.warning(warn_str)
+
+    # Things look good.
+    else:
+        printStr = "Saved figure to '%s'" % (fname)
+        if log is not None: log.log(level, printStr)
+        elif verbose: print(printStr)
 
     return
 
 
-def strSciNot(val, precman=1, precexp=0):
+def strSciNot(val, precman=0, precexp=0, dollar=True):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
     ---------
-        val <flt> : numerical value to convert
-        precman <int> : precision of the mantissa (decimal points)
-        precexp <int> : precision of the exponent (decimal points)
+    val : scalar
+        Numerical value to convert.
+    precman : int or `None`
+        Precision of the mantissa (decimal points); or `None` for omit mantissa.
+    precexp : int or `None`
+        Precision of the exponent (decimal points); or `None` for omit exponent.
+    dollar : bool
+        Include dollar-signs ('$') around returned expression.
 
     Returns
     -------
-        str <str> : scientific notation string using latex formatting.
+    notStr : str
+        Scientific notation string using latex formatting.
 
     """
     man, exp = zmath.frexp10(val)
-    notStr = "${0:.{2:d}f} \\times \, 10^{{ {1:.{3:d}f} }}$"
-    notStr = notStr.format(man, exp, precman, precexp)
+    use_man = (precman is not None and np.isfinite(exp))
+    if use_man: manStr = "{0:.{1:d}f}".format(man, precman)
+    else:       manStr = ""
+    # if precexp is not None: expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
+    # else:                   expStr = ""
+    if precexp is not None:
+        # Try to convert `exp` to integer, fails if 'inf' or 'nan'
+        try:
+            exp = np.int(exp)
+            expStr = "10^{{ {:d} }}".format(exp)
+        except:
+            expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
+
+        # Add negative sign if needed
+        if not use_man and (man < 0.0 or val == -np.inf):
+            expStr = "-" + expStr
+    else:
+        expStr = ""
+
+    notStr = "$"*dollar + manStr
+    if len(manStr) and len(expStr):
+        notStr += " \\times"
+    notStr += expStr + "$"*dollar
     return notStr
 
 
 def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None,
-                 fill=None, **kwargs):
+                 fill=None, invert=False, **kwargs):
     """Given bin edges and histogram-like values, plot a histogram.
 
     Arguments
@@ -752,13 +827,13 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
 
     # Determine color if included in ``kwargs``
     col = 'black'
-    if(kwargs.get('color') is not None): col = kwargs.get('color')
-    elif(kwargs.get('c') is not None): col = kwargs.get('c')
+    if kwargs.get('color') is not None: col = kwargs.get('color')
+    elif kwargs.get('c') is not None: col = kwargs.get('c')
 
     # Extend bin edges if needed
-    if(len(edges) != len(hist)+1):
-        if(extend == 'left'): edges = np.concatenate([[zmath.extend(edges)[0]], edges])
-        elif(extend == 'right'): edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
+    if len(edges) != len(hist)+1:
+        if extend == 'left': edges = np.concatenate([[zmath.extend(edges)[0]], edges])
+        elif extend == 'right': edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
         else: raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend`` given")
 
     # Construct plot points to manually create a step-plot
@@ -773,6 +848,11 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
     if(positive):
         xval = np.ma.masked_where(yval < 0.0, xval)
         yval = np.ma.masked_where(yval < 0.0, yval)
+
+    if invert:
+        temp = np.array(xval)
+        xval = yval
+        yval = temp
 
     # Plot Histogram
     line, = ax.plot(xval, yval, **kwargs)
@@ -880,11 +960,20 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     CONF_INTS = [0.95, 0.68]
     CONF_COLS = ['green', 'orange']
 
-    if(scaley.startswith('log')): logy = True
-    else:                         logy = False
+    if scaley.startswith('log'): logy = True
+    else:                        logy = False
+
+    if 'color' not in kwargs and 'c' not in kwargs:
+        kwargs['color'] = COL_CORR
+    if 'alpha' not in kwargs:
+        kwargs['alpha'] = HIST_ALPHA
+    if 'rwidth' not in kwargs:
+        kwargs['rwidth'] = 0.8
+    if 'zorder' not in kwargs:
+        kwargs['zorder'] = 100
 
     # Add Confidence intervals
-    if(conf):
+    if conf:
         med, cints = zmath.confidenceIntervals(xx, ci=CONF_INTS)
         ax.axvline(med, color='red', ls='--', lw=LW_CONF, zorder=101)
         # Add average
@@ -895,25 +984,24 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
 
     # Create a given number of log-spaced bins
     #     If not log-spaced, then `ax.hist` will do the same
-    if(isinstance(bins, numbers.Integral) and scalex.startswith('log')):
-        bins = zmath.spacing(xx, num=bins, )
+    if isinstance(bins, numbers.Integral) and scalex.startswith('log'):
+        bins = zmath.spacing(xx, num=bins, scale='log')
 
-    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', log=logy, alpha=HIST_ALPHA,
-                               rwidth=0.8, color=COL_CORR, zorder=100, **kwargs)
+    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', log=logy, **kwargs)
 
     # Dont let lower y-lim be less than 0.8 with log-scaling
-    if(scaley.startswith('log')):
+    if scaley.startswith('log'):
         # setLim(ax, 'y', lo=0.8, at='least')   <=== This isn't working for some reason!  FIX
         ylim = np.array(ax.get_ylim())
-        if(ylim[0] < 0.8):
+        if ylim[0] < 0.8:
             ylim[0] = 0.8
             ax.set_ylim(ylim)
 
     return bars
 
 
-def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
-                 filter=None, outline='0.5', **kwargs):
+def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, linealpha=0.8,
+                 filter=None, outline='0.5', edges=True, floor=None, ceil=None, **kwargs):
     """Draw a median line and (set of) confidence interval(s).
 
     The `med` and `conf` values can be obtained from `numpy.percentile` and or
@@ -944,6 +1032,12 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
     outline : str or `None`.
         Draw a `outline` colored line behind the median line to make it easier to see.
         If `None`, no outline is drawn.
+    edges : bool
+        Add lines along the edges of each confidence interval.
+    floor : array_like of float or `None`
+        Set the minimum value for confidence intervals to this value.
+    ceil : array_like of float or `None`
+        Set the maximmum value for confidence intervals to be this value.
     **kwargs : additional key-value pairs,
         Passed to `matplotlib.pyplot.fill_between` controlling `matplotlib.patches.Polygon`
         properties.  These are included in the `linePatch` objects, but *not* the `confPatches`.
@@ -960,9 +1054,9 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
     ll, = ax.plot(rads, med, '-', color=color, lw=lw)
 
     # `conf` has shape ``(num-rads, num-conf-ints, 2)``
-    if(conf.ndim == 2):
+    if conf.ndim == 2:
         conf = conf.reshape(len(rads), 1, 2)
-    elif(conf.ndim != 3):
+    elif conf.ndim != 3:
         raise ValueError("`conf` must be 2 or 3 dimensions!")
 
     if filter is not None:
@@ -973,38 +1067,231 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0,
     # Iterate over confidence intervals
     for jj in xrange(numConf):
         # Set fill-opacity
-        if(np.size(fillalpha) == numConf): falph = fillalpha
-        else:                              falph = np.power(fillalpha, jj+1)
+        if np.size(fillalpha) == numConf: falph = fillalpha
+        else:                             falph = np.power(fillalpha, jj+1)
 
         # Create a dummy-patch to return for a legend of confidence-intervals
-        pp = ax.fill(np.nan, np.nan, color=color, alpha=falph)
+        pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
         confPatches.append(pp[0])
 
         xx = np.array(rads)
         ylo = np.array(conf[:, jj, 0])
         yhi = np.array(conf[:, jj, 1])
+        if floor is not None:
+            ylo = np.maximum(ylo, floor)
+        if ceil is not None:
+            yhi = np.minimum(yhi, ceil)
+
         if filter:
-            inds = np.where(filter(ylo, 0.0) & filter(yhi, 0.0))
-            xx = xx[inds]
-            ylo = ylo[inds]
-            yhi = yhi[inds]
+            ylo = np.ma.masked_where(~filter(ylo, 0.0), ylo)
+            yhi = np.ma.masked_where(~filter(yhi, 0.0), yhi)
 
         # Fill between confidence intervals
-        ax.fill_between(xx, ylo, yhi, alpha=falph, color=color, **kwargs)
+        pp = ax.fill_between(xx, ylo, yhi, alpha=falph, facecolor=color, **kwargs)
+
+        # Plot edges of confidence intervals
+        if edges:
+            ax.plot(rads, ylo, color=color, alpha=0.5*linealpha, lw=0.5*lw)
+            ax.plot(rads, yhi, color=color, alpha=0.5*linealpha, lw=0.5*lw)
 
         # Create dummy-patch for the median-line and fill-color, for a legend
-        if(jj == 0):
-            pp = ax.fill(np.nan, np.nan, color=color, alpha=falph, **kwargs)
+        if jj == 0:
+            # pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
             # Create overlay of lines and patches
-            linePatch = (pp[0], ll)
+            linePatch = (pp, ll)
 
     # Plot Median Line
     #    Plot black outline to improve contrast
     if outline is not None:
         ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=_LW_OUTLINE)
-    ll, = ax.plot(rads, med, '-', color=color, lw=lw)
-
+    ll, = ax.plot(rads, med, '-', color=color, lw=lw, alpha=linealpha)
     return linePatch, confPatches
+
+
+def line_label(ax, pos, label, dir='v', loc='top',
+               line_kwargs={}, text_kwargs={}, dashes=None, rot=None):
+    """Plot a vertical line, and give it a label outside the axes.
+
+    Arguments
+    ---------
+    ax : `matplotlib.axes.Axes` object
+        Axes on which to plot.
+    xx : float
+        Location (in data coordinated) to place the line.
+    label : str
+        Label to place with the vertical line.
+    top : bool
+        Place the label above the axes ('True'), as apposed to below ('False').
+    line_kwargs : dict
+        Additional parameters for the line, passed to `ax.axvline`.
+    text_kwargs : dict
+        Additional parameters for the text, passed to `plot_core.text`.
+    dashes : array_like of float or `None`
+        Specification for dash/dots pattern for the line, passed to `set_dashes`.
+
+    Returns
+    -------
+    ll : `matplotlib.lines.Line2D`
+        Added line object.
+    txt : `matplotlib.text.Text`
+        Added text object.
+
+    """
+    PAD = 0.01
+    tdir = dir.lower()[:1]
+    if tdir.startswith('v'):   VERT = True
+    elif tdir.startswith('h'): VERT = False
+    else: raise ValueError("`dir` ('{}') must start with {{'v', 'h'}}".format(dir))
+    tloc = loc.lower()[:1]
+    valid_locs = ['t', 'b', 'l', 'r']
+    if tloc not in valid_locs:
+        raise ValueError("`loc` ('{}') must start with '{}'".format(loc, valid_locs))
+
+    # Set default rotation
+    if rot is None:
+        rot = 0
+        # If to 'l'eft or 'r'ight, rotate 90-degrees
+        if tloc.startswith('l'): rot = 90
+        elif tloc.startswith('r'): rot = -90
+
+    # Set alignment
+    if tloc.startswith('l'):
+        ha = 'right'
+        va = 'center'
+    elif tloc.startswith('r'):
+        ha = 'left'
+        va = 'center'
+    elif tloc.startswith('t'):
+        ha = 'center'
+        va = 'bottom'
+    elif tloc.startswith('b'):
+        ha = 'center'
+        va = 'top'
+
+    # Add vertical line
+    if VERT:
+        ll = ax.axvline(pos, **line_kwargs)
+        trans = mpl.transforms.blended_transform_factory(ax.transData, ax.transAxes)
+        if tloc.startswith('l'):
+            xx = pos
+            yy = 0.5
+        elif tloc.startswith('r'):
+            xx = pos
+            yy = 0.5
+        elif tloc.startswith('t'):
+            xx = pos
+            yy = 1.0 + PAD
+        elif tloc.startswith('b'):
+            xx = pos
+            yy = 0.0 - PAD
+    # Add horizontal line
+    else:
+        ll = ax.axhline(pos, **line_kwargs)
+        trans = mpl.transforms.blended_transform_factory(ax.transAxes, ax.transData)
+        if tloc.startswith('l'):
+            xx = 0.0 - PAD
+            yy = pos
+        elif tloc.startswith('r'):
+            xx = 1.0 + PAD
+            yy = pos
+        elif tloc.startswith('t'):
+            xx = 0.5
+            yy = pos
+        elif tloc.startswith('b'):
+            xx = 0.5
+            yy = pos
+
+    if dashes: ll.set_dashes(dashes)
+
+    txt = text(ax, label, x=xx, y=yy, halign=ha, valign=va, trans=trans, **text_kwargs)
+    return ll, txt
+
+
+def full_extent(ax, pad=0.0, invert=None):
+    """Get the full extent of an axes, including axes labels, tick labels, and titles.
+
+    From: 'stackoverflow.com/questions/14712665/'
+    """
+    # Draw text objects so extents are defined
+    ax.figure.canvas.draw()
+    items = ax.get_xticklabels() + ax.get_yticklabels()
+    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
+    items += [ax, ax.title]
+    use_items = []
+    for item in items:
+        if isinstance(item, mpl.text.Text) and len(item.get_text()) == 0: continue
+        use_items.append(item)
+    bbox = mpl.transforms.Bbox.union([item.get_window_extent() for item in use_items])
+    bbox = bbox.expanded(1.0 + pad, 1.0 + pad)
+    if invert:
+        bbox = bbox.transformed(invert.inverted())
+
+    return bbox
+
+
+def position_to_extent(fig, ax, loc, pad=0.0, halign='left', valign='lower'):
+    """Reposition axis so that origin of 'full_extent' is at given `loc`.
+    """
+    bbox = full_extent(ax, pad=pad, invert=fig.transFigure)
+    ax_bbox = ax.get_position()
+
+    if halign.startswith('r'):
+        dx = ax_bbox.x1 - bbox.x1
+    elif halign.startswith('l'):
+        dx = ax_bbox.x0 - bbox.x0
+    else:
+        raise ValueError("`halign` = '{}' must start with 'l' or 'r'.".format(halign))
+
+    if valign.startswith('l'):
+        dy = ax_bbox.y0 - bbox.y0
+    elif valign.startswith('u'):
+        dy = ax_bbox.y1 - bbox.y1
+    else:
+        raise ValueError("`valign` = '{}' must start with 'l' or 'u'.".format(valign))
+
+    if len(loc) == 2:
+        new_loc = [loc[0]+dx, loc[1]+dy, ax_bbox.width, ax_bbox.height]
+    elif len(loc) == 4:
+        new_loc = [loc[0]+dx, loc[1]+dy, loc[2], loc[3]]
+    else:
+        raise ValueError("`loc` must be 2 or 4 long: [x, y, (width, height)]")
+
+    ax.set_position(new_loc)
+    return
+
+
+def _extents(ax, pad=0.0, invert=None):
+    """Get the extents of an axes, including axes labels, tick labels, and titles.
+
+    Adapted From: 'stackoverflow.com/questions/14712665/'
+    """
+    # For text objects, we need to draw the figure first, otherwise the extents
+    # are undefined.
+    ax.figure.canvas.draw()
+    items = ax.get_xticklabels() + ax.get_yticklabels()
+    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
+    items += [ax, ax.title]
+    bboxes = [it.get_window_extent().expanded(1.0 + pad, 1.0 + pad) for it in items]
+    if invert:
+        bboxes = [bb.transformed(invert.inverted()) for bb in bboxes]
+
+    return bboxes
+
+
+def backdrop(fig, ax, pad=0.0, union=False, **kwargs):
+    if union:
+        bboxes = [full_extent(ax, pad=pad, invert=fig.transFigure)]
+    else:
+        bboxes = _extents(ax, pad=pad, invert=fig.transFigure)
+
+    pats = []
+    for bbox in bboxes:
+        rect = mpl.patches.Rectangle([bbox.xmin, bbox.ymin], bbox.width, bbox.height,
+                                     transform=fig.transFigure, **kwargs)
+        fig.patches.append(rect)
+        pats.append(rect)
+
+    return pats
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):

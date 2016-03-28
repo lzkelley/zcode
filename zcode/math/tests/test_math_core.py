@@ -1,4 +1,8 @@
-"""
+"""Test methods for `zcode/math/math_core.py`.
+
+Can be run with:
+    $ nosetests math/tests/test_math_core.py
+
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -229,8 +233,81 @@ class TestMathCore(object):
 
         # Smoothing length 1 should have no effect
         assert np.all(smArrs[0] == arrs[0])
+        return
+
+
+    def test_comparison_function(self):
+        from zcode.math.math_core import _comparison_function
+        
+        comp = ['g', '>']
+        arr = [0.5, 1.5, -0.5, 0.0]
+        res = [True, True, False, False]
+        for cc in comp:
+            func = _comparison_function(cc, value=0.0)
+            assert_true(np.all(np.equal(func(arr), res)))
+
+        comp = ['ge', '>=']
+        arr = [0.5, 1.5, -0.5, 0.0]
+        res = [True, True, False, True]
+        for cc in comp:
+            func = _comparison_function(cc, value=0.0)
+            assert_true(np.all(np.equal(func(arr), res)))
+
+        comp = ['l', '<']
+        arr = [-10.5, -1.5, 0.5, 0.0]
+        res = [True, True, False, False]
+        for cc in comp:
+            func = _comparison_function(cc, value=0.0)
+            assert_true(np.all(np.equal(func(arr), res)))
+
+        comp = ['le', '<=']
+        arr = [-10.5, -1.5, 0.5, 0.0]
+        res = [True, True, False, True]
+        for cc in comp:
+            func = _comparison_function(cc, value=0.0)
+            assert_true(np.all(np.equal(func(arr), res)))
+
+        comp = ['e', '=', '==']
+        arr = [-10.5, 0.5, 0.0]
+        res = [False, False, True]
+        for cc in comp:
+            func = _comparison_function(cc, value=0.0)
+            assert_true(np.all(np.equal(func(arr), res)))
+
+        comp = ['ne', '!=']
+        arr = [-10.5, 0.5, 0.0]
+        res = [True, True, False]
+        for cc in comp:
+            func = _comparison_function(cc, value=0.0)
+            assert_true(np.all(np.equal(func(arr), res)))
 
         return
+
+    def test_comparison_filter(self):
+        from zcode.math.math_core import _comparison_filter
+        
+        comp = ['g', '>']
+        arr = [0.5, -1.0, 1.5, -0.5, 0.0]
+        res = [0.5, 1.5]
+        inds = [0, 2]
+        for cc in comp:
+            vals = _comparison_filter(arr, cc, value=0.0)
+            assert_true(np.all(np.equal(vals, res)))
+            vals = _comparison_filter(arr, cc, inds=True, value=0.0)
+            assert_true(np.all(np.equal(vals[0], inds)))
+
+        comp = ['le', '<=']
+        arr = [0.5, -1.0, 1.5, -0.5, 0.0]
+        res = [-1.0, -0.5, 0.0]
+        inds = [1, 3, 4]
+        for cc in comp:
+            vals = _comparison_filter(arr, cc, value=0.0)
+            assert_true(np.all(np.equal(vals, res)))
+            vals = _comparison_filter(arr, cc, inds=True, value=0.0)
+            assert_true(np.all(np.equal(vals[0], inds)))
+
+        return
+
 
 # Run all methods as if with `nosetests ...`
 if __name__ == "__main__":

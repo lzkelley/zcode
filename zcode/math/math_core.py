@@ -28,6 +28,9 @@ Functions
 -   smooth                   - Use convolution to smooth the given array.
 -   mono                     - Check for monotonicity in the given array.
 -   stats_str                - Return a string with the statistics of the given array.
+-   ceil_log                 - Round the given value upwards in log-space (see `round_log`).
+-   floor_log                - Round the given value downwards in log-space (see `round_log`).
+-   round_log                - Round the given value in log-space.
 
 -   _trapezium_loglog        -
 -   _comparisonFunction      -
@@ -52,8 +55,9 @@ __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'confidenceBands',
            'frexp10', 'stats', 'groupDigitized',
-           'sampleInverse', 'smooth', 'mono', 'stats_str',
-           '_comparisonFunction', '_infer_scale']
+           'sampleInverse', 'smooth', 'mono', 'stats_str', 'ceil_log', 'floor_log', 'round_log',
+           'comparison_filter',
+           '_comparisonFunction', '_comparison_function', '_infer_scale']
 
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=True):
@@ -243,37 +247,45 @@ def indsWithin(vals, extr, edges=True):
     return inds
 
 
-def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=None):
+def minmax(data, prev=None, stretch=0.0, filter=None, limit=None):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
+    To compare with only a previous minimum or maximum, pass the other as `None`, e.g.
+    ``prev = [None, 2.5]`` to compare only with a maximum of `2.5`.
 
     Arguments
     ---------
-       data     <scalar>[...] : arbitrarily shaped data to find minumum and maximum of.
-       nonzero  <bool>        : ignore zero values in input ``data``
-       positive <bool>        : select values '>= 0.0' in input ``data``
-       prev     <scalar>[2]   : also find min/max against prev[0] and prev[1] respectively.
-       stretch  <flt>         : factor by which to stretch min and max by (1 +- ``stretch``)
+    data : [...] ndarray of scalar of any shape
+        Arbitrarily shaped data to find minumum and maximum of.
+    prev : `None` or (2,) array_like of scalar and/or `None`
+        Also find min/max against prev[0] and prev[1] respectively.  If `prev` is `None`,
+        or if either of the elements of `prev` are `None`, then they are not compared.
+    filter : str or `None`,
+        Key describing how to filter the input data, or `None` for no filter.
+        See, ``comparison_filter``.
+    stretch : flt
+        Factor by which to stretch min and max by (``1.0 +- stretch``).
 
     Returns
     -------
-       minmax <scalar>[2] : minimum and maximum of given data (and ``prev`` if provided).
-                            Returned data type will match the input ``data`` (and ``prev``).
+    minmax : (2,) array of scalar, or `None`
+        Minimum and maximum of given data (and ``prev`` if provided).  If the input data is empty,
+        then `prev` is returned --- even if that is `None`.
 
     To-Do
     -----
-     - Added an 'axis' argument, remove 'flatten()' to accomodate arbitrary shapes
+    -   Add an 'axis' argument.
 
     """
-    # ---- DEPRECATION SECTION -------
-    filter = _flagsToFilter(positive, nonzero, filter=filter, source='minmax')
-    # --------------------------------
+    if prev is not None:
+        assert len(prev) == 2, "`prev` must have length 2."
+    if limit is not None:
+        assert len(limit) == 2, "`limit` must have length 2."
 
     useData = np.array(data)
-
     if filter:
-        useData = _comparisonFilter(useData, filter)
+        useData = comparison_filter(useData, filter)
 
     # If there are no elements (left), return `prev` (`None` if not provided)
     if np.size(useData) == 0:
@@ -288,8 +300,13 @@ def minmax(data, prev=None, stretch=0.0, filter=None, nonzero=None, positive=Non
 
     # Compare to previous extrema, if given
     if prev is not None:
-        minmax[0] = np.min([minmax[0], prev[0]])
-        minmax[1] = np.max([minmax[1], prev[1]])
+        if prev[0] is not None: minmax[0] = np.min([minmax[0], prev[0]])
+        if prev[1] is not None: minmax[1] = np.max([minmax[1], prev[1]])
+
+    # Compare to limits, if given
+    if limit is not None:
+        if limit[0] is not None: minmax[0] = np.max([minmax[0], limit[0]])
+        if limit[1] is not None: minmax[1] = np.min([minmax[1], limit[1]])
 
     return minmax
 
@@ -723,14 +740,17 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
         Axis over which to calculate confidence intervals.
     filter : str or `None`
         Filter the input array with a boolean comparison to zero.
+        If no values remain after filtering, ``None, None`` is returned.
 
     Returns
     -------
     med : scalar
         Median of the input data.
+        `None` if there are no values (e.g. after filtering).
     conf : ndarray of scalar
         Bounds for each confidence interval.  Shape depends on the number of confidence intervals
         passed in `ci`, and also the input shape of `vals`.
+        `None` if there are no values (e.g. after filtering).
 
     """
     ci = np.atleast_1d(ci)
@@ -738,7 +758,7 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
 
     # Filter input values
     if filter:
-        vals = _comparisonFilter(vals, filter)
+        vals = comparison_filter(vals, filter)
         if vals.size == 0:
             return None, None
 
@@ -838,20 +858,23 @@ def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter
 
 
 def frexp10(vals):
-    """Return the mantissa and exponent in base 10
+    """Return the mantissa and exponent in base 10.
 
     Arguments
     ---------
-        vals <flt>(N) : values to be converted
+    vals : (N,) array_like of float
+        Values to be converted.
 
     Returns
     -------
-        man <flt>(N) : mantissa
-        exp <flt>(N) : exponent
-
+    man : (N,) array_like of float
+        Mantissa.
+    exp : (N,) array_like of float
+        Exponent
     """
-
-    exp = np.int(np.floor(np.log10(vals)))
+    # Find exponent of absolute value
+    exp = np.floor(np.log10(np.fabs(vals)))
+    # Positive/negative is still included here
     man = vals / np.power(10.0, exp)
     return man, exp
 
@@ -999,7 +1022,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     ---------
         arr   <flt>[N] : input array to be smoothed
         size  <obj>    : size of smoothing window
-        width <obj>    : scalar specifying the region to be smoothed, of twp values are given
+        width <obj>    : scalar specifying the region to be smoothed, if two values are given
                          they are taken as left and right bounds
         loc   <flt>    : int or float specifying to center position of smoothing,
                          ``width`` is used relative to this position, if provided.
@@ -1014,7 +1037,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     length = np.size(arr)
     size = _fracToInt(size, length, within=1.0, round='floor')
 
-    assert size <= length, "``size`` must be less than length of input array!"
+    assert size <= length, "`size` must be less than length of input array!"
 
     window = np.ones(int(size))/float(size)
 
@@ -1022,7 +1045,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     smArr = np.convolve(arr, window, mode=mode)
 
     # Return full smoothed array if no bounds given
-    if(width is None):
+    if width is None:
         return smArr
 
     # Other convolution modes require dealing with differing lengths
@@ -1032,11 +1055,11 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     # Smooth portion of array
     # -----------------------
 
-    if(np.size(width) == 2):
+    if np.size(width) == 2:
         lef = width[0]
         rit = width[1]
-    elif(np.size(width) == 1):
-        if(loc is None): raise ValueError("For a singular ``width``, ``pos`` must be provided!")
+    elif np.size(width) == 1:
+        if loc is None: raise ValueError("For a singular ``width``, ``pos`` must be provided!")
         lef = width
         rit = width
     else:
@@ -1047,7 +1070,7 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     rit = _fracToInt(rit, length-1, within=1.0, round='floor')
 
     # If ``loc`` is provided, use ``width`` relative to that
-    if(loc is not None):
+    if loc is not None:
         loc = _fracToInt(loc, length-1, within=1.0, round='floor')
         lef = loc - lef
         rit = loc + rit
@@ -1085,7 +1108,8 @@ def mono(arr, type='g', axis=-1):
     return retval
 
 
-def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True, format=''):
+def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True,
+              format='', label='Statistics: '):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -1100,6 +1124,8 @@ def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True, format=''):
         Include standard-deviation in output.
     format : str
         Formatting for all numerical output, (e.g. `":.2f"`).
+    label : str
+        String to prepend output with, (e.g. '<label> Statistics: ...')
 
     Output
     ------
@@ -1112,7 +1138,7 @@ def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True, format=''):
     percs_flag = False
     if percs is not None and len(percs): percs_flag = True
 
-    out = "Statistics: "
+    out = label
     form = "{{{}}}".format(format)
     if ave:
         out += "ave = " + form.format(np.average(data))
@@ -1128,6 +1154,52 @@ def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True, format=''):
         out += ", for (" + ", ".join("{:.1f}%".format(pp) for pp in percs) + ")"
 
     return out
+
+
+def ceil_log(val):
+    """Round the given value upwards in log-space (see `round_log`).
+    """
+    return round_log(val, dir='u')
+
+
+def floor_log(val):
+    """Round the given value downwards in log-space (see `round_log`).
+    """
+    return round_log(val, dir='d')
+
+
+def round_log(val, dir='up', nonzero=True):
+    """Round the given value in log-space, i.e. the log10 mantissa to the nearest integer.
+
+    Arguments
+    ---------
+    val : scalar
+        Value to be rounded.
+    dir : str
+        Direction to round, must start with 'u' (up) or 'd' (down).
+
+    Returns
+    -------
+    rounded : scalar
+        log-rounded value.
+
+    """
+    if np.size(val) != 1:
+        raise ValueError("Only scalars currently supported.")
+    if nonzero and val == 0.0:
+        return val
+
+    man, exp = frexp10(val)
+    if dir.startswith('u'):
+        man = np.ceil(man)
+    elif dir.startswith('d'):
+        man = np.floor(man)
+    else:
+        raise ValueError("`dir` ('{}') must start with 'u', of 'd'.".format(dir))
+
+    rounded = man * np.power(10.0, exp)
+    return rounded
+
 
 '''
 def percentiles_str(names, data, percs=[50, 68, 95, 100], out=print, title='', format='.1f'):
@@ -1154,19 +1226,25 @@ def percentiles_str(names, data, percs=[50, 68, 95, 100], out=print, title='', f
 
 
 def _comparisonFunction(comp):
-    """Retrieve the comparison function matching the input expression.
+    """[DEPRECATED]Retrieve the comparison function matching the input expression.
     """
-    if(comp == 'g' or comp == '>'):
+    # ---- DECPRECATION SECTION ----
+    warnStr = ("Using deprecated function '_comparisonFunction'.  "
+               "Use '_comparison_function' instead.")
+    warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
+    # ------------------------------
+
+    if comp == 'g' or comp == '>':
         func = np.greater
-    elif(comp == 'ge' or comp == '>='):
+    elif comp == 'ge' or comp == '>=':
         func = np.greater_equal
-    elif(comp == 'l' or comp == '<'):
+    elif comp == 'l' or comp == '<':
         func = np.less
-    elif(comp == 'le' or comp == '<='):
+    elif comp == 'le' or comp == '<=':
         func = np.less_equal
-    elif(comp == 'e' or comp == '=' or comp == '=='):
+    elif comp == 'e' or comp == '=' or comp == '==':
         func = np.equal
-    elif(comp == 'ne' or comp == '!='):
+    elif comp == 'ne' or comp == '!=':
         func = np.not_equal
     else:
         raise ValueError("Unrecognized comparison '%s'." % (comp))
@@ -1174,13 +1252,78 @@ def _comparisonFunction(comp):
     return func
 
 
+def _comparison_function(comp, value=0.0):
+    """Retrieve the comparison function matching the input expression.
+
+    Arguments
+    ---------
+    comp : str
+        Key describing the type of comparison.
+    value : scalar
+        Value with which to compare.
+
+    Returns
+    -------
+    comp_func : callable
+        Comparison function which returns a or an-array-or bool matching the input
+        shape, describing how the input values compare  to `value`.
+
+    """
+    if comp == 'g' or comp == '>':
+        func = np.greater
+    elif comp == 'ge' or comp == '>=':
+        func = np.greater_equal
+    elif comp == 'l' or comp == '<':
+        func = np.less
+    elif comp == 'le' or comp == '<=':
+        func = np.less_equal
+    elif comp == 'e' or comp == '=' or comp == '==':
+        func = np.equal
+    elif comp == 'ne' or comp == '!=':
+        func = np.not_equal
+    else:
+        raise ValueError("Unrecognized comparison '{}'.".format(comp))
+
+    def comp_func(xx):
+        return func(xx, value)
+
+    return comp_func
+
+
 def _comparisonFilter(data, filter):
     """
     """
+    # ---- DECPRECATION SECTION ----
+    warnStr = ("Using deprecated function '_comparisonFilter'.  "
+               "Use '_comparison_filter' instead.")
+    warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
+    # ------------------------------
+    if filter is None:
+        return data
     if not callable(filter):
         filter = _comparisonFunction(filter)
     sel = np.where(filter(data, 0.0) & np.isfinite(data))
     return data[sel]
+
+
+def comparison_filter(data, filter, inds=False, value=0.0, finite=True):
+    """
+    """
+    if filter is None:
+        return data
+    if not callable(filter):
+        filter = _comparison_function(filter, value=value)
+
+    # Include is-finite check
+    if finite:
+        sel = np.where(filter(data) & np.isfinite(data))
+    else:
+        sel = np.where(filter(data))
+
+    if inds:
+        return sel
+    else:
+        return np.asarray(data)[sel]
 
 
 def _fracToInt(frac, size, within=None, round='floor'):

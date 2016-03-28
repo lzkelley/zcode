@@ -5,6 +5,9 @@ Future / To-Do
 --------------
 -   General
     +   Implement tests for all modules and functions.
+    +   Update all situations to use 'filter' instead of 'positive'/'nonzero'
+    +   More tests.  For plotting stuff, add tests just to make sure nothing breaks.
+    +   Setup automatic testing (e.g. nightly?)
 -   math/
     +   math_core.py
         -   `spacing`
@@ -13,6 +16,95 @@ Future / To-Do
 
 Current
 -------
+
+
+
+[0.0.7] - 2016/03/28
+--------------------
+-   inout/
+    +   inout_core.py
+        -   `ascii_table`
+            +   [ENH] passing ``out = None`` will make the function return a string version of the
+                table.
+        -   `checkPath`
+            +   [ENH] added parameter `create` to choose whether missing directories are created
+                or not.
+            +   [DOC] added docstrings.
+        -   `iterable_notstring` [new-function]
+            +   Return 'True' if the argument is an iterable and not a string type.
+    +   timer.py
+        -   [ENH] `Timings.report()` will return the results as a string if the parameter,
+            ``out = None``.
+-   math/
+    +   math_core.py
+        -   `_comparisonFunction` [DEPRECATED] ---> `_comparison_function` [new-function]
+            +   [ENH] Returned function takes a single parameter, instead of needing the comparison
+                value in each call.  Instead the comparison value is passed once to
+                `_comparison_function`, just during initialization.
+        -   `_comparisonFilter` [DEPRECATED] ---> `comparison_filter` [new-function]
+            +   [ENH] Added options to return indices (instead of values), compare with non-zero
+                comparison values, and check for finite (or not).
+        -   `ceil_log` [new-function]
+            +   Round up to the nearest integer in the the log10 mantissa (e.g. 23400 --> 30000)
+        -   `floor_log` [new-function]
+            +   Round down to the nearest integer in the the log10 mantissa (e.g. 23400 --> 20000)
+        -   `frexp10`
+            +   [ENH] Updated to work with negative and non-finite values.
+        -   `minmax`
+            +   [ENH] Extend the `prev` argument to allow for either minimum or maximum comparison
+                to be `None`.
+            +   [ENH] Added `limit` keyword argument to place limits on low/high extrema.
+            +   [MAINT] Fully deprecated (removed) `positive`, `nonzero` keywords.
+        -   `round_log` [new-function]
+            +   Wrapper for `ceil_log` and `floor_log`, round in log-space in either direction.
+        -   `stats_str`
+            +   [ENH] Added parameter `label` to give to the output string.
+    +   tests/
+        -   test_math_core.py
+            +   [ENH] Added *some* tests for `_comparison_function` and `_comparison_filter`.
+-   plot/
+    +   Hist2D.py
+        -   `plot2DHist`
+            +   [ENH] Added options for overplotting contour lines.  Basics work, might need some
+                fine tuning.
+        -   `plot2DHistProj`
+            +   [ENH] added parameters to adjust the size / location of axes composing plots.
+            +   [BUG] fixed issue where log-color-scales projected axes with zero values would
+                fail.  Seems to be working fine.
+            +   [BUG] fixed issue in right projection where the x-axis scaling would be set
+                incorrectly.
+            +   [BUG] fixed issue with trying to set numerous axes variables in colorbar.
+            +   [ENH] updated with `cmap` and `smap` parameters passed to `plot2DHist`.
+            +   [ENH] improved the way extrema are handled, especially in xprojection axis.
+    +   plot_core.py
+        -   `backdrop` [new-function]
+            +   [ENH] Add rectangular patches behind the content of the given axes.
+        -   `colormap`
+            +   [ENH] Added grey colors for 'under' and 'over' (i.e. outside colormap limits).
+        -   `full_extent` [new-function]
+            +   [ENH] Find the bbox (or set of bbox) which contain the given axes and its contents.
+        -   `legend`
+            +   [BUG] fixed issue where 'center' could be repeated for `valign` and `halign`.
+            +   [ENH] change the argument `fig` to be `art` -- either an axes or fig object.
+            +   [ENH] added default for `handlelength` parameter; removed monospace fonts default.
+        -   `line_label` [new-function]
+            +   Function which draws a vertical or horizontal line, and adds an annotation to it.
+        -   `plotConfFill`
+            +   [ENH] Added `edges` argument to control drawing the edges of each confidence
+                interval explicitly.
+            +   [ENH] Added 'floor' and 'ceil' parameters to set absolute minima and maxima.
+        -   `plotHistBars`
+            +   [ENH] Added improved default parameters for bar plot.  Missing parameter bug fix.
+        -   `plotHistLine`
+            +   [ENH] Added `invert` argument to allow switching the x and y data.
+        -   `position_to_extent` [new-function]
+            +   [ENH] Reposition an axes object so that its 'full_extent' (see above) is at the
+                intended position.
+        -   `saveFigure`
+            +   [ENH] check that figures saved properly.
+        -   `strSciNot`
+            +   [ENH] enable `None` precision --- i.e. dont show mantissa or exponent.
+            +   [ENH] Updated to work with negative and non-finite values.
 
 
 [0.0.6] - 2016/01/30

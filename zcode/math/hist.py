@@ -10,7 +10,7 @@ from . import math_core as zmath
 __all__ = ['histogram']
 
 
-def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum',
+def histogram(args, bins, scale=None, bounds='both', weights=None, func='sum',
               cumul=False, stdev=False):
     """Histogram (bin) the given values.
 
@@ -23,8 +23,8 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
        args     <scalar>[N]   : data to be histogrammed.
        bins     <scalar>([M]) : Positions of bin edges or number of bins to construct automatically.
                                 If a single ``bins`` value is given, it is assumed to be a number of
-                                bins to create with a scaling given by ``binScale`` (see desc).
-       binScale <str>         : scaling to use when creating bins automatically.
+                                bins to create with a scaling given by ``scale`` (see desc).
+       scale <str>            : scaling to use when creating bins automatically.
                                 If `None`, the extrema of ``args`` are used to make an selection.
        bounds    <str>        : optional, how to treat the given ``bins`` values, i.e. which 'edges'
                                 these represent.  Must be one of {`left`, `both`, `right`}.
@@ -82,7 +82,7 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
     # Construct a certain number ``bins`` bins spaced appropriately
     if(np.size(bins) == 1):
         extr = zmath.minmax(args)
-        useScale = binScale
+        useScale = scale
         # If no bin scaling is given, make an appropriate choice
         if(useScale is None):
             useScale = 'log'
@@ -100,7 +100,7 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
         # Try to go just after right-most value
         useMax = 1.01*np.max([np.max(edges), np.max(args)])
         # Deal with right-most being 0.0
-        shiftMax = zmath.minmax(np.fabs(args), nonzero=True)
+        shiftMax = zmath.minmax(np.fabs(args), filter='!=')
         #     If there are no, nonzero values ``None`` is returned
         if(shiftMax is None): shiftMax = 1.0
         else:                   shiftMax = 0.1*shiftMax[0]
@@ -111,7 +111,7 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
         # Try to go just before left-most value
         useMin = 0.99*np.min([np.min(edges), np.min(args)])
         # Deal with left-most being 0.0
-        shiftMin = zmath.minmax(np.fabs(args), nonzero=True)
+        shiftMin = zmath.minmax(np.fabs(args), filter='!=')
         #     If there are no, nonzero values ``None`` is returned
         if(shiftMin is None): shiftMin = 1.0
         else:                   shiftMin = 0.1*shiftMin[0]
@@ -183,7 +183,7 @@ def histogram(args, bins, binScale=None, bounds='both', weights=None, func='sum'
         std = [np.std(weights[digits == ii]) for ii in range(1, len(edges))]
         # Fix last bin to include values which equal the right-most edge
         if(bounds == 'both'):
-            std[-1] = np.std(weights[(digits == ii) | (args == edges[-1])])
+            std[-1] = np.std(weights[(digits == len(edges)-1) | (args == edges[-1])])
 
         std = np.array(std)
 
