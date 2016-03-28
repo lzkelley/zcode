@@ -39,6 +39,10 @@ Current
         -   `_comparisonFilter` [DEPRECATED] ---> `comparison_filter` [new-function]
             +   [ENH] Added options to return indices (instead of values), compare with non-zero
                 comparison values, and check for finite (or not).
+        -   `ceil_log` [new-function]
+            +   Round up to the nearest integer in the the log10 mantissa (e.g. 23400 --> 30000)
+        -   `floor_log` [new-function]
+            +   Round down to the nearest integer in the the log10 mantissa (e.g. 23400 --> 20000)
         -   `frexp10`
             +   [ENH] Updated to work with negative and non-finite values.
         -   `minmax`
@@ -46,6 +50,8 @@ Current
                 to be `None`.
             +   [ENH] Added `limit` keyword argument to place limits on low/high extrema.
             +   [MAINT] Fully deprecated (removed) `positive`, `nonzero` keywords.
+        -   `round_log` [new-function]
+            +   Wrapper for `ceil_log` and `floor_log`, round in log-space in either direction.
         -   `stats_str`
             +   [ENH] Added parameter `label` to give to the output string.
     +   tests/
@@ -81,6 +87,9 @@ Current
             +   [ENH] Added improved default parameters for bar plot.  Missing parameter bug fix.
         -   `plotHistLine`
             +   [ENH] Added `invert` argument to allow switching the x and y data.
+        -   `position_to_extent` [new-function]
+            +   [ENH] Reposition an axes object so that its 'full_extent' (see above) is at the
+                intended position.
         -   `saveFigure`
             +   [ENH] check that figures saved properly.
         -   `strSciNot`

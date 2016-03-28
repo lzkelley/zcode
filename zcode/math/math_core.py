@@ -28,6 +28,9 @@ Functions
 -   smooth                   - Use convolution to smooth the given array.
 -   mono                     - Check for monotonicity in the given array.
 -   stats_str                - Return a string with the statistics of the given array.
+-   ceil_log                 - Round the given value upwards in log-space (see `round_log`).
+-   floor_log                - Round the given value downwards in log-space (see `round_log`).
+-   round_log                - Round the given value in log-space.
 
 -   _trapezium_loglog        -
 -   _comparisonFunction      -
@@ -52,7 +55,8 @@ __all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
            'vecmag', 'extend',
            'renumerate', 'cumstats', 'confidenceIntervals', 'confidenceBands',
            'frexp10', 'stats', 'groupDigitized',
-           'sampleInverse', 'smooth', 'mono', 'stats_str', 'comparison_filter',
+           'sampleInverse', 'smooth', 'mono', 'stats_str', 'ceil_log', 'floor_log', 'round_log',
+           'comparison_filter',
            '_comparisonFunction', '_comparison_function', '_infer_scale']
 
 
@@ -280,7 +284,6 @@ def minmax(data, prev=None, stretch=0.0, filter=None, limit=None):
         assert len(limit) == 2, "`limit` must have length 2."
 
     useData = np.array(data)
-
     if filter:
         useData = comparison_filter(useData, filter)
 
@@ -1151,6 +1154,52 @@ def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True,
         out += ", for (" + ", ".join("{:.1f}%".format(pp) for pp in percs) + ")"
 
     return out
+
+
+def ceil_log(val):
+    """Round the given value upwards in log-space (see `round_log`).
+    """
+    return round_log(val, dir='u')
+
+
+def floor_log(val):
+    """Round the given value downwards in log-space (see `round_log`).
+    """
+    return round_log(val, dir='d')
+
+
+def round_log(val, dir='up', nonzero=True):
+    """Round the given value in log-space, i.e. the log10 mantissa to the nearest integer.
+
+    Arguments
+    ---------
+    val : scalar
+        Value to be rounded.
+    dir : str
+        Direction to round, must start with 'u' (up) or 'd' (down).
+
+    Returns
+    -------
+    rounded : scalar
+        log-rounded value.
+
+    """
+    if np.size(val) != 1:
+        raise ValueError("Only scalars currently supported.")
+    if nonzero and val == 0.0:
+        return val
+
+    man, exp = frexp10(val)
+    if dir.startswith('u'):
+        man = np.ceil(man)
+    elif dir.startswith('d'):
+        man = np.floor(man)
+    else:
+        raise ValueError("`dir` ('{}') must start with 'u', of 'd'.".format(dir))
+
+    rounded = man * np.power(10.0, exp)
+    return rounded
+
 
 '''
 def percentiles_str(names, data, percs=[50, 68, 95, 100], out=print, title='', format='.1f'):
