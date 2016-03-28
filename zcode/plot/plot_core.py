@@ -24,8 +24,9 @@ Functions
 -   plotHistBars         - Plot a histogram bar graph.
 -   plotConfFill         - Draw a median line and (set of) confidence interval(s).
 -   line_label           - Plot a vertical line, and give it a label outside the axes.
--   full_extent
--   backdrop
+-   full_extent          -
+-   position_to_extent   -
+-   backdrop             -
 
 -   _setAxis_scale       -
 -   _setAxis_label       -
@@ -57,7 +58,7 @@ __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'lege
            'unifyAxesLimits', 'color_cycle',
            'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
-           'line_label', 'full_extent', 'backdrop', '_histLine']
+           'line_label', 'full_extent', 'position_to_extent', 'backdrop', '_histLine']
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -66,6 +67,9 @@ _COLOR_SET = ['black', 'blue', 'red', 'green', 'purple',
               'orange', 'cyan', 'brown', 'gold', 'pink',
               'forestgreen', 'grey', 'olive', 'coral', 'yellow']
 _LW_OUTLINE = 0.8
+
+# Default length for lines in legend handles; in units of font-size
+_HANDLE_LENGTH = 2.5
 
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None,
@@ -437,6 +441,8 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
         Fontsize.
     trans : `matplotlib.BboxTransformTo` object, or `None`,
         Transformation to use for legend placement.
+        If `None`, then it defaults to `transFigure` or `transAxes` if `art` is a 'Figure' or 'Axes'
+        respectively.
     kwargs : any,
         Additional named arguments passed to `matplotlib.pyplot.legend`.
         For example, ``ncol=1`` or ``title='Legend Title'``.
@@ -454,6 +460,9 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
         ax = art
         if trans is None: trans = ax.transAxes
 
+    if 'handlelength' not in kwargs:
+        kwargs['handlelength'] = _HANDLE_LENGTH
+
     if valign == 'top':
         valign = 'upper'
     if valign == 'bottom':
@@ -463,7 +472,7 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
     if not (valign == 'center' and halign == 'center'):
         alignStr += " " + halign
 
-    leg = ax.legend(keys, names, prop={'size': fs, 'family': 'monospace'},
+    leg = ax.legend(keys, names, prop={'size': fs},  # 'family': 'monospace'},
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
     return leg
 
@@ -528,7 +537,7 @@ def color_cycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     return cols
 
 
-def colormap(args, cmap='jet', scale=None):
+def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
@@ -540,16 +549,24 @@ def colormap(args, cmap='jet', scale=None):
     scale : str or `None`
         Scaling specification of colormap {'lin', 'log', `None`}.
         If `None`, scaling is inferred based on input `args`.
+    under : str or `None`
+        Color specification for values below range.
+    over : str or `None`
+        Color specification for values above range.
 
     Returns
     -------
-   smap : ``matplotlib.cm.ScalarMappable``
-       Scalar mappable object which contains the members:
-       `norm`, `cmap`, and the function `to_rgba`.
+    smap : ``matplotlib.cm.ScalarMappable``
+        Scalar mappable object which contains the members:
+        `norm`, `cmap`, and the function `to_rgba`.
 
     """
 
-    if isinstance(cmap, str): cmap = plt.get_cmap(cmap)
+    if cmap is None: cmap = 'jet'
+
+    if isinstance(cmap, six.string_types): cmap = plt.get_cmap(cmap)
+    if under is not None: cmap.set_under(under)
+    if over is not None: cmap.set_over(over)
 
     if scale is None:
         if np.size(args) > 1 and np.all(args > 0.0):
@@ -984,7 +1001,7 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
 
 
 def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, linealpha=0.8,
-                 filter=None, outline='0.5', edges=True, **kwargs):
+                 filter=None, outline='0.5', edges=True, floor=None, ceil=None, **kwargs):
     """Draw a median line and (set of) confidence interval(s).
 
     The `med` and `conf` values can be obtained from `numpy.percentile` and or
@@ -1015,6 +1032,12 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
     outline : str or `None`.
         Draw a `outline` colored line behind the median line to make it easier to see.
         If `None`, no outline is drawn.
+    edges : bool
+        Add lines along the edges of each confidence interval.
+    floor : array_like of float or `None`
+        Set the minimum value for confidence intervals to this value.
+    ceil : array_like of float or `None`
+        Set the maximmum value for confidence intervals to be this value.
     **kwargs : additional key-value pairs,
         Passed to `matplotlib.pyplot.fill_between` controlling `matplotlib.patches.Polygon`
         properties.  These are included in the `linePatch` objects, but *not* the `confPatches`.
@@ -1054,6 +1077,11 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
         xx = np.array(rads)
         ylo = np.array(conf[:, jj, 0])
         yhi = np.array(conf[:, jj, 1])
+        if floor is not None:
+            ylo = np.maximum(ylo, floor)
+        if ceil is not None:
+            yhi = np.minimum(yhi, ceil)
+
         if filter:
             ylo = np.ma.masked_where(~filter(ylo, 0.0), ylo)
             yhi = np.ma.masked_where(~filter(yhi, 0.0), yhi)
@@ -1184,19 +1212,52 @@ def full_extent(ax, pad=0.0, invert=None):
 
     From: 'stackoverflow.com/questions/14712665/'
     """
-    # For text objects, we need to draw the figure first, otherwise the extents
-    # are undefined.
+    # Draw text objects so extents are defined
     ax.figure.canvas.draw()
     items = ax.get_xticklabels() + ax.get_yticklabels()
     items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
     items += [ax, ax.title]
-    bbox = mpl.transforms.Bbox.union([item.get_window_extent() for item in items])
+    use_items = []
+    for item in items:
+        if isinstance(item, mpl.text.Text) and len(item.get_text()) == 0: continue
+        use_items.append(item)
+    bbox = mpl.transforms.Bbox.union([item.get_window_extent() for item in use_items])
     bbox = bbox.expanded(1.0 + pad, 1.0 + pad)
-    # return bbox.expanded(1.0 + pad, 1.0 + pad)
     if invert:
         bbox = bbox.transformed(invert.inverted())
 
     return bbox
+
+
+def position_to_extent(fig, ax, loc, pad=0.0, halign='left', valign='lower'):
+    """Reposition axis so that origin of 'full_extent' is at given `loc`.
+    """
+    bbox = full_extent(ax, pad=pad, invert=fig.transFigure)
+    ax_bbox = ax.get_position()
+
+    if halign.startswith('r'):
+        dx = ax_bbox.x1 - bbox.x1
+    elif halign.startswith('l'):
+        dx = ax_bbox.x0 - bbox.x0
+    else:
+        raise ValueError("`halign` = '{}' must start with 'l' or 'r'.".format(halign))
+
+    if valign.startswith('l'):
+        dy = ax_bbox.y0 - bbox.y0
+    elif valign.startswith('u'):
+        dy = ax_bbox.y1 - bbox.y1
+    else:
+        raise ValueError("`valign` = '{}' must start with 'l' or 'u'.".format(valign))
+
+    if len(loc) == 2:
+        new_loc = [loc[0]+dx, loc[1]+dy, ax_bbox.width, ax_bbox.height]
+    elif len(loc) == 4:
+        new_loc = [loc[0]+dx, loc[1]+dy, loc[2], loc[3]]
+    else:
+        raise ValueError("`loc` must be 2 or 4 long: [x, y, (width, height)]")
+
+    ax.set_position(new_loc)
+    return
 
 
 def _extents(ax, pad=0.0, invert=None):

@@ -74,16 +74,20 @@ Current
     +   plot_core.py
         -   `backdrop` [new-function]
             +   [ENH] Add rectangular patches behind the content of the given axes.
+        -   `colormap`
+            +   [ENH] Added grey colors for 'under' and 'over' (i.e. outside colormap limits).
         -   `full_extent` [new-function]
             +   [ENH] Find the bbox (or set of bbox) which contain the given axes and its contents.
         -   `legend`
             +   [BUG] fixed issue where 'center' could be repeated for `valign` and `halign`.
             +   [ENH] change the argument `fig` to be `art` -- either an axes or fig object.
+            +   [ENH] added default for `handlelength` parameter; removed monospace fonts default.
         -   `line_label` [new-function]
             +   Function which draws a vertical or horizontal line, and adds an annotation to it.
         -   `plotConfFill`
             +   [ENH] Added `edges` argument to control drawing the edges of each confidence
                 interval explicitly.
+            +   [ENH] Added 'floor' and 'ceil' parameters to set absolute minima and maxima.
         -   `plotHistBars`
             +   [ENH] Added improved default parameters for bar plot.  Missing parameter bug fix.
         -   `plotHistLine`
