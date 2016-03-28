@@ -648,7 +648,7 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=Fal
     return
 
 
-def modify_exists(fname, max=100):
+def modify_exists(fname, max=1000):
     """If the given filename already exists, return a modified version.
 
     Returns a filename, modified by appending a 0-padded integer to the input `fname`.
