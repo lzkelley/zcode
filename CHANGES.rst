@@ -16,6 +16,11 @@ Future / To-Do
 
 Current
 -------
+
+
+
+[0.0.7] - 2016/03/28
+--------------------
 -   inout/
     +   inout_core.py
         -   `ascii_table`
