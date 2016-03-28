@@ -70,6 +70,7 @@ Current
                 incorrectly.
             +   [BUG] fixed issue with trying to set numerous axes variables in colorbar.
             +   [ENH] updated with `cmap` and `smap` parameters passed to `plot2DHist`.
+            +   [ENH] improved the way extrema are handled, especially in xprojection axis.
     +   plot_core.py
         -   `backdrop` [new-function]
             +   [ENH] Add rectangular patches behind the content of the given axes.

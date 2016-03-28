@@ -36,9 +36,9 @@ _CB_WID = 0.02
 _CB_WPAD = 0.08
 
 
-def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None,
+def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None, extrema=None,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0,
-                   cmap=plt.cm.jet, smap=None,
+                   cmap=None, smap=None,
                    fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False,
                    left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP):
     """Plot a 2D histogram with projections of one or both axes.
@@ -132,6 +132,9 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         if weights is None: statistic = 'count'
         else:               statistic = 'sum'
 
+    if filter is None and histScale.startswith('log'):
+        filter = 'g'
+
     # Filter input data
     if filter is not None:
         # Make sure `filter` is an iterable pair
@@ -215,8 +218,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
 
     hist = np.nan_to_num(hist)
+    # Preserve input extrema if given, otherwise calculate
+    extrema = _set_extrema(extrema, hist, filter=filter[2])
     pcm, smap = plot2DHist(prax, xedges, yedges, hist, cscale=histScale, cbax=cbax,
-                           labels=labels, counts=counts, cmap=cmap, smap=smap)
+                           labels=labels, counts=counts, cmap=cmap, smap=smap, extrema=extrema)
 
     # Plot projection of the x-axis (i.e. ignore 'y')
     if xpax:
@@ -230,12 +235,17 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         if smap.log:
             min, max = zmath.minmax(colhist, filter='g')
             colhist = np.maximum(colhist, min)
+            extrema = [zmath.floor_log(extrema[0]), zmath.ceil_log(extrema[1])]
+        else:
+            extrema = [np.floor(extrema[0]), np.ceil(extrema[1])]
+
         xpax.bar(edges[:-1], hist, color=smap.to_rgba(colhist), log=islog, width=np.diff(edges))
         #     set tick-labels to the top
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
         #     set bounds to bin edges
         plot_core.setLim(xpax, 'x', data=xedges)
+        xpax.set_ylim(extrema)
 
     # Plot projection of the y-axis (i.e. ignore 'x')
     if ypax:
@@ -258,7 +268,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
 
 def plot2DHist(ax, xvals, yvals, hist,
-               cax=None, cbax=None, cscale='log', cmap=plt.cm.jet, smap=None, extrema=None,
+               cax=None, cbax=None, cscale='log', cmap=None, smap=None, extrema=None,
                contours=None, clabel={}, fs=12, rasterized=True,
                title=None, labels=None, counts=None, **kwargs):
     """Plot the given 2D histogram of data.
@@ -316,7 +326,8 @@ def plot2DHist(ax, xvals, yvals, hist,
     hist = np.asarray(hist)
     if plot_core._scale_to_log_flag(cscale): filter = 'g'
     else:                                    filter = None
-    if extrema is None: extrema = zmath.minmax(hist, filter=filter)
+    extrema = _set_extrema(extrema, hist, filter=filter)
+
     if labels is not None:
         if np.size(labels) >= 2:
             ax.set_xlabel(labels[0], size=fs)
@@ -330,7 +341,7 @@ def plot2DHist(ax, xvals, yvals, hist,
 
     # Plot
     pcm = ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap, linewidth=0,
-                        rasterized=rasterized, **kwargs)
+                        rasterized=rasterized, vmin=smap.norm.vmin, vmax=smap.norm.vmax, **kwargs)
     pcm.set_edgecolor('face')
 
     # Add color bar
@@ -462,3 +473,13 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
         cbax = fig.add_axes([cbar_left, bottom, _CB_WID, prim_hit])
 
     return fig, prax, xpax, ypax, cbax
+
+
+def _set_extrema(extrema, vals, filter=None):
+    _extr = zmath.minmax(vals, filter=filter)
+    if extrema is None: new_extr = _extr
+    else:               new_extr = np.asarray(extrema)
+    if new_extr[0] is None: new_extr[0] = _extr[0]
+    if new_extr[1] is None: new_extr[1] = _extr[1]
+    new_extr = new_extr.astype(np.float64)
+    return new_extr
