@@ -31,7 +31,6 @@ def cumstats(arr):
         std <flt>[N] : cumulative standard deviation over ``arr``
 
     """
-
     tot = len(arr)
     num = np.arange(tot)
     std = np.zeros(tot)
@@ -136,12 +135,12 @@ def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter
 
     """
     squeeze = False
-    if(not np.iterable(confInt)):
+    if not np.iterable(confInt):
         squeeze = True
         confInt = [confInt]
     xx = np.asarray(xx).flatten()
     yy = np.asarray(yy).flatten()
-    if(xx.shape != yy.shape):
+    if xx.shape != yy.shape:
         errStr = "Shapes of `xx` and `yy` must match ('{}' vs. '{}'."
         errStr = errStr.format(str(xx.shape), str(yy.shape))
         raise ValueError(errStr)
@@ -166,7 +165,7 @@ def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter
     # Calculate medians and confidence intervals
     for ii, gg in enumerate(groups):
         count[ii] = np.size(gg)
-        if(count[ii] == 0): continue
+        if count[ii] == 0: continue
         mm, cc = confidenceIntervals(yy[gg], ci=confInt)
         med[ii] = mm
         conf[ii, ...] = cc[...]
