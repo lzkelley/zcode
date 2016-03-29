@@ -25,6 +25,13 @@ Current
         -    Moved 'statistical' methods from 'math_core.py' to here.
         -    `confidenceBands` [DEPRECATED] --> `confidence_bands` [new-function]
         -    `confidenceIntervals` [DEPRECATED] --> `confidence_intervals` [new-function]
+    +   tests/
+        -   'test_math_core.py'
+            +   Functions split off into 'test_numeric.py' and 'test_statistic.py'.
+        -   'test_numeric.py' [new-file]
+            +   Tests for numerical functions.
+        -   'test_statistic.py' [new-file]
+            +   Tests for statistical functions.
 -   plot/
     +   plot_core.py
         -   `backdrop`
