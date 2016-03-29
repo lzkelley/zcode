@@ -10,13 +10,8 @@ Functions
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-# from six.moves import xrange
 
 import numpy as np
-# import scipy as sp
-# import scipy.interpolate
-# import warnings
-# import numbers
 
 from . import math_core
 
