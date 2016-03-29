@@ -16,7 +16,13 @@ Future / To-Do
 
 Current
 -------
-
+-   plot/
+    +   plot_core.py
+        -   `backdrop`
+            +   [ENH] Add option `draw` to determine if patch should be added to figure
+                or only returned.
+        -   `full_extent`
+            +   [ENH] Improve to work with legends (`matplotlib.legend.Legend`).
 
 
 [0.0.7] - 2016/03/28

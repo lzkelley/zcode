@@ -1214,14 +1214,22 @@ def full_extent(ax, pad=0.0, invert=None):
     """
     # Draw text objects so extents are defined
     ax.figure.canvas.draw()
-    items = ax.get_xticklabels() + ax.get_yticklabels()
-    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
-    items += [ax, ax.title]
-    use_items = []
-    for item in items:
-        if isinstance(item, mpl.text.Text) and len(item.get_text()) == 0: continue
-        use_items.append(item)
-    bbox = mpl.transforms.Bbox.union([item.get_window_extent() for item in use_items])
+    if isinstance(ax, mpl.axes.Axes):
+        items = ax.get_xticklabels() + ax.get_yticklabels()
+        items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
+        items += [ax, ax.title]
+        use_items = []
+        for item in items:
+            if isinstance(item, mpl.text.Text) and len(item.get_text()) == 0: continue
+            use_items.append(item)
+        bbox = mpl.transforms.Bbox.union([item.get_window_extent() for item in use_items])
+    elif isinstance(ax, mpl.legend.Legend):
+        bbox = ax.get_frame().get_bbox()
+    else:
+        err_str = "Unrecognized type of `ax` = '{}'.  Currently support axes and legends.".format(
+            type(ax))
+        raise ValueError(err_str)
+
     bbox = bbox.expanded(1.0 + pad, 1.0 + pad)
     if invert:
         bbox = bbox.transformed(invert.inverted())
@@ -1278,19 +1286,27 @@ def _extents(ax, pad=0.0, invert=None):
     return bboxes
 
 
-def backdrop(fig, ax, pad=0.0, union=False, **kwargs):
+def backdrop(fig, obj, pad=0.0, union=False, draw=True, **kwargs):
+    """Draw a rectangle behind the full extent of the given object.
+
+    Example
+    -------
+    >>> zplot.backdrop(fig, ax, pad=0.02, union=True,
+                       facecolor='white', edgecolor='none', zorder=5, alpha=0.8)
+    """
     if union:
-        bboxes = [full_extent(ax, pad=pad, invert=fig.transFigure)]
+        bboxes = [full_extent(obj, pad=pad, invert=fig.transFigure)]
     else:
-        bboxes = _extents(ax, pad=pad, invert=fig.transFigure)
+        bboxes = _extents(obj, pad=pad, invert=fig.transFigure)
 
     pats = []
     for bbox in bboxes:
         rect = mpl.patches.Rectangle([bbox.xmin, bbox.ymin], bbox.width, bbox.height,
                                      transform=fig.transFigure, **kwargs)
-        fig.patches.append(rect)
+        if draw: fig.patches.append(rect)
         pats.append(rect)
 
+    if len(pats) == 1: return pats[0]
     return pats
 
 
