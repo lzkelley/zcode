@@ -23,6 +23,8 @@ Current
         -    Moved 'numerical' methods from 'math_core.py' to here.
     +   stats.py [new-file]
         -    Moved 'statistical' methods from 'math_core.py' to here.
+        -    `confidenceBands` [DEPRECATED] --> `confidence_bands` [new-function]
+        -    `confidenceIntervals` [DEPRECATED] --> `confidence_intervals` [new-function]
 -   plot/
     +   plot_core.py
         -   `backdrop`

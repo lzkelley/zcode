@@ -3,7 +3,7 @@
 Functions
 ---------
 -   cumstats                 - Calculate a cumulative average and standard deviation.
--   confidenceIntervals      - Compute the values bounding desired confidence intervals.
+-   confidence_intervals     - Compute the values bounding desired confidence intervals.
 -   confidenceBands          - Bin by `xx` to calculate confidence intervals in `yy`.
 -   stats                    - Get basic statistics for the given array.
 -   stats_str                - Return a string with the statistics of the given array.
@@ -11,11 +11,13 @@ Functions
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import warnings
 import numpy as np
 
 from . import math_core
 
-__all__ = ['cumstats', 'confidenceIntervals', 'confidenceBands', 'stats', 'stats_str']
+__all__ = ['cumstats', 'confidenceIntervals', 'confidence_intervals', 'confidenceBands',
+           'stats', 'stats_str']
 
 
 def cumstats(arr):
@@ -46,7 +48,15 @@ def cumstats(arr):
     return ave, std
 
 
-def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
+def confidenceIntervals(*args, **kwargs):
+    """DEPRECATED: use `confidence_intervals`.
+    """
+    warnings.warn("`confidenceIntervals` is deprecated.  Use `confidence_intervals`",
+                  DeprecationWarning, stacklevel=3)
+    return confidence_intervals(*args, **kwargs)
+
+
+def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
     """Compute the values bounding the target confidence intervals for an array of data.
 
     Arguments
@@ -94,7 +104,15 @@ def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
     return med, conf
 
 
-def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter=None):
+def confidenceBands(*args, **kwargs):
+    """DEPRECATED: use `confidence_bands`.
+    """
+    warnings.warn("`confidenceBands` is deprecated.  Use `confidence_bands`",
+                  DeprecationWarning, stacklevel=3)
+    return confidence_bands(*args, **kwargs)
+
+
+def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter=None):
     """Bin the given data with respect to `xx` and calculate confidence intervals in `yy`.
 
     Arguments
