@@ -5,7 +5,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 import warnings
 
-from . import math_core as zmath
+from . import math_core
 
 __all__ = ['histogram']
 
@@ -81,7 +81,7 @@ def histogram(args, bins, scale=None, bounds='both', weights=None, func='sum',
 
     # Construct a certain number ``bins`` bins spaced appropriately
     if(np.size(bins) == 1):
-        extr = zmath.minmax(args)
+        extr = math_core.minmax(args)
         useScale = scale
         # If no bin scaling is given, make an appropriate choice
         if(useScale is None):
@@ -91,7 +91,7 @@ def histogram(args, bins, scale=None, bounds='both', weights=None, func='sum',
             # Dont use log for small ranges of values
             elif(extr[1]/extr[0] < 10.0): useScale = 'lin'
 
-        edges = zmath.spacing(extr, scale=useScale, num=bins+1, nonzero=False)
+        edges = math_core.spacing(extr, scale=useScale, num=bins+1, nonzero=False)
     else:
         edges = np.array(bins)
 
@@ -100,7 +100,7 @@ def histogram(args, bins, scale=None, bounds='both', weights=None, func='sum',
         # Try to go just after right-most value
         useMax = 1.01*np.max([np.max(edges), np.max(args)])
         # Deal with right-most being 0.0
-        shiftMax = zmath.minmax(np.fabs(args), filter='!=')
+        shiftMax = math_core.minmax(np.fabs(args), filter='!=')
         #     If there are no, nonzero values ``None`` is returned
         if(shiftMax is None): shiftMax = 1.0
         else:                   shiftMax = 0.1*shiftMax[0]
@@ -111,7 +111,7 @@ def histogram(args, bins, scale=None, bounds='both', weights=None, func='sum',
         # Try to go just before left-most value
         useMin = 0.99*np.min([np.min(edges), np.min(args)])
         # Deal with left-most being 0.0
-        shiftMin = zmath.minmax(np.fabs(args), filter='!=')
+        shiftMin = math_core.minmax(np.fabs(args), filter='!=')
         #     If there are no, nonzero values ``None`` is returned
         if(shiftMin is None): shiftMin = 1.0
         else:                   shiftMin = 0.1*shiftMin[0]
