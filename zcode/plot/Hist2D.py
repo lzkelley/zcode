@@ -233,11 +233,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         colhist = np.array(hist)
         # Enforce positive values for colors in log-plots.
         if smap.log:
-            min, max = zmath.minmax(colhist, filter='g')
-            colhist = np.maximum(colhist, min)
-            extrema = [zmath.floor_log(extrema[0]), zmath.ceil_log(extrema[1])]
-        else:
-            extrema = [np.floor(extrema[0]), np.ceil(extrema[1])]
+            tmin, tmax = zmath.minmax(colhist, filter='g')
+            colhist = np.maximum(colhist, tmin)
+
+        extrema = [zmath.floor_log(extrema[0]), zmath.ceil_log(extrema[1])]
 
         xpax.bar(edges[:-1], hist, color=smap.to_rgba(colhist), log=islog, width=np.diff(edges))
         #     set tick-labels to the top
