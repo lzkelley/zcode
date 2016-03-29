@@ -2,9 +2,9 @@
 
 Functions
 ---------
--   cumstats                 - Calculate a cumulative average and standard deviation.
+-   confidence_bands         - Bin by `xx` to calculate confidence intervals in `yy`.
 -   confidence_intervals     - Compute the values bounding desired confidence intervals.
--   confidenceBands          - Bin by `xx` to calculate confidence intervals in `yy`.
+-   cumstats                 - Calculate a cumulative average and standard deviation.
 -   stats                    - Get basic statistics for the given array.
 -   stats_str                - Return a string with the statistics of the given array.
 
@@ -16,92 +16,8 @@ import numpy as np
 
 from . import math_core
 
-__all__ = ['cumstats', 'confidenceIntervals', 'confidence_intervals', 'confidenceBands',
-           'stats', 'stats_str']
-
-
-def cumstats(arr):
-    """Calculate a cumulative average and standard deviation.
-
-    Arguments
-    ---------
-        arr <flt>[N] : input array
-
-    Returns
-    -------
-        ave <flt>[N] : cumulative average over ``arr``
-        std <flt>[N] : cumulative standard deviation over ``arr``
-
-    """
-    tot = len(arr)
-    num = np.arange(tot)
-    std = np.zeros(tot)
-    # Cumulative sum
-    sm1 = np.cumsum(arr)
-    # Cumulative sum of squares
-    sm2 = np.cumsum(np.square(arr))
-    # Cumulative average
-    ave = sm1/(num+1.0)
-
-    std[1:] = np.fabs(sm2[1:] - np.square(sm1[1:])/(num[1:]+1.0))/num[1:]
-    std[1:] = np.sqrt(std[1:])
-    return ave, std
-
-
-def confidenceIntervals(*args, **kwargs):
-    """DEPRECATED: use `confidence_intervals`.
-    """
-    warnings.warn("`confidenceIntervals` is deprecated.  Use `confidence_intervals`",
-                  DeprecationWarning, stacklevel=3)
-    return confidence_intervals(*args, **kwargs)
-
-
-def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
-    """Compute the values bounding the target confidence intervals for an array of data.
-
-    Arguments
-    ---------
-    vals : array_like of scalars
-        Data over which to calculate confidence intervals.
-    ci : (M,) array_like of floats
-        List of desired confidence intervals as fractions (e.g. `[0.68, 0.95]`)
-    axis : int
-        Axis over which to calculate confidence intervals.
-    filter : str or `None`
-        Filter the input array with a boolean comparison to zero.
-        If no values remain after filtering, ``None, None`` is returned.
-
-    Returns
-    -------
-    med : scalar
-        Median of the input data.
-        `None` if there are no values (e.g. after filtering).
-    conf : ndarray of scalar
-        Bounds for each confidence interval.  Shape depends on the number of confidence intervals
-        passed in `ci`, and also the input shape of `vals`.
-        `None` if there are no values (e.g. after filtering).
-
-    """
-    ci = np.atleast_1d(ci)
-    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
-
-    # Filter input values
-    if filter:
-        vals = math_core.comparison_filter(vals, filter)
-        if vals.size == 0:
-            return None, None
-
-    # Calculate confidence-intervals and median
-    cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
-    conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
-             np.percentile(vals, 100.0*cdf[1], axis=axis)]
-            for cdf in cdf_vals]
-    conf = np.array(conf)
-    med = np.percentile(vals, 50.0, axis=axis)
-    if len(conf) == 1:
-        conf = conf[0]
-
-    return med, conf
+__all__ = ['confidenceBands', 'confidence_bands', 'confidenceIntervals', 'confidence_intervals',
+           'cumstats', 'stats', 'stats_str']
 
 
 def confidenceBands(*args, **kwargs):
@@ -192,6 +108,90 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
         conf = conf.squeeze()
 
     return count, med, conf, xbins
+
+
+def confidenceIntervals(*args, **kwargs):
+    """DEPRECATED: use `confidence_intervals`.
+    """
+    warnings.warn("`confidenceIntervals` is deprecated.  Use `confidence_intervals`",
+                  DeprecationWarning, stacklevel=3)
+    return confidence_intervals(*args, **kwargs)
+
+
+def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
+    """Compute the values bounding the target confidence intervals for an array of data.
+
+    Arguments
+    ---------
+    vals : array_like of scalars
+        Data over which to calculate confidence intervals.
+    ci : (M,) array_like of floats
+        List of desired confidence intervals as fractions (e.g. `[0.68, 0.95]`)
+    axis : int
+        Axis over which to calculate confidence intervals.
+    filter : str or `None`
+        Filter the input array with a boolean comparison to zero.
+        If no values remain after filtering, ``None, None`` is returned.
+
+    Returns
+    -------
+    med : scalar
+        Median of the input data.
+        `None` if there are no values (e.g. after filtering).
+    conf : ndarray of scalar
+        Bounds for each confidence interval.  Shape depends on the number of confidence intervals
+        passed in `ci`, and also the input shape of `vals`.
+        `None` if there are no values (e.g. after filtering).
+
+    """
+    ci = np.atleast_1d(ci)
+    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
+
+    # Filter input values
+    if filter:
+        vals = math_core.comparison_filter(vals, filter)
+        if vals.size == 0:
+            return None, None
+
+    # Calculate confidence-intervals and median
+    cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
+    conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
+             np.percentile(vals, 100.0*cdf[1], axis=axis)]
+            for cdf in cdf_vals]
+    conf = np.array(conf)
+    med = np.percentile(vals, 50.0, axis=axis)
+    if len(conf) == 1:
+        conf = conf[0]
+
+    return med, conf
+
+
+def cumstats(arr):
+    """Calculate a cumulative average and standard deviation.
+
+    Arguments
+    ---------
+        arr <flt>[N] : input array
+
+    Returns
+    -------
+        ave <flt>[N] : cumulative average over ``arr``
+        std <flt>[N] : cumulative standard deviation over ``arr``
+
+    """
+    tot = len(arr)
+    num = np.arange(tot)
+    std = np.zeros(tot)
+    # Cumulative sum
+    sm1 = np.cumsum(arr)
+    # Cumulative sum of squares
+    sm2 = np.cumsum(np.square(arr))
+    # Cumulative average
+    ave = sm1/(num+1.0)
+
+    std[1:] = np.fabs(sm2[1:] - np.square(sm1[1:])/(num[1:]+1.0))/num[1:]
+    std[1:] = np.sqrt(std[1:])
+    return ave, std
 
 
 def stats(vals, median=False):
