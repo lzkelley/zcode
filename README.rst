@@ -32,4 +32,4 @@ diagnostics and testing.  These can all be run using the `zcode/test.sh` script.
 
 #### Deprecations:
 When deprecating a function/object/method, use a warning like:
-``warnings.warn(warnStr.format('positive'), DeprecationWarning, stacklevel=3)``
+``warnings.warn("Some warning...", DeprecationWarning, stacklevel=3)``
