@@ -16,6 +16,13 @@ Future / To-Do
 
 Current
 -------
+-   math/
+    +   math_core.py
+        -    Moved many methods to new files, 'numeric.py' and 'stats.py'
+    +   numeric.py [new-file]
+        -    Moved 'numerical' methods from 'math_core.py' to here.
+    +   stats.py [new-file]
+        -    Moved 'statistical' methods from 'math_core.py' to here.
 -   plot/
     +   plot_core.py
         -   `backdrop`

@@ -2,9 +2,7 @@
 
 Functions
 ---------
--   spline                   - Create a general spline interpolation function.
 -   contiguousInds           - Find the largest segment of contiguous array values
--   cumtrapz_loglog          - Perform a cumulative integral in log-log space.
 -   within                   - Test whether a value is within the bounds of another.
 -   indsWithin               - Find the indices within the given extrema.
 -   minmax                   - Find the min and max of given values.
@@ -16,23 +14,14 @@ Functions
 -   sliceForAxis             - Array slicing object which slices only the target axis.
 -   midpoints                - Return the midpoints between values in the given array.
 -   vecmag                   - find the magnitude/distance of/between vectors.
--   extend                   - Extend the given array by extraplation.
 -   renumerate               - construct a reverse enumeration iterator.
--   cumstats                 - Calculate a cumulative average and standard deviation.
--   confidenceIntervals      - Compute the values bounding desired confidence intervals.
--   confidenceBands          - Bin by `xx` to calculate confidence intervals in `yy`.
 -   frexp10                  - Decompose a float into mantissa and exponent (base 10).
--   stats                    - Get basic statistics for the given array.
 -   groupDigitized           - Get a list of array indices corresponding to each bin.
--   sampleInverse            - Find x-sampling to evenly divide a function in y-space.
--   smooth                   - Use convolution to smooth the given array.
 -   mono                     - Check for monotonicity in the given array.
--   stats_str                - Return a string with the statistics of the given array.
 -   ceil_log                 - Round the given value upwards in log-space (see `round_log`).
 -   floor_log                - Round the given value downwards in log-space (see `round_log`).
 -   round_log                - Round the given value in log-space.
 
--   _trapezium_loglog        -
 -   _comparisonFunction      -
 -   _comparisonFilter        -
 -   _fracToInt               -
@@ -43,94 +32,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from six.moves import xrange
 
 import numpy as np
-import scipy as sp
-import scipy.interpolate
 import warnings
 import numbers
 
-__all__ = ['spline', 'contiguousInds', 'cumtrapz_loglog',
-           'within', 'indsWithin', 'minmax', 'really1d',
-           'argextrema', 'spacing', 'asBinEdges',
-           'strArray', 'sliceForAxis', 'midpoints',
-           'vecmag', 'extend',
-           'renumerate', 'cumstats', 'confidenceIntervals', 'confidenceBands',
-           'frexp10', 'stats', 'groupDigitized',
-           'sampleInverse', 'smooth', 'mono', 'stats_str', 'ceil_log', 'floor_log', 'round_log',
-           'comparison_filter',
+__all__ = ['contiguousInds', 'within', 'indsWithin', 'minmax', 'really1d',
+           'argextrema', 'spacing', 'asBinEdges', 'strArray', 'sliceForAxis', 'midpoints',
+           'vecmag', 'renumerate', 'frexp10', 'groupDigitized',
+           'mono', 'ceil_log', 'floor_log', 'round_log', 'comparison_filter',
            '_comparisonFunction', '_comparison_function', '_infer_scale']
-
-
-def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=True):
-    """Create a general, callable spline interpolation function.
-
-    Arguments
-    ---------
-    xx : (N,), array_like scalars
-        Independent variable, must be monotonically increasing -- which `sort`, if `True`, will do.
-    yy : (N,), array_like scalars
-        Dependent variable; the values of the function.
-    order : int
-        Order of interpolation (must be 3` if `mono`).
-    log : bool
-        Interpolate in log-log-space.
-    mono : bool
-        Use an explicitly monotonic interpolator (`scipy.interpolate.PchipInterpolator`).
-    extrap : bool
-        Allow extrapolation outside of range of `xx`.
-    pos : bool
-        Filter to only positive values of `yy` (and corresponding `xx`).
-    sort : bool
-        Sort the input arrays to assure `xx` is monotonically increasing.
-
-    Returns
-    -------
-    spline : obj, callable function
-        Spline interplation function.
-
-    """
-
-    xp = np.array(xx)
-    yp = np.array(yy)
-
-    # Make sure arguments are sorted (by independent variable `xx`)
-    if(sort):
-        inds = np.argsort(xp)
-        xp = xp[inds]
-        yp = yp[inds]
-
-    # Select positive y-values
-    if(pos):
-        inds = np.where(yp > 0.0)[0]
-        xp = xp[inds]
-        yp = yp[inds]
-
-    # Convert to log-space as needed
-    if(log):
-        xp = np.log10(xp)
-        yp = np.log10(yp)
-
-    # Sort input arrays
-    inds = np.argsort(xp)
-    xp = xp[inds]
-    yp = yp[inds]
-
-    # Monotonic Interpolation
-    if(mono):
-        if(order != 3): warnings.warn("monotonic `PchipInterpolator` is always cubic!")
-        terp = sp.interpolate.PchipInterpolator(xp, yp, extrapolate=extrap)
-    # General Interpolation
-    else:
-        # Let function extrapolate outside range
-        if(extrap): ext = 0
-        # Return zero outside of range
-        else:       ext = 1
-        terp = sp.interpolate.InterpolatedUnivariateSpline(xp, yp, k=order, ext=ext)
-
-    # Convert back to normal space, as needed
-    if(log): spline = lambda xx, terp=terp: np.power(10.0, terp(np.log10(xx)))
-    else:    spline = terp
-
-    return spline
 
 
 def contiguousInds(args):
@@ -162,43 +71,6 @@ def contiguousInds(args):
     inds = np.arange(*idx[maxPos])
 
     return inds
-
-
-def cumtrapz_loglog(yy, xx, init=0.0, rev=False):
-    """Perform a cumulative integral in log-log space.
-    From Thomas Robitaille
-    https://github.com/astrofrog/fortranlib/blob/master/src/lib_array.f90
-    """
-    if(np.ndim(yy) > 1): raise RuntimeError("This isn't implemented for ndim > 1!")
-
-    nums = len(xx)
-    sum = np.zeros(nums)
-
-    if(rev):
-        xx = xx[::-1]
-        yy = yy[::-1]
-
-    sum[0] = init
-    for ii in range(1, nums):
-        sum[ii] = sum[ii-1] + _trapezium_loglog(xx[ii-1], yy[ii-1], xx[ii], yy[ii])
-
-    if(rev): sum = sum[::-1]
-
-    return sum
-
-
-def _trapezium_loglog(x1, y1, x2, y2):
-    """
-    From Thomas Robitaille
-    https://github.com/astrofrog/fortranlib/blob/master/src/lib_array.f90
-    """
-    b = np.log10(y1/y2) / np.log10(x1/x2)
-    if(np.fabs(b+1.0) < 1.0e-10):
-        trap = x1 * y1 * np.log(x2/x1)
-    else:
-        trap = y1 * (x2*(x2/x1)**b-x1) / (b+1.0)
-
-    return trap
 
 
 def within(vals, extr, edges=True, all=False, inv=False):
@@ -660,201 +532,11 @@ def vecmag(r1, r2=None):
     return dist
 
 
-def extend(arr, num=1, log=True, append=False):
-    """Extend the given array by extraplation.
-
-    Arguments
-    ---------
-        arr    <flt>[N] : array to extend
-        num    <int>    : number of points to add (on each side, if ``both``)
-        log    <bool>   : extrapolate in log-space
-        append <bool>   : add the extended points onto the given array
-
-    Returns
-    -------
-        retval <flt>[M] : extension (or input ``arr`` with extension added, if ``append``).
-
-    """
-
-    if(log): useArr = np.log10(arr)
-    else:      useArr = np.array(arr)
-
-    steps = np.arange(1, num+1)
-    left = useArr[0] + (useArr[0] - useArr[1])*steps[::-1].squeeze()
-    rigt = useArr[-1] + (useArr[-1] - useArr[-2])*steps.squeeze()
-
-    if(log):
-        left = np.power(10.0, left)
-        rigt = np.power(10.0, rigt)
-
-    if(append): return np.hstack([left, arr, rigt])
-    return [left, rigt]
-
-
 def renumerate(arr):
     """
     Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
     """
     return zip(reversed(range(len(arr))), reversed(arr))
-
-
-def cumstats(arr):
-    """Calculate a cumulative average and standard deviation.
-
-    Arguments
-    ---------
-        arr <flt>[N] : input array
-
-    Returns
-    -------
-        ave <flt>[N] : cumulative average over ``arr``
-        std <flt>[N] : cumulative standard deviation over ``arr``
-
-    """
-
-    tot = len(arr)
-    num = np.arange(tot)
-    std = np.zeros(tot)
-    # Cumulative sum
-    sm1 = np.cumsum(arr)
-    # Cumulative sum of squares
-    sm2 = np.cumsum(np.square(arr))
-    # Cumulative average
-    ave = sm1/(num+1.0)
-
-    std[1:] = np.fabs(sm2[1:] - np.square(sm1[1:])/(num[1:]+1.0))/num[1:]
-    std[1:] = np.sqrt(std[1:])
-    return ave, std
-
-
-def confidenceIntervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
-    """Compute the values bounding the target confidence intervals for an array of data.
-
-    Arguments
-    ---------
-    vals : array_like of scalars
-        Data over which to calculate confidence intervals.
-    ci : (M,) array_like of floats
-        List of desired confidence intervals as fractions (e.g. `[0.68, 0.95]`)
-    axis : int
-        Axis over which to calculate confidence intervals.
-    filter : str or `None`
-        Filter the input array with a boolean comparison to zero.
-        If no values remain after filtering, ``None, None`` is returned.
-
-    Returns
-    -------
-    med : scalar
-        Median of the input data.
-        `None` if there are no values (e.g. after filtering).
-    conf : ndarray of scalar
-        Bounds for each confidence interval.  Shape depends on the number of confidence intervals
-        passed in `ci`, and also the input shape of `vals`.
-        `None` if there are no values (e.g. after filtering).
-
-    """
-    ci = np.atleast_1d(ci)
-    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
-
-    # Filter input values
-    if filter:
-        vals = comparison_filter(vals, filter)
-        if vals.size == 0:
-            return None, None
-
-    # Calculate confidence-intervals and median
-    cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
-    conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
-             np.percentile(vals, 100.0*cdf[1], axis=axis)]
-            for cdf in cdf_vals]
-    conf = np.array(conf)
-    med = np.percentile(vals, 50.0, axis=axis)
-    if len(conf) == 1:
-        conf = conf[0]
-
-    return med, conf
-
-
-def confidenceBands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter=None):
-    """Bin the given data with respect to `xx` and calculate confidence intervals in `yy`.
-
-    Arguments
-    ---------
-    xx : array_like scalars
-        Data values for the axis by which to bin.
-    yy : array_like scalars
-        Data values for the axis in which to calculate confidence intervals, with values
-        corresponding to each of the `xx` values.  Must have the same number of elements
-        as `xx`.
-    xbins : int or array_like of scalar
-        Specification for bins in `xx`.  Either a
-        * int, describing the number of bins `N` to create automatically with scale `xscale`.
-        * array_like scalar, describing the `N+1` edges of each bin (left and right).
-    xscale : str
-        Specification of xbin scaling if bins are to be calculated automatically, {'lin', 'log'}.
-        Ignored if bin edges are given explicitly to `xbins`.
-    confInt : scalar or array_like of scalar
-        The percentage confidence intervals to calculate (e.g. 0.5 for median).
-        Must be between {0.0, 1.0}.
-    filter : str or `None`
-
-    Returns
-    -------
-    (for number of bins `N`)
-    count : (N,) array of int
-        The number of points in each xbin.
-    med : (N,) array of float
-        The median value of points in each bin
-    conf : array or ndarray of float
-        Values describing the confidence intervals.
-        If a single `confInt` is given, this will have shape (N,2);
-        If `M` `confInt` values are given, this will have shape (N,M,2)
-        Where in each case the 0th and 1st element of the last dimension is the lower and upper
-        confidence bounds respectively.
-    xbins : (N+1,) array of float
-        Location of bin edges.
-
-    """
-    squeeze = False
-    if(not np.iterable(confInt)):
-        squeeze = True
-        confInt = [confInt]
-    xx = np.asarray(xx).flatten()
-    yy = np.asarray(yy).flatten()
-    if(xx.shape != yy.shape):
-        errStr = "Shapes of `xx` and `yy` must match ('{}' vs. '{}'."
-        errStr = errStr.format(str(xx.shape), str(yy.shape))
-        raise ValueError(errStr)
-
-    # Filter based on whether `yy` values match `filter` comparison to 0.0
-    if filter is not None:
-        compFunc = _comparisonFunction(filter)
-        inds = np.where(compFunc(yy, 0.0))[0]
-        xx = xx[inds]
-        yy = yy[inds]
-
-    # Create bins
-    xbins = asBinEdges(xbins, xx)
-    nbins = xbins.size - 1
-    # Find the entries corresponding to each bin
-    groups = groupDigitized(xx, xbins[1:], edges='right')
-    # Allocate storage for results
-    med = np.zeros(nbins)
-    conf = np.zeros((nbins, np.size(confInt), 2))
-    count = np.zeros(nbins, dtype=int)
-
-    # Calculate medians and confidence intervals
-    for ii, gg in enumerate(groups):
-        count[ii] = np.size(gg)
-        if(count[ii] == 0): continue
-        mm, cc = confidenceIntervals(yy[gg], ci=confInt)
-        med[ii] = mm
-        conf[ii, ...] = cc[...]
-
-    if squeeze:
-        conf = conf.squeeze()
-
-    return count, med, conf, xbins
 
 
 def frexp10(vals):
@@ -877,30 +559,6 @@ def frexp10(vals):
     # Positive/negative is still included here
     man = vals / np.power(10.0, exp)
     return man, exp
-
-
-def stats(vals, median=False):
-    """Get basic statistics for the given array.
-
-    Arguments
-    ---------
-        vals <flt>[N] : input array
-        median <bool> : include median in return values
-
-    Returns
-    -------
-        ave <flt>
-        std <flt>
-        [med <flt>] : median, returned if ``median`` is `True`
-
-    """
-    ave = np.average(vals)
-    std = np.std(vals)
-    if(median):
-        med = np.median(vals)
-        return ave, std, med
-
-    return ave, std
 
 
 def groupDigitized(arr, bins, edges='right'):
@@ -964,124 +622,6 @@ def groupDigitized(arr, bins, edges='right'):
     return groups
 
 
-def sampleInverse(xx, yy, num=100, log=True, sort=False):
-    """Find the x-sampling of a function to evenly divide its results in y-space.
-
-    Input function *must* be strictly monotonic in ``yy``.
-
-    Arguments
-    ---------
-        xx   <flt>[N] : array(scalar), initial sample space
-        yy   <flt>[N] : function to resample
-        num  <int>    : number of points to produce
-        log  <bool>   : sample in log space
-        sort <bool>   : sort return array ``samps``
-
-    Returns
-    -------
-        samps <flt>[``num``] : new sample points from ``xx``
-
-    """
-
-    # Convert to log-space, as needed
-    if(log):
-        xp = np.log10(xx)
-        yp = np.log10(yy)
-    else:
-        xp = np.array(xx)
-        yp = np.array(yy)
-
-    inds = np.argsort(yp)
-    xp = xp[inds]
-    yp = yp[inds]
-
-    # Construct Interpolating Function, *must be monotonic*
-    interpBack = spline(yp, xp, log=False, mono=True)
-
-    # Divide y-axis evenly, and find corresponding x-points
-    #     Note: `log` spacing is enforced manually, use `lin` here!
-    levels = spacing(yp, scale='lin', num=num)
-    samples = interpBack(levels)
-
-    # Convert back to normal space, as needed
-    if(log): samples = np.power(10.0, samples)
-
-    if(sort): samples = samples[np.argsort(samples)]
-
-    return samples
-
-
-def smooth(arr, size, width=None, loc=None, mode='same'):
-    """Use convolution to smooth the given array.
-
-    The ``width``, ``loc`` and ``size`` arguments can be given as integers, in which case they are taken
-    as indices in the input array; or they can be floats, in which case they are interpreted as
-    fractions of the length of the input array.
-
-    Arguments
-    ---------
-        arr   <flt>[N] : input array to be smoothed
-        size  <obj>    : size of smoothing window
-        width <obj>    : scalar specifying the region to be smoothed, if two values are given
-                         they are taken as left and right bounds
-        loc   <flt>    : int or float specifying to center position of smoothing,
-                         ``width`` is used relative to this position, if provided.
-        mode  <str>    : type of convolution, passed to ``numpy.convolve``
-
-    Returns
-    -------
-        smArr <flt>[N] : smoothed array
-
-    """
-
-    length = np.size(arr)
-    size = _fracToInt(size, length, within=1.0, round='floor')
-
-    assert size <= length, "`size` must be less than length of input array!"
-
-    window = np.ones(int(size))/float(size)
-
-    # Smooth entire array
-    smArr = np.convolve(arr, window, mode=mode)
-
-    # Return full smoothed array if no bounds given
-    if width is None:
-        return smArr
-
-    # Other convolution modes require dealing with differing lengths
-    #    If smoothing only a portion of the array,
-    assert mode == 'same', "Other convolution modes not supported for portions of array!"
-
-    # Smooth portion of array
-    # -----------------------
-
-    if np.size(width) == 2:
-        lef = width[0]
-        rit = width[1]
-    elif np.size(width) == 1:
-        if loc is None: raise ValueError("For a singular ``width``, ``pos`` must be provided!")
-        lef = width
-        rit = width
-    else:
-        raise ValueError("``width`` must be one or two scalars!")
-
-    # Convert fractions to positions, if needed
-    lef = _fracToInt(lef, length-1, within=1.0, round='floor')
-    rit = _fracToInt(rit, length-1, within=1.0, round='floor')
-
-    # If ``loc`` is provided, use ``width`` relative to that
-    if loc is not None:
-        loc = _fracToInt(loc, length-1, within=1.0, round='floor')
-        lef = loc - lef
-        rit = loc + rit
-
-    mask = np.ones(length, dtype=bool)
-    mask[lef:rit] = False
-    smArr[mask] = arr[mask]
-
-    return smArr
-
-
 def mono(arr, type='g', axis=-1):
     """Check for monotonicity in the given array.
 
@@ -1106,54 +646,6 @@ def mono(arr, type='g', axis=-1):
     delta = np.diff(arr, axis=axis)
     retval = np.all(func(delta, 0.0))
     return retval
-
-
-def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True,
-              format='', label='Statistics: '):
-    """Return a string with the statistics of the given array.
-
-    Arguments
-    ---------
-    data : ndarray of scalar
-        Input data from which to calculate statistics.
-    percs : array_like of scalars in {0, 100}
-        Which percentiles to calculate.
-    ave : bool
-        Include average value in output.
-    std : bool
-        Include standard-deviation in output.
-    format : str
-        Formatting for all numerical output, (e.g. `":.2f"`).
-    label : str
-        String to prepend output with, (e.g. '<label> Statistics: ...')
-
-    Output
-    ------
-    out : str
-        Single-line string of the desired statistics.
-
-    """
-    data = np.asarray(data)
-    percs = np.atleast_1d(percs)
-    percs_flag = False
-    if percs is not None and len(percs): percs_flag = True
-
-    out = label
-    form = "{{{}}}".format(format)
-    if ave:
-        out += "ave = " + form.format(np.average(data))
-        if std or percs:
-            out += ", "
-    if std:
-        out += "std = " + form.format(np.std(data))
-        if percs_flag:
-            out += ", "
-    if percs_flag:
-        tiles = np.percentile(data, percs)
-        out += "percentiles: [" + ", ".join(form.format(tt) for tt in tiles) + "]"
-        out += ", for (" + ", ".join("{:.1f}%".format(pp) for pp in percs) + ")"
-
-    return out
 
 
 def ceil_log(val):
@@ -1199,30 +691,6 @@ def round_log(val, dir='up', nonzero=True):
 
     rounded = man * np.power(10.0, exp)
     return rounded
-
-
-'''
-def percentiles_str(names, data, percs=[50, 68, 95, 100], out=print, title='', format='.1f'):
-    """Print the target percentiles of the given arrays.
-    """
-    names = np.atleast_1d(names)
-    percs = np.atleast_1d(percs)
-    if names.size != len(data):
-        errStr = "``names.size = {} != len(data) = {}``.".format(names.size, len(data))
-        out(errStr)
-        raise RuntimeError(errStr)
-
-    # Calculate percentiles
-    vals = [np.percentile(row, percs) for row in data]
-    # Convert percentiles to strings
-    vals = [["{val:{form:s}}".format(val=rr, form=format) for rr in row] for row in vals]
-    # Construct column labels with the target percentages
-    cols = ["{:.1f}".format(cc) for cc in percs]
-    # Print a table with the results
-    zio.ascii_table(vals, rows=names, cols=cols, title=title, out=out,
-                    linewise=False, prepend="\n")
-    return
-'''
 
 
 def _comparisonFunction(comp):
