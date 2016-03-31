@@ -639,6 +639,8 @@ def mono(arr, type='g', axis=-1):
         Whether the input array is monotonic in the desired sense.
 
     """
+    arr = np.atleast_1d(arr)
+    if arr.size == 1: return True
     good_type = ['g', 'ge', 'l', 'le', 'e']
     assert type in good_type, "Type '%s' Unrecognized." % (type)
     # Retrieve the numpy comparison function (e.g. np.greater) for the given `type` (e.g. 'g')
