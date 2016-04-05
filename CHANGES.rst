@@ -22,13 +22,16 @@ Current
 -------
 -   math/
     +   math_core.py
-        -    Moved many methods to new files, 'numeric.py' and 'stats.py'
+        -   Moved many methods to new files, 'numeric.py' and 'stats.py'
+        -   `ordered_groups` [new-function]
+            +   Find the locations in an array of indices which sort the input array into groups
+                based on target locations.
     +   numeric.py [new-file]
-        -    Moved 'numerical' methods from 'math_core.py' to here.
+        -   Moved 'numerical' methods from 'math_core.py' to here.
     +   stats.py [new-file]
-        -    Moved 'statistical' methods from 'math_core.py' to here.
-        -    `confidenceBands` [DEPRECATED] --> `confidence_bands` [new-function]
-        -    `confidenceIntervals` [DEPRECATED] --> `confidence_intervals` [new-function]
+        -   Moved 'statistical' methods from 'math_core.py' to here.
+        -   `confidenceBands` [DEPRECATED] --> `confidence_bands` [new-function]
+        -   `confidenceIntervals` [DEPRECATED] --> `confidence_intervals` [new-function]
     +   tests/
         -   'test_math_core.py'
             +   Functions split off into 'test_numeric.py' and 'test_statistic.py'.

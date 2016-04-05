@@ -68,6 +68,60 @@ class TestMathCore(object):
         assert_true(math_core.mono(arr_e, 'e'))
         assert_false(math_core.mono(arr_le, 'e'))
 
+    def test_ordered_groups(self):
+        arr = np.array([99, 77, 14, 21, 71, 64, 98, 38, 66, 25])
+        sinds = np.argsort(arr)
+        targets = [40, 77]
+        print("arr = {}, targets = {}, sorted arr = {}".format(arr, targets, arr[sinds]))
+
+        # Group into elements below targets
+        #    Exclusively
+        print("Below, exclusive:")
+        locs, isort = math_core.ordered_groups(arr, targets, inds=None, dir='b', include=False)
+        assert_true(np.all(sinds == isort))
+        #    Check subsets from each target location
+        for ll, tt in zip(locs, targets):
+            print("target = {}, loc = {}".format(tt, ll))
+            print(set(arr[isort[:ll]]), set(arr[sinds][arr[sinds] < tt]))
+            assert_true(set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] < tt]))
+        #    Inclusively
+        print("Below, inclusive:")
+        locs, isort = math_core.ordered_groups(arr, targets, inds=None, dir='b', include=True)
+        assert_true(np.all(sinds == isort))
+        #    Check subsets from each target location
+        for ll, tt in zip(locs, targets):
+            print("target = {}, loc = {}".format(tt, ll))
+            print(set(arr[isort[:ll]]), set(arr[sinds][arr[sinds] <= tt]))
+            assert_true(set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] <= tt]))
+
+        # Group into elements above targets
+        #    Exclusive
+        print("Above, exclusive:")
+        locs, isort = math_core.ordered_groups(arr, targets, inds=None, dir='a', include=False)
+        assert_true(np.all(sinds[::-1] == isort))
+        # Check subsets from each target location
+        for ll, tt in zip(locs, targets):
+            print("target = {}, loc = {}".format(tt, ll))
+            print(set(arr[isort[:ll]]), set(arr[sinds][arr[sinds] > tt]))
+            assert_true(set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] > tt]))
+
+        #    Exclusive
+        print("Above, inclusive:")
+        locs, isort = math_core.ordered_groups(arr, targets, inds=None, dir='a', include=True)
+        assert_true(np.all(sinds[::-1] == isort))
+        # Check subsets from each target location
+        for ll, tt in zip(locs, targets):
+            print("target = {}, loc = {}".format(tt, ll))
+            print(set(arr[isort[:ll]]), set(arr[sinds][arr[sinds] >= tt]))
+            assert_true(set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] >= tt]))
+
+        # Should raise error for unsorted `targets`
+        assert_raises(ValueError, math_core.ordered_groups, arr, targets[::-1])
+
+        # Should raise error for `dir` not starting with 'a' or 'b'
+        assert_raises(ValueError, math_core.ordered_groups, arr, targets, None, 'c')
+        return
+
     def test_really1d(self):
         from zcode.math import really1d
         assert_true(really1d([1, 2, 3]))

@@ -622,6 +622,78 @@ def groupDigitized(arr, bins, edges='right'):
     return groups
 
 
+def ordered_groups(values, targets, inds=None, dir='above', include=False):
+    """Find the locations in ordering indices to break the given values into target groups.
+
+    Arguments
+    ---------
+    values : (N,) array_like of scalar
+        Values to order by.
+    targets : scalar or (M,) array_like of scalar
+        Target locations at which to divide `values` into groups.
+    inds : (L,) array_like of int or `None`
+        Subset of elements in the input `values` to consider.
+    dir : str {'a', 'b'}
+        Consider elements 'a'bove or 'b'elow each `targets` value.
+    include : bool
+        Include the `targets` values themselves in the groups.
+        See: Example[1]
+
+    Returns
+    -------
+    locs : int or (M,) array of int
+        Locations in the array of sorting indices `sorter` at which to divide groups.
+        If the given `targets` is a scalar, then the returned `locs` is also.
+    sorter : (N,) [or (L,) if `inds` is provided] of int
+        Indices to sort the input array `values`, [or `values[inds]` if `inds` is provided].
+
+    Examples
+    --------
+    # [1] Inclusive vs. Exclusive  and  Scalar vs. array_like input
+    >>> ordered_groups([5, 4, 3, 2], 3, dir='b', include=False)
+    1
+    >>> ordered_groups([5, 4, 3, 2], [3], dir='b', include=True)
+    [2]
+
+    """
+    values = np.asarray(values)
+    nval = values.size
+    scalar = False
+    if np.ndim(targets) == 0:
+        scalar = True
+    targets = np.atleast_1d(targets)
+    if dir.startswith('a'):
+        above = True
+        if include: side = 'left'
+        else: side = 'right'
+    elif dir.startswith('b'):
+        above = False
+        if include: side = 'right'
+        else: side = 'left'
+    else:
+        raise ValueError("`dir` = '{}' must be either 'a'bove or 'b'elow.".format(dir))
+
+    if not mono(targets):
+        raise ValueError("`targets` must be in increasing order.")
+
+    if inds is None:
+        inds = np.arange(nval)
+
+    # Find indices to sort by `mass_ratio`
+    sorter = np.argsort(values[inds])
+    # Find the locations in the sorted array at which the desired `mrats` occur.
+    locs = np.searchsorted(values[inds], targets, sorter=sorter, side=side)
+    # Reverse sorter so to get elements ABOVE target mass-ratios
+    if above:
+        sorter = sorter[::-1]
+        locs = inds.size - locs
+
+    if scalar:
+        locs = np.asscalar(locs)
+
+    return locs, sorter
+
+
 def mono(arr, type='g', axis=-1):
     """Check for monotonicity in the given array.
 
