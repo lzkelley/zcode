@@ -13,6 +13,10 @@ Future / To-Do
         -   `spacing`
             +   Add `endpoint` keyword argument to decide whether end-point(s) are included
                 in returned range.
+-   plot/
+    +   Hist2D.py
+        -   Add ability to plot central axes as scatter plot, with projected histograms
+            (instead of just the central 2D histogram).
 
 Current
 -------
