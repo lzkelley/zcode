@@ -50,6 +50,7 @@ import warnings
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
+import seaborn.apionly as sns
 
 import zcode.math as zmath
 import zcode.inout as zio
@@ -63,9 +64,16 @@ __all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'lege
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
 VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
-_COLOR_SET = ['black', 'blue', 'red', 'green', 'purple',
+_COLOR_SET = ['blue', 'red', 'green', 'purple',
               'orange', 'cyan', 'brown', 'gold', 'pink',
               'forestgreen', 'grey', 'olive', 'coral', 'yellow']
+
+_COLOR_SET_XKCD = ["blue", "red", "green", "purple", "orange",
+                   "azure", "brown", "pink", "magenta", "windows blue",
+                   "amber", "teal", "light blue", "rose", "turquoise",
+                   "lavender", "slate blue", "cyan", "lime green", "greyish",
+                   "faded green", "mustard", "brick red", "dusty purple"]
+
 _LW_OUTLINE = 0.8
 
 # Default length for lines in legend handles; in units of font-size
@@ -598,7 +606,7 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
     return smap
 
 
-def color_set(num, black=False):
+def color_set(num, black=False, cset='xkcd'):
     """Retrieve a (small) set of color-strings with hand picked values.
 
     Arguments
@@ -607,27 +615,32 @@ def color_set(num, black=False):
         Number of colors to retrieve.
     black : bool
         Include 'black' as the first color.
+    cset : str, {'xkcd', 'def'}
+        Which set of colors to choose from.
 
     Returns
     -------
-    cols : (`num`) list of str
-        List of `matplotlib` compatible color-strings.
+    cols : (`num`) list of str or RGBA tuples
+        List of `matplotlib` compatible color-strings or tuples.
 
     """
-    ncol = len(_COLOR_SET)
-    # Make sure enough colors are available
-    if (black and num > ncol) or (not black and num > ncol-1):
-        errStr = "Only have {} colors {}, `num` ({}) is too large."
-        if black: errStr = errStr.format(ncol, "with black", num)
-        else:     errStr = errStr.format(ncol-1, "without black", num)
-        raise ValueError(errStr)
+    if cset == 'xkcd':
+        colors = list(_COLOR_SET_XKCD)
+        colors = sns.xkcd_palette(colors)
+    elif cset.startswith('def'):
+        colors = list(_COLOR_SET)
+    else:
+        raise ValueError("`cset` '{}' unrecognized.".format(cset))
 
     if black:
-        cols = _COLOR_SET[:num]
-    else:
-        cols = _COLOR_SET[1:num+1]
+        colors = ['black'] + colors
 
-    return cols
+    ncol = len(colors)
+    # Make sure enough colors are available
+    if num > ncol:
+        raise ValueError("Limited to {} colors, cannot produce `num` = '{}'.".format(ncol, num))
+
+    return colors[:num]
 
 
 def setGrid(ax, val, axis='both', below=True):
