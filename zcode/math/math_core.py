@@ -38,7 +38,7 @@ import numbers
 __all__ = ['contiguousInds', 'within', 'indsWithin', 'minmax', 'really1d',
            'argextrema', 'spacing', 'asBinEdges', 'strArray', 'sliceForAxis', 'midpoints',
            'vecmag', 'renumerate', 'frexp10', 'groupDigitized',
-           'mono', 'ceil_log', 'floor_log', 'round_log', 'comparison_filter',
+           'mono', 'ordered_groups', 'ceil_log', 'floor_log', 'round_log', 'comparison_filter',
            '_comparisonFunction', '_comparison_function', '_infer_scale']
 
 
@@ -622,6 +622,34 @@ def groupDigitized(arr, bins, edges='right'):
     return groups
 
 
+def mono(arr, type='g', axis=-1):
+    """Check for monotonicity in the given array.
+
+    Arguments
+    ---------
+    arr : array_like scalars
+        Input array to check.
+    type : str
+        Type of monotonicity to look for:
+        * 'g' :
+
+    Returns
+    -------
+    retval : bool
+        Whether the input array is monotonic in the desired sense.
+
+    """
+    arr = np.atleast_1d(arr)
+    if arr.size == 1: return True
+    good_type = ['g', 'ge', 'l', 'le', 'e']
+    assert type in good_type, "Type '%s' Unrecognized." % (type)
+    # Retrieve the numpy comparison function (e.g. np.greater) for the given `type` (e.g. 'g')
+    func = _comparisonFunction(type)
+    delta = np.diff(arr, axis=axis)
+    retval = np.all(func(delta, 0.0))
+    return retval
+
+
 def ordered_groups(values, targets, inds=None, dir='above', include=False):
     """Find the locations in ordering indices to break the given values into target groups.
 
@@ -692,34 +720,6 @@ def ordered_groups(values, targets, inds=None, dir='above', include=False):
         locs = np.asscalar(locs)
 
     return locs, sorter
-
-
-def mono(arr, type='g', axis=-1):
-    """Check for monotonicity in the given array.
-
-    Arguments
-    ---------
-    arr : array_like scalars
-        Input array to check.
-    type : str
-        Type of monotonicity to look for:
-        * 'g' :
-
-    Returns
-    -------
-    retval : bool
-        Whether the input array is monotonic in the desired sense.
-
-    """
-    arr = np.atleast_1d(arr)
-    if arr.size == 1: return True
-    good_type = ['g', 'ge', 'l', 'le', 'e']
-    assert type in good_type, "Type '%s' Unrecognized." % (type)
-    # Retrieve the numpy comparison function (e.g. np.greater) for the given `type` (e.g. 'g')
-    func = _comparisonFunction(type)
-    delta = np.diff(arr, axis=axis)
-    retval = np.all(func(delta, 0.0))
-    return retval
 
 
 def ceil_log(val):
