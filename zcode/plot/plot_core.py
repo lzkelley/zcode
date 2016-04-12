@@ -853,12 +853,12 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
     xval, yval = _histLine(edges, hist)
 
     # Select nonzero values
-    if(nonzero):
+    if nonzero:
         xval = np.ma.masked_where(yval == 0.0, xval)
         yval = np.ma.masked_where(yval == 0.0, yval)
 
     # Select positive values
-    if(positive):
+    if positive:
         xval = np.ma.masked_where(yval < 0.0, xval)
         yval = np.ma.masked_where(yval < 0.0, yval)
 
@@ -874,18 +874,17 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
     if(yerr is not None):
         xmid = zmath.midpoints(edges)
 
-        if(nonzero):
+        if nonzero:
             inds = np.where(hist != 0.0)
             ax.errorbar(xmid[inds], hist[inds], yerr=yerr[inds], fmt=None, ecolor=col)
         else:
             ax.errorbar(xmid,       hist,       yerr=yerr,       fmt=None, ecolor=col)
 
     # Add a fill region
-    if(fill is not None):
+    if fill is not None:
         ylim = ax.get_ylim()
-        if(type(fill) == dict): filldict = fill
-        else:                     filldict = dict()
-
+        if type(fill) == dict: filldict = fill
+        else:                  filldict = dict()
         ax.fill_between(xval, yval, 0.1*ylim[0], **filldict)
         ax.set_ylim(ylim)
 
