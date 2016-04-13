@@ -26,6 +26,9 @@ Current
         -   `ordered_groups` [new-function]
             +   Find the locations in an array of indices which sort the input array into groups
                 based on target locations.
+        -   `round` [new-function]
+            +   Round in linear or log-space, in any direction (up, down, nearest).  This function
+                should take over all of the other rounding functions (when complete).
     +   numeric.py [new-file]
         -   Moved 'numerical' methods from 'math_core.py' to here.
     +   stats.py [new-file]

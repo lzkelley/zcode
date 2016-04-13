@@ -2,6 +2,8 @@
 
 Can be run with:
     $ nosetests math/tests/test_math_core.py
+    $ nosetests math/tests/test_math_core.py:TestMathCore.test_round
+    $ python math/tests/test_math_core.py
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -294,6 +296,27 @@ class TestMathCore(object):
 
         return
 
+    def test_round(self):
+        from zcode.math.math_core import round
+        vals = [
+            # Test linear, nearest rounding
+            [[123.4678, 0, 'lin', 'nearest'], 123.00],
+            [[123.4678, 1, 'linear', 'nearest'], 123.50],
+            [[123.4678, 2, 'lin', 'nearest'], 123.47],
+            # Test logarithmic, nearest rounding
+            [[123.4678, 0, 'log', 'nearest'], 100.0],
+            [[123.4678, 1, 'logarithmic', 'nearest'], 120.0],
+            [[123.4678, 2, 'log', 'nearest'], 123.00],
+            [[123.4678, 3, 'log', 'nearest'], 123.50],
+        ]
+        for vv in vals:
+            print(vv)
+            res = round(*vv[0])
+            print("\t", res)
+            assert_true(np.isclose(vv[1], res))
+
+        raise
+        return
 
 # Run all methods as if with `nosetests ...`
 if __name__ == "__main__":

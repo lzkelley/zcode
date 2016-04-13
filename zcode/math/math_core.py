@@ -767,6 +767,30 @@ def round_log(val, dir='up', nonzero=True):
     return rounded
 
 
+def round(val, decimals=0, scale='log', dir='nearest'):
+    """
+    """
+    from zcode.plot import plot_core
+    islog = plot_core._scale_to_log_flag(scale)
+    if islog and decimals < 0:
+        err_str = "With 'log' scaling and `decimals` = '{}' < 0, all results zero.".format(decimals)
+        raise ValueError(err_str)
+
+    if islog:
+        useval, exp = frexp10(val)
+    else:
+        useval = np.array(val)
+        exp = 0.0
+
+    if dir.startswith('n'):
+        useval = np.around(useval, decimals)
+        rnd = useval * np.power(10.0, exp)
+    else:
+        raise ValueError("Given `dir` = '{}' not supported.".format(dir))
+
+    return rnd
+
+
 def _comparisonFunction(comp):
     """[DEPRECATED]Retrieve the comparison function matching the input expression.
     """
@@ -942,6 +966,7 @@ def _flagsToFilter(positive, nonzero, filter=None, source=None):
 def _infer_scale(args):
     if np.all(args > 0.0): return 'log'
     return 'lin'
+
 
 '''
 def createSlice(index, max):
