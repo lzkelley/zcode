@@ -30,7 +30,7 @@ __all__ = ['plot2DHist', 'plot2DHistProj']
 _LEFT = 0.09
 _RIGHT = 0.92     # Location of right of plots
 _BOTTOM = 0.09
-_TOP = 0.80       # Location of top of plots
+_TOP = 0.90       # Location of top of plots
 
 _CB_WID = 0.02
 _CB_WPAD = 0.08
@@ -38,7 +38,7 @@ _CB_WPAD = 0.08
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None, extrema=None,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0,
-                   cmap=None, smap=None,
+                   cmap=None, smap=None, type='hist',
                    fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False,
                    left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP):
     """Plot a 2D histogram with projections of one or both axes.
@@ -65,6 +65,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         If this is a single value, it is applies to both `xvals` and `yvals`.
         If this is a tuple/list of two values, they correspond to `xvals` and `yvals` respectively.
         If `weights` are provided, the tuple/list should have three values.
+    extrema :
     fig : ``matplotlib.figure.figure``,
         Figure instance to which axes are added for plotting.  One is created if not given.
     xproj : bool,
@@ -82,6 +83,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         Overridden if `smap` is provided.
     smap : `matplotlib.cm.ScalarMappable` object or `None`
         A scalar-mappable object to use for colormaps, or `None` for one to be created.
+    type : str, {'hist', 'scatter'}
+        What type of plot should be in the center, a 2D Histogram or a scatter-plot.
     fs : int,
         Font-size
     scale : str or [str, str],
@@ -90,6 +93,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     histScale : str,
         Scaling to use for the histograms {'log','lin'}-- the color scale on the 2D histogram,
         or the Counts axis on the 1D histograms.
+    labels : (2,) str
     cbar : bool,
         Add a colorbar.
     write_counts : bool
@@ -123,9 +127,25 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     elif np.size(scale) != 2:
         raise ValueError("`scale` must be one or two scaling specifications!")
 
-    if not labels: labels = ['', '']
+    # Check the `labels`
+    if labels is None: labels = ['', '', '']
+    elif np.size(labels) == 2: labels = [labels[0], labels[1], '']
+
+    if np.size(labels) != 3:
+        raise ValueError("`labels` = '{}' is invalid.".format(labels))
+
     # Make sure scale strings are matplotlib-compliant
     scale = [plot_core._clean_scale(sc) for sc in scale]
+
+    # Determine type of central plot
+    if type.startswith('hist'):
+        type_hist = True
+    elif type.startswith('scat'):
+        type_hist = False
+        cblabel = str(labels[2])
+        labels[2] = 'Count'
+    else:
+        raise ValueError("`type` = '{}', must be either 'hist', or 'scatter'.".format(type))
 
     # Infer default statistic
     if statistic is None:
@@ -205,59 +225,85 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         if np.any(~np.isfinite(delta) | (delta == 0.0)):
             raise ValueError("Error constructing `{}` = {}, delta = {}".format(name, arr, delta))
 
+    # Calculate Histograms
+    # --------------------
+    #    2D
+    hist_2d, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
+        xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
+    hist_2d = np.nan_to_num(hist_2d)
+    #    X-projection (ignore Y)
+    hist_xp, edges_xp, bins_xp = sp.stats.binned_statistic(
+        xvals, weights, statistic=statistic, bins=xbins)
+    #    Y-projection (ignore X)
+    hist_yp, edges_yp, bins_yp = sp.stats.binned_statistic(
+        yvals, weights, statistic=statistic, bins=ybins)
+
+    # Calculate Extrema - Preserve input extrema if given, otherwise calculate
+    extrema = _set_extrema(extrema, [hist_2d, hist_xp, hist_yp], filter=filter[2])
+
+    # Create scalar-mappable if needed
+    if smap is None:
+        smap = plot_core.colormap(extrema, cmap=cmap, scale=histScale)
+
     # Plot Histograms and Projections
     # -------------------------------
     # Plot 2D Histogram
-    counts = None
-    # If we should overlay strings labeling the num values in each bin, calculate those `counts`
-    if write_counts:
-        counts, xedges, yedges, binnums = sp.stats.binned_statistic_2d(
-            xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
+    if type_hist:
+        counts = None
+        # If we should overlay strings labeling the num values in each bin, calculate those `counts`
+        if write_counts:
+            counts, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
+                xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
 
-    hist, xedges, yedges, binnums = sp.stats.binned_statistic_2d(
-        xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
+        pcm, smap = plot2DHist(prax, xedges_2d, yedges_2d, hist_2d, cscale=histScale, cbax=cbax,
+                               labels=labels, counts=counts, cmap=cmap, smap=smap, extrema=extrema)
 
-    hist = np.nan_to_num(hist)
-    # Preserve input extrema if given, otherwise calculate
-    extrema = _set_extrema(extrema, hist, filter=filter[2])
-    pcm, smap = plot2DHist(prax, xedges, yedges, hist, cscale=histScale, cbax=cbax,
-                           labels=labels, counts=counts, cmap=cmap, smap=smap, extrema=extrema)
+        # Colors
+        # X-projection
+        colhist_xp = np.array(hist_xp)
+        # Enforce positive values for colors in log-plots.
+        if smap.log:
+            tmin, tmax = zmath.minmax(colhist_xp, filter='g')
+            colhist_xp = np.maximum(colhist_xp, tmin)
+        colors_xp = smap.to_rgba(colhist_xp)
+        colors_yp = smap.to_rgba(hist_yp)
+
+    # Scatter Plot
+    else:
+        colors = smap.to_rgba(weights)
+        prax.scatter(xvals, yvals, c=colors)
+
+        cbar = plt.colorbar(smap, cax=cbax)
+        cbar.set_label(cblabel, fontsize=fs)
+        cbar.ax.tick_params(labelsize=fs)
+
+        # Make projection colors all grey
+        colors_xp = '0.8'
+        colors_yp = '0.8'
 
     # Plot projection of the x-axis (i.e. ignore 'y')
     if xpax:
         islog = scale[0].startswith('log')
-        #     create and plot histogram
-        hist, edges, bins = sp.stats.binned_statistic(
-            xvals, weights, statistic=statistic, bins=xbins)
+        # extrema_y = [zmath.floor_log(extrema[0]), zmath.ceil_log(extrema[1])]
+        extrema_y = zmath.minmax(extrema, round=0)
 
-        colhist = np.array(hist)
-        # Enforce positive values for colors in log-plots.
-        if smap.log:
-            tmin, tmax = zmath.minmax(colhist, filter='g')
-            colhist = np.maximum(colhist, tmin)
-
-        extrema = [zmath.floor_log(extrema[0]), zmath.ceil_log(extrema[1])]
-
-        xpax.bar(edges[:-1], hist, color=smap.to_rgba(colhist), log=islog, width=np.diff(edges))
+        xpax.bar(edges_xp[:-1], hist_xp, color=colors_xp, log=islog, width=np.diff(edges_xp))
         #     set tick-labels to the top
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
         #     set bounds to bin edges
-        plot_core.setLim(xpax, 'x', data=xedges)
-        xpax.set_ylim(extrema)
+        plot_core.setLim(xpax, 'x', data=xedges_2d)
+        xpax.set_ylim(extrema_y)
 
     # Plot projection of the y-axis (i.e. ignore 'x')
     if ypax:
         islog = plot_core._scale_to_log_flag(histScale)
-        #    create and plot histogram
-        hist, edges, bins = sp.stats.binned_statistic(
-            yvals, weights, statistic=statistic, bins=ybins)
-        ypax.barh(edges[:-1], hist, color=smap.to_rgba(hist), log=islog, height=np.diff(edges))
+        ypax.barh(edges_yp[:-1], hist_yp, color=colors_yp, log=islog, height=np.diff(edges_yp))
         #     set tick-labels to the top
         plt.setp(ypax.get_yticklabels(), fontsize=fs, rotation=90)
         ypax.yaxis.tick_right()
         #     set bounds to bin edges
-        plot_core.setLim(ypax, 'y', data=yedges)
+        plot_core.setLim(ypax, 'y', data=yedges_2d)
         try:
             ypax.locator_params(axis='x', tight=True, nbins=4)
         except:
@@ -475,7 +521,9 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
 
 
 def _set_extrema(extrema, vals, filter=None):
-    _extr = zmath.minmax(vals, filter=filter)
+    _extr = None
+    for vv in vals:
+        _extr = zmath.minmax(vv, filter=filter, prev=_extr, stretch=0.05)
     if extrema is None: new_extr = _extr
     else:               new_extr = np.asarray(extrema)
     if new_extr[0] is None: new_extr[0] = _extr[0]

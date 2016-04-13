@@ -53,6 +53,10 @@ Current
         -   'test_statistic.py' [new-file]
             +   Tests for statistical functions.
 -   plot/
+    +   hist.py
+        -   `plot2DHistProj`
+            +   [ENH] Allow central plot to be scatter instead of 2D histogram.
+                Use `type` argument.
     +   plot_core.py
         -   `backdrop`
             +   [ENH] Add option `draw` to determine if patch should be added to figure
