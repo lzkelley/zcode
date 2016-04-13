@@ -28,7 +28,11 @@ Package Organization
 
 #### Tests:
 Each subdirectory (e.g. 'math/') contains a 'tests/' directory which includes methods for internal
-diagnostics and testing.  These can all be run using the `zcode/test.sh` script.
+diagnostics and testing.  These can all be run using the `zcode/test.sh` script.  They can also be
+run individually using something like,
+    $ nosetests math/tests/test_math_core.py
+    $ nosetests math/tests/test_math_core.py:TestMathCore.test_round
+    $ python math/tests/test_math_core.py
 
 #### Deprecations:
 When deprecating a function/object/method, use a warning like:
