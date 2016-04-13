@@ -299,15 +299,36 @@ class TestMathCore(object):
     def test_round(self):
         from zcode.math.math_core import round
         vals = [
-            # Test linear, nearest rounding
-            [[123.4678, 0, 'lin', 'nearest'], 123.00],
+            # Nearest
+            #    linear
+            [[123.4678, 0, 'lin', 'near'], 123.00],
             [[123.4678, 1, 'linear', 'nearest'], 123.50],
-            [[123.4678, 2, 'lin', 'nearest'], 123.47],
-            # Test logarithmic, nearest rounding
+            [[123.4678, 2, 'lin', 'n'], 123.47],
+            #    logarithmic
             [[123.4678, 0, 'log', 'nearest'], 100.0],
             [[123.4678, 1, 'logarithmic', 'nearest'], 120.0],
-            [[123.4678, 2, 'log', 'nearest'], 123.00],
-            [[123.4678, 3, 'log', 'nearest'], 123.50],
+            [[123.4678, 2, 'log', 'nearest'], 123.0],
+            [[123.4678, 3, 'log', 'nearest'], 123.5],
+            # Ceiling (up)
+            #    linear
+            [[123.4678, 0, 'lin', 'c'], 124.0],
+            [[123.4678, 1, 'linear', 'ceiling'], 123.5],
+            [[123.4678, 2, 'lin', 'ceil'], 123.47],
+            #    logarithmic
+            [[123.4678, 0, 'log', 'c'], 200.0],
+            [[123.4678, 1, 'logarithmic', 'c'], 130.0],
+            [[123.4678, 2, 'log', 'c'], 124.0],
+            [[123.4678, 3, 'log', 'c'], 123.5],
+            # Floor (down)
+            #    linear
+            [[123.4678, 0, 'lin', 'f'], 123.0],
+            [[123.4678, 1, 'linear', 'fl'], 123.4],
+            [[123.4678, 2, 'lin', 'floor'], 123.46],
+            #    logarithmic
+            [[123.4678, 0, 'log', 'f'], 100.0],
+            [[123.4678, 1, 'logarithmic', 'f'], 120.0],
+            [[123.4678, 2, 'log', 'f'], 123.0],
+            [[123.4678, 3, 'log', 'f'], 123.4],
         ]
         for vv in vals:
             print(vv)
@@ -315,7 +336,12 @@ class TestMathCore(object):
             print("\t", res)
             assert_true(np.isclose(vv[1], res))
 
-        raise
+        # Invalid 'scaling'
+        assert_raises(ValueError, round, 1234.567, 1, 'symlog', 'n')
+        # Invalid 'dir'ection
+        assert_raises(ValueError, round, 1234.567, 1, 'log', 'm')
+        # log-scaling with negative decimals
+        assert_raises(ValueError, round, 1234.567, -1, 'log', 'm')
         return
 
 # Run all methods as if with `nosetests ...`

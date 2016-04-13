@@ -13,6 +13,8 @@ Future / To-Do
         -   `spacing`
             +   Add `endpoint` keyword argument to decide whether end-point(s) are included
                 in returned range.
+        -   `round`
+            +   Does this work correctly for negative decimal values??
 -   plot/
     +   Hist2D.py
         -   Add ability to plot central axes as scatter plot, with projected histograms
@@ -23,12 +25,16 @@ Current
 -   math/
     +   math_core.py
         -   Moved many methods to new files, 'numeric.py' and 'stats.py'
+        -   `ceil_log` [DEPRECATED] ---> `round`
+        -   `floor_log` [DEPRECATED] ---> `round`
         -   `ordered_groups` [new-function]
             +   Find the locations in an array of indices which sort the input array into groups
                 based on target locations.
         -   `round` [new-function]
-            +   Round in linear or log-space, in any direction (up, down, nearest).  This function
-                should take over all of the other rounding functions (when complete).
+            +   Round in linear or log-space, in any direction (up, down, nearest).
+                This function deprecates other rounding methods
+                (`ceil_log`, `floor_log`, `round_log`).
+        -   `round_log` [DEPRECATED] ---> `round`
     +   numeric.py [new-file]
         -   Moved 'numerical' methods from 'math_core.py' to here.
     +   stats.py [new-file]

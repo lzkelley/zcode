@@ -18,9 +18,7 @@ Functions
 -   frexp10                  - Decompose a float into mantissa and exponent (base 10).
 -   groupDigitized           - Get a list of array indices corresponding to each bin.
 -   mono                     - Check for monotonicity in the given array.
--   ceil_log                 - Round the given value upwards in log-space (see `round_log`).
--   floor_log                - Round the given value downwards in log-space (see `round_log`).
--   round_log                - Round the given value in log-space.
+-   round                    -
 
 -   _comparisonFunction      -
 -   _comparisonFilter        -
@@ -38,7 +36,7 @@ import numbers
 __all__ = ['contiguousInds', 'within', 'indsWithin', 'minmax', 'really1d',
            'argextrema', 'spacing', 'asBinEdges', 'strArray', 'sliceForAxis', 'midpoints',
            'vecmag', 'renumerate', 'frexp10', 'groupDigitized',
-           'mono', 'ordered_groups', 'ceil_log', 'floor_log', 'round_log', 'comparison_filter',
+           'mono', 'ordered_groups', 'round', 'comparison_filter',
            '_comparisonFunction', '_comparison_function', '_infer_scale']
 
 
@@ -722,59 +720,19 @@ def ordered_groups(values, targets, inds=None, dir='above', include=False):
     return locs, sorter
 
 
-def ceil_log(val):
-    """Round the given value upwards in log-space (see `round_log`).
-    """
-    return round_log(val, dir='u')
-
-
-def floor_log(val):
-    """Round the given value downwards in log-space (see `round_log`).
-    """
-    return round_log(val, dir='d')
-
-
-def round_log(val, dir='up', nonzero=True):
-    """Round the given value in log-space, i.e. the log10 mantissa to the nearest integer.
-
-    Arguments
-    ---------
-    val : scalar
-        Value to be rounded.
-    dir : str
-        Direction to round, must start with 'u' (up) or 'd' (down).
-
-    Returns
-    -------
-    rounded : scalar
-        log-rounded value.
-
-    """
-    if np.size(val) != 1:
-        raise ValueError("Only scalars currently supported.")
-    if nonzero and val == 0.0:
-        return val
-
-    man, exp = frexp10(val)
-    if dir.startswith('u'):
-        man = np.ceil(man)
-    elif dir.startswith('d'):
-        man = np.floor(man)
-    else:
-        raise ValueError("`dir` ('{}') must start with 'u', of 'd'.".format(dir))
-
-    rounded = man * np.power(10.0, exp)
-    return rounded
-
-
 def round(val, decimals=0, scale='log', dir='nearest'):
     """
+
+    Perhaps rename `scale` to `sigfigs` or something?  Not really in 'log' scaling...
+
     """
     from zcode.plot import plot_core
     islog = plot_core._scale_to_log_flag(scale)
     if islog and decimals < 0:
         err_str = "With 'log' scaling and `decimals` = '{}' < 0, all results zero.".format(decimals)
         raise ValueError(err_str)
+    if np.size(val) > 1:
+        raise ValueError("Arrays are not yet supported.")
 
     if islog:
         useval, exp = frexp10(val)
@@ -782,12 +740,25 @@ def round(val, decimals=0, scale='log', dir='nearest'):
         useval = np.array(val)
         exp = 0.0
 
+    dpow = np.power(10.0, decimals)
+
+    # Round to nearest ('n'earest)
     if dir.startswith('n'):
         useval = np.around(useval, decimals)
-        rnd = useval * np.power(10.0, exp)
+    # Round up ('c'eiling)
+    elif dir.startswith('c') or dir.startswith('u'):
+        useval *= dpow
+        useval = np.ceil(useval)
+        useval /= dpow
+    # Round down ('f'loor)
+    elif dir.startswith('f') or dir.startswith('d'):
+        useval *= dpow
+        useval = np.floor(useval)
+        useval /= dpow
     else:
         raise ValueError("Given `dir` = '{}' not supported.".format(dir))
 
+    rnd = useval * np.power(10.0, exp)
     return rnd
 
 
