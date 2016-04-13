@@ -18,7 +18,7 @@ Functions
 -   frexp10                  - Decompose a float into mantissa and exponent (base 10).
 -   groupDigitized           - Get a list of array indices corresponding to each bin.
 -   mono                     - Check for monotonicity in the given array.
--   round                    -
+-   round                    - Round the given value to arbitrary decimal points, in any direction.
 
 -   _comparisonFunction      -
 -   _comparisonFilter        -
