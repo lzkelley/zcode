@@ -36,7 +36,7 @@ import numbers
 __all__ = ['contiguousInds', 'within', 'indsWithin', 'minmax', 'really1d',
            'argextrema', 'spacing', 'asBinEdges', 'strArray', 'sliceForAxis', 'midpoints',
            'vecmag', 'renumerate', 'frexp10', 'groupDigitized',
-           'mono', 'ordered_groups', 'round', 'comparison_filter',
+           'mono', 'ordered_groups', 'around', 'comparison_filter',
            '_comparisonFunction', '_comparison_function', '_infer_scale']
 
 
@@ -117,7 +117,7 @@ def indsWithin(vals, extr, edges=True):
     return inds
 
 
-def minmax(data, prev=None, stretch=0.0, filter=None, limit=None):
+def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
@@ -136,6 +136,9 @@ def minmax(data, prev=None, stretch=0.0, filter=None, limit=None):
         See, ``comparison_filter``.
     stretch : flt
         Factor by which to stretch min and max by (``1.0 +- stretch``).
+    limit :
+    round : int or 'None'
+        The number of significant figures to which to round the min and max values.
 
     Returns
     -------
@@ -177,6 +180,11 @@ def minmax(data, prev=None, stretch=0.0, filter=None, limit=None):
     if limit is not None:
         if limit[0] is not None: minmax[0] = np.max([minmax[0], limit[0]])
         if limit[1] is not None: minmax[1] = np.min([minmax[1], limit[1]])
+
+    # Round the min/max results to given number of sig-figs
+    if round is not None:
+        minmax[0] = around(minmax[0], round, 'log', 'floor')
+        minmax[1] = around(minmax[1], round, 'log', 'ceil')
 
     return minmax
 
@@ -720,7 +728,7 @@ def ordered_groups(values, targets, inds=None, dir='above', include=False):
     return locs, sorter
 
 
-def round(val, decimals=0, scale='log', dir='near'):
+def around(val, decimals=0, scale='log', dir='near'):
     """Round the given value to arbitrary decimal points, in any direction.
 
     Perhaps rename `scale` to `sigfigs` or something?  Not really in 'log' scaling...

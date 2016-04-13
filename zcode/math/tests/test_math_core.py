@@ -2,7 +2,7 @@
 
 Can be run with:
     $ nosetests math/tests/test_math_core.py
-    $ nosetests math/tests/test_math_core.py:TestMathCore.test_round
+    $ nosetests math/tests/test_math_core.py:TestMathCore.test_around
     $ python math/tests/test_math_core.py
 
 """
@@ -296,8 +296,8 @@ class TestMathCore(object):
 
         return
 
-    def test_round(self):
-        from zcode.math.math_core import round
+    def test_around(self):
+        from zcode.math.math_core import around
         vals = [
             # Nearest
             #    linear
@@ -332,16 +332,16 @@ class TestMathCore(object):
         ]
         for vv in vals:
             print(vv)
-            res = round(*vv[0])
+            res = around(*vv[0])
             print("\t", res)
             assert_true(np.isclose(vv[1], res))
 
         # Invalid 'scaling'
-        assert_raises(ValueError, round, 1234.567, 1, 'symlog', 'n')
+        assert_raises(ValueError, around, 1234.567, 1, 'symlog', 'n')
         # Invalid 'dir'ection
-        assert_raises(ValueError, round, 1234.567, 1, 'log', 'm')
+        assert_raises(ValueError, around, 1234.567, 1, 'log', 'm')
         # log-scaling with negative decimals
-        assert_raises(ValueError, round, 1234.567, -1, 'log', 'm')
+        assert_raises(ValueError, around, 1234.567, -1, 'log', 'm')
         return
 
 # Run all methods as if with `nosetests ...`

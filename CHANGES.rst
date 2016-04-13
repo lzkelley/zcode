@@ -13,7 +13,7 @@ Future / To-Do
         -   `spacing`
             +   Add `endpoint` keyword argument to decide whether end-point(s) are included
                 in returned range.
-        -   `round`
+        -   `around`
             +   Does this work correctly for negative decimal values??
             +   Implement 'dir' relative to zero --- i.e. round up/down the absolute values.
 -   plot/
@@ -26,16 +26,18 @@ Current
 -   math/
     +   math_core.py
         -   Moved many methods to new files, 'numeric.py' and 'stats.py'
-        -   `ceil_log` [DEPRECATED] ---> `round`
-        -   `floor_log` [DEPRECATED] ---> `round`
-        -   `ordered_groups` [new-function]
-            +   Find the locations in an array of indices which sort the input array into groups
-                based on target locations.
-        -   `round` [new-function]
+        -   `around` [new-function]
             +   Round in linear or log-space, in any direction (up, down, nearest).
                 This function deprecates other rounding methods
                 (`ceil_log`, `floor_log`, `round_log`).
-        -   `round_log` [DEPRECATED] ---> `round`
+        -   `ceil_log` [DEPRECATED] ---> `around`
+        -   `floor_log` [DEPRECATED] ---> `around`
+        -   `minmax`
+            +   Added rounding functionality using new `around` method.
+        -   `ordered_groups` [new-function]
+            +   Find the locations in an array of indices which sort the input array into groups
+                based on target locations.
+        -   `round_log` [DEPRECATED] ---> `around`
     +   numeric.py [new-file]
         -   Moved 'numerical' methods from 'math_core.py' to here.
     +   stats.py [new-file]
@@ -45,6 +47,7 @@ Current
     +   tests/
         -   'test_math_core.py'
             +   Functions split off into 'test_numeric.py' and 'test_statistic.py'.
+            +   Added tests for new-function `around`.
         -   'test_numeric.py' [new-file]
             +   Tests for numerical functions.
         -   'test_statistic.py' [new-file]
