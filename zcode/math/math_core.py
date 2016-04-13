@@ -720,10 +720,31 @@ def ordered_groups(values, targets, inds=None, dir='above', include=False):
     return locs, sorter
 
 
-def round(val, decimals=0, scale='log', dir='nearest'):
-    """
+def round(val, decimals=0, scale='log', dir='near'):
+    """Round the given value to arbitrary decimal points, in any direction.
 
     Perhaps rename `scale` to `sigfigs` or something?  Not really in 'log' scaling...
+
+    Arguments
+    ---------
+    val : scalar
+        Value to be rounded.
+    decimals : int
+        Number of decimal places at which to round.
+    scale : str, {'log', 'lin'}
+        How to interpret the number of decimals/precision at which to round.
+        +   'log': round to `decimals` number of significant figures.
+        +   'lin': round to `decimals` number of decimal points.
+    dir : str, {'near', 'ceil', 'floor'}
+        Direction in which to round.
+        +   'nearest': use `np.around` to round the nearest 'even' value.
+        +   'ceil': use `np.ceil` to round to higher (more positive) values.
+        +   'floor': use `np.floor` to round to lower (more negative) values.
+
+    Returns
+    -------
+    rnd : scalar
+        Rounded version of the input `val`.
 
     """
     from zcode.plot import plot_core

@@ -15,6 +15,7 @@ Future / To-Do
                 in returned range.
         -   `round`
             +   Does this work correctly for negative decimal values??
+            +   Implement 'dir' relative to zero --- i.e. round up/down the absolute values.
 -   plot/
     +   Hist2D.py
         -   Add ability to plot central axes as scatter plot, with projected histograms
