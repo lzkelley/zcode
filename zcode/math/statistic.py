@@ -218,7 +218,7 @@ def stats(vals, median=False):
     return ave, std
 
 
-def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True,
+def stats_str(data, percs=[0, 16, 50, 84, 100], ave=True, std=True,
               format='', label='Statistics: '):
     """Return a string with the statistics of the given array.
 
@@ -252,7 +252,7 @@ def stats_str(data, percs=[0, 32, 50, 68, 100], ave=True, std=True,
     form = "{{{}}}".format(format)
     if ave:
         out += "ave = " + form.format(np.average(data))
-        if std or percs:
+        if std or percs_flag:
             out += ", "
     if std:
         out += "std = " + form.format(np.std(data))
