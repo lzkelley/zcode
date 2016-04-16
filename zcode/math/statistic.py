@@ -218,7 +218,7 @@ def stats(vals, median=False):
     return ave, std
 
 
-def stats_str(data, percs=[0, 16, 50, 84, 100], ave=True, std=True,
+def stats_str(data, percs=[0, 16, 50, 84, 100], ave=True, std=False,
               format='', label='Statistics: '):
     """Return a string with the statistics of the given array.
 
