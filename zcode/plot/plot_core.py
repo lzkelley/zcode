@@ -585,8 +585,10 @@ def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=
         if isinstance(color, six.string_types): 
             cc = mpl.colors.ColorConverter()
             color = cc.to_rgba(color)
+        if np.size(color) == 3:
+            color = np.append(color, 1.0)
         if np.size(color) != 4:
-            raise ValueError("`color` = '{}', must be a RGBA set.".format(color))
+            raise ValueError("`color` = '{}', must be a RGBA series.".format(color))
         cols = [np.append(color[:3], nn) for nn in nums]
 
     if ax is not None: ax.set_color_cycle(cols[::-1])
