@@ -65,6 +65,10 @@ Current
             +   [ENH] Added new set of colors based on `seaborn.xkcd_palette` colors.
         -   `full_extent`
             +   [ENH] Improve to work with legends (`matplotlib.legend.Legend`).
+        -   `legend`
+            +   [ENH] Added `loc` parameter to automatically set x,y positions and alignment
+                      based on a two-character string.
+            +   [ENH] Added `mono` parameter to set font as monospaced.
 
 
 [0.0.7] - 2016/03/28

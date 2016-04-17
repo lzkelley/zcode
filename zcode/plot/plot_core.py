@@ -75,6 +75,7 @@ _COLOR_SET_XKCD = ["blue", "red", "green", "purple", "orange",
                    "faded green", "mustard", "brick red", "dusty purple"]
 
 _LW_OUTLINE = 0.8
+_PAD = 0.01
 
 # Default length for lines in legend handles; in units of font-size
 _HANDLE_LENGTH = 2.5
@@ -425,7 +426,7 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
 
 
 def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None,
-           **kwargs):
+           loc=None, mono=False, **kwargs):
     """Add a legend to the given figure.
 
     Wrapper for the `matplotlib.pyplot.Legend` method.
@@ -451,6 +452,13 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
         Transformation to use for legend placement.
         If `None`, then it defaults to `transFigure` or `transAxes` if `art` is a 'Figure' or 'Axes'
         respectively.
+    loc : str or 'None',
+        Describe the location of the legend using a string, e.g. 'tl', 'br', 'cl', 'tc'
+        The string must be a two letter combination, such that:
+        -   First letter determines the vertical alingment {'t', 'b', 'c'};
+        -   Second letter the horizontal, {'l', 'r', 'c'}.
+    mono : bool,
+        Use a monospace font for the legend strings.
     kwargs : any,
         Additional named arguments passed to `matplotlib.pyplot.legend`.
         For example, ``ncol=1`` or ``title='Legend Title'``.
@@ -471,6 +479,31 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
     if 'handlelength' not in kwargs:
         kwargs['handlelength'] = _HANDLE_LENGTH
 
+    # Override alignment using `loc` argument
+    if loc is not None:
+        if loc[0] == 't':
+            valign = 'upper'
+            y = 1-_PAD
+        elif loc[0] == 'b':
+            valign = 'lower'
+            y = _PAD
+        elif loc[0] == 'c':
+            valign = 'center'
+            y = 0.5
+        else:
+            raise ValueError("Unrecognized `loc`[0] = '{}'.".format(loc[0]))
+        if loc[1] == 'l':
+            halign = 'left'
+            x = _PAD
+        elif loc[1] == 'r':
+            halign = 'right'
+            x = 1 - _PAD
+        elif loc[1] == 'c':
+            halign = 'center'
+            x = 0.5
+        else:
+            raise ValueError("Unrecognized `loc`[1] = '{}'.".format(loc[1]))
+
     if valign == 'top':
         valign = 'upper'
     if valign == 'bottom':
@@ -480,7 +513,9 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
     if not (valign == 'center' and halign == 'center'):
         alignStr += " " + halign
 
-    leg = ax.legend(keys, names, prop={'size': fs},  # 'family': 'monospace'},
+    prop_dict = {'size': fs}
+    if mono: prop_dict['family'] = 'monospace'
+    leg = ax.legend(keys, names, prop=prop_dict,
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
     return leg
 
@@ -1149,7 +1184,6 @@ def line_label(ax, pos, label, dir='v', loc='top',
         Added text object.
 
     """
-    PAD = 0.01
     tdir = dir.lower()[:1]
     if tdir.startswith('v'):   VERT = True
     elif tdir.startswith('h'): VERT = False
@@ -1192,19 +1226,19 @@ def line_label(ax, pos, label, dir='v', loc='top',
             yy = 0.5
         elif tloc.startswith('t'):
             xx = pos
-            yy = 1.0 + PAD
+            yy = 1.0 + _PAD
         elif tloc.startswith('b'):
             xx = pos
-            yy = 0.0 - PAD
+            yy = 0.0 - _PAD
     # Add horizontal line
     else:
         ll = ax.axhline(pos, **line_kwargs)
         trans = mpl.transforms.blended_transform_factory(ax.transAxes, ax.transData)
         if tloc.startswith('l'):
-            xx = 0.0 - PAD
+            xx = 0.0 - _PAD
             yy = pos
         elif tloc.startswith('r'):
-            xx = 1.0 + PAD
+            xx = 1.0 + _PAD
             yy = pos
         elif tloc.startswith('t'):
             xx = 0.5
