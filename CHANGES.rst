@@ -61,6 +61,9 @@ Current
         -   `backdrop`
             +   [ENH] Add option `draw` to determine if patch should be added to figure
                 or only returned.
+        -   `color_cycle`
+            +   [ENH] Allow single `color` to be passed, from which a cycle is created by
+                      varying the 'alpha' values.
         -   `color_set`
             +   [ENH] Added new set of colors based on `seaborn.xkcd_palette` colors.
         -   `full_extent`

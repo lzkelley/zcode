@@ -550,7 +550,7 @@ def colorCycle(args, **kwargs):
     return color_cycle(args, **kwargs)
 
 
-def color_cycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
+def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
     """Create a range of colors.
 
     Arguments
@@ -574,8 +574,21 @@ def color_cycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
         Colors forming the color cycle.
 
     """
-    cmap = _get_cmap(cmap)
-    cols = [cmap(it) for it in np.linspace(left, right, num)]
+    nums = np.linspace(left, right, num)
+
+    # If a single color is not provided, use a colormap (`cmap`)
+    if color is None:
+        cmap = _get_cmap(cmap)
+        cols = [cmap(it) for it in nums]
+    # If a single color is provided, create a cycle by altering its `a[lpha]`
+    else:
+        if isinstance(color, six.string_types): 
+            cc = mpl.colors.ColorConverter()
+            color = cc.to_rgba(color)
+        if np.size(color) != 4:
+            raise ValueError("`color` = '{}', must be a RGBA set.".format(color))
+        cols = [np.append(color[:3], nn) for nn in nums]
+
     if ax is not None: ax.set_color_cycle(cols[::-1])
     return cols
 
