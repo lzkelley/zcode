@@ -63,7 +63,7 @@ Current
                 or only returned.
         -   `color_cycle`
             +   [ENH] Allow single `color` to be passed, from which a cycle is created by
-                      varying the 'alpha' values.
+                      using `seaborn.light_palette` or `seaborn.dark_palette`.
         -   `color_set`
             +   [ENH] Added new set of colors based on `seaborn.xkcd_palette` colors.
         -   `full_extent`

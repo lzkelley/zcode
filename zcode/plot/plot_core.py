@@ -550,7 +550,7 @@ def colorCycle(args, **kwargs):
     return color_cycle(args, **kwargs)
 
 
-def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
+def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=0.9, light=True):
     """Create a range of colors.
 
     Arguments
@@ -567,6 +567,9 @@ def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=
         Start colors this fraction of the way into the colormap (to avoid black/white).
     right : float {0.0, 1.0}
         Stop colors at this fraction of the way through the colormap (to avoid black/white).
+    light : bool
+        If `color` is given instead of `cmap`, use a seaborn 'light' colormap (vs. 'dark').
+        Note: only works if `color` is given.
 
     Returns
     -------
@@ -579,7 +582,6 @@ def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=
     # If a single color is not provided, use a colormap (`cmap`)
     if color is None:
         cmap = _get_cmap(cmap)
-        cols = [cmap(it) for it in nums]
     # If a single color is provided, create a cycle by altering its `a[lpha]`
     else:
         if isinstance(color, six.string_types): 
@@ -589,8 +591,15 @@ def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=
             color = np.append(color, 1.0)
         if np.size(color) != 4:
             raise ValueError("`color` = '{}', must be a RGBA series.".format(color))
-        cols = [np.append(color[:3], nn) for nn in nums]
 
+        if light:
+            palette = sns.light_palette
+        else:
+            palette = sns.dark_palette
+
+        cmap = palette(color, n_colors=num, as_cmap=True)
+
+    cols = [cmap(it) for it in nums]
     if ax is not None: ax.set_color_cycle(cols[::-1])
     return cols
 
