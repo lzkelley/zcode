@@ -804,7 +804,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     return
 
 
-def strSciNot(val, precman=0, precexp=0, dollar=True):
+def strSciNot(val, precman=0, precexp=0, dollar=True, one=True, zero=False):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
@@ -817,6 +817,10 @@ def strSciNot(val, precman=0, precexp=0, dollar=True):
         Precision of the exponent (decimal points); or `None` for omit exponent.
     dollar : bool
         Include dollar-signs ('$') around returned expression.
+    one : bool
+        Include the mantissa even if it is '1[.0...]'.
+    zero : bool
+        If the value is uniformly '0.0', write it as such (instead of 10^-inf).
 
     Returns
     -------
@@ -824,12 +828,18 @@ def strSciNot(val, precman=0, precexp=0, dollar=True):
         Scientific notation string using latex formatting.
 
     """
+    if zero and val == 0.0:
+        notStr = "$"*dollar + "0.0" + "$"*dollar
+        return notStr
+
     man, exp = zmath.frexp10(val)
     use_man = (precman is not None and np.isfinite(exp))
     if use_man: manStr = "{0:.{1:d}f}".format(man, precman)
     else:       manStr = ""
-    # if precexp is not None: expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
-    # else:                   expStr = ""
+    # If the mantissa is '1' (or '1.0' or '1.00' etc), dont write it
+    if not one and manStr == "{0:.{1:d}f}".format(1.0, precman):
+        manStr = ""
+
     if precexp is not None:
         # Try to convert `exp` to integer, fails if 'inf' or 'nan'
         try:
@@ -848,6 +858,7 @@ def strSciNot(val, precman=0, precexp=0, dollar=True):
     if len(manStr) and len(expStr):
         notStr += " \\times"
     notStr += expStr + "$"*dollar
+
     return notStr
 
 

@@ -69,6 +69,9 @@ Current
             +   [ENH] Added `loc` parameter to automatically set x,y positions and alignment
                       based on a two-character string.
             +   [ENH] Added `mono` parameter to set font as monospaced.
+        -   `strSciNot`
+            +   [ENH] Added options `one` and `zero` to decide whether to include mantissa values
+                      of '1.0' and whether to write '0.0' as just '0.0' (instead of 10^-inf).
 
 
 [0.0.7] - 2016/03/28
