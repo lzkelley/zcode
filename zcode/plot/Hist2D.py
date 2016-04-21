@@ -37,7 +37,7 @@ _CB_WPAD = 0.08
 
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None, extrema=None,
-                   fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0,
+                   fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0, alpha=1.0,
                    cmap=None, smap=None, type='hist',
                    fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False,
                    left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP):
@@ -191,7 +191,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     # Create and initializae figure and axes
     fig, prax, xpax, ypax, cbax = _constructFigure(fig, xproj, yproj, hratio, wratio, pad,
                                                    scale, histScale, labels, cbar,
-                                                   left, bottom, right, top)
+                                                   left, bottom, right, top, fs=fs)
 
     # Create bins
     # -----------
@@ -271,7 +271,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     # Scatter Plot
     else:
         colors = smap.to_rgba(weights)
-        prax.scatter(xvals, yvals, c=colors)
+        prax.scatter(xvals, yvals, c=colors, alpha=alpha)
 
         cbar = plt.colorbar(smap, cax=cbax)
         cbar.set_label(cblabel, fontsize=fs)
@@ -308,6 +308,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
             ypax.locator_params(axis='x', tight=True, nbins=4)
         except:
             ypax.locator_params(axis='x', tight=True)
+
+    prax.set(xlim=zmath.minmax(xedges_2d), ylim=zmath.minmax(yedges_2d))
 
     return fig
 
@@ -442,7 +444,7 @@ def plot2DHist(ax, xvals, yvals, hist,
 
 
 def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, labels, cbar,
-                     left, bottom, right, top):
+                     left, bottom, right, top, fs=12):
     """Add the required axes to the given figure object.
 
     Arguments
@@ -492,6 +494,7 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
     #    d
     prax = fig.add_axes([left, bottom, prim_wid, prim_hit])
     prax.set(xscale=scale[0], yscale=scale[1], xlabel=labels[0], ylabel=labels[1])
+    prax.tick_params(axis='both', which='major', labelsize=fs)
     plot_core.setGrid(prax, False)
 
     if len(labels) > 2: histLab = labels[2]
@@ -502,6 +505,7 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
         xpax = fig.add_axes([left, bottom+prim_hit+pad, prim_wid, xpro_hit-pad])
         xpax.set(xscale=scale[0], yscale=histScale, ylabel=histLab, xlabel=labels[0])
         xpax.xaxis.set_label_position('top')
+        xpax.tick_params(axis='both', which='major', labelsize=fs)
         plot_core.setGrid(xpax, True, axis='y')
 
     # Add y-projection axes on bottom-right
@@ -509,6 +513,7 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
         ypax = fig.add_axes([left+prim_wid+pad, bottom, ypro_wid-pad, prim_hit])
         ypax.set(yscale=scale[1], xscale=histScale, xlabel=histLab, ylabel=labels[1])
         ypax.yaxis.set_label_position('right')
+        ypax.tick_params(axis='both', which='major', labelsize=fs)
         plot_core.setGrid(ypax, True, axis='x')
 
     # Add color-bar axes on the right
