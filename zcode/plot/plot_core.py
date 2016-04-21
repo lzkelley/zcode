@@ -419,14 +419,14 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
-    txt = fig.text(x, y, pstr, size=fs, transform=trans,  #  family='monospace',
+    txt = fig.text(x, y, pstr, size=fs, transform=trans,  # family='monospace',
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
 
 
-def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None,
-           loc=None, mono=False, **kwargs):
+def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=12, trans=None,
+           fs_title=None, loc=None, mono=False, **kwargs):
     """Add a legend to the given figure.
 
     Wrapper for the `matplotlib.pyplot.Legend` method.
@@ -452,6 +452,7 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
         Transformation to use for legend placement.
         If `None`, then it defaults to `transFigure` or `transAxes` if `art` is a 'Figure' or 'Axes'
         respectively.
+    fs_title : int,
     loc : str or 'None',
         Describe the location of the legend using a string, e.g. 'tl', 'br', 'cl', 'tc'
         The string must be a two letter combination, such that:
@@ -481,10 +482,10 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
 
     # Override alignment using `loc` argument
     if loc is not None:
-        if loc[0] == 't':
+        if loc[0] == 't' or loc[0] == 'u':
             valign = 'upper'
             y = 1-_PAD
-        elif loc[0] == 'b':
+        elif loc[0] == 'b' or loc[0] == 'l':
             valign = 'lower'
             y = _PAD
         elif loc[0] == 'c':
@@ -517,6 +518,9 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
     if mono: prop_dict['family'] = 'monospace'
     leg = ax.legend(keys, names, prop=prop_dict,
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
+    if fs_title is not None:
+        plt.setp(leg.get_title(), fontsize=fs_title)
+
     return leg
 
 
@@ -584,7 +588,7 @@ def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=
         cmap = _get_cmap(cmap)
     # If a single color is provided, create a cycle by altering its `a[lpha]`
     else:
-        if isinstance(color, six.string_types): 
+        if isinstance(color, six.string_types):
             cc = mpl.colors.ColorConverter()
             color = cc.to_rgba(color)
         if np.size(color) == 3:
@@ -1083,7 +1087,9 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
 
 
 def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, linealpha=0.8,
-                 filter=None, outline='0.5', edges=True, floor=None, ceil=None, **kwargs):
+                 filter=None, outline='0.5', edges=True, floor=None, ceil=None, dashes=None,
+                 lw_edges=None,
+                 **kwargs):
     """Draw a median line and (set of) confidence interval(s).
 
     The `med` and `conf` values can be obtained from `numpy.percentile` and or
@@ -1120,6 +1126,7 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
         Set the minimum value for confidence intervals to this value.
     ceil : array_like of float or `None`
         Set the maximmum value for confidence intervals to be this value.
+    dashes :
     **kwargs : additional key-value pairs,
         Passed to `matplotlib.pyplot.fill_between` controlling `matplotlib.patches.Polygon`
         properties.  These are included in the `linePatch` objects, but *not* the `confPatches`.
@@ -1133,7 +1140,9 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
 
     """
 
-    ll, = ax.plot(rads, med, '-', color=color, lw=lw)
+    # ll, = ax.plot(rads, med, '-', color=color, lw=lw)
+    # if dashes is not None:
+    #     ll.set_dashes(dashes)
 
     # `conf` has shape ``(num-rads, num-conf-ints, 2)``
     if conf.ndim == 2:
@@ -1144,9 +1153,13 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
     if filter is not None:
         filter = zmath._comparisonFunction(filter)
 
+    if lw_edges is None:
+        lw_edges = 0.5 * lw
+
     numConf = np.shape(conf)[-2]
     confPatches = []
     # Iterate over confidence intervals
+    _pp = None
     for jj in xrange(numConf):
         # Set fill-opacity
         if np.size(fillalpha) == numConf: falph = fillalpha
@@ -1173,20 +1186,29 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
 
         # Plot edges of confidence intervals
         if edges:
-            ax.plot(rads, ylo, color=color, alpha=0.5*linealpha, lw=0.5*lw)
-            ax.plot(rads, yhi, color=color, alpha=0.5*linealpha, lw=0.5*lw)
+            ax.plot(rads, ylo, color=color, alpha=0.5*linealpha, lw=lw_edges)
+            ax.plot(rads, yhi, color=color, alpha=0.5*linealpha, lw=lw_edges)
 
         # Create dummy-patch for the median-line and fill-color, for a legend
         if jj == 0:
             # pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
             # Create overlay of lines and patches
-            linePatch = (pp, ll)
+            _pp = pp
+            # linePatch = (_pp, ll)
 
     # Plot Median Line
     #    Plot black outline to improve contrast
     if outline is not None:
-        ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=_LW_OUTLINE)
+        oo, = ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=_LW_OUTLINE)
+        if dashes is not None:
+            oo.set_dashes(tuple(dashes))
+
     ll, = ax.plot(rads, med, '-', color=color, lw=lw, alpha=linealpha)
+    if dashes is not None:
+        ll.set_dashes(tuple(dashes))
+
+    linePatch = (_pp, ll)
+
     return linePatch, confPatches
 
 
@@ -1298,7 +1320,7 @@ def full_extent(ax, pad=0.0, invert=None):
     if isinstance(ax, mpl.axes.Axes):
         items = ax.get_xticklabels() + ax.get_yticklabels()
         items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
-        items += [ax, ax.title]
+        # items += [ax, ax.title]
         use_items = []
         for item in items:
             if isinstance(item, mpl.text.Text) and len(item.get_text()) == 0: continue
