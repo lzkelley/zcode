@@ -5,6 +5,7 @@ Functions
 -   setAxis              - Set many different axis properties at once.
 -   twinAxis             - Easily create and set a new twin axis (like `twinx()` or `twiny()`)
 -   setLim               - Set limits on an axis
+-   set_ticks
 -   zoom                 - Zoom-in at a certain location on the given axes.
 -   stretchAxes          - Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
 -   text                 - Add text to figure.
@@ -55,7 +56,7 @@ import seaborn.apionly as sns
 import zcode.math as zmath
 import zcode.inout as zio
 
-__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend',
+__all__ = ['setAxis', 'twinAxis', 'setLim', 'set_ticks', 'zoom', 'stretchAxes', 'text', 'legend',
            'unifyAxesLimits', 'color_cycle',
            'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
@@ -305,6 +306,24 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
         if(axis == 'x'): ax.invert_xaxis()
         else:            ax.invert_yaxis()
 
+    return
+
+
+def set_ticks(ax, axis='y', every=2, log=True):
+    """DEV
+    """
+    if axis != 'y': raise ValueError("Only 'y' axis currently supported.")
+    if not log: raise ValueError("Only `log` scaling currently supported.")
+
+    ylims = np.array(ax.get_ylim())
+    man, exp = zmath.frexp10(ylims[0])
+    low = np.int(exp)
+    man, exp = zmath.frexp10(ylims[1])
+    high = np.int(exp)
+
+    vals = np.arange(low, high, every)
+    vals = np.power(10.0, vals)
+    ax.set_yticks(vals)
     return
 
 
@@ -1166,8 +1185,8 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
         else:                             falph = np.power(fillalpha, jj+1)
 
         # Create a dummy-patch to return for a legend of confidence-intervals
-        pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
-        confPatches.append(pp[0])
+        # pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
+        # confPatches.append(pp[0])
 
         xx = np.array(rads)
         ylo = np.array(conf[:, jj, 0])
@@ -1183,6 +1202,7 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
 
         # Fill between confidence intervals
         pp = ax.fill_between(xx, ylo, yhi, alpha=falph, facecolor=color, **kwargs)
+        confPatches.append(pp)
 
         # Plot edges of confidence intervals
         if edges:

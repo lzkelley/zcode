@@ -20,6 +20,8 @@ Future / To-Do
     +   Hist2D.py
         -   Add ability to plot central axes as scatter plot, with projected histograms
             (instead of just the central 2D histogram).
+    +   plot_core.py
+        -   Finish 'set_ticks' method.
 
 Current
 -------
