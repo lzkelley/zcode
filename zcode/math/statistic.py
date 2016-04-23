@@ -7,17 +7,19 @@ Functions
 -   cumstats                 - Calculate a cumulative average and standard deviation.
 -   stats                    - Get basic statistics for the given array.
 -   stats_str                - Return a string with the statistics of the given array.
+-   sigma                    - Convert from standard deviation to percentiles.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import warnings
 import numpy as np
+import scipy as sp
 
 from . import math_core
 
 __all__ = ['confidenceBands', 'confidence_bands', 'confidenceIntervals', 'confidence_intervals',
-           'cumstats', 'stats', 'stats_str']
+           'cumstats', 'sigma', 'stats', 'stats_str']
 
 
 def confidenceBands(*args, **kwargs):
@@ -192,6 +194,40 @@ def cumstats(arr):
     std[1:] = np.fabs(sm2[1:] - np.square(sm1[1:])/(num[1:]+1.0))/num[1:]
     std[1:] = np.sqrt(std[1:])
     return ave, std
+
+
+def sigma(sig, side='in'):
+    """Convert from standard deviation 'sigma' to percentiles in/out-side the normal distribution.
+
+    Arguments
+    ---------
+    sig : (N,) array_like scalar
+        Standard deviations.
+    side : str, {'in', 'out'}
+        Calculate percentiles inside (i.e. [-sig, sig]) or ouside (i.e. [-inf, -sig] U [sig, inf])
+
+    Returns
+    -------
+    vals : (N,) array_like scalar
+        Percentiles corresponding to the input `sig`.
+
+    """
+    if side.startswith('in'):
+        inside = True
+    elif side.startswith('out'):
+        inside = False
+    else:
+        raise ValueError("`side` = '{}' must be {'in', 'out'}.".format(side))
+
+    # From CDF from -inf to `sig`
+    cdf = sp.stats.norm.cdf(sig)
+    # Area outside of [-sig, sig]
+    vals = 2.0 * (1.0 - cdf)
+    # Convert to area inside [-sig, sig]
+    if inside:
+        vals = 1.0 - vals
+
+    return vals
 
 
 def stats(vals, median=False):

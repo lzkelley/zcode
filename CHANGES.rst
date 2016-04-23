@@ -40,10 +40,13 @@ Current
         -   `round_log` [DEPRECATED] ---> `around`
     +   numeric.py [new-file]
         -   Moved 'numerical' methods from 'math_core.py' to here.
-    +   stats.py [new-file]
+    +   statistic.py [new-file]
         -   Moved 'statistical' methods from 'math_core.py' to here.
         -   `confidenceBands` [DEPRECATED] --> `confidence_bands` [new-function]
         -   `confidenceIntervals` [DEPRECATED] --> `confidence_intervals` [new-function]
+        -   `sigma` [new-function]
+            +   Convert from standard deviations to percentiles (inside or outside) of the normal
+                distribution.
     +   tests/
         -   'test_math_core.py'
             +   Functions split off into 'test_numeric.py' and 'test_statistic.py'.
@@ -52,6 +55,7 @@ Current
             +   Tests for numerical functions.
         -   'test_statistic.py' [new-file]
             +   Tests for statistical functions.
+            +   Tests for `sigma` function.
 -   plot/
     +   hist.py
         -   `plot2DHistProj`

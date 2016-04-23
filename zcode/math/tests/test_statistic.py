@@ -11,7 +11,7 @@ from numpy.testing import run_module_suite
 from nose.tools import assert_true
 
 
-class TestMathCore(object):
+class TestStatistic(object):
 
     @classmethod
     def setup_class(cls):
@@ -56,6 +56,23 @@ class TestMathCore(object):
         assert_true(np.allclose(conf[:, 0], true_conf[0]))
         assert_true(np.allclose(conf[:, 1], true_conf[1]))
         assert_true(np.allclose(xbins, true_xbins))
+
+    def test_sigma(self):
+        from zcode.math import statistic
+        sigma = [1.0, 2.0]
+        inside = [0.68268949213708585, 0.95449973610364158]
+        outside = 1 - np.array(inside)
+
+        ret_inside = statistic.sigma(sigma, side='in')
+        ret_outside = statistic.sigma(sigma, side='out')
+        print("sigma = ", sigma)
+        print("inside = ", inside)
+        print("ret_inside = ", ret_inside)
+        print("inside = ", outside)
+        print("ret_outside = ", ret_outside)
+        assert_true(np.allclose(inside, ret_inside))
+        assert_true(np.allclose(outside, ret_outside))
+
 
 # Run all methods as if with `nosetests ...`
 if __name__ == "__main__":
