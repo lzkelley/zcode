@@ -33,7 +33,7 @@ _BOTTOM = 0.09
 _TOP = 0.90       # Location of top of plots
 
 _CB_WID = 0.02
-_CB_WPAD = 0.08
+_CB_WPAD = 0.1
 
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None, extrema=None,
@@ -256,7 +256,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
                 xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
 
         pcm, smap = plot2DHist(prax, xedges_2d, yedges_2d, hist_2d, cscale=histScale, cbax=cbax,
-                               labels=labels, counts=counts, cmap=cmap, smap=smap, extrema=extrema)
+                               labels=labels, counts=counts, cmap=cmap, smap=smap, extrema=extrema,
+                               fs=fs)
 
         # Colors
         # X-projection
@@ -518,8 +519,9 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
 
     # Add color-bar axes on the right
     if cbar:
-        cbar_left = left + prim_wid + _CB_WPAD
-        if yproj: cbar_left += ypro_wid
+        # cbar_left = left + prim_wid + _CB_WPAD
+        # if yproj: cbar_left += ypro_wid
+        cbar_left = 1 - (_CB_WID + _CB_WPAD)
         cbax = fig.add_axes([cbar_left, bottom, _CB_WID, prim_hit])
 
     return fig, prax, xpax, ypax, cbax
