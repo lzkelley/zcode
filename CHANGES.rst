@@ -83,6 +83,8 @@ Current
         -   `strSciNot`
             +   [ENH] Added options `one` and `zero` to decide whether to include mantissa values
                       of '1.0' and whether to write '0.0' as just '0.0' (instead of 10^-inf).
+        -   `test`
+            +   [ENH] Now works with either `matplotlib.axes.Axes` or `matplotlib.figure.Figure`.
 
 
 [0.0.7] - 2016/03/28

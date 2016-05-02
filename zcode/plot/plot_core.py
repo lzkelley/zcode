@@ -429,7 +429,13 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         Handle storing the drawn text.
 
     """
-    if trans is None: trans = fig.transFigure
+    # if trans is None: trans = fig.transFigure
+    if trans is None:
+        if isinstance(fig, mpl.figure.Figure):
+            trans = fig.transFigure
+        elif isinstance(fig, mpl.axes.Axes):
+            trans = fig.transAxes
+
     if valign == 'upper':
         warnings.warn("Use `'top'` not `'upper'`!")
         valign = 'top'
@@ -444,7 +450,7 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
     return txt
 
 
-def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=12, trans=None,
+def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs=12, trans=None,
            fs_title=None, loc=None, mono=False, **kwargs):
     """Add a legend to the given figure.
 
@@ -503,24 +509,24 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
     if loc is not None:
         if loc[0] == 't' or loc[0] == 'u':
             valign = 'upper'
-            y = 1-_PAD
+            if y is None: y = 1 - _PAD
         elif loc[0] == 'b' or loc[0] == 'l':
             valign = 'lower'
-            y = _PAD
+            if y is None: y = _PAD
         elif loc[0] == 'c':
             valign = 'center'
-            y = 0.5
+            if y is None: y = 0.5
         else:
             raise ValueError("Unrecognized `loc`[0] = '{}'.".format(loc[0]))
         if loc[1] == 'l':
             halign = 'left'
-            x = _PAD
+            if x is None: x = _PAD
         elif loc[1] == 'r':
             halign = 'right'
-            x = 1 - _PAD
+            if x is None: x = 1 - _PAD
         elif loc[1] == 'c':
             halign = 'center'
-            x = 0.5
+            if x is None: x = 0.5
         else:
             raise ValueError("Unrecognized `loc`[1] = '{}'.".format(loc[1]))
 
@@ -528,6 +534,9 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
         valign = 'upper'
     if valign == 'bottom':
         valign = 'lower'
+
+    if x is None: x = 0.99
+    if y is None: y = 0.5
 
     alignStr = valign
     if not (valign == 'center' and halign == 'center'):
