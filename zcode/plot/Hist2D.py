@@ -38,9 +38,9 @@ _CB_WPAD = 0.1
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None, extrema=None,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0, alpha=1.0,
-                   cmap=None, smap=None, type='hist',
+                   cmap=None, smap=None, type='hist', scale_to_cbar=True,
                    fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False,
-                   left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP):
+                   left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP, lo=None, hi=None):
     """Plot a 2D histogram with projections of one or both axes.
 
     Arguments
@@ -85,6 +85,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         A scalar-mappable object to use for colormaps, or `None` for one to be created.
     type : str, {'hist', 'scatter'}
         What type of plot should be in the center, a 2D Histogram or a scatter-plot.
+    scale_to_cbar : 
     fs : int,
         Font-size
     scale : str or [str, str],
@@ -106,6 +107,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         Location of the right edge of axes relative to the figure.
     top : float {0.0, 1.0}
         Location of the top edge of axes relative to the figure.
+    lo : scalar or 'None'
+        When autocalculating `extrema`, ignore histogram entries below this value.
+    hi : scalar or 'None'
+        When autocalculating `extrema`, ignore histogram entries above this value.
 
     Returns
     -------
@@ -239,8 +244,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         yvals, weights, statistic=statistic, bins=ybins)
 
     # Calculate Extrema - Preserve input extrema if given, otherwise calculate
-    extrema = _set_extrema(extrema, [hist_2d, hist_xp, hist_yp], filter=filter[2])
-
+    extrema = _set_extrema(extrema, [hist_2d, hist_xp, hist_yp], filter=filter[2], lo=lo, hi=hi)
     # Create scalar-mappable if needed
     if smap is None:
         smap = plot_core.colormap(extrema, cmap=cmap, scale=histScale)
@@ -285,30 +289,37 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     # Plot projection of the x-axis (i.e. ignore 'y')
     if xpax:
         islog = scale[0].startswith('log')
-        # extrema_y = [zmath.floor_log(extrema[0]), zmath.ceil_log(extrema[1])]
-        extrema_y = zmath.minmax(extrema, round=0)
 
         xpax.bar(edges_xp[:-1], hist_xp, color=colors_xp, log=islog, width=np.diff(edges_xp))
-        #     set tick-labels to the top
+        # set tick-labels to the top
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
-        #     set bounds to bin edges
+        # set bounds to bin edges
         plot_core.setLim(xpax, 'x', data=xedges_2d)
-        xpax.set_ylim(extrema_y)
+        # Set axes limits to match those of colorbar
+        if scale_to_cbar:
+            # extrema_y = [zmath.floor_log(extrema[0]), zmath.ceil_log(extrema[1])]
+            extrema_y = zmath.minmax(extrema, round=0)
+            xpax.set_ylim(extrema_y)
 
     # Plot projection of the y-axis (i.e. ignore 'x')
     if ypax:
         islog = plot_core._scale_to_log_flag(histScale)
         ypax.barh(edges_yp[:-1], hist_yp, color=colors_yp, log=islog, height=np.diff(edges_yp))
-        #     set tick-labels to the top
+        # set tick-labels to the top
         plt.setp(ypax.get_yticklabels(), fontsize=fs, rotation=90)
         ypax.yaxis.tick_right()
-        #     set bounds to bin edges
+        # set bounds to bin edges
         plot_core.setLim(ypax, 'y', data=yedges_2d)
         try:
             ypax.locator_params(axis='x', tight=True, nbins=4)
         except:
             ypax.locator_params(axis='x', tight=True)
+
+        # Set axes limits to match those of colorbar
+        if scale_to_cbar:
+            extrema_x = zmath.minmax(extrema, round=0)
+            ypax.set_xlim(extrema_x)
 
     prax.set(xlim=zmath.minmax(xedges_2d), ylim=zmath.minmax(yedges_2d))
 
@@ -527,10 +538,16 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
     return fig, prax, xpax, ypax, cbax
 
 
-def _set_extrema(extrema, vals, filter=None):
+def _set_extrema(extrema, vals, filter=None, lo=None, hi=None):
     _extr = None
     for vv in vals:
-        _extr = zmath.minmax(vv, filter=filter, prev=_extr, stretch=0.05)
+        use_vv = np.array(vv)
+        if lo is not None:
+            use_vv = use_vv[use_vv > lo]
+        if hi is not None:
+            use_vv = use_vv[use_vv < hi]
+        _extr = zmath.minmax(use_vv, filter=filter, prev=_extr, stretch=0.05)
+
     if extrema is None: new_extr = _extr
     else:               new_extr = np.asarray(extrema)
     if new_extr[0] is None: new_extr[0] = _extr[0]
