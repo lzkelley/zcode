@@ -34,6 +34,7 @@ _TOP = 0.90       # Location of top of plots
 
 _CB_WID = 0.02
 _CB_WPAD = 0.1
+_BAR_ALPHA = 0.8
 
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None, extrema=None,
@@ -286,11 +287,14 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         colors_xp = '0.8'
         colors_yp = '0.8'
 
+    hist_log = plot_core._scale_to_log_flag(histScale)
+
     # Plot projection of the x-axis (i.e. ignore 'y')
     if xpax:
         islog = scale[0].startswith('log')
 
-        xpax.bar(edges_xp[:-1], hist_xp, color=colors_xp, log=islog, width=np.diff(edges_xp))
+        xpax.bar(edges_xp[:-1], hist_xp, color=colors_xp, log=islog, width=np.diff(edges_xp),
+                 alpha=_BAR_ALPHA)
         # set tick-labels to the top
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
@@ -299,13 +303,15 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         # Set axes limits to match those of colorbar
         if scale_to_cbar:
             # extrema_y = [zmath.floor_log(extrema[0]), zmath.ceil_log(extrema[1])]
-            extrema_y = zmath.minmax(extrema, round=0)
+            round = 0
+            if hist_log: round = -1
+            extrema_y = zmath.minmax(extrema, round=round)
             xpax.set_ylim(extrema_y)
 
     # Plot projection of the y-axis (i.e. ignore 'x')
     if ypax:
-        islog = plot_core._scale_to_log_flag(histScale)
-        ypax.barh(edges_yp[:-1], hist_yp, color=colors_yp, log=islog, height=np.diff(edges_yp))
+        ypax.barh(edges_yp[:-1], hist_yp, color=colors_yp, log=hist_log, height=np.diff(edges_yp),
+                  alpha=_BAR_ALPHA)
         # set tick-labels to the top
         plt.setp(ypax.get_yticklabels(), fontsize=fs, rotation=90)
         ypax.yaxis.tick_right()
@@ -318,7 +324,9 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
         # Set axes limits to match those of colorbar
         if scale_to_cbar:
-            extrema_x = zmath.minmax(extrema, round=0)
+            round = 0
+            if hist_log: round = -1
+            extrema_x = zmath.minmax(extrema, round=round)
             ypax.set_xlim(extrema_x)
 
     prax.set(xlim=zmath.minmax(xedges_2d), ylim=zmath.minmax(yedges_2d))
