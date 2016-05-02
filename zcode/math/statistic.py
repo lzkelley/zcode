@@ -133,7 +133,7 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
         Axis over which to calculate confidence intervals.
     filter : str or `None`
         Filter the input array with a boolean comparison to zero.
-        If no values remain after filtering, ``None, None`` is returned.
+        If no values remain after filtering, ``NaN, NaN`` is returned.
 
     Returns
     -------
@@ -153,7 +153,7 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
     if filter:
         vals = math_core.comparison_filter(vals, filter)
         if vals.size == 0:
-            return None, None
+            return np.nan, np.nan
 
     # Calculate confidence-intervals and median
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
