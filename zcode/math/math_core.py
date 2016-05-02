@@ -2,6 +2,7 @@
 
 Functions
 ---------
+-   around                   - Round the given value to arbitrary decimal points, in any direction.
 -   contiguousInds           - Find the largest segment of contiguous array values
 -   within                   - Test whether a value is within the bounds of another.
 -   indsWithin               - Find the indices within the given extrema.
@@ -18,7 +19,6 @@ Functions
 -   frexp10                  - Decompose a float into mantissa and exponent (base 10).
 -   groupDigitized           - Get a list of array indices corresponding to each bin.
 -   mono                     - Check for monotonicity in the given array.
--   round                    - Round the given value to arbitrary decimal points, in any direction.
 
 -   _comparisonFunction      -
 -   _comparisonFilter        -
@@ -33,11 +33,96 @@ import numpy as np
 import warnings
 import numbers
 
-__all__ = ['contiguousInds', 'within', 'indsWithin', 'minmax', 'really1d',
+__all__ = ['around', 'contiguousInds', 'within', 'indsWithin', 'minmax', 'really1d',
            'argextrema', 'spacing', 'asBinEdges', 'strArray', 'sliceForAxis', 'midpoints',
            'vecmag', 'renumerate', 'frexp10', 'groupDigitized',
-           'mono', 'ordered_groups', 'around', 'comparison_filter',
+           'mono', 'ordered_groups', 'comparison_filter',
            '_comparisonFunction', '_comparison_function', '_infer_scale']
+
+
+def around(val, decimals=0, scale='log', dir='near'):
+    """Round the given value to arbitrary decimal points, in any direction.
+
+    Perhaps rename `scale` to `sigfigs` or something?  Not really in 'log' scaling...
+
+    Arguments
+    ---------
+    val : scalar
+        Value to be rounded.
+    decimals : int
+        Number of decimal places at which to round.
+        If `scale` is 'log' and `decimals` is negative, then the nearest order of magnitude
+        is returned, in the direction of `dir`.  NOTE: this rounding is done in log-space.
+    scale : str, {'log', 'lin'}
+        How to interpret the number of decimals/precision at which to round.
+        +   'log': round to `decimals` number of significant figures.
+        +   'lin': round to `decimals` number of decimal points.
+    dir : str, {'near', 'ceil', 'floor'}
+        Direction in which to round.
+        +   'nearest': use `np.around` to round the nearest 'even' value.
+        +   'ceil': use `np.ceil` to round to higher (more positive) values.
+        +   'floor': use `np.floor` to round to lower (more negative) values.
+
+    Returns
+    -------
+    rnd : scalar
+        Rounded version of the input `val`.
+
+    """
+    from zcode.plot import plot_core
+    islog = plot_core._scale_to_log_flag(scale)
+    if np.size(val) > 1:
+        raise ValueError("Arrays are not yet supported.")
+
+    # Round to nearest ('n'earest)
+    if dir.startswith('n'):
+        dir_int = 0
+    # Round up ('c'eiling)
+    elif dir.startswith('c') or dir.startswith('u'):
+        dir_int = 1
+    # Round down ('f'loor)
+    elif dir.startswith('f') or dir.startswith('d'):
+        dir_int = -1
+    else:
+        raise ValueError("Given `dir` = '{}' not supported.".format(dir))
+
+    if islog:
+        useval, exp = frexp10(val)
+        # If `decimals` is negative and ``scale == 'log'``, round to order of magnitude
+        # NOTE: this is done in log-space, i.e. 4.0e-4 rounds to nearest as 1e-4 (not 1e-3)
+        if decimals < 0:
+            useval = np.log10(val)
+            # Round base-ten power in target direction
+            if dir_int == 0:
+                useval = np.around(useval, 0)
+            elif dir_int == +1:
+                useval = np.ceil(useval)
+            elif dir_int == -1:
+                useval = np.floor(useval)
+            # Return order of magnitude
+            return np.power(10.0, useval)
+    else:
+        useval = np.array(val)
+        exp = 0.0
+
+    dpow = np.power(10.0, decimals)
+
+    # Round to nearest
+    if dir_int == 0:
+        useval = np.around(useval, decimals)
+    # Round up
+    elif dir_int == +1:
+        useval *= dpow
+        useval = np.ceil(useval)
+        useval /= dpow
+    # Round down
+    elif dir_int == -1:
+        useval *= dpow
+        useval = np.floor(useval)
+        useval /= dpow
+
+    rnd = useval * np.power(10.0, exp)
+    return rnd
 
 
 def contiguousInds(args):
@@ -726,69 +811,6 @@ def ordered_groups(values, targets, inds=None, dir='above', include=False):
         locs = np.asscalar(locs)
 
     return locs, sorter
-
-
-def around(val, decimals=0, scale='log', dir='near'):
-    """Round the given value to arbitrary decimal points, in any direction.
-
-    Perhaps rename `scale` to `sigfigs` or something?  Not really in 'log' scaling...
-
-    Arguments
-    ---------
-    val : scalar
-        Value to be rounded.
-    decimals : int
-        Number of decimal places at which to round.
-    scale : str, {'log', 'lin'}
-        How to interpret the number of decimals/precision at which to round.
-        +   'log': round to `decimals` number of significant figures.
-        +   'lin': round to `decimals` number of decimal points.
-    dir : str, {'near', 'ceil', 'floor'}
-        Direction in which to round.
-        +   'nearest': use `np.around` to round the nearest 'even' value.
-        +   'ceil': use `np.ceil` to round to higher (more positive) values.
-        +   'floor': use `np.floor` to round to lower (more negative) values.
-
-    Returns
-    -------
-    rnd : scalar
-        Rounded version of the input `val`.
-
-    """
-    from zcode.plot import plot_core
-    islog = plot_core._scale_to_log_flag(scale)
-    if islog and decimals < 0:
-        err_str = "With 'log' scaling and `decimals` = '{}' < 0, all results zero.".format(decimals)
-        raise ValueError(err_str)
-    if np.size(val) > 1:
-        raise ValueError("Arrays are not yet supported.")
-
-    if islog:
-        useval, exp = frexp10(val)
-    else:
-        useval = np.array(val)
-        exp = 0.0
-
-    dpow = np.power(10.0, decimals)
-
-    # Round to nearest ('n'earest)
-    if dir.startswith('n'):
-        useval = np.around(useval, decimals)
-    # Round up ('c'eiling)
-    elif dir.startswith('c') or dir.startswith('u'):
-        useval *= dpow
-        useval = np.ceil(useval)
-        useval /= dpow
-    # Round down ('f'loor)
-    elif dir.startswith('f') or dir.startswith('d'):
-        useval *= dpow
-        useval = np.floor(useval)
-        useval /= dpow
-    else:
-        raise ValueError("Given `dir` = '{}' not supported.".format(dir))
-
-    rnd = useval * np.power(10.0, exp)
-    return rnd
 
 
 def _comparisonFunction(comp):

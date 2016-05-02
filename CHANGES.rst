@@ -32,6 +32,8 @@ Current
             +   Round in linear or log-space, in any direction (up, down, nearest).
                 This function deprecates other rounding methods
                 (`ceil_log`, `floor_log`, `round_log`).
+            +   When rounding in log-space, a negative value for decimals means rounding to
+                an order of magnitude (in any direction).
         -   `ceil_log` [DEPRECATED] ---> `around`
         -   `floor_log` [DEPRECATED] ---> `around`
         -   `minmax`

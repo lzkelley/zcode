@@ -309,6 +309,8 @@ class TestMathCore(object):
             [[123.4678, 1, 'logarithmic', 'nearest'], 120.0],
             [[123.4678, 2, 'log', 'nearest'], 123.0],
             [[123.4678, 3, 'log', 'nearest'], 123.5],
+            #       Negative decimals (order-of-magnitude rounding)
+            [[213.4678, -1, 'log', 'nearest'], 100.0],
             # Ceiling (up)
             #    linear
             [[123.4678, 0, 'lin', 'c'], 124.0],
@@ -319,6 +321,8 @@ class TestMathCore(object):
             [[123.4678, 1, 'logarithmic', 'c'], 130.0],
             [[123.4678, 2, 'log', 'c'], 124.0],
             [[123.4678, 3, 'log', 'c'], 123.5],
+            #       Negative decimals (order-of-magnitude rounding)
+            [[213.4678, -1, 'log', 'c'], 1000.0],
             # Floor (down)
             #    linear
             [[123.4678, 0, 'lin', 'f'], 123.0],
@@ -329,6 +333,8 @@ class TestMathCore(object):
             [[123.4678, 1, 'logarithmic', 'f'], 120.0],
             [[123.4678, 2, 'log', 'f'], 123.0],
             [[123.4678, 3, 'log', 'f'], 123.4],
+            #       Negative decimals (order-of-magnitude rounding)
+            [[213.4678, -1, 'log', 'f'], 100.0],
         ]
         for vv in vals:
             print(vv)
@@ -340,8 +346,6 @@ class TestMathCore(object):
         assert_raises(ValueError, around, 1234.567, 1, 'symlog', 'n')
         # Invalid 'dir'ection
         assert_raises(ValueError, around, 1234.567, 1, 'log', 'm')
-        # log-scaling with negative decimals
-        assert_raises(ValueError, around, 1234.567, -1, 'log', 'm')
         return
 
 # Run all methods as if with `nosetests ...`
