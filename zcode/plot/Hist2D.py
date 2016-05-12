@@ -41,7 +41,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0, alpha=1.0,
                    cmap=None, smap=None, type='hist', scale_to_cbar=True,
                    fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False,
-                   left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP, lo=None, hi=None):
+                   left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP, lo=None, hi=None,
+                   overall=False, overall_bins=20, overall_wide=False, overall_cumulative=False):
     """Plot a 2D histogram with projections of one or both axes.
 
     Arguments
@@ -86,7 +87,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         A scalar-mappable object to use for colormaps, or `None` for one to be created.
     type : str, {'hist', 'scatter'}
         What type of plot should be in the center, a 2D Histogram or a scatter-plot.
-    scale_to_cbar : 
+    scale_to_cbar :
     fs : int,
         Font-size
     scale : str or [str, str],
@@ -112,6 +113,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         When autocalculating `extrema`, ignore histogram entries below this value.
     hi : scalar or 'None'
         When autocalculating `extrema`, ignore histogram entries above this value.
+    overall :
+    overall_bins
+    overall_wide
+    overall_cumulative
 
     Returns
     -------
@@ -195,9 +200,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
             weights = weights[inds]
 
     # Create and initializae figure and axes
-    fig, prax, xpax, ypax, cbax = _constructFigure(fig, xproj, yproj, hratio, wratio, pad,
-                                                   scale, histScale, labels, cbar,
-                                                   left, bottom, right, top, fs=fs)
+    fig, prax, xpax, ypax, cbax, ovax = _constructFigure(
+        fig, xproj, yproj, overall, overall_wide, hratio, wratio, pad,
+        scale, histScale, labels, cbar,
+        left, bottom, right, top, fs=fs)
 
     # Create bins
     # -----------
@@ -328,6 +334,19 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
             if hist_log: round = -1
             extrema_x = zmath.minmax(extrema, round=round)
             ypax.set_xlim(extrema_x)
+
+    # Plot Overall Histogram of values
+    if overall:
+        ov_bins = zmath.spacing(weights, num=overall_bins)
+        bin_centers = zmath.midpoints(ov_bins, log=hist_log)
+        nums, bins, patches = ovax.hist(weights, ov_bins, log=hist_log, facecolor='0.5', edgecolor='k')
+        for pp, cent in zip(patches, bin_centers):
+            pp.set_facecolor(smap.to_rgba(cent))
+
+        # Add cumulative distribution
+        if overall_cumulative:
+            cum_sum = np.cumsum(nums)
+            ovax.plot(bin_centers, cum_sum, 'k--')
 
     prax.set(xlim=zmath.minmax(xedges_2d), ylim=zmath.minmax(yedges_2d))
 
@@ -460,10 +479,11 @@ def plot2DHist(ax, xvals, yvals, hist,
 
     plot_core.setLim(ax, 'x', data=xvals)
     plot_core.setLim(ax, 'y', data=yvals)
-    return pcm, smap
+    return pcm, smap, cbar
 
 
-def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, labels, cbar,
+def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, pad,
+                     scale, histScale, labels, cbar,
                      left, bottom, right, top, fs=12):
     """Add the required axes to the given figure object.
 
@@ -491,7 +511,7 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
     # Create figure if needed
     if not fig: fig = plt.figure()
 
-    xpax = ypax = cbax = None
+    xpax = ypax = cbax = ovax = None
 
     # Determine usable space and axes sizes
     useable = [right-left, top-bottom]
@@ -538,12 +558,30 @@ def _constructFigure(fig, xproj, yproj, hratio, wratio, pad, scale, histScale, l
 
     # Add color-bar axes on the right
     if cbar:
-        # cbar_left = left + prim_wid + _CB_WPAD
-        # if yproj: cbar_left += ypro_wid
         cbar_left = 1 - (_CB_WID + _CB_WPAD)
         cbax = fig.add_axes([cbar_left, bottom, _CB_WID, prim_hit])
 
-    return fig, prax, xpax, ypax, cbax
+    # Add fourth axes in top-right corner for histogram of all values
+    if overall:
+        ov_loc = [left + prim_wid + pad, bottom + prim_hit + pad]
+        if overall_wide:
+            # ov_size = [right - ov_loc[0], xpro_hit - pad]
+            ov_size = [cbar_left + _CB_WID - ov_loc[0], xpro_hit - pad]
+        else:
+            ov_size = [ypro_wid - pad, xpro_hit - pad]
+
+        ovax = fig.add_axes(ov_loc + ov_size)
+        ovax.set(xscale=histScale, xlabel=histLab, ylabel='Number')
+        ovax.tick_params(axis='both', which='major', labelsize=fs)
+        # Move the y ticks/labels to the right
+        ovax.yaxis.tick_right()
+        ovax.yaxis.set_label_position("right")
+        # Move the x ticks/labels to the top
+        ovax.xaxis.tick_top()
+        ovax.xaxis.set_label_position("top")
+        plot_core.setGrid(ovax, True)  # , axis='x')
+
+    return fig, prax, xpax, ypax, cbax, ovax
 
 
 def _set_extrema(extrema, vals, filter=None, lo=None, hi=None):

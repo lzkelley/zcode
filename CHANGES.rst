@@ -61,10 +61,14 @@ Current
             +   Tests for statistical functions.
             +   Tests for `sigma` function.
 -   plot/
-    +   hist.py
+    +   Hist2D.py
         -   `plot2DHistProj`
             +   [ENH] Allow central plot to be scatter instead of 2D histogram.
                 Use `type` argument.
+            +   [ENH] Add fourth subplot in the top-right corner for additional (especially
+                cumulative) plots.  Still needs fine tuning, but working okay.
+        -   `_constructFigure`
+            +   [ENH] Add fourth subplot in the top-right corner, if desired.
     +   plot_core.py
         -   `backdrop`
             +   [ENH] Add option `draw` to determine if patch should be added to figure
