@@ -29,6 +29,8 @@ Functions
 -   position_to_extent   -
 -   backdrop             -
 
+_   _extents             -
+-   _set_extents         -
 -   _setAxis_scale       -
 -   _setAxis_label       -
 -   _histLine            - construct a stepped line
@@ -80,6 +82,7 @@ _PAD = 0.01
 
 # Default length for lines in legend handles; in units of font-size
 _HANDLE_LENGTH = 2.5
+_SCATTER_POINTS = 1
 
 
 def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None,
@@ -504,6 +507,13 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
 
     if 'handlelength' not in kwargs:
         kwargs['handlelength'] = _HANDLE_LENGTH
+    if 'scatterpoints' not in kwargs:
+        kwargs['scatterpoints'] = _SCATTER_POINTS
+    # `alpha` should actually be `framealpha`
+    if 'alpha' in kwargs:
+        warnings.warn("For legends, use `framealpha` instead of `alpha`.")
+        kwargs['framealpha'] = kwargs['alpha']
+        del kwargs['alpha']
 
     # Override alignment using `loc` argument
     if loc is not None:
@@ -1354,7 +1364,8 @@ def full_extent(ax, pad=0.0, invert=None):
         for item in items:
             if isinstance(item, mpl.text.Text) and len(item.get_text()) == 0: continue
             use_items.append(item)
-        bbox = mpl.transforms.Bbox.union([item.get_window_extent() for item in use_items])
+        # bbox = mpl.transforms.Bbox.union([item.get_window_extent() for item in use_items])
+        bbox = _set_extents(use_items, union=True, pad=0.0)
     elif isinstance(ax, mpl.legend.Legend):
         bbox = ax.get_frame().get_bbox()
     else:
@@ -1400,7 +1411,7 @@ def position_to_extent(fig, ax, loc, pad=0.0, halign='left', valign='lower'):
     return
 
 
-def _extents(ax, pad=0.0, invert=None):
+def _extents(ax, pad=0.0, invert=None, group=False):
     """Get the extents of an axes, including axes labels, tick labels, and titles.
 
     Adapted From: 'stackoverflow.com/questions/14712665/'
@@ -1408,17 +1419,31 @@ def _extents(ax, pad=0.0, invert=None):
     # For text objects, we need to draw the figure first, otherwise the extents
     # are undefined.
     ax.figure.canvas.draw()
-    items = ax.get_xticklabels() + ax.get_yticklabels()
-    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
-    items += [ax, ax.title]
-    bboxes = [it.get_window_extent().expanded(1.0 + pad, 1.0 + pad) for it in items]
+    if group:
+        items = [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
+        bboxes = [_set_extents(ax.get_xticklabels(), pad=pad, union=True)]
+        bboxes += [_set_extents(ax.get_yticklabels(), pad=pad, union=True)]
+        bboxes += _set_extents(items, pad=pad, union=False)
+    else:
+        items = ax.get_xticklabels() + ax.get_yticklabels()
+        items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
+        # bboxes = [it.get_window_extent().expanded(1.0 + pad, 1.0 + pad) for it in items]
+        bboxes = _set_extents(items, pad=pad, union=False)
+
     if invert:
         bboxes = [bb.transformed(invert.inverted()) for bb in bboxes]
 
     return bboxes
 
 
-def backdrop(fig, obj, pad=0.0, union=False, draw=True, **kwargs):
+def _set_extents(items, pad=0.0, union=False):
+    bboxes = [it.get_window_extent().expanded(1.0 + pad, 1.0 + pad) for it in items]
+    if union:
+        bboxes = mpl.transforms.Bbox.union(bboxes)
+    return bboxes
+
+
+def backdrop(fig, obj, pad=0.0, union=False, group=False, draw=True, **kwargs):
     """Draw a rectangle behind the full extent of the given object.
 
     Example
@@ -1429,7 +1454,7 @@ def backdrop(fig, obj, pad=0.0, union=False, draw=True, **kwargs):
     if union:
         bboxes = [full_extent(obj, pad=pad, invert=fig.transFigure)]
     else:
-        bboxes = _extents(obj, pad=pad, invert=fig.transFigure)
+        bboxes = _extents(obj, pad=pad, invert=fig.transFigure, group=group)
 
     pats = []
     for bbox in bboxes:
