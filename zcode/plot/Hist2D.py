@@ -38,6 +38,7 @@ _BAR_ALPHA = 0.8
 
 
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None, extrema=None,
+                   cumulative=None,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0, alpha=1.0,
                    cmap=None, smap=None, type='hist', scale_to_cbar=True,
                    fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False,
@@ -68,6 +69,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         If this is a tuple/list of two values, they correspond to `xvals` and `yvals` respectively.
         If `weights` are provided, the tuple/list should have three values.
     extrema :
+    cumulative :
     fig : ``matplotlib.figure.figure``,
         Figure instance to which axes are added for plotting.  One is created if not given.
     xproj : bool,
@@ -241,14 +243,14 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     # --------------------
     #    2D
     hist_2d, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
-        xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
+        xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins], expand_binnumbers=True)
     hist_2d = np.nan_to_num(hist_2d)
     #    X-projection (ignore Y)
     hist_xp, edges_xp, bins_xp = sp.stats.binned_statistic(
-        xvals, weights, statistic=statistic, bins=xbins)
+        xvals, weights, statistic=statistic, bins=xbins, expand_binnumbers=True)
     #    Y-projection (ignore X)
     hist_yp, edges_yp, bins_yp = sp.stats.binned_statistic(
-        yvals, weights, statistic=statistic, bins=ybins)
+        yvals, weights, statistic=statistic, bins=ybins, expand_binnumbers=True)
 
     # Calculate Extrema - Preserve input extrema if given, otherwise calculate
     extrema = _set_extrema(extrema, [hist_2d, hist_xp, hist_yp], filter=filter[2], lo=lo, hi=hi)
@@ -264,11 +266,12 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         # If we should overlay strings labeling the num values in each bin, calculate those `counts`
         if write_counts:
             counts, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
-                xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
+                xvals, yvals, weights, statistic='count', bins=[xbins, ybins],
+                expand_binnumbers=True)
 
-        pcm, smap = plot2DHist(prax, xedges_2d, yedges_2d, hist_2d, cscale=histScale, cbax=cbax,
-                               labels=labels, counts=counts, cmap=cmap, smap=smap, extrema=extrema,
-                               fs=fs)
+        pcm, smap, cbar = plot2DHist(prax, xedges_2d, yedges_2d, hist_2d, cscale=histScale,
+                                     cbax=cbax, labels=labels, counts=counts, cmap=cmap, smap=smap,
+                                     extrema=extrema, fs=fs)
 
         # Colors
         # X-projection
