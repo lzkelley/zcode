@@ -38,10 +38,14 @@ Current
         -   `floor_log` [DEPRECATED] ---> `around`
         -   `minmax`
             +   Added rounding functionality using new `around` method.
+            +   Added `round_scale` parameter for interface with `around` method.
         -   `ordered_groups` [new-function]
             +   Find the locations in an array of indices which sort the input array into groups
                 based on target locations.
         -   `round_log` [DEPRECATED] ---> `around`
+        -   `spacing`
+            +   Added `integers` parameter, if true, will create spacing in integers (linear or log)
+                between the given extrema.
     +   numeric.py [new-file]
         -   Moved 'numerical' methods from 'math_core.py' to here.
     +   statistic.py [new-file]
@@ -55,6 +59,7 @@ Current
         -   'test_math_core.py'
             +   Functions split off into 'test_numeric.py' and 'test_statistic.py'.
             +   Added tests for new-function `around`.
+            +   Added tests for new functionality (`integers`) of `spacing()`.
         -   'test_numeric.py' [new-file]
             +   Tests for numerical functions.
         -   'test_statistic.py' [new-file]

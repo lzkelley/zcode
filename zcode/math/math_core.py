@@ -202,7 +202,7 @@ def indsWithin(vals, extr, edges=True):
     return inds
 
 
-def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None):
+def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None, round_scale='log'):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
@@ -224,6 +224,8 @@ def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None):
     limit :
     round : int or 'None'
         The number of significant figures to which to round the min and max values.
+    round_scale : str, {'lin', 'log'}
+        In which scaling to round in.
 
     Returns
     -------
@@ -268,8 +270,8 @@ def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None):
 
     # Round the min/max results to given number of sig-figs
     if round is not None:
-        minmax[0] = around(minmax[0], round, 'log', 'floor')
-        minmax[1] = around(minmax[1], round, 'log', 'ceil')
+        minmax[0] = around(minmax[0], round, round_scale, 'floor')
+        minmax[1] = around(minmax[1], round, round_scale, 'ceil')
 
     return minmax
 
@@ -337,10 +339,8 @@ def argextrema(arr, type, filter=None):
     return ind
 
 
-def spacing(data, scale='log', num=100, filter=None, nonzero=None, positive=None):
+def spacing(data, scale='log', num=100, filter=None, integers=False):
     """Create an evenly spaced array between extrema from the given data.
-
-    If ``nonzero`` and ``positive`` are not given, educated guesses are made based on ``scale``.
 
     Arguments
     ---------
@@ -352,15 +352,20 @@ def spacing(data, scale='log', num=100, filter=None, nonzero=None, positive=None
         Number of points to produce, `N`.
     filter : str or `None`
         String specifying how to filter the input `data` relative to zero.
-    [Deprecated]
-        nonzero : bool
-            Only use ``!= 0.0`` elements of `data`.
-        positive : bool
-            Only use ``>= 0.0`` elements of `data`.
+    integers : bool
+        Create spacing with only integer (whole numbers).  NOTE: this ignores the `num` argument.
+        If ``scale == 'log'``: these are Scientific-notation integers, e.g. [7, 8, 9, 10, 20, 30].
+        If ``scale == 'lin'``: these are all integers, e.g. [7, 8, 9, 10, 11, 12 ... 29].
+        NOTE: when `integers` is 'True', the extrema are the nearest integral values *outside* the
+              the range specified with `data`.  e.g. if `data` is [7.96, 28.12], the above example
+              arrays are the ones that would be returned.
 
     Returns
     -------
-       spacing <scalar>[N] : array of evenly spaced points, with number of elements ``N = num``
+    spaced : (N,) array of scalar
+        Array of evenly spaced points, with number of elements ``N = num`` if ``integers = False``,
+        otherwise `N` is how many whole numbers there are between the given extrema (see `integers`)
+        argument above.
 
     """
     if scale.startswith('log'):
@@ -370,21 +375,52 @@ def spacing(data, scale='log', num=100, filter=None, nonzero=None, positive=None
     else:
         raise RuntimeError("``scale`` '%s' unrecognized!" % (scale))
 
-    # ---- DEPRECATION SECTION -------
-    filter = _flagsToFilter(positive, nonzero, filter=filter, source='spacing')
-    # --------------------------------
-
     # If no `filter` is given, and we are log-scaling, use a ``> 0.0`` filter
     if filter is None and log_flag:
         filter = '>'
 
-    span = minmax(data, filter=filter)
-    if log_flag:
-        spacing = np.logspace(*np.log10(span), num=num)
-    else:
-        spacing = np.linspace(*span, num=num)
+    # Find extrema of values
+    round = None
+    # If only 'integers' (whole numbers) are desired, round extrema to *outside*
+    if integers:
+        round = 0
+    span = minmax(data, filter=filter, round=round, round_scale=scale)
+    # If only 'integers', use 'arange'
+    if integers:
+        # Log-spacing : create each decade manually
+        if log_flag:
+            # Find the SciNot exp for lower and upper values
+            span_exp = np.floor(np.log10(span)).astype(int)
+            # Find the SciNot mantissa for lower and upper values
+            span_man = span / np.power(10, span_exp)
+            # If range is only a single decade, create it directly
+            if np.isclose(span_exp[0], span_exp[1]):
+                spaced = np.arange(span_man[0], span_man[1]+1) * np.power(10.0, span_exp[0])
+            # If multiple decades, create each separately
+            else:
+                exp_range = np.arange(span_exp[0], span_exp[1]+1)
+                for ii, exp in enumerate(exp_range):
+                    # If first decade, start at the first mantissa value
+                    if ii == 0:
+                        spaced = np.arange(span_man[0], 10) * np.power(10.0, exp)
+                    # If last decade, end at the last mantissa value
+                    elif ii == exp_range.size - 1:
+                        spaced = np.append(spaced, np.arange(1, span_man[1]+1) * np.power(10.0, exp))
+                    # Inbetween decades, use full range [1, 9]
+                    else:
+                        spaced = np.append(spaced, np.arange(1, 10) * np.power(10.0, exp))
+        # Linear spacing
+        else:
+            spaced = np.arange(span[0], span[1]+1)
 
-    return spacing
+    # Create spacing between min/max values exactly
+    else:
+        if log_flag:
+            spaced = np.logspace(*np.log10(span), num=num)
+        else:
+            spaced = np.linspace(*span, num=num)
+
+    return spaced
 
 
 def asBinEdges(bins, data, scale='lin'):

@@ -48,6 +48,27 @@ class TestMathCore(object):
         ref4 = np.linspace(-5.0, -2.5, num=27)
         spc4 = spacing([3.0, -2.5, -5.0, 0.0], scale='lin', num=27, filter='<')
         assert_true(np.allclose(ref4, spc4))
+
+        # Only integral (whole number) values
+        # log spacing
+        vals = [2.34, 365.23]
+        res = np.array([2., 3., 4., 5., 6., 7., 8., 9., 10.,
+                        20., 30., 40., 50., 60., 70., 80., 90., 100.,
+                        200., 300., 400.])
+        retvals = spacing(vals, 'log', integers=True)
+        print("integers, log\n", vals, "\n\t", res, "\n\t", retvals)
+        print(retvals)
+        print(np.allclose(retvals, res))
+        assert_true(np.allclose(retvals, res))
+
+        # lin spacing
+        vals = [2.34, 11.23]
+        res = np.arange(2, 13)
+        retvals = spacing(vals, 'lin', integers=True)
+        print("integers, lin\n", vals, "\n\t", res, "\n\t", retvals)
+        print(np.allclose(retvals, res))
+        assert_true(np.allclose(retvals, res))
+
         return
 
     def test_mono(self):
