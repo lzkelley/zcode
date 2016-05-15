@@ -15,7 +15,7 @@ To-do
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from six.moves import xrange
+import six
 
 import numpy as np
 import scipy as sp
@@ -242,15 +242,34 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     # Calculate Histograms
     # --------------------
     #    2D
-    hist_2d, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
-        xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins], expand_binnumbers=True)
-    hist_2d = np.nan_to_num(hist_2d)
-    #    X-projection (ignore Y)
-    hist_xp, edges_xp, bins_xp = sp.stats.binned_statistic(
-        xvals, weights, statistic=statistic, bins=xbins, expand_binnumbers=True)
-    #    Y-projection (ignore X)
-    hist_yp, edges_yp, bins_yp = sp.stats.binned_statistic(
-        yvals, weights, statistic=statistic, bins=ybins, expand_binnumbers=True)
+    try:
+        hist_2d, xedges_2d, yedges_2d, binnums_2d = sp.stats.binned_statistic_2d(
+            xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins], expand_binnumbers=True)
+        hist_2d = np.nan_to_num(hist_2d)
+        #    X-projection (ignore Y)
+        hist_xp, edges_xp, bins_xp = sp.stats.binned_statistic(
+            xvals, weights, statistic=statistic, bins=xbins)
+        #    Y-projection (ignore X)
+        hist_yp, edges_yp, bins_yp = sp.stats.binned_statistic(
+            yvals, weights, statistic=statistic, bins=ybins)
+    except:
+        hist_2d, xedges_2d, yedges_2d, binnums_2d = sp.stats.binned_statistic_2d(
+            xvals, yvals, weights, statistic=statistic, bins=[xbins, ybins])
+        hist_2d = np.nan_to_num(hist_2d)
+        #    X-projection (ignore Y)
+        hist_xp, edges_xp, bins_xp = sp.stats.binned_statistic(
+            xvals, weights, statistic=statistic, bins=xbins)
+        #    Y-projection (ignore X)
+        hist_yp, edges_yp, bins_yp = sp.stats.binned_statistic(
+            yvals, weights, statistic=statistic, bins=ybins)
+
+    if cumulative is not None:
+        hist_2d = _cumulative_stat2d(
+            weights, hist_2d.shape, binnums_2d, statistic, cumulative)
+        hist_xp = _cumulative_stat1d(
+            weights, hist_xp.size, bins_xp, statistic, cumulative[0])
+        hist_yp = _cumulative_stat1d(
+            weights, hist_yp.size, bins_yp, statistic, cumulative[1])
 
     # Calculate Extrema - Preserve input extrema if given, otherwise calculate
     extrema = _set_extrema(extrema, [hist_2d, hist_xp, hist_yp], filter=filter[2], lo=lo, hi=hi)
@@ -265,13 +284,21 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         counts = None
         # If we should overlay strings labeling the num values in each bin, calculate those `counts`
         if write_counts:
-            counts, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
-                xvals, yvals, weights, statistic='count', bins=[xbins, ybins],
-                expand_binnumbers=True)
+            try:
+                counts, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
+                    xvals, yvals, weights, statistic='count', bins=[xbins, ybins],
+                    expand_binnumbers=True)
+            except:
+                counts, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
+                    xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
+
+            if cumulative is not None:
+                counts = _cumulative_stat2d(
+                    np.ones_like(xvals), counts.shape, binnums, 'count', cumulative)
 
         pcm, smap, cbar = plot2DHist(prax, xedges_2d, yedges_2d, hist_2d, cscale=histScale,
                                      cbax=cbax, labels=labels, counts=counts, cmap=cmap, smap=smap,
-                                     extrema=extrema, fs=fs)
+                                     extrema=extrema, fs=fs, scale=scale)
 
         # Colors
         # X-projection
@@ -358,7 +385,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
 def plot2DHist(ax, xvals, yvals, hist,
                cax=None, cbax=None, cscale='log', cmap=None, smap=None, extrema=None,
-               contours=None, clabel={}, fs=12, rasterized=True,
+               contours=None, clabel={}, fs=12, rasterized=True, scale='log',
                title=None, labels=None, counts=None, **kwargs):
     """Plot the given 2D histogram of data.
 
@@ -417,6 +444,12 @@ def plot2DHist(ax, xvals, yvals, hist,
     else:                                    filter = None
     extrema = _set_extrema(extrema, hist, filter=filter)
 
+    # Make sure the given `scale` is valid
+    if np.size(scale) == 1:
+        scale = [scale, scale]
+    elif np.size(scale) != 2:
+        raise ValueError("`scale` must be one or two scaling specifications!")
+
     if labels is not None:
         if np.size(labels) >= 2:
             ax.set_xlabel(labels[0], size=fs)
@@ -434,6 +467,7 @@ def plot2DHist(ax, xvals, yvals, hist,
     pcm.set_edgecolor('face')
 
     # Add color bar
+    cbar = None
     if cbax is not None or cax is not None:
         if cbax is not None:
             cbar = plt.colorbar(smap, cax=cbax)
@@ -441,6 +475,10 @@ def plot2DHist(ax, xvals, yvals, hist,
             cbar = plt.colorbar(smap, ax=cax)
         cbar.set_label(cblab, fontsize=fs)
         cbar.ax.tick_params(labelsize=fs)
+        ticks = [smap.norm.vmin, smap.norm.vmax]
+        print("tick lims = ", ticks)
+        ticks = zmath.spacing(ticks, cscale, integers=True)
+        cbar.ax.yaxis.set_ticks(smap.norm(ticks), minor=True)
 
     if fs is not None:
         ax.tick_params(labelsize=fs)
@@ -457,10 +495,16 @@ def plot2DHist(ax, xvals, yvals, hist,
                 counts.shape, hist.shape))
 
         # Remember these are transposes
-        for ii in xrange(xgrid.shape[0] - 1):
-            for jj in xrange(xgrid.shape[1] - 1):
-                xx = np.sqrt(xgrid[jj, ii] * xgrid[jj, ii+1])
-                yy = np.sqrt(ygrid[jj, ii] * ygrid[jj+1, ii])
+        for ii in range(xgrid.shape[0] - 1):
+            for jj in range(xgrid.shape[1] - 1):
+                if scale[0].startswith('log'):
+                    xx = np.sqrt(xgrid[jj, ii] * xgrid[jj, ii+1])
+                else:
+                    xx = np.average([xgrid[jj, ii], xgrid[jj, ii+1]])
+                if scale[1].startswith('log'):
+                    yy = np.sqrt(ygrid[jj, ii] * ygrid[jj+1, ii])
+                else:
+                    yy = np.average([ygrid[jj, ii], ygrid[jj+1, ii]])
                 ax.text(xx, yy, "{:d}".format(counts.T[jj, ii]), ha='center', va='center',
                         fontsize=8, bbox=dict(facecolor='white', alpha=0.2, edgecolor='none'))
 
@@ -603,3 +647,141 @@ def _set_extrema(extrema, vals, filter=None, lo=None, hi=None):
     if new_extr[1] is None: new_extr[1] = _extr[1]
     new_extr = new_extr.astype(np.float64)
     return new_extr
+
+
+def _cumulative_stat2d(values, shape, bins, statistic, cumulative):
+    """Calculate cumulative, 2D binned statistics for values given their bin placements.
+
+    Arguments
+    ---------
+    values : (N,)
+    shape : (2,)
+    bins : (2,N)
+    statistic : str
+    cumulative : (2) str
+
+    Returns
+    -------
+    cumul : (M,L) array of scalar
+
+    """
+
+    # Convert from 'raveled' to unraveled indices, if needed
+    if np.ndim(bins) == 1:
+        try:
+            bins = np.asarray(np.unravel_index(bins, shape))
+        except Exception as err:
+            raise ValueError("`bins` shape {} is not right.".format(np.shape(bins)))
+
+    # Make sure `cumulative` is length 2 string
+    if not isinstance(cumulative, six.string_types) or len(cumulative) != 2:
+        raise ValueError("`cumulative` = '{}' must be a 2 char string, 'yx'".format(cumulative))
+    if np.ndim(bins) != 2:
+        raise ValueError("`bins` must be (2,N) for 'N' values.")
+    if values.size != bins[0].size != bins[1].size:
+        raise ValueError("`values` ({}) size must match `bins` ({}) shape.".format(
+            values.size, bins.shape))
+    # Make sure each entry in `cumulative` is valid
+    for cc in cumulative:
+        if cc not in ['l', 'r']:
+            raise ValueError("`cumulative` = '{}' must be {'l','r'} + {'l','r'}".format(cumulative))
+
+    nrow, ncol = shape
+
+    # Determine which direction we're accumulating
+    if cumulative[0] == 'r':
+        row_comp = np.greater_equal
+    else:
+        row_comp = np.less_equal
+
+    if cumulative[1] == 'r':
+        col_comp = np.greater_equal
+    else:
+        col_comp = np.less_equal
+
+    # Determine function to use
+    if statistic == 'count':
+        stat_func = np.sum
+    elif statistic == 'average' or statistic == 'mean':
+        stat_func = np.average
+    else:
+        try:
+            stat_func = getattr(np, statistic)
+        except Exception as err:
+            raise ValueError("Invalid `statistic` = '{}': '{}'".format(statistic, str(err)))
+
+    if statistic == 'count':
+        use_vals = np.ones_like(values)
+    else:
+        use_vals = values
+
+    cumul = np.zeros([nrow, ncol])
+    for ii in range(nrow):
+        for jj in range(ncol):
+            row_bool = row_comp(bins[0]-1, ii) & (bins[0] > 0)
+            col_bool = col_comp(bins[1]-1, jj) & (bins[1] > 0)
+            both_bool = row_bool & col_bool
+            if np.any(both_bool):
+                cumul[ii, jj] = stat_func(use_vals[both_bool])
+
+    return cumul
+
+
+def _cumulative_stat1d(values, shape, bins, statistic, cumulative):
+    """Calculate cumulative, 1D binned statistics for values given their bin placements.
+
+    Arguments
+    ---------
+    values : (N,)
+    shape : (M,)
+    bins : (N,)
+    statistic : str
+    cumulative : (1,) str
+
+    Returns
+    -------
+    cumul : (M,) array of scalar
+
+    """
+
+    # Make sure `cumulative` is length 2 string
+    if not isinstance(cumulative, six.string_types) or len(cumulative) != 1:
+        raise ValueError("`cumulative` = '{}' must be a 1 char string".format(cumulative))
+    if np.ndim(bins) != 1:
+        raise ValueError("`bins` must be (N,) for 'N' values.")
+    if values.size != bins.size:
+        raise ValueError("`values` ({}) size must match `bins` ({}) shape.".format(
+            values.size, bins.shape))
+    # Make sure each entry in `cumulative` is valid
+    if cumulative not in ['l', 'r']:
+        raise ValueError("`cumulative` = '{}' must be {'l','r'} + {'l','r'}".format(cumulative))
+
+    # Determine which direction we're accumulating
+    if cumulative == 'r':
+        row_comp = np.greater_equal
+    else:
+        row_comp = np.less_equal
+
+    # Determine function to use
+    if statistic == 'count':
+        stat_func = np.sum
+    elif statistic == 'average' or statistic == 'mean':
+        stat_func = np.average
+    else:
+        try:
+            stat_func = getattr(np, statistic)
+        except Exception as err:
+            raise ValueError("Invalid `statistic` = '{}': '{}'".format(statistic, str(err)))
+
+    if statistic == 'count':
+        use_vals = np.ones_like(values)
+    else:
+        use_vals = values
+
+    cumul = np.zeros(shape)
+    for ii in range(shape):
+        row_bool = row_comp(bins-1, ii) & (bins > 0)
+        if np.any(row_bool):
+            cumul[ii] = stat_func(use_vals[row_bool])
+
+    return cumul
