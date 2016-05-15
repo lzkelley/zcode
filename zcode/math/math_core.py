@@ -390,7 +390,7 @@ def spacing(data, scale='log', num=100, filter=None, integers=False):
         # Log-spacing : create each decade manually
         if log_flag:
             # Find the SciNot exp for lower and upper values
-            span_exp = np.floor(np.log10(span)).astype(int)
+            span_exp = np.floor(np.log10(span))
             # Find the SciNot mantissa for lower and upper values
             span_man = span / np.power(10, span_exp)
             # If range is only a single decade, create it directly
