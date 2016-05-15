@@ -23,8 +23,15 @@ Future / To-Do
     +   plot_core.py
         -   Finish 'set_ticks' method.
 
+
 Current
 -------
+
+
+
+
+[0.0.8] - 2016/05/15
+--------------------
 -   math/
     +   math_core.py
         -   Moved many methods to new files, 'numeric.py' and 'stats.py'
@@ -76,6 +83,8 @@ Current
                 cumulative) plots.  Still needs fine tuning, but working okay.
             +   [ENH] Add ability to overlay (write) either 'counts' or 'values' on 2D hist.
                 Optional formatting available also.
+            +   [ENH] Ability to plot cumulative statistics --- i.e. consider values in all bins
+                (e.g.) up and to the right of the target bin, works for counts, medians, etc.
         -   `_constructFigure`
             +   [ENH] Add fourth subplot in the top-right corner, if desired.
     +   plot_core.py
