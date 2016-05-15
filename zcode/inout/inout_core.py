@@ -22,6 +22,7 @@ Functions
 -   mpiError                 - Raise an error through MPI and exit all processes.
 -   ascii_table              - Print a table with the given contents to output.
 -   modify_exists            - Modify the given filename if it already exists.
+-   iterable_notstring       - Return True' if the argument is an iterable and not a string type.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -34,11 +35,13 @@ import re
 import logging
 import warnings
 import numpy as np
+import collections
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize',
            'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
-           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists']
+           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
+           'iterable_notstring']
 
 
 class _Keys_Meta(type):
@@ -256,12 +259,31 @@ def estimateLines(files):
     return numLines
 
 
-def checkPath(tpath):
+def checkPath(tpath, create=True):
     """Create the given filepath if it doesn't already exist.
+
+    Arguments
+    ---------
+    tpath : str
+        Path to check.
+    create : bool
+        Create the path if it doesnt already exist.
+        If `False`, and the path does *not* exist, `None` is returned
+
+    Returns
+    -------
+    path : str or `None`
+        If the path exists, or is created, this is the name of the directory portion of the path.
+        If the path does not exist, `None` is returned
+
     """
     path, name = os.path.split(tpath)
-    if(len(path) > 0):
-        if(not os.path.isdir(path)): os.makedirs(path)
+    if len(path) > 0:
+        if not os.path.isdir(path):
+            if create:
+                os.makedirs(path)
+            else:
+                return None
 
     return path
 
@@ -531,15 +553,21 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=Fal
         Labels for each column.
     title : str or `None`
         Title for the whole table.  Placed in top-left corner.
-    out : callable
+    out : callable or `None`
         Method to call for output, defaults to `print`, but could also be
         for example: ``logging.Logger.debug``.
+        If `None`, the table is returned as a string.
     linewise : bool
         If `True`, call the `out` comment (e.g. `print`) line-by-line.  Otherwise, call `out` on
         a single str for the entire table.
     prepend : str
         Print the given str before the table.  If ``linewise == True``, this happens for each line,
         otherwise it happens once for the entire table.
+
+    Returns
+    -------
+    table : str or `None`
+        If `out` is `None`, then the table is returned as a string.  Otherwise `None` is returned.
 
     """
     table = np.atleast_2d(table)
@@ -605,16 +633,22 @@ def ascii_table(table, rows=None, cols=None, title=None, out=print, linewise=Fal
 
     ascii.append(bar_str)
 
+    table = prepend + "\n".join(ascii)
+    # Return table as string
+    if out is None:
+        return table
+
+    # Print table to some output
     if linewise:
         for line in ascii:
             out(prepend + line)
     else:
-        out(prepend + "\n".join(ascii))
+        out(table)
 
     return
 
 
-def modify_exists(fname, max=100):
+def modify_exists(fname, max=1000):
     """If the given filename already exists, return a modified version.
 
     Returns a filename, modified by appending a 0-padded integer to the input `fname`.
@@ -694,3 +728,9 @@ def modify_exists(fname, max=100):
         raise RuntimeError("New filename '{}' already exists.".format(newName))
 
     return newName
+
+
+def iterable_notstring(var):
+    """Return True' if the argument is an iterable and not a string type.
+    """
+    return not isinstance(var, six.string_types) and isinstance(var, collections.Iterable)

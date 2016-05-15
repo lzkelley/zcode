@@ -5,14 +5,196 @@ Future / To-Do
 --------------
 -   General
     +   Implement tests for all modules and functions.
+    +   Update all situations to use 'filter' instead of 'positive'/'nonzero'
+    +   More tests.  For plotting stuff, add tests just to make sure nothing breaks.
+    +   Setup automatic testing (e.g. nightly?)
 -   math/
     +   math_core.py
         -   `spacing`
             +   Add `endpoint` keyword argument to decide whether end-point(s) are included
                 in returned range.
+        -   `around`
+            +   Does this work correctly for negative decimal values??
+            +   Implement 'dir' relative to zero --- i.e. round up/down the absolute values.
+-   plot/
+    +   Hist2D.py
+        -   Add ability to plot central axes as scatter plot, with projected histograms
+            (instead of just the central 2D histogram).
+    +   plot_core.py
+        -   Finish 'set_ticks' method.
+
 
 Current
 -------
+
+
+
+
+[0.0.8] - 2016/05/15
+--------------------
+-   math/
+    +   math_core.py
+        -   Moved many methods to new files, 'numeric.py' and 'stats.py'
+        -   `around` [new-function]
+            +   Round in linear or log-space, in any direction (up, down, nearest).
+                This function deprecates other rounding methods
+                (`ceil_log`, `floor_log`, `round_log`).
+            +   When rounding in log-space, a negative value for decimals means rounding to
+                an order of magnitude (in any direction).
+        -   `ceil_log` [DEPRECATED] ---> `around`
+        -   `floor_log` [DEPRECATED] ---> `around`
+        -   `minmax`
+            +   Added rounding functionality using new `around` method.
+            +   Added `round_scale` parameter for interface with `around` method.
+        -   `ordered_groups` [new-function]
+            +   Find the locations in an array of indices which sort the input array into groups
+                based on target locations.
+        -   `round_log` [DEPRECATED] ---> `around`
+        -   `spacing`
+            +   Added `integers` parameter, if true, will create spacing in integers (linear or log)
+                between the given extrema.
+    +   numeric.py [new-file]
+        -   Moved 'numerical' methods from 'math_core.py' to here.
+    +   statistic.py [new-file]
+        -   Moved 'statistical' methods from 'math_core.py' to here.
+        -   `confidenceBands` [DEPRECATED] --> `confidence_bands` [new-function]
+        -   `confidenceIntervals` [DEPRECATED] --> `confidence_intervals` [new-function]
+        -   `sigma` [new-function]
+            +   Convert from standard deviations to percentiles (inside or outside) of the normal
+                distribution.
+    +   tests/
+        -   'test_math_core.py'
+            +   Functions split off into 'test_numeric.py' and 'test_statistic.py'.
+            +   Added tests for new-function `around`.
+            +   Added tests for new functionality (`integers`) of `spacing()`.
+        -   'test_numeric.py' [new-file]
+            +   Tests for numerical functions.
+        -   'test_statistic.py' [new-file]
+            +   Tests for statistical functions.
+            +   Tests for `sigma` function.
+-   plot/
+    +   Hist2D.py
+        -   `plot2DHist`
+            +   [MAINT] minor, allow different types of overlayed values; (see `plot2DHistProj`).
+        -   `plot2DHistProj`
+            +   [ENH] Allow central plot to be scatter instead of 2D histogram.
+                Use `type` argument.
+            +   [ENH] Add fourth subplot in the top-right corner for additional (especially
+                cumulative) plots.  Still needs fine tuning, but working okay.
+            +   [ENH] Add ability to overlay (write) either 'counts' or 'values' on 2D hist.
+                Optional formatting available also.
+            +   [ENH] Ability to plot cumulative statistics --- i.e. consider values in all bins
+                (e.g.) up and to the right of the target bin, works for counts, medians, etc.
+        -   `_constructFigure`
+            +   [ENH] Add fourth subplot in the top-right corner, if desired.
+    +   plot_core.py
+        -   `backdrop`
+            +   [ENH] Add option `draw` to determine if patch should be added to figure
+                or only returned.
+        -   `color_cycle`
+            +   [ENH] Allow single `color` to be passed, from which a cycle is created by
+                      using `seaborn.light_palette` or `seaborn.dark_palette`.
+        -   `color_set`
+            +   [ENH] Added new set of colors based on `seaborn.xkcd_palette` colors.
+        -   `full_extent`
+            +   [ENH] Improve to work with legends (`matplotlib.legend.Legend`).
+        -   `legend`
+            +   [ENH] Added `loc` parameter to automatically set x,y positions and alignment
+                      based on a two-character string.
+            +   [ENH] Added `mono` parameter to set font as monospaced.
+        -   `strSciNot`
+            +   [ENH] Added options `one` and `zero` to decide whether to include mantissa values
+                      of '1.0' and whether to write '0.0' as just '0.0' (instead of 10^-inf).
+        -   `test`
+            +   [ENH] Now works with either `matplotlib.axes.Axes` or `matplotlib.figure.Figure`.
+
+
+[0.0.7] - 2016/03/28
+--------------------
+-   inout/
+    +   inout_core.py
+        -   `ascii_table`
+            +   [ENH] passing ``out = None`` will make the function return a string version of the
+                table.
+        -   `checkPath`
+            +   [ENH] added parameter `create` to choose whether missing directories are created
+                or not.
+            +   [DOC] added docstrings.
+        -   `iterable_notstring` [new-function]
+            +   Return 'True' if the argument is an iterable and not a string type.
+    +   timer.py
+        -   [ENH] `Timings.report()` will return the results as a string if the parameter,
+            ``out = None``.
+-   math/
+    +   math_core.py
+        -   `_comparisonFunction` [DEPRECATED] ---> `_comparison_function` [new-function]
+            +   [ENH] Returned function takes a single parameter, instead of needing the comparison
+                value in each call.  Instead the comparison value is passed once to
+                `_comparison_function`, just during initialization.
+        -   `_comparisonFilter` [DEPRECATED] ---> `comparison_filter` [new-function]
+            +   [ENH] Added options to return indices (instead of values), compare with non-zero
+                comparison values, and check for finite (or not).
+        -   `ceil_log` [new-function]
+            +   Round up to the nearest integer in the the log10 mantissa (e.g. 23400 --> 30000)
+        -   `floor_log` [new-function]
+            +   Round down to the nearest integer in the the log10 mantissa (e.g. 23400 --> 20000)
+        -   `frexp10`
+            +   [ENH] Updated to work with negative and non-finite values.
+        -   `minmax`
+            +   [ENH] Extend the `prev` argument to allow for either minimum or maximum comparison
+                to be `None`.
+            +   [ENH] Added `limit` keyword argument to place limits on low/high extrema.
+            +   [MAINT] Fully deprecated (removed) `positive`, `nonzero` keywords.
+        -   `round_log` [new-function]
+            +   Wrapper for `ceil_log` and `floor_log`, round in log-space in either direction.
+        -   `stats_str`
+            +   [ENH] Added parameter `label` to give to the output string.
+    +   tests/
+        -   test_math_core.py
+            +   [ENH] Added *some* tests for `_comparison_function` and `_comparison_filter`.
+-   plot/
+    +   Hist2D.py
+        -   `plot2DHist`
+            +   [ENH] Added options for overplotting contour lines.  Basics work, might need some
+                fine tuning.
+        -   `plot2DHistProj`
+            +   [ENH] added parameters to adjust the size / location of axes composing plots.
+            +   [BUG] fixed issue where log-color-scales projected axes with zero values would
+                fail.  Seems to be working fine.
+            +   [BUG] fixed issue in right projection where the x-axis scaling would be set
+                incorrectly.
+            +   [BUG] fixed issue with trying to set numerous axes variables in colorbar.
+            +   [ENH] updated with `cmap` and `smap` parameters passed to `plot2DHist`.
+            +   [ENH] improved the way extrema are handled, especially in xprojection axis.
+    +   plot_core.py
+        -   `backdrop` [new-function]
+            +   [ENH] Add rectangular patches behind the content of the given axes.
+        -   `colormap`
+            +   [ENH] Added grey colors for 'under' and 'over' (i.e. outside colormap limits).
+        -   `full_extent` [new-function]
+            +   [ENH] Find the bbox (or set of bbox) which contain the given axes and its contents.
+        -   `legend`
+            +   [BUG] fixed issue where 'center' could be repeated for `valign` and `halign`.
+            +   [ENH] change the argument `fig` to be `art` -- either an axes or fig object.
+            +   [ENH] added default for `handlelength` parameter; removed monospace fonts default.
+        -   `line_label` [new-function]
+            +   Function which draws a vertical or horizontal line, and adds an annotation to it.
+        -   `plotConfFill`
+            +   [ENH] Added `edges` argument to control drawing the edges of each confidence
+                interval explicitly.
+            +   [ENH] Added 'floor' and 'ceil' parameters to set absolute minima and maxima.
+        -   `plotHistBars`
+            +   [ENH] Added improved default parameters for bar plot.  Missing parameter bug fix.
+        -   `plotHistLine`
+            +   [ENH] Added `invert` argument to allow switching the x and y data.
+        -   `position_to_extent` [new-function]
+            +   [ENH] Reposition an axes object so that its 'full_extent' (see above) is at the
+                intended position.
+        -   `saveFigure`
+            +   [ENH] check that figures saved properly.
+        -   `strSciNot`
+            +   [ENH] enable `None` precision --- i.e. dont show mantissa or exponent.
+            +   [ENH] Updated to work with negative and non-finite values.
 
 
 [0.0.6] - 2016/01/30
