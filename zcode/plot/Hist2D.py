@@ -41,7 +41,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
                    cumulative=None,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0, alpha=1.0,
                    cmap=None, smap=None, type='hist', scale_to_cbar=True,
-                   fs=12, scale='log', histScale='log', labels=None, cbar=True, write_counts=False,
+                   fs=12, scale='log', histScale='log', labels=None, cbar=True,
+                   overlay=False, overlay_fmt='',
                    left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP, lo=None, hi=None,
                    overall=False, overall_bins=20, overall_wide=False, overall_cumulative=False):
     """Plot a 2D histogram with projections of one or both axes.
@@ -101,8 +102,12 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     labels : (2,) str
     cbar : bool,
         Add a colorbar.
-    write_counts : bool
-        Print a str on each bin writing the number of values included in that bin.
+    overlay : str or None, if str {'counts', 'values'}
+        Print a str on each bin writing,
+        'counts' - the number of values included in that bin, or
+        'values' - the value of the bin itself.
+    overlay_fmt : str
+        Format specification on overlayed values, e.g. "02d" (no colon or brackets).
     left : float {0.0, 1.0}
         Location of the left edge of axes relative to the figure.
     bottom : float {0.0, 1.0}
@@ -133,6 +138,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     if weights is not None and np.shape(weights) != np.shape(xvals):
         raise ValueError("Shape of `weights` ({}) must match `xvals` and `yvals` ({}).".format(
             np.shape(weights), np.shape(xvals)))
+
+    if overlay is not None:
+        if not (overlay.startswith('val') or overlay.startswith('count')):
+            raise ValueError("`overlay` = '{}', must be {'values', 'count'}".format(overlay))
 
     # Make sure the given `scale` is valid
     if np.size(scale) == 1:
@@ -281,24 +290,30 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     # -------------------------------
     # Plot 2D Histogram
     if type_hist:
-        counts = None
+        overlay_values = None
         # If we should overlay strings labeling the num values in each bin, calculate those `counts`
-        if write_counts:
-            try:
-                counts, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
-                    xvals, yvals, weights, statistic='count', bins=[xbins, ybins],
-                    expand_binnumbers=True)
-            except:
-                counts, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
-                    xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
+        if overlay is not None:
+            # Overlay the values themselves
+            if overlay.startswith('val'):
+                overlay_values = hist_2d
+            # Get the 'counts' to overlay on plot
+            else:
+                try:
+                    overlay_values, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
+                        xvals, yvals, weights, statistic='count', bins=[xbins, ybins],
+                        expand_binnumbers=True)
+                except:
+                    overlay_values, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
+                        xvals, yvals, weights, statistic='count', bins=[xbins, ybins])
 
-            if cumulative is not None:
-                counts = _cumulative_stat2d(
-                    np.ones_like(xvals), counts.shape, binnums, 'count', cumulative)
+                if cumulative is not None:
+                    overlay_values = _cumulative_stat2d(
+                        np.ones_like(xvals), overlay_values.shape, binnums, 'count', cumulative)
 
         pcm, smap, cbar = plot2DHist(prax, xedges_2d, yedges_2d, hist_2d, cscale=histScale,
-                                     cbax=cbax, labels=labels, counts=counts, cmap=cmap, smap=smap,
-                                     extrema=extrema, fs=fs, scale=scale)
+                                     cbax=cbax, labels=labels, cmap=cmap, smap=smap,
+                                     extrema=extrema, fs=fs, scale=scale,
+                                     overlay=overlay_values, overlay_fmt=overlay_fmt)
 
         # Colors
         # X-projection
@@ -340,7 +355,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         if scale_to_cbar:
             # extrema_y = [zmath.floor_log(extrema[0]), zmath.ceil_log(extrema[1])]
             round = 0
-            if hist_log: round = -1
+            # if hist_log: round = -1
             extrema_y = zmath.minmax(extrema, round=round)
             xpax.set_ylim(extrema_y)
 
@@ -361,7 +376,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         # Set axes limits to match those of colorbar
         if scale_to_cbar:
             round = 0
-            if hist_log: round = -1
+            # if hist_log: round = -1
             extrema_x = zmath.minmax(extrema, round=round)
             ypax.set_xlim(extrema_x)
 
@@ -386,7 +401,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 def plot2DHist(ax, xvals, yvals, hist,
                cax=None, cbax=None, cscale='log', cmap=None, smap=None, extrema=None,
                contours=None, clabel={}, fs=12, rasterized=True, scale='log',
-               title=None, labels=None, counts=None, **kwargs):
+               title=None, labels=None, overlay=None, overlay_fmt="", **kwargs):
     """Plot the given 2D histogram of data.
 
     Use with (e.g.) ``numpy.histogram2d``,
@@ -426,8 +441,10 @@ def plot2DHist(ax, xvals, yvals, hist,
     labels : (2,) or (3,) array_like of strings
         The first two string are the 'x' and 'y' axis labels respectively.  If a third string is
         provided it is used as the colorbar label.
-    counts : (N,M) ndarray of int or `None`
+    overlay : (N,M) ndarray of int or `None`
         Number of elements in each bin if overlaid-text is desired.
+    overlay_fmt : str
+        Format specification on overlayed values, e.g. "02d" (no colon or brackets).
 
     Returns
     -------
@@ -467,6 +484,7 @@ def plot2DHist(ax, xvals, yvals, hist,
     pcm.set_edgecolor('face')
 
     # Add color bar
+    # -------------
     cbar = None
     if cbax is not None or cax is not None:
         if cbax is not None:
@@ -476,7 +494,6 @@ def plot2DHist(ax, xvals, yvals, hist,
         cbar.set_label(cblab, fontsize=fs)
         cbar.ax.tick_params(labelsize=fs)
         ticks = [smap.norm.vmin, smap.norm.vmax]
-        print("tick lims = ", ticks)
         ticks = zmath.spacing(ticks, cscale, integers=True)
         cbar.ax.yaxis.set_ticks(smap.norm(ticks), minor=True)
 
@@ -486,13 +503,15 @@ def plot2DHist(ax, xvals, yvals, hist,
     if title is not None:
         ax.set_title(title, size=fs)
 
-    # Add counts overlay
-    if counts is not None:
-        counts = np.asarray(counts).astype(int)
+    # Add overlay
+    # -----------
+    if overlay is not None:
+        form = "{:%s}" % (overlay_fmt)
+        overlay = np.asarray(overlay)  # .astype(int)
         # Make sure sizes are correct
-        if counts.shape != hist.shape:
-            raise ValueError("shape of `counts` ({}) must match `hist` ({})".format(
-                counts.shape, hist.shape))
+        if overlay.shape != hist.shape:
+            raise ValueError("shape of `overlay` ({}) must match `hist` ({})".format(
+                overlay.shape, hist.shape))
 
         # Remember these are transposes
         for ii in range(xgrid.shape[0] - 1):
@@ -505,10 +524,11 @@ def plot2DHist(ax, xvals, yvals, hist,
                     yy = np.sqrt(ygrid[jj, ii] * ygrid[jj+1, ii])
                 else:
                     yy = np.average([ygrid[jj, ii], ygrid[jj+1, ii]])
-                ax.text(xx, yy, "{:d}".format(counts.T[jj, ii]), ha='center', va='center',
+                ax.text(xx, yy, form.format(overlay.T[jj, ii]), ha='center', va='center',
                         fontsize=8, bbox=dict(facecolor='white', alpha=0.2, edgecolor='none'))
 
     # Add contour lines
+    # -----------------
     if contours is not None:
         if isinstance(contours, bool) and contours:
             levels = None

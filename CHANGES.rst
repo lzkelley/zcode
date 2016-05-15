@@ -67,11 +67,15 @@ Current
             +   Tests for `sigma` function.
 -   plot/
     +   Hist2D.py
+        -   `plot2DHist`
+            +   [MAINT] minor, allow different types of overlayed values; (see `plot2DHistProj`).
         -   `plot2DHistProj`
             +   [ENH] Allow central plot to be scatter instead of 2D histogram.
                 Use `type` argument.
             +   [ENH] Add fourth subplot in the top-right corner for additional (especially
                 cumulative) plots.  Still needs fine tuning, but working okay.
+            +   [ENH] Add ability to overlay (write) either 'counts' or 'values' on 2D hist.
+                Optional formatting available also.
         -   `_constructFigure`
             +   [ENH] Add fourth subplot in the top-right corner, if desired.
     +   plot_core.py
