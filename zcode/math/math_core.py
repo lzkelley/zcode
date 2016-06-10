@@ -33,11 +33,46 @@ import numpy as np
 import warnings
 import numbers
 
-__all__ = ['around', 'contiguousInds', 'within', 'indsWithin', 'minmax', 'really1d',
-           'argextrema', 'spacing', 'asBinEdges', 'strArray', 'sliceForAxis', 'midpoints',
-           'vecmag', 'renumerate', 'frexp10', 'groupDigitized',
-           'mono', 'ordered_groups', 'comparison_filter',
-           '_comparisonFunction', '_comparison_function', '_infer_scale']
+__all__ = ['argextrema', 'around', 'asBinEdges', 'contiguousInds', 'frexp10', 'groupDigitized',
+           'indsWithin', 'midpoints', 'minmax',  'mono', 'ordered_groups', 'really1d', 'renumerate',
+           'sliceForAxis', 'spacing', 'strArray', 'vecmag', 'within',
+           'comparison_filter', '_comparisonFunction', '_comparison_function', '_infer_scale']
+
+
+def argextrema(arr, type, filter=None):
+    """Find the index of the desired type of extrema in the input array.
+    """
+    # Valid filters, NOTE: do *not* include 'e' (equals), doesn't make sense here.
+    good_filter = [None, 'g', 'ge', 'l', 'le']
+    if(filter not in good_filter):
+        raise ValueError("Filter '%s' Unrecognized." % (type))
+    # Make sure `type` is valid
+    good_type = ['min', 'max']
+    if(not np.any([type.startswith(gt) for gt in good_type])):
+        raise ValueError("Type '%s' Unrecognized." % (type))
+    # Make sure input array `arr` is valid (1D)
+    arr = np.asarray(arr)
+    if(arr.ndim != 1 or arr[0].ndim != 0):
+        raise ValueError("Only 1D arrays currently supported.")
+
+    if(type.startswith('min')):
+        func = np.argmin
+    elif(type.startswith('max')):
+        func = np.argmax
+
+    # Find whether the `filter` criteria is True
+    if(filter):
+        filterFunc = _comparisonFunction(filter)
+        sel = filterFunc(arr, 0.0)
+    # If no filter (`None`), all values are valid
+    else:
+        sel = np.ones_like(arr, dtype=bool)
+
+    # Find the extrema within the valid (`sel`) subset
+    ind = func(arr[sel])
+    # Convert to index wrt the full input array
+    ind = np.where(sel)[0][ind]
+    return ind
 
 
 def around(val, decimals=0, scale='log', dir='near'):
@@ -125,304 +160,6 @@ def around(val, decimals=0, scale='log', dir='near'):
     return rnd
 
 
-def contiguousInds(args):
-    """Find the longest contiguous segment of positive values in the array.
-    """
-    condition = (np.array(args) > 0.0)
-
-    # Find the indicies of changes in ``condition``
-    dd = np.diff(condition)
-    idx, = dd.nonzero()
-
-    # Start things after change in ``condition``, thus shift indices 1 rightward
-    idx += 1
-
-    # If the start is True prepend a 0
-    if condition[0]:  idx = np.r_[0, idx]
-
-    # If the end is True, append the length of the array
-    if condition[-1]: idx = np.r_[idx, condition.size]
-
-    # Reshape the result into two columns
-    idx.shape = (-1, 2)
-
-    # Find lengths of each contiguous segment
-    sizes = np.diff(idx, axis=1)
-    # Find the location of maximum segment length
-    maxPos = np.argmax(sizes)
-    # Make indices spanning longest segment
-    inds = np.arange(*idx[maxPos])
-
-    return inds
-
-
-def within(vals, extr, edges=True, all=False, inv=False):
-    """Test whether a value or array is within the bounds of another.
-
-    Arguments
-    ---------
-       vals   <scalar>([N]) : test value(s)
-       extr  <scalar>[M]    : array or span to compare with
-       edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
-       all   <bool>         : optional, whether All values are within bounds (single return `bool`)
-       inv   <bool>         : optional, invert results (i.e. `True` ==> `False` and visa-versa)
-
-    Returns
-    -------
-       <bool> : True if within, False otherwise
-
-    """
-
-    extr_bnds = minmax(extr)
-
-    # Include edges for WITHIN bounds (thus not including is outside)
-    if(edges): retval = np.asarray(((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])))
-    # Don't include edges for WITHIN  (thus include them for outside)
-    else:      retval = np.asarray(((vals > extr_bnds[0]) & (vals < extr_bnds[1])))
-
-    # Convert to single return value
-    if(all): retval = np.all(retval)
-
-    # Invert results
-    if(inv): retval = np.invert(retval)
-
-    return retval
-
-
-def indsWithin(vals, extr, edges=True):
-    """Find the indices of the input array which are within the given extrema.
-    """
-    assert np.ndim(vals) == 1, "Only `ndim = 1` arrays allowed!"
-    bnds = minmax(extr)
-    if(edges):
-        inds = np.where((vals >= bnds[0]) & (vals <= bnds[1]))[0]
-    else:
-        inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
-
-    return inds
-
-
-def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None, round_scale='log'):
-    """Find minimum and maximum of given data, return as numpy array.
-
-    If ``prev`` is provided, the returned minmax values will also be compared to it.
-    To compare with only a previous minimum or maximum, pass the other as `None`, e.g.
-    ``prev = [None, 2.5]`` to compare only with a maximum of `2.5`.
-
-    Arguments
-    ---------
-    data : [...] ndarray of scalar of any shape
-        Arbitrarily shaped data to find minumum and maximum of.
-    prev : `None` or (2,) array_like of scalar and/or `None`
-        Also find min/max against prev[0] and prev[1] respectively.  If `prev` is `None`,
-        or if either of the elements of `prev` are `None`, then they are not compared.
-    filter : str or `None`,
-        Key describing how to filter the input data, or `None` for no filter.
-        See, ``comparison_filter``.
-    stretch : flt
-        Factor by which to stretch min and max by (``1.0 +- stretch``).
-    limit :
-    round : int or 'None'
-        The number of significant figures to which to round the min and max values.
-    round_scale : str, {'lin', 'log'}
-        In which scaling to round in.
-
-    Returns
-    -------
-    minmax : (2,) array of scalar, or `None`
-        Minimum and maximum of given data (and ``prev`` if provided).  If the input data is empty,
-        then `prev` is returned --- even if that is `None`.
-
-    To-Do
-    -----
-    -   Add an 'axis' argument.
-
-    """
-    if prev is not None:
-        assert len(prev) == 2, "`prev` must have length 2."
-    if limit is not None:
-        assert len(limit) == 2, "`limit` must have length 2."
-
-    useData = np.array(data)
-    if filter:
-        useData = comparison_filter(useData, filter)
-
-    # If there are no elements (left), return `prev` (`None` if not provided)
-    if np.size(useData) == 0:
-        return prev
-
-    # Determine stretch factor
-    lef = (1.0-stretch)
-    rit = (1.0+stretch)
-
-    # Find extrema
-    minmax = np.array([lef*np.min(useData), rit*np.max(useData)])
-
-    # Compare to previous extrema, if given
-    if prev is not None:
-        if prev[0] is not None: minmax[0] = np.min([minmax[0], prev[0]])
-        if prev[1] is not None: minmax[1] = np.max([minmax[1], prev[1]])
-
-    # Compare to limits, if given
-    if limit is not None:
-        if limit[0] is not None: minmax[0] = np.max([minmax[0], limit[0]])
-        if limit[1] is not None: minmax[1] = np.min([minmax[1], limit[1]])
-
-    # Round the min/max results to given number of sig-figs
-    if round is not None:
-        minmax[0] = around(minmax[0], round, round_scale, 'floor')
-        minmax[1] = around(minmax[1], round, round_scale, 'ceil')
-
-    return minmax
-
-
-def really1d(arr):
-    """Test whether an array_like is really 1D (i.e. not a jagged ND array).
-
-    Test whether the input array is uniformly one-dimensional, as apposed to (e.g.) a ``ndim == 1``
-    list or array of irregularly shaped sub-lists/sub-arrays.  True for an empty list `[]`.
-
-    Arguments
-    ---------
-    arr : array_like
-        Array to be tested.
-
-    Returns
-    -------
-    bool
-        Whether `arr` is purely 1D.
-
-    """
-    if np.ndim(arr) != 1:
-        return False
-    # Empty list or array
-    if len(arr) == 0:
-        return True
-    if np.any(np.vectorize(np.ndim)(arr)):
-        return False
-    return True
-
-
-def argextrema(arr, type, filter=None):
-    """Find the index of the desired type of extrema in the input array.
-    """
-    # Valid filters, NOTE: do *not* include 'e' (equals), doesn't make sense here.
-    good_filter = [None, 'g', 'ge', 'l', 'le']
-    if(filter not in good_filter):
-        raise ValueError("Filter '%s' Unrecognized." % (type))
-    # Make sure `type` is valid
-    good_type = ['min', 'max']
-    if(not np.any([type.startswith(gt) for gt in good_type])):
-        raise ValueError("Type '%s' Unrecognized." % (type))
-    # Make sure input array `arr` is valid (1D)
-    arr = np.asarray(arr)
-    if(arr.ndim != 1 or arr[0].ndim != 0):
-        raise ValueError("Only 1D arrays currently supported.")
-
-    if(type.startswith('min')):
-        func = np.argmin
-    elif(type.startswith('max')):
-        func = np.argmax
-
-    # Find whether the `filter` criteria is True
-    if(filter):
-        filterFunc = _comparisonFunction(filter)
-        sel = filterFunc(arr, 0.0)
-    # If no filter (`None`), all values are valid
-    else:
-        sel = np.ones_like(arr, dtype=bool)
-
-    # Find the extrema within the valid (`sel`) subset
-    ind = func(arr[sel])
-    # Convert to index wrt the full input array
-    ind = np.where(sel)[0][ind]
-    return ind
-
-
-def spacing(data, scale='log', num=100, filter=None, integers=False):
-    """Create an evenly spaced array between extrema from the given data.
-
-    Arguments
-    ---------
-    data : array_like of scalar
-        Data from which to extract the extrema for bounds.
-    scale : str
-        Scaling for spacing, {'lin', 'log'}.
-    num : int
-        Number of points to produce, `N`.
-    filter : str or `None`
-        String specifying how to filter the input `data` relative to zero.
-    integers : bool
-        Create spacing with only integer (whole numbers).  NOTE: this ignores the `num` argument.
-        If ``scale == 'log'``: these are Scientific-notation integers, e.g. [7, 8, 9, 10, 20, 30].
-        If ``scale == 'lin'``: these are all integers, e.g. [7, 8, 9, 10, 11, 12 ... 29].
-        NOTE: when `integers` is 'True', the extrema are the nearest integral values *outside* the
-              the range specified with `data`.  e.g. if `data` is [7.96, 28.12], the above example
-              arrays are the ones that would be returned.
-
-    Returns
-    -------
-    spaced : (N,) array of scalar
-        Array of evenly spaced points, with number of elements ``N = num`` if ``integers = False``,
-        otherwise `N` is how many whole numbers there are between the given extrema (see `integers`)
-        argument above.
-
-    """
-    if scale.startswith('log'):
-        log_flag = True
-    elif scale.startswith('lin'):
-        log_flag = False
-    else:
-        raise RuntimeError("``scale`` '%s' unrecognized!" % (scale))
-
-    # If no `filter` is given, and we are log-scaling, use a ``> 0.0`` filter
-    if filter is None and log_flag:
-        filter = '>'
-
-    # Find extrema of values
-    round = None
-    # If only 'integers' (whole numbers) are desired, round extrema to *outside*
-    if integers:
-        round = 0
-    span = minmax(data, filter=filter, round=round, round_scale=scale)
-    # If only 'integers', use 'arange'
-    if integers:
-        # Log-spacing : create each decade manually
-        if log_flag:
-            # Find the SciNot exp for lower and upper values
-            span_exp = np.floor(np.log10(span))
-            # Find the SciNot mantissa for lower and upper values
-            span_man = span / np.power(10, span_exp)
-            # If range is only a single decade, create it directly
-            if np.isclose(span_exp[0], span_exp[1]):
-                spaced = np.arange(span_man[0], span_man[1]+1) * np.power(10.0, span_exp[0])
-            # If multiple decades, create each separately
-            else:
-                exp_range = np.arange(span_exp[0], span_exp[1]+1)
-                for ii, exp in enumerate(exp_range):
-                    # If first decade, start at the first mantissa value
-                    if ii == 0:
-                        spaced = np.arange(span_man[0], 10) * np.power(10.0, exp)
-                    # If last decade, end at the last mantissa value
-                    elif ii == exp_range.size - 1:
-                        spaced = np.append(spaced, np.arange(1, span_man[1]+1) * np.power(10.0, exp))
-                    # Inbetween decades, use full range [1, 9]
-                    else:
-                        spaced = np.append(spaced, np.arange(1, 10) * np.power(10.0, exp))
-        # Linear spacing
-        else:
-            spaced = np.arange(span[0], span[1]+1)
-
-    # Create spacing between min/max values exactly
-    else:
-        if log_flag:
-            spaced = np.logspace(*np.log10(span), num=num)
-        else:
-            spaced = np.linspace(*span, num=num)
-
-    return spaced
-
-
 def asBinEdges(bins, data, scale='lin'):
     """Create bin-edges if the given `bins` do not already give them.
 
@@ -498,172 +235,35 @@ def asBinEdges(bins, data, scale='lin'):
     return edges
 
 
-def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
-    """Create a string representation of a numerical array.
-
-    Arguments
-    ---------
-    arr : array_like scalars,
-        Array to be converted to string.
-    first : int or None,
-        Number of elements at the beginning of the array to print.
-        `None` means FULL array, while `0` means zero elements.
-    last : int,
-        Number of elements at the end of the array to print.
-    delim : str,
-        Character to delimit elements of string array.
-    format : str,
-        Specification of how each array element should be converted to a str.
-        This is a c-style specification used by ``str.format``.
-
-    Returns
-    -------
-    arrStr : str,
-        Stringified version of input array.
-
+def contiguousInds(args):
+    """Find the longest contiguous segment of positive values in the array.
     """
+    condition = (np.array(args) > 0.0)
 
-    if first is None or last is None:
-        first = None
-        last = 0
+    # Find the indicies of changes in ``condition``
+    dd = np.diff(condition)
+    idx, = dd.nonzero()
 
-    # Create the style specification
-    form = "{:%s}" % (format)
+    # Start things after change in ``condition``, thus shift indices 1 rightward
+    idx += 1
 
-    arrStr = "["
-    # Add the first `first` elements
-    if first or first is None:
-        arrStr += delim.join([form.format(vv) for vv in arr[:first]])
+    # If the start is True prepend a 0
+    if condition[0]:  idx = np.r_[0, idx]
 
-    # Include separator unless full array is being printed
-    if first is not None:
-        arrStr += "... "
+    # If the end is True, append the length of the array
+    if condition[-1]: idx = np.r_[idx, condition.size]
 
-    # Add the last `last` elements
-    if last:
-        arrStr += delim.join([form.format(vv) for vv in arr[-last-1:]])
+    # Reshape the result into two columns
+    idx.shape = (-1, 2)
 
-    arrStr += "]"
+    # Find lengths of each contiguous segment
+    sizes = np.diff(idx, axis=1)
+    # Find the location of maximum segment length
+    maxPos = np.argmax(sizes)
+    # Make indices spanning longest segment
+    inds = np.arange(*idx[maxPos])
 
-    return arrStr
-
-
-def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
-    """
-    Creates an array slicing object which slices only the target axis.
-
-    If ``arr`` is a single number, it is taken as the number of dimensions to create the slice for.
-    Otherwise, the ndim of ``arr`` is used.
-
-    Arguments
-    ---------
-        arr   <obj>    : integer number of dimensions, or N-Dim array of objects to retrieve ndim
-        axis  <int>    : target axis (`-1` for last)
-        start <int>    : None for default
-        stop  <int>    : None for default
-        step  <int>    : None for default
-
-    Returns
-    -------
-        cut   <obj>[N] : list of `slice` objects for each dimension, only slicing on ``axis``
-
-    """
-
-    if(start is stop is step is None):
-        raise RuntimeError("``start``,``stop``, or ``step`` required!")
-
-    ndim = np.ndim(arr)
-    if(ndim == 0): ndim = arr
-
-    if(ndim > 1):
-        #     Create an object to slice all elements of all dims
-        cut = [slice(None)]*ndim
-        #     Exclude the last element of the last dimension
-        cut[axis] = slice(start, stop, step)
-    else:
-        if(axis != 0 and axis != -1): raise RuntimeError("cannot slice nonexistent axis!")
-        cut = slice(start, stop, step)
-
-    return cut
-
-
-def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
-    """Return the midpoints between values in the given array.
-
-    If the given array is N-dimensional, midpoints are calculated from the last dimension.
-
-    Arguments
-    ---------
-        arr : ndarray of scalars,
-            Input array.
-        log : bool,
-            Find midpoints in log-space.
-        frac : float,
-            Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
-        axis : int,
-            Which axis about which to find the midpoints.
-
-    Returns
-    -------
-        mids : ndarray of floats,
-            The midpoints of the input array.
-            The resulting shape will be the same as the input array `arr`, except that
-            `mids.shape[axis] == arr.shape[axis]-1`.
-
-    """
-
-    if(np.shape(arr)[axis] < 2):
-        raise RuntimeError("Input ``arr`` does not have a valid shape!")
-
-    # Convert to log-space
-    if(log): user = np.log10(arr)
-    else:    user = np.array(arr)
-
-    diff = np.diff(user, axis=axis)
-
-    #     skip the last element, or the last axis
-    cut = sliceForAxis(user, axis=axis, stop=-1)
-    start = user[cut]
-    mids = start + frac*diff
-
-    if(log): mids = np.power(10.0, mids)
-    if(squeeze): mids = mids.squeeze()
-
-    return mids
-
-
-def vecmag(r1, r2=None):
-    """Calculate the distance from vector(s) r1 to r2.
-
-    Both ``r1`` and ``r2`` can be either single, ``M`` dimensional, vectors or a set of ``N`` of
-    them.  If both ``r1`` and ``r2`` are sets of vectors, they must have the same length.
-
-    Arguments
-    ---------
-       r1 <scalar>[(N,)M] : first  vector (set)
-       r2 <scalar>[(N,)M] : second vector (set)
-
-    Returns
-    -------
-       dist <scalar>([N]) : distances
-
-    """
-
-    if(r2 is None): r2 = np.zeros(np.shape(r1))
-
-    if(len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1):
-        dist = np.sqrt(np.sum(np.square(r1 - r2), axis=1))
-    else:
-        dist = np.sqrt(np.sum(np.square(r1 - r2)))
-
-    return dist
-
-
-def renumerate(arr):
-    """
-    Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
-    """
-    return zip(reversed(range(len(arr))), reversed(arr))
+    return inds
 
 
 def frexp10(vals):
@@ -747,6 +347,138 @@ def groupDigitized(arr, bins, edges='right'):
         groups.append(np.where(pos == ii)[0])
 
     return groups
+
+
+def indsWithin(vals, extr, edges=True):
+    """Find the indices of the input array which are within the given extrema.
+    """
+    assert np.ndim(vals) == 1, "Only `ndim = 1` arrays allowed!"
+    bnds = minmax(extr)
+    if(edges):
+        inds = np.where((vals >= bnds[0]) & (vals <= bnds[1]))[0]
+    else:
+        inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
+
+    return inds
+
+
+def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
+    """Return the midpoints between values in the given array.
+
+    If the given array is N-dimensional, midpoints are calculated from the last dimension.
+
+    Arguments
+    ---------
+        arr : ndarray of scalars,
+            Input array.
+        log : bool,
+            Find midpoints in log-space.
+        frac : float,
+            Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
+        axis : int,
+            Which axis about which to find the midpoints.
+
+    Returns
+    -------
+        mids : ndarray of floats,
+            The midpoints of the input array.
+            The resulting shape will be the same as the input array `arr`, except that
+            `mids.shape[axis] == arr.shape[axis]-1`.
+
+    """
+
+    if(np.shape(arr)[axis] < 2):
+        raise RuntimeError("Input ``arr`` does not have a valid shape!")
+
+    # Convert to log-space
+    if(log): user = np.log10(arr)
+    else:    user = np.array(arr)
+
+    diff = np.diff(user, axis=axis)
+
+    #     skip the last element, or the last axis
+    cut = sliceForAxis(user, axis=axis, stop=-1)
+    start = user[cut]
+    mids = start + frac*diff
+
+    if(log): mids = np.power(10.0, mids)
+    if(squeeze): mids = mids.squeeze()
+
+    return mids
+
+
+def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None, round_scale='log'):
+    """Find minimum and maximum of given data, return as numpy array.
+
+    If ``prev`` is provided, the returned minmax values will also be compared to it.
+    To compare with only a previous minimum or maximum, pass the other as `None`, e.g.
+    ``prev = [None, 2.5]`` to compare only with a maximum of `2.5`.
+
+    Arguments
+    ---------
+    data : [...] ndarray of scalar of any shape
+        Arbitrarily shaped data to find minumum and maximum of.
+    prev : `None` or (2,) array_like of scalar and/or `None`
+        Also find min/max against prev[0] and prev[1] respectively.  If `prev` is `None`,
+        or if either of the elements of `prev` are `None`, then they are not compared.
+    filter : str or `None`,
+        Key describing how to filter the input data, or `None` for no filter.
+        See, ``comparison_filter``.
+    stretch : flt
+        Factor by which to stretch min and max by (``1.0 +- stretch``).
+    limit :
+    round : int or 'None'
+        The number of significant figures to which to round the min and max values.
+    round_scale : str, {'lin', 'log'}
+        In which scaling to round in.
+
+    Returns
+    -------
+    minmax : (2,) array of scalar, or `None`
+        Minimum and maximum of given data (and ``prev`` if provided).  If the input data is empty,
+        then `prev` is returned --- even if that is `None`.
+
+    To-Do
+    -----
+    -   Add an 'axis' argument.
+
+    """
+    if prev is not None:
+        assert len(prev) == 2, "`prev` must have length 2."
+    if limit is not None:
+        assert len(limit) == 2, "`limit` must have length 2."
+
+    useData = np.array(data)
+    if filter:
+        useData = comparison_filter(useData, filter)
+
+    # If there are no elements (left), return `prev` (`None` if not provided)
+    if np.size(useData) == 0:
+        return prev
+
+    # Determine stretch factor
+    lef = (1.0-stretch)
+    rit = (1.0+stretch)
+
+    # Find extrema
+    minmax = np.array([lef*np.min(useData), rit*np.max(useData)])
+
+    # Compare to previous extrema, if given
+    if prev is not None:
+        if prev[0] is not None: minmax[0] = np.min([minmax[0], prev[0]])
+        if prev[1] is not None: minmax[1] = np.max([minmax[1], prev[1]])
+
+    # Compare to limits, if given
+    if limit is not None:
+        if limit[0] is not None: minmax[0] = np.max([minmax[0], limit[0]])
+        if limit[1] is not None: minmax[1] = np.min([minmax[1], limit[1]])
+
+    # Round the min/max results to given number of sig-figs
+    if round is not None:
+        minmax[0] = around(minmax[0], round, round_scale, 'floor')
+        minmax[1] = around(minmax[1], round, round_scale, 'ceil')
+
+    return minmax
 
 
 def mono(arr, type='g', axis=-1):
@@ -847,6 +579,273 @@ def ordered_groups(values, targets, inds=None, dir='above', include=False):
         locs = np.asscalar(locs)
 
     return locs, sorter
+
+
+def really1d(arr):
+    """Test whether an array_like is really 1D (i.e. not a jagged ND array).
+
+    Test whether the input array is uniformly one-dimensional, as apposed to (e.g.) a ``ndim == 1``
+    list or array of irregularly shaped sub-lists/sub-arrays.  True for an empty list `[]`.
+
+    Arguments
+    ---------
+    arr : array_like
+        Array to be tested.
+
+    Returns
+    -------
+    bool
+        Whether `arr` is purely 1D.
+
+    """
+    if np.ndim(arr) != 1:
+        return False
+    # Empty list or array
+    if len(arr) == 0:
+        return True
+    if np.any(np.vectorize(np.ndim)(arr)):
+        return False
+    return True
+
+
+def renumerate(arr):
+    """
+    Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
+    """
+    return zip(reversed(range(len(arr))), reversed(arr))
+
+
+def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
+    """
+    Creates an array slicing object which slices only the target axis.
+
+    If ``arr`` is a single number, it is taken as the number of dimensions to create the slice for.
+    Otherwise, the ndim of ``arr`` is used.
+
+    Arguments
+    ---------
+        arr   <obj>    : integer number of dimensions, or N-Dim array of objects to retrieve ndim
+        axis  <int>    : target axis (`-1` for last)
+        start <int>    : None for default
+        stop  <int>    : None for default
+        step  <int>    : None for default
+
+    Returns
+    -------
+        cut   <obj>[N] : list of `slice` objects for each dimension, only slicing on ``axis``
+
+    """
+
+    if(start is stop is step is None):
+        raise RuntimeError("``start``,``stop``, or ``step`` required!")
+
+    ndim = np.ndim(arr)
+    if(ndim == 0): ndim = arr
+
+    if(ndim > 1):
+        #     Create an object to slice all elements of all dims
+        cut = [slice(None)]*ndim
+        #     Exclude the last element of the last dimension
+        cut[axis] = slice(start, stop, step)
+    else:
+        if(axis != 0 and axis != -1): raise RuntimeError("cannot slice nonexistent axis!")
+        cut = slice(start, stop, step)
+
+    return cut
+
+
+def spacing(data, scale='log', num=100, filter=None, integers=False):
+    """Create an evenly spaced array between extrema from the given data.
+
+    Arguments
+    ---------
+    data : array_like of scalar
+        Data from which to extract the extrema for bounds.
+    scale : str
+        Scaling for spacing, {'lin', 'log'}.
+    num : int
+        Number of points to produce, `N`.
+    filter : str or `None`
+        String specifying how to filter the input `data` relative to zero.
+    integers : bool
+        Create spacing with only integer (whole numbers).  NOTE: this ignores the `num` argument.
+        If ``scale == 'log'``: these are Scientific-notation integers, e.g. [7, 8, 9, 10, 20, 30].
+        If ``scale == 'lin'``: these are all integers, e.g. [7, 8, 9, 10, 11, 12 ... 29].
+        NOTE: when `integers` is 'True', the extrema are the nearest integral values *outside* the
+              the range specified with `data`.  e.g. if `data` is [7.96, 28.12], the above example
+              arrays are the ones that would be returned.
+
+    Returns
+    -------
+    spaced : (N,) array of scalar
+        Array of evenly spaced points, with number of elements ``N = num`` if ``integers = False``,
+        otherwise `N` is how many whole numbers there are between the given extrema (see `integers`)
+        argument above.
+
+    """
+    if scale.startswith('log'):
+        log_flag = True
+    elif scale.startswith('lin'):
+        log_flag = False
+    else:
+        raise RuntimeError("``scale`` '%s' unrecognized!" % (scale))
+
+    # If no `filter` is given, and we are log-scaling, use a ``> 0.0`` filter
+    if filter is None and log_flag:
+        filter = '>'
+
+    # Find extrema of values
+    round = None
+    # If only 'integers' (whole numbers) are desired, round extrema to *outside*
+    if integers:
+        round = 0
+    span = minmax(data, filter=filter, round=round, round_scale=scale)
+    # If only 'integers', use 'arange'
+    if integers:
+        # Log-spacing : create each decade manually
+        if log_flag:
+            # Find the SciNot exp for lower and upper values
+            span_exp = np.floor(np.log10(span))
+            # Find the SciNot mantissa for lower and upper values
+            span_man = span / np.power(10, span_exp)
+            # If range is only a single decade, create it directly
+            if np.isclose(span_exp[0], span_exp[1]):
+                spaced = np.arange(span_man[0], span_man[1]+1) * np.power(10.0, span_exp[0])
+            # If multiple decades, create each separately
+            else:
+                exp_range = np.arange(span_exp[0], span_exp[1]+1)
+                for ii, exp in enumerate(exp_range):
+                    # If first decade, start at the first mantissa value
+                    if ii == 0:
+                        spaced = np.arange(span_man[0], 10) * np.power(10.0, exp)
+                    # If last decade, end at the last mantissa value
+                    elif ii == exp_range.size - 1:
+                        spaced = np.append(spaced, np.arange(1, span_man[1]+1) * np.power(10.0, exp))
+                    # Inbetween decades, use full range [1, 9]
+                    else:
+                        spaced = np.append(spaced, np.arange(1, 10) * np.power(10.0, exp))
+        # Linear spacing
+        else:
+            spaced = np.arange(span[0], span[1]+1)
+
+    # Create spacing between min/max values exactly
+    else:
+        if log_flag:
+            spaced = np.logspace(*np.log10(span), num=num)
+        else:
+            spaced = np.linspace(*span, num=num)
+
+    return spaced
+
+
+def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
+    """Create a string representation of a numerical array.
+
+    Arguments
+    ---------
+    arr : array_like scalars,
+        Array to be converted to string.
+    first : int or None,
+        Number of elements at the beginning of the array to print.
+        `None` means FULL array, while `0` means zero elements.
+    last : int,
+        Number of elements at the end of the array to print.
+    delim : str,
+        Character to delimit elements of string array.
+    format : str,
+        Specification of how each array element should be converted to a str.
+        This is a c-style specification used by ``str.format``.
+
+    Returns
+    -------
+    arrStr : str,
+        Stringified version of input array.
+
+    """
+
+    if first is None or last is None:
+        first = None
+        last = 0
+
+    # Create the style specification
+    form = "{:%s}" % (format)
+
+    arrStr = "["
+    # Add the first `first` elements
+    if first or first is None:
+        arrStr += delim.join([form.format(vv) for vv in arr[:first]])
+
+    # Include separator unless full array is being printed
+    if first is not None:
+        arrStr += "... "
+
+    # Add the last `last` elements
+    if last:
+        arrStr += delim.join([form.format(vv) for vv in arr[-last-1:]])
+
+    arrStr += "]"
+
+    return arrStr
+
+
+def vecmag(r1, r2=None):
+    """Calculate the distance from vector(s) r1 to r2.
+
+    Both ``r1`` and ``r2`` can be either single, ``M`` dimensional, vectors or a set of ``N`` of
+    them.  If both ``r1`` and ``r2`` are sets of vectors, they must have the same length.
+
+    Arguments
+    ---------
+       r1 <scalar>[(N,)M] : first  vector (set)
+       r2 <scalar>[(N,)M] : second vector (set)
+
+    Returns
+    -------
+       dist <scalar>([N]) : distances
+
+    """
+
+    if(r2 is None): r2 = np.zeros(np.shape(r1))
+
+    if(len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1):
+        dist = np.sqrt(np.sum(np.square(r1 - r2), axis=1))
+    else:
+        dist = np.sqrt(np.sum(np.square(r1 - r2)))
+
+    return dist
+
+
+def within(vals, extr, edges=True, all=False, inv=False):
+    """Test whether a value or array is within the bounds of another.
+
+    Arguments
+    ---------
+       vals   <scalar>([N]) : test value(s)
+       extr  <scalar>[M]    : array or span to compare with
+       edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
+       all   <bool>         : optional, whether All values are within bounds (single return `bool`)
+       inv   <bool>         : optional, invert results (i.e. `True` ==> `False` and visa-versa)
+
+    Returns
+    -------
+       <bool> : True if within, False otherwise
+
+    """
+
+    extr_bnds = minmax(extr)
+
+    # Include edges for WITHIN bounds (thus not including is outside)
+    if(edges): retval = np.asarray(((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])))
+    # Don't include edges for WITHIN  (thus include them for outside)
+    else:      retval = np.asarray(((vals > extr_bnds[0]) & (vals < extr_bnds[1])))
+
+    # Convert to single return value
+    if(all): retval = np.all(retval)
+
+    # Invert results
+    if(inv): retval = np.invert(retval)
+
+    return retval
 
 
 def _comparisonFunction(comp):
