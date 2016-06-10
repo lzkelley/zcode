@@ -42,7 +42,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0, alpha=1.0,
                    cmap=None, smap=None, type='hist', scale_to_cbar=True,
                    fs=12, scale='log', histScale='log', labels=None, cbar=True,
-                   overlay=False, overlay_fmt='',
+                   overlay=False, overlay_fmt=None,
                    left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP, lo=None, hi=None,
                    overall=False, overall_bins=20, overall_wide=False, overall_cumulative=False):
     """Plot a 2D histogram with projections of one or both axes.
@@ -102,11 +102,11 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     labels : (2,) str
     cbar : bool,
         Add a colorbar.
-    overlay : str or None, if str {'counts', 'values'}
+    overlay : str or 'None', if str {'counts', 'values'}
         Print a str on each bin writing,
         'counts' - the number of values included in that bin, or
         'values' - the value of the bin itself.
-    overlay_fmt : str
+    overlay_fmt : str or 'None'
         Format specification on overlayed values, e.g. "02d" (no colon or brackets).
     left : float {0.0, 1.0}
         Location of the left edge of axes relative to the figure.
@@ -296,8 +296,12 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
             # Overlay the values themselves
             if overlay.startswith('val'):
                 overlay_values = hist_2d
+                if overlay_fmt is None:
+                    overlay_fmt = ''
             # Get the 'counts' to overlay on plot
             else:
+                if overlay_fmt is None:
+                    overlay_fmt = 'd'
                 try:
                     overlay_values, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
                         xvals, yvals, weights, statistic='count', bins=[xbins, ybins],
@@ -309,6 +313,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
                 if cumulative is not None:
                     overlay_values = _cumulative_stat2d(
                         np.ones_like(xvals), overlay_values.shape, binnums, 'count', cumulative)
+
+                overlay_values = overlay_values.astype(int)
 
         pcm, smap, cbar = plot2DHist(prax, xedges_2d, yedges_2d, hist_2d, cscale=histScale,
                                      cbax=cbax, labels=labels, cmap=cmap, smap=smap,
