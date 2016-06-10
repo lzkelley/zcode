@@ -31,7 +31,7 @@ _LEFT = 0.09
 _RIGHT = 0.92     # Location of right of plots
 _BOTTOM = 0.09
 _TOP = 0.90       # Location of top of plots
-
+_PAD = 0.03
 _CB_WID = 0.02
 _CB_WPAD = 0.1
 _BAR_ALPHA = 0.8
@@ -42,7 +42,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0, alpha=1.0,
                    cmap=None, smap=None, type='hist', scale_to_cbar=True,
                    fs=12, scale='log', histScale='log', labels=None, cbar=True,
-                   overlay=False, overlay_fmt=None,
+                   overlay=None, overlay_fmt=None,
                    left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP, lo=None, hi=None,
                    overall=False, overall_bins=20, overall_wide=False, overall_cumulative=False):
     """Plot a 2D histogram with projections of one or both axes.
@@ -336,9 +336,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         colors = smap.to_rgba(weights)
         prax.scatter(xvals, yvals, c=colors, alpha=alpha)
 
-        cbar = plt.colorbar(smap, cax=cbax)
-        cbar.set_label(cblabel, fontsize=fs)
-        cbar.ax.tick_params(labelsize=fs)
+        if cbar:
+            cbar = plt.colorbar(smap, cax=cbax)
+            cbar.set_label(cblabel, fontsize=fs)
+            cbar.ax.tick_params(labelsize=fs)
 
         # Make projection colors all grey
         colors_xp = '0.8'
@@ -593,7 +594,7 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
 
     if yproj:
         prim_wid = useable[0]*wratio
-        ypro_wid = useable[0]*(1.0-wratio)
+        ypro_wid = useable[0]*(1.0-wratio-_PAD)
     else:
         prim_wid = useable[0]
 
@@ -616,8 +617,10 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
     # Add x-projection axes on top-left
     if xproj:
         xpax = fig.add_axes([left, bottom+prim_hit+pad, prim_wid, xpro_hit-pad])
-        xpax.set(xscale=scale[0], yscale=histScale, ylabel=histLab, xlabel=labels[0])
+        xpax.set(xscale=scale[0], yscale=histScale, ylabel=histLab)
+        xpax.set_xlabel(labels[0], labelpad=fs*0.6)
         xpax.xaxis.set_label_position('top')
+        # xpax.xaxis.label_pad = 30
         xpax.tick_params(axis='both', which='major', labelsize=fs)
         plot_core.setGrid(xpax, True, axis='y')
 
@@ -644,7 +647,8 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
             ov_size = [ypro_wid - pad, xpro_hit - pad]
 
         ovax = fig.add_axes(ov_loc + ov_size)
-        ovax.set(xscale=histScale, xlabel=histLab, ylabel='Number')
+        ovax.set(xscale=histScale, ylabel='Number')
+        ovax.set_xlabel(histLab, labelpad=fs*0.6)
         ovax.tick_params(axis='both', which='major', labelsize=fs)
         # Move the y ticks/labels to the right
         ovax.yaxis.tick_right()
