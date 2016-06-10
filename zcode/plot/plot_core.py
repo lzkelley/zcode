@@ -59,7 +59,7 @@ import zcode.math as zmath
 import zcode.inout as zio
 
 __all__ = ['setAxis', 'twinAxis', 'setLim', 'set_ticks', 'zoom', 'stretchAxes', 'text', 'legend',
-           'unifyAxesLimits', 'color_cycle',
+           'unifyAxesLimits', 'color_cycle', 'transform',
            'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
            'line_label', 'full_extent', 'position_to_extent', 'backdrop', '_histLine']
@@ -71,10 +71,10 @@ _COLOR_SET = ['blue', 'red', 'green', 'purple',
               'orange', 'cyan', 'brown', 'gold', 'pink',
               'forestgreen', 'grey', 'olive', 'coral', 'yellow']
 
-_COLOR_SET_XKCD = ["blue", "red", "green", "purple", "orange",
-                   "azure", "brown", "pink", "magenta", "windows blue",
-                   "amber", "teal", "light blue", "rose", "turquoise",
-                   "lavender", "slate blue", "cyan", "lime green", "greyish",
+_COLOR_SET_XKCD = ["blue", "red", "green", "purple", "cyan", "orange",
+                   "pink", "brown", "magenta", "amber", "slate blue",
+                   "teal", "light blue", "lavender", "rose", "turquoise", "azure",
+                   "lime green", "greyish", "windows blue",
                    "faded green", "mustard", "brick red", "dusty purple"]
 
 _LW_OUTLINE = 0.8
@@ -122,8 +122,6 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     ax.tick_params(axis=axis, which='major', size=ts)
 
     # Set Grid Lines
-    # ax.grid(grid, which='both', axis=axis)
-    # setGrid(ax, grid, axis=axis)
     setGrid(ax, grid, axis='both')
 
     if(axis == 'x'):
@@ -400,14 +398,43 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     return ax
 
 
-def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=None, **kwargs):
+def transform(ax, trans, fig=None):
+    """Create a (blended) transformation.
+    """
+    if np.size(trans) == 1 and isinstance(trans, six.string_types):
+        trans = [trans]
+    elif np.size(trans) != 2:
+        raise ValueError("`trans` = '{}' must be a string or pair of strings.".format(trans))
+
+    forms = []
+    for tt in trans:
+        if tt.startswith('ax'):
+            forms.append(ax.transAxes)
+        elif tt.startswith('data'):
+            forms.append(ax.transData)
+        elif tt.startswith('fig'):
+            if fig is None:
+                raise ValueError("trans = '{}' requires a `fig` object".format(tt))
+            forms.append(fig.transFigure)
+        else:
+            raise ValueError("Unrecognized transform '{}'".format(tt))
+
+    if len(forms) == 1:
+        transform = forms[0]
+    else:
+        transform = mpl.transforms.blended_transform_factory(forms[0], forms[1])
+
+    return transform
+
+
+def text(art, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=None, **kwargs):
     """Add text to figure.
 
     Wrapper for the `matplotlib.figure.Figure.text` method.
 
     Arguments
     ---------
-    fig : `matplotlib.figure.Figure` object,
+    art : `matplotlib.figure.Figure` or `matplotlib.axes.Axes` object,
     pstr : str,
         String to be printed.
     x : float,
@@ -434,10 +461,10 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
     """
     # if trans is None: trans = fig.transFigure
     if trans is None:
-        if isinstance(fig, mpl.figure.Figure):
-            trans = fig.transFigure
-        elif isinstance(fig, mpl.axes.Axes):
-            trans = fig.transAxes
+        if isinstance(art, mpl.figure.Figure):
+            trans = art.transFigure
+        elif isinstance(art, mpl.axes.Axes):
+            trans = art.transAxes
 
     if valign == 'upper':
         warnings.warn("Use `'top'` not `'upper'`!")
@@ -447,14 +474,14 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
-    txt = fig.text(x, y, pstr, size=fs, transform=trans,  # family='monospace',
+    txt = art.text(x, y, pstr, size=fs, transform=trans,  # family='monospace',
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
 
 
 def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs=12, trans=None,
-           fs_title=None, loc=None, mono=False, **kwargs):
+           fs_title=None, loc=None, mono=False, zorder=None, **kwargs):
     """Add a legend to the given figure.
 
     Wrapper for the `matplotlib.pyplot.Legend` method.
@@ -558,6 +585,9 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
     if fs_title is not None:
         plt.setp(leg.get_title(), fontsize=fs_title)
+
+    if zorder is not None:
+        leg.set_zorder(10)
 
     return leg
 
@@ -744,14 +774,16 @@ def color_set(num, black=False, cset='xkcd'):
     return colors[:num]
 
 
-def setGrid(ax, val, axis='both', below=True):
+def setGrid(ax, val=True, axis='both', below=True, major=True, minor=True):
     """Configure the axes' grid.
     """
     ax.grid(False, which='both', axis='both')
     ax.set_axisbelow(below)
     if val:
-        ax.grid(True, which='major', axis=axis, c='0.50', ls='-')
-        ax.grid(True, which='minor', axis=axis, c='0.75', ls='-')
+        if major:
+            ax.grid(True, which='major', axis=axis, c='0.60', ls='-')
+        if minor:
+            ax.grid(True, which='minor', axis=axis, c='0.85', ls='-')
     return
 
 
@@ -1251,7 +1283,7 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
     return linePatch, confPatches
 
 
-def line_label(ax, pos, label, dir='v', loc='top',
+def line_label(ax, pos, label, dir='v', loc='top', xx=None, yy=None, ha=None, va=None,
                line_kwargs={}, text_kwargs={}, dashes=None, rot=None):
     """Plot a vertical line, and give it a label outside the axes.
 
@@ -1298,50 +1330,56 @@ def line_label(ax, pos, label, dir='v', loc='top',
 
     # Set alignment
     if tloc.startswith('l'):
-        ha = 'right'
-        va = 'center'
+        _ha = 'right'
+        _va = 'center'
     elif tloc.startswith('r'):
-        ha = 'left'
-        va = 'center'
+        _ha = 'left'
+        _va = 'center'
     elif tloc.startswith('t'):
-        ha = 'center'
-        va = 'bottom'
+        _ha = 'center'
+        _va = 'bottom'
     elif tloc.startswith('b'):
-        ha = 'center'
-        va = 'top'
+        _ha = 'center'
+        _va = 'top'
+
+    if ha is None: ha = _ha
+    if va is None: va = _va
 
     # Add vertical line
     if VERT:
         ll = ax.axvline(pos, **line_kwargs)
         trans = mpl.transforms.blended_transform_factory(ax.transData, ax.transAxes)
         if tloc.startswith('l'):
-            xx = pos
-            yy = 0.5
+            _xx = pos
+            _yy = 0.5
         elif tloc.startswith('r'):
-            xx = pos
-            yy = 0.5
+            _xx = pos
+            _yy = 0.5
         elif tloc.startswith('t'):
-            xx = pos
-            yy = 1.0 + _PAD
+            _xx = pos
+            _yy = 1.0 + _PAD
         elif tloc.startswith('b'):
-            xx = pos
-            yy = 0.0 - _PAD
+            _xx = pos
+            _yy = 0.0 - _PAD
     # Add horizontal line
     else:
         ll = ax.axhline(pos, **line_kwargs)
         trans = mpl.transforms.blended_transform_factory(ax.transAxes, ax.transData)
         if tloc.startswith('l'):
-            xx = 0.0 - _PAD
-            yy = pos
+            _xx = 0.0 - _PAD
+            _yy = pos
         elif tloc.startswith('r'):
-            xx = 1.0 + _PAD
-            yy = pos
+            _xx = 1.0 + _PAD
+            _yy = pos
         elif tloc.startswith('t'):
-            xx = 0.5
-            yy = pos
+            _xx = 0.5
+            _yy = pos
         elif tloc.startswith('b'):
-            xx = 0.5
-            yy = pos
+            _xx = 0.5
+            _yy = pos
+
+    if xx is None: xx = _xx
+    if yy is None: yy = _yy
 
     if dashes: ll.set_dashes(dashes)
 
