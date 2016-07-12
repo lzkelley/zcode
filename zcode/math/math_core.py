@@ -2,13 +2,14 @@
 
 Functions
 ---------
+-   argextrema               - Find the index of the extrema in the input array.
+-   argnearest               - Find the indices in one array closest to those in a second array.
 -   around                   - Round the given value to arbitrary decimal points, in any direction.
 -   contiguousInds           - Find the largest segment of contiguous array values
 -   within                   - Test whether a value is within the bounds of another.
 -   indsWithin               - Find the indices within the given extrema.
 -   minmax                   - Find the min and max of given values.
 -   really1d                 - Test whether an array_like is really 1D (e.g. not jagged array).
--   argextrema               - Find the index of the extrema in the input array.
 -   spacing                  - Create an even spacing between extrema from given data.
 -   asBinEdges               - Create bin-edges if the given `bins` do not already give them.
 -   strArray                 - Create a string representation of a numerical array.
@@ -73,6 +74,32 @@ def argextrema(arr, type, filter=None):
     # Convert to index wrt the full input array
     ind = np.where(sel)[0][ind]
     return ind
+
+
+def argnearest(options, targets):
+    """Find the indices of elements in the `options` array closest to those in the `targets` array.
+
+    Arguments
+    ---------
+    options : (N,) array of scalar
+        Find indices for elements in this array.
+    targets : (M,) array of scalar
+        Look for elements in the `options` array closest to these `targets` values.
+
+    Returns
+    -------
+    idx : (M,) array of int
+        Indices of `options` nearest `targets`.  May include duplicates.
+
+    """
+    options = np.atleast_1d(options)
+    targets = np.atleast_1d(targets)
+    idx = np.searchsorted(options, targets, side="left").clip(max=options.size-1)
+    dist_lo = np.fabs(targets - options[idx-1])
+    dist_hi = np.fabs(targets - options[idx])
+    mask = (idx > 0) & ((idx == options.size) | (dist_lo < dist_hi))
+    idx = idx - mask
+    return idx
 
 
 def around(val, decimals=0, scale='log', dir='near'):
