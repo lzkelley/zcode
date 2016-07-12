@@ -26,8 +26,22 @@ Future / To-Do
 
 Current
 -------
-
-
+-   inout/
+    +   inout_core.py
+        -   `npzToDict`
+            +   BUG: issue loading npz across python2-python3 transition.  Attempt to resolve.
+-   math/
+    +   math_core.py
+        -   `argnearest` [new-function]
+            +   Find the arguments in one array closest to those in another.
+    +   tests/
+        -   test_math_core.py
+            +   `test_argnearest` [new-function]
+                -   Test the new `argnearest` function.
+-   plot/
+    +   Hist2D.py
+        -   `plot2DHist`
+            +   BUG: fixed issue where grid indices were reversed -- caused errors in non-square grids.
 
 
 [0.0.8] - 2016/05/15
