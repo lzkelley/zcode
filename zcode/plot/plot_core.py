@@ -112,8 +112,8 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
     """
 
-    assert axis in ['x', 'y'],                          "``axis`` must be `x` or `y`!"
-    assert trans in ['axes', 'figure'],                  "``trans`` must be `axes` or `figure`!"
+    assert axis in ['x', 'y'], "``axis`` must be `x` or `y`!"
+    assert trans in ['axes', 'figure'], "``trans`` must be `axes` or `figure`!"
     assert side in VALID_SIDES, "``side`` must be in '%s'" % (VALID_SIDES)
 
     # Set tick colors and font-sizes
@@ -124,70 +124,75 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     # Set Grid Lines
     setGrid(ax, grid, axis='both')
 
-    if(axis == 'x'):
+    if axis == 'x':
         ax.xaxis.label.set_color(c)
         offt = ax.get_xaxis().get_offset_text()
 
-        if(side is None):
-            if(pos is None):
+        if side is None:
+            if pos is None:
                 side = 'bottom'
             else:
-                if(pos < 0.5): side = 'bottom'
-                else:            side = 'top'
+                if pos < 0.5:
+                    side = 'bottom'
+                else:
+                    side = 'top'
 
-        if(pos is not None):
+        if pos is not None:
             offt.set_y(pos)
             ax.xaxis.set_label_position(side)
             ax.xaxis.set_ticks_position(side)
 
-        if(lim is not None):
-            if(np.size(lim) > 2): lim = zmath.minmax(lim)
+        if lim is not None:
+            if np.size(lim) > 2: lim = zmath.minmax(lim)
             ax.set_xlim(lim)
 
-        if(invert): ax.invert_xaxis()
-        if(not ticks):
+        if invert: ax.invert_xaxis()
+        if not ticks:
             for tlab in ax.xaxis.get_ticklabels(): tlab.set_visible(False)
 
     else:
         ax.yaxis.label.set_color(c)
         offt = ax.get_yaxis().get_offset_text()
 
-        if(side is None):
-            if(pos is None):
+        if side is None:
+            if pos is None:
                 side = 'left'
             else:
-                if(pos < 0.5): side = 'left'
-                else:            side = 'right'
+                if pos < 0.5:
+                    side = 'left'
+                else:
+                    side = 'right'
 
-        if(pos is not None):
+        if pos is not None:
             offt.set_x(pos)
 
         ax.yaxis.set_label_position(side)
         ax.yaxis.set_ticks_position(side)
 
-        if(lim is not None): ax.set_ylim(lim)
+        if lim is not None: ax.set_ylim(lim)
 
-        if(invert): ax.invert_yaxis()
-        if(not ticks):
+        if invert:
+            ax.invert_yaxis()
+        if not ticks:
             for tlab in ax.yaxis.get_ticklabels(): tlab.set_visible(False)
 
     # Set Spine colors
     ax.spines[side].set_color(c)
-    if(pos is not None):
+    if pos is not None:
         ax.set_frame_on(True)
         ax.spines[side].set_position((trans, pos))
         ax.spines[side].set_visible(True)
         ax.patch.set_visible(False)
 
     # Set Axis Scaling
-    if(scale is not None): _setAxis_scale(ax, axis, scale, thresh=thresh)
+    if scale is not None: _setAxis_scale(ax, axis, scale, thresh=thresh)
 
     # Set Axis Label
     _setAxis_label(ax, axis, label, fs=fs, c=c)
 
-    if(stretch != 1.0):
-        if(axis == 'x'): ax = stretchAxes(ax, xs=stretch)
-        elif(axis == 'y'): ax = stretchAxes(ax, ys=stretch)
+    if stretch != 1.0:
+        if axis == 'x': ax = stretchAxes(ax, xs=stretch)
+        elif axis == 'y': ax = stretchAxes(ax, ys=stretch)
 
     offt.set_color(c)
     return ax
@@ -196,10 +201,10 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 def twinAxis(ax, axis='x', pos=1.0, **kwargs):
     """
     """
-    if(axis == 'x'):
+    if axis == 'x':
         tw = ax.twinx()
         setax = 'y'
-    elif(axis == 'y'):
+    elif axis == 'y':
         tw = ax.twiny()
         setax = 'x'
     else:
@@ -245,10 +250,10 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
     AT_VALID = [AT_LEAST, AT_EXACTLY, AT_MOST]
     assert at in AT_VALID, "``at`` must be in {'%s'}!" % (str(AT_VALID))
 
-    if(axis == 'y'):
+    if axis == 'y':
         get_lim = ax.get_ylim
         set_lim = ax.set_ylim
-    elif(axis == 'x'):
+    elif axis == 'x':
         get_lim = ax.get_xlim
         set_lim = ax.set_xlim
     else:
@@ -257,54 +262,54 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
     lims = np.array(get_lim())
 
     # Set Range/Span of Limits
-    if(range):
-        if(lo is not None):
-            if(at == AT_EXACTLY):
+    if range:
+        if lo is not None:
+            if at == AT_EXACTLY:
                 lims[0] = lims[1]/lo
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[0] = np.max([lims[0], lims[0]/lo])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[0] = np.min([lims[0], lims[0]/lo])
-        elif(hi is not None):
-            if(at == AT_EXACTLY):
+        elif hi is not None:
+            if at == AT_EXACTLY:
                 lims[1] = lims[1]*hi
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[1] = np.max([lims[1], lims[1]*hi])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[1] = np.min([lims[1], lims[1]*hi])
         else:
             raise RuntimeError("``lo`` or ``hi`` must be provided!")
 
     # Set Limits explicitly
     else:
-        if(lo is not None):
-            if(at == AT_EXACTLY):
+        if lo is not None:
+            if at == AT_EXACTLY:
                 lims[0] = lo
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[0] = np.max([lims[0], lo])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[0] = np.min([lims[0], lo])
             else:
                 raise ValueError("Unrecognized `at` = '%s'" % (at))
-        elif(data is not None):
+        elif data is not None:
             lims[0] = np.min(data)
 
-        if(hi is not None):
-            if(at == AT_EXACTLY):
+        if hi is not None:
+            if at == AT_EXACTLY:
                 lims[1] = hi
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[1] = np.max([lims[1], hi])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[1] = np.min([lims[1], hi])
             else:
                 raise ValueError("Unrecognized `at` = '%s'" % (at))
-        elif(data is not None):
+        elif data is not None:
             lims[1] = np.max(data)
 
     # Actually set the axes limits
     set_lim(lims)
-    if(invert):
-        if(axis == 'x'): ax.invert_xaxis()
+    if invert:
+        if axis == 'x': ax.invert_xaxis()
         else:            ax.invert_yaxis()
 
     return
@@ -333,11 +338,11 @@ def zoom(ax, loc, axis='x', scale=2.0):
     """
 
     # Choose functions based on target axis
-    if(axis == 'x'):
+    if axis == 'x':
         axScale = ax.get_xscale()
         lim = ax.get_xlim()
         set_lim = ax.set_xlim
-    elif(axis == 'y'):
+    elif axis == 'y':
         axScale = ax.get_yscale()
         lim = ax.get_ylim()
         set_lim = ax.set_ylim
@@ -347,15 +352,15 @@ def zoom(ax, loc, axis='x', scale=2.0):
     lim = np.array(lim)
 
     # Determine axis scaling
-    if(axScale.startswith('lin')):
+    if axScale.startswith('lin'):
         log = False
-    elif(axScale.startswith('log')):
+    elif axScale.startswith('log'):
         log = True
     else:
         raise ValueError("``axScale`` '%s' not implemented!" % (str(axScale)))
 
     # Convert to log if appropriate
-    if(log):
+    if log:
         lim = np.log10(lim)
         loc = np.log10(loc)
 
@@ -363,7 +368,7 @@ def zoom(ax, loc, axis='x', scale=2.0):
     delta = np.diff(zmath.minmax(lim))[0]
     lim = np.array([loc - (0.5/scale)*delta, loc + (0.5/scale)*delta])
     # Convert back to linear if appropriate
-    if(log): lim = np.power(10.0, lim)
+    if log: lim = np.power(10.0, lim)
     set_lim(lim)
 
     return lim
@@ -380,8 +385,8 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     xlims = np.array(ax.get_xlim())
     ylims = np.array(ax.get_ylim())
 
-    if(xlog): xlims = np.log10(xlims)
-    if(ylog): ylims = np.log10(ylims)
+    if xlog: xlims = np.log10(xlims)
+    if ylog: ylims = np.log10(ylims)
 
     xlims = [xlims[0] + 0.5*(1.0-xs)*(xlims[1]-xlims[0]),
              xlims[1] + 0.5*(1.0-xs)*(xlims[0]-xlims[1])]
@@ -389,8 +394,8 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     ylims = [ylims[0] + 0.5*(1.0-ys)*(ylims[1]-ylims[0]),
              ylims[1] + 0.5*(1.0-ys)*(ylims[0]-ylims[1])]
 
-    if(xlog): xlims = np.power(10.0, xlims)
-    if(ylog): ylims = np.power(10.0, ylims)
+    if xlog: xlims = np.power(10.0, xlims)
+    if ylog: ylims = np.power(10.0, ylims)
 
     ax.set_xlim(xlims)
     ax.set_ylim(ylims)
@@ -1015,7 +1020,7 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
     line, = ax.plot(xval, yval, **kwargs)
 
     # Add yerror-bars
-    if(yerr is not None):
+    if yerr is not None:
         xmid = zmath.midpoints(edges)
 
         if nonzero:
@@ -1049,7 +1054,7 @@ def plotSegmentedLine(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], lw=
     # conver to normalization
     norm = plt.Normalize(norm[0], norm[1])
 
-    if(zz is None): zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
+    if zz is None: zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
     else:             zz = np.asarray(zz)
 
     segments = _make_segments(xx, yy)
@@ -1067,15 +1072,15 @@ def plotScatter(ax, xx, yy, scalex='log', scaley='log',
     """
     COL = COL_CORR
 
-    if(size is None): size = [30, 6]
-    if(color is None): color = ['0.25', COL]
-    if(alpha is None): alpha = [0.5, 0.8]
+    if size is None: size = [30, 6]
+    if color is None: color = ['0.25', COL]
+    if alpha is None: alpha = [0.5, 0.8]
 
     ax.scatter(xx, yy, s=size[0], color=color[0], alpha=alpha[0], **kwargs)
     pnts = ax.scatter(xx, yy, s=size[1], color=color[1], alpha=alpha[1], **kwargs)
 
     # Add Contours
-    if(cont):
+    if cont:
         NUM = 4
         CMAP = 'jet'
         res = 0.3*np.sqrt(len(xx))
@@ -1506,10 +1511,10 @@ def backdrop(fig, obj, pad=0.0, union=False, group=False, draw=True, **kwargs):
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
-    if(scale.startswith('lin')): scale = 'linear'
-    if(scale == 'symlog'): thresh = 1.0
-    if(axis == 'x'): ax.set_xscale(scale, linthreshx=thresh)
-    elif(axis == 'y'): ax.set_yscale(scale, linthreshy=thresh)
+    if scale.startswith('lin'): scale = 'linear'
+    if scale == 'symlog': thresh = 1.0
+    if axis == 'x': ax.set_xscale(scale, linthreshx=thresh)
+    elif axis == 'y': ax.set_yscale(scale, linthreshy=thresh)
     else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
     return
 
@@ -1580,13 +1585,13 @@ def rescale(ax, which='both'):
     """
     """
 
-    if(which == 'x'):
+    if which == 'x':
         scaley = False
         scalex = True
-    elif(which == 'y'):
+    elif which == 'y':
         scaley = True
         scalex = True
-    elif(which == 'both'):
+    elif which == 'both':
         scaley = True
         scalex = True
     else:
