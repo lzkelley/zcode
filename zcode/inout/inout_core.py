@@ -335,18 +335,38 @@ def npzToDict(npz):
        Output dictionary with key-values from npz file.
 
     """
-    if(isinstance(npz, six.string_types)): npz = np.load(npz)
 
+    try:
+        if isinstance(npz, six.string_types):
+            # Use `fix_imports` to try to resolve python2 to python3 issues.
+            _npz = np.load(npz, fix_imports=True)
+        else:
+            _npz = npz
+        newDict = _convert_npz_to_dict(_npz)
+
+    except Exception:
+        warnings.warn("Normal load of `{}` failed ... trying different encoding".format(
+            npz))
+        if isinstance(npz, six.string_types):
+            # Use `fix_imports` to try to resolve python2 to python3 issues.
+            _npz = np.load(npz, fix_imports=True, encoding="bytes")
+        else:
+            _npz = npz
+        newDict = _convert_npz_to_dict(_npz)
+
+    return newDict
+
+
+def _convert_npz_to_dict(npz):
     newDict = {}
     for key in list(npz.keys()):
         vals = npz[key]
         # Extract objects (e.g. dictionaries) packaged into size=1 arrays
-        if(np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) and
-           vals.dtype.type is np.object_):
+        if ((np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) and
+             vals.dtype.type is np.object_)):
             vals = vals.item()
 
         newDict[key] = vals
-
     return newDict
 
 
@@ -394,26 +414,26 @@ def combineFiles(inFilenames, outFilename, verbose=False):
     nums = len(inFilenames)
 
     # Open output file for writing
-    if(verbose): pbar = getProgressBar(nums)
+    if verbose: pbar = getProgressBar(nums)
     with open(outFilename, 'w') as outfil:
 
         # Iterate over input files
         for ii, inname in enumerate(inFilenames):
             inSize += os.path.getsize(inname)
-            if(verbose): pbar.update(ii)
+            if verbose: pbar.update(ii)
 
             # Open input file for reading
             with open(inname, 'r') as infil:
                 # Iterate over input file lines
                 for line in infil: outfil.write(line)
 
-    if(verbose): pbar.finish()
+    if verbose: pbar.finish()
 
     outSize = os.path.getsize(outFilename)
     inStr = bytesString(inSize)
     outStr = bytesString(outSize)
 
-    if(verbose): print(" - - - Total input size = %s, output size = %s" % (inStr, outStr))
+    if verbose: print("Total input size = %s, output size = %s" % (inStr, outStr))
     return
 
 
