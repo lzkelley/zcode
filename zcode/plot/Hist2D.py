@@ -521,8 +521,8 @@ def plot2DHist(ax, xvals, yvals, hist,
                 overlay.shape, hist.shape))
 
         # Remember these are transposes
-        for ii in range(xgrid.shape[0] - 1):
-            for jj in range(xgrid.shape[1] - 1):
+        for ii in range(xgrid.shape[1] - 1):
+            for jj in range(xgrid.shape[0] - 1):
                 if scale[0].startswith('log'):
                     xx = np.sqrt(xgrid[jj, ii] * xgrid[jj, ii+1])
                 else:
