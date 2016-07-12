@@ -26,6 +26,19 @@ class TestMathCore(object):
         cls.r1 = np.random.random(cls.SIZE)
         cls.r2 = np.random.uniform(-1.0, 1.0, size=cls.SIZE)
 
+    def test_argnearest(self):
+        from zcode.math.math_core import argnearest
+        xx = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
+        yy = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
+        correct = [0, 0, 1, 2, 4, 5, 7, 9, 10, 10]
+        retval = argnearest(xx, yy)
+        assert_true(np.all(correct == retval))
+        print("Options = {}".format(xx))
+        print("Targets = {}".format(yy))
+        print("retval  = {}".format(retval))
+        print("correct = {}".format(correct))
+        return
+
     def test_spacing(self):
         from zcode.math.math_core import spacing
 
