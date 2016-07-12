@@ -82,8 +82,8 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
     # Determine and Set Logging Levels
     if fileLevel is None: fileLevel = logging.DEBUG
     if strLevel is None: strLevel = logging.WARNING
-    #     Logger object must be at minimum level
-    logger.setLevel(np.min([fileLevel, strLevel]))
+    #     Logger object must be at minimum level (`np` int doesnt work, need regular int)
+    logger.setLevel(int(np.min([fileLevel, strLevel]).astype(int)))
 
     if dateFmt is None: dateFmt = '%Y/%m/%d %H:%M:%S'
 
