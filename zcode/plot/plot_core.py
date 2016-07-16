@@ -432,7 +432,7 @@ def transform(ax, trans, fig=None):
     return transform
 
 
-def text(art, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=None, **kwargs):
+def text(art, pstr, loc=None, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=None, **kwargs):
     """Add text to figure.
 
     Wrapper for the `matplotlib.figure.Figure.text` method.
@@ -471,6 +471,20 @@ def text(art, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         elif isinstance(art, mpl.axes.Axes):
             trans = art.transAxes
 
+    # If a location string is given, convert to parameters
+    if loc is not None:
+        x, y, halign, valign = _loc_str_to_pars(loc, x=x, y=y, halign=halign, valign=valign)
+
+    # Set default values
+    if x is None:
+        x = 0.5
+    if y is None:
+        y = 1 - _PAD
+    if halign is None:
+        halign = 'center'
+    if valign is None:
+        valign = 'top'
+
     if valign == 'upper':
         warnings.warn("Use `'top'` not `'upper'`!")
         valign = 'top'
@@ -479,7 +493,7 @@ def text(art, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         warnings.warn("Use `'bottom'` not `'lower'`!")
         valign = 'bottom'
 
-    txt = art.text(x, y, pstr, size=fs, transform=trans,  # family='monospace',
+    txt = art.text(x, y, pstr, size=fs, transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
@@ -549,28 +563,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
 
     # Override alignment using `loc` argument
     if loc is not None:
-        if loc[0] == 't' or loc[0] == 'u':
-            valign = 'upper'
-            if y is None: y = 1 - _PAD
-        elif loc[0] == 'b' or loc[0] == 'l':
-            valign = 'lower'
-            if y is None: y = _PAD
-        elif loc[0] == 'c':
-            valign = 'center'
-            if y is None: y = 0.5
-        else:
-            raise ValueError("Unrecognized `loc`[0] = '{}'.".format(loc[0]))
-        if loc[1] == 'l':
-            halign = 'left'
-            if x is None: x = _PAD
-        elif loc[1] == 'r':
-            halign = 'right'
-            if x is None: x = 1 - _PAD
-        elif loc[1] == 'c':
-            halign = 'center'
-            if x is None: x = 0.5
-        else:
-            raise ValueError("Unrecognized `loc`[1] = '{}'.".format(loc[1]))
+        x, y, halign, valign = _loc_str_to_pars(loc)
 
     if valign == 'top':
         valign = 'upper'
@@ -1579,6 +1572,60 @@ def _get_cmap(cmap):
         return cmap
     else:
         raise ValueError("`cmap` '{}' is not a valid colormap or colormap name".format(cmap))
+
+
+def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
+    """Convert from a string location specification to the specifying parameters.
+
+    If any of the specifying parameters: {x, y, halign, valign}, are 'None', they are set to
+    default values.
+
+    Returns
+    -------
+    x : float
+    y : float
+    halign : str
+    valign : str
+
+    """
+    if loc[0] == 't' or loc[0] == 'u':
+        if valign is None:
+            valign = 'upper'
+        if y is None:
+            y = 1 - pad
+    elif loc[0] == 'b' or loc[0] == 'l':
+        if valign is None:
+            valign = 'lower'
+        if y is None:
+            y = pad
+    elif loc[0] == 'c':
+        if valign is None:
+            valign = 'center'
+        if y is None:
+            y = 0.5
+    else:
+        raise ValueError("Unrecognized `loc`[0] = '{}'.".format(loc[0]))
+
+    if loc[1] == 'l':
+        if halign is None:
+            halign = 'left'
+        if x is None:
+            x = pad
+    elif loc[1] == 'r':
+        if halign is None:
+            halign = 'right'
+        if x is None:
+            x = 1 - pad
+    elif loc[1] == 'c':
+        if halign is None:
+            halign = 'center'
+        if x is None:
+            x = 0.5
+    else:
+        raise ValueError("Unrecognized `loc`[1] = '{}'.".format(loc[1]))
+
+    return x, y, halign, valign
+
 
 '''
 def rescale(ax, which='both'):

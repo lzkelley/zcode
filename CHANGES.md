@@ -42,6 +42,9 @@ Current
     +   Hist2D.py
         -   `plot2DHist`
             +   BUG: fixed issue where grid indices were reversed -- caused errors in non-square grids.
+    +   plot_core.py
+        -   `text`
+            +   ENH: now accepts a `loc` argument, a two-letter string which describes the location at which the text will be placed.
 
 
 [0.0.8] - 2016/05/15
