@@ -127,10 +127,11 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
     ---------
     vals : array_like of scalars
         Data over which to calculate confidence intervals.
+        This can be an arbitrarily shaped ndarray.
     ci : (M,) array_like of floats
         List of desired confidence intervals as fractions (e.g. `[0.68, 0.95]`)
-    axis : int
-        Axis over which to calculate confidence intervals.
+    axis : int or None
+        Axis over which to calculate confidence intervals, or 'None' to marginalize over all axes.
     filter : str or `None`
         Filter the input array with a boolean comparison to zero.
         If no values remain after filtering, ``NaN, NaN`` is returned.
@@ -140,10 +141,16 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
     med : scalar
         Median of the input data.
         `None` if there are no values (e.g. after filtering).
-    conf : ndarray of scalar
+    conf : ([L, ]M, 2) ndarray of scalar
         Bounds for each confidence interval.  Shape depends on the number of confidence intervals
-        passed in `ci`, and also the input shape of `vals`.
+        passed in `ci`, and the input shape of `vals`.
         `None` if there are no values (e.g. after filtering).
+        If `vals` is 1D or `axis` is 'None', then the output shape will be (M, 2).
+        If `vals` has more than one-dimension, and `axis` is not 'None', then the shape `L`
+        will be the shape of `vals`, minus the `axis` axis.
+        For example,
+            if ``vals.shape = (4,3,5)` and `axis=1`, then `L = (4,5)`
+            the final output shape will be: (4,5,M,2).
 
     """
     ci = np.atleast_1d(ci)
@@ -157,10 +164,17 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
 
     # Calculate confidence-intervals and median
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
+    # This produces an ndarray with shape `[M, 2(, L)]`
+    #    If ``axis is None`` or `np.ndim(vals) == 1` then the shape will be simply `[M, 2]`
+    #    Otherwise, `L` will be the shape of `vals` without axis `axis`.
     conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
              np.percentile(vals, 100.0*cdf[1], axis=axis)]
             for cdf in cdf_vals]
     conf = np.array(conf)
+    # Reshape from `[M, 2, L]` to `[L, M, 2]`
+    if np.ndim(vals) > 1 and axis is not None:
+        conf = np.moveaxis(conf, 2, 0)
+
     med = np.percentile(vals, 50.0, axis=axis)
     if len(conf) == 1:
         conf = conf[0]

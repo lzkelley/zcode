@@ -34,6 +34,9 @@ Current
     +   math_core.py
         -   `argnearest` [new-function]
             +   Find the arguments in one array closest to those in another.
+    +   statistic.py
+        -   `confidence_intervals`
+            +   BUG: fixed issue where multidimensional array input was leading to incorrectly shaped output arrays.
     +   tests/
         -   test_math_core.py
             +   `test_argnearest` [new-function]
