@@ -432,7 +432,8 @@ def transform(ax, trans, fig=None):
     return transform
 
 
-def text(art, pstr, loc=None, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=None, **kwargs):
+def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
+         fs=16, trans=None, **kwargs):
     """Add text to figure.
 
     Wrapper for the `matplotlib.figure.Figure.text` method.
