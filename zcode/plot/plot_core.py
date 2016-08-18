@@ -9,6 +9,7 @@ Functions
 -   zoom                 - Zoom-in at a certain location on the given axes.
 -   stretchAxes          - Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
 -   text                 - Add text to figure.
+-   label_line           - Add text to line
 -   legend               - Add a legend to the given figure.
 -   unifyAxesLimits      - Set limits on all given axes to match global extrema.
 -   color_cycle          - Create a range of colors.
@@ -58,11 +59,15 @@ import seaborn.apionly as sns
 import zcode.math as zmath
 import zcode.inout as zio
 
-__all__ = ['setAxis', 'twinAxis', 'setLim', 'set_ticks', 'zoom', 'stretchAxes', 'text', 'legend',
+__all__ = ['setAxis', 'twinAxis', 'setLim', 'set_ticks', 'zoom',
+           'stretchAxes', 'text', 'label_line', 'legend',
            'unifyAxesLimits', 'color_cycle', 'transform',
-           'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
-           'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
-           'line_label', 'full_extent', 'position_to_extent', 'backdrop', '_histLine']
+           'colorCycle', 'colormap', 'color_set', 'setGrid',
+           'skipTicks', 'saveFigure', 'strSciNot',
+           'plotHistLine', 'plotSegmentedLine', 'plotScatter',
+           'plotHistBars', 'plotConfFill',
+           'line_label', 'full_extent', 'position_to_extent',
+           'backdrop', '_histLine']
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -498,6 +503,86 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
+
+
+def label_line(ax, line, label, color='0.5', fs=14, halign='left', scale='linear'):
+    """Add an annotation to the given line with appropriate placement and rotation.
+
+    Based on code from:
+        [How to rotate matplotlib annotation to match a line?]
+        (http://stackoverflow.com/a/18800233/230468)
+        User: [Adam](http://stackoverflow.com/users/321772/adam)
+
+    Arguments
+    ---------
+    ax : `matplotlib.axes.Axes` object
+        Axes on which the label should be added.
+    line : `matplotlib.lines.Line2D` object
+        Line which is being labeled.
+    label : str
+        Text which should be drawn as the label.
+    ...
+
+    Returns
+    -------
+    text : `matplotlib.text.Text` object
+
+    """
+    xlim = np.array(ax.get_xlim())
+    ylim = np.array(ax.get_ylim())
+
+    xdata, ydata = line.get_data()
+    x1 = xdata[0]
+    x2 = xdata[-1]
+    y1 = ydata[0]
+    y2 = ydata[-1]
+    # Limit the edges to the plotted area
+    x1, x2 = zmath.limit([x1, x2], xlim)
+    y1, y2 = np.interp([x1, x2], xdata, ydata)
+    y1, y2 = zmath.limit([y1, y2], ylim)
+    x1, x2 = np.interp([y1, y2], ydata, xdata)
+
+    log = _scale_to_log_flag(scale)
+
+    if halign.startswith('l'):
+        xx = x1
+        halign = 'left'
+    elif halign.startswith('r'):
+        xx = x2
+        halign = 'right'
+    elif halign.startswith('c'):
+        xx = zmath.midpoints([x1, x2], log=log)
+        halign = 'center'
+    else:
+        raise ValueError("Unrecognized `halign` = '{}'.".format(halign))
+
+    yy = np.interp(xx, xdata, ydata)
+    # print(xx, yy)
+    # # Limit to displayed coordinates
+    # yy = np.maximum(yy, ylim[0])
+    # yy = np.minimum(yy, ylim[1])
+    # print("\t", xx, yy)
+    # xx = np.interp(yy, ydata, xdata)
+    # print("\t", xx, yy)
+
+    # xytext = (10, 10)
+    xytext = (0, 0)
+    text = ax.annotate(label, xy=(xx, yy), xytext=xytext, textcoords='offset points',
+                       size=fs, color=color, zorder=1,
+                       horizontalalignment=halign, verticalalignment='center_baseline')
+
+    sp1 = ax.transData.transform_point((x1, y1))
+    sp2 = ax.transData.transform_point((x2, y2))
+
+    rise = (sp2[1] - sp1[1])
+    run = (sp2[0] - sp1[0])
+
+    slope_degrees = np.degrees(np.arctan2(rise, run))
+    text.set_rotation_mode('anchor')
+    text.set_rotation(slope_degrees)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return text
 
 
 def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs=12, trans=None,

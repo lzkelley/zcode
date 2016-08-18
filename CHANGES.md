@@ -34,6 +34,8 @@ Current
     +   math_core.py
         -   `argnearest` [new-function]
             +   Find the arguments in one array closest to those in another.
+        -   `limit` [new-function]
+            +   Limit the given value(s) to the given extrema. 
     +   statistic.py
         -   `confidence_intervals`
             +   BUG: fixed issue where multidimensional array input was leading to incorrectly shaped output arrays.
@@ -48,6 +50,8 @@ Current
         -   `plot2DHist`
             +   BUG: fixed issue where grid indices were reversed -- caused errors in non-square grids.
     +   plot_core.py
+        -   `label_line` [new-function]
+            +   ENH: new function to add an annotation to a given line with the appropriate placement and rotation.
         -   `text`
             +   ENH: now accepts a `loc` argument, a two-letter string which describes the location at which the text will be placed.
 
