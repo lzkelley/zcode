@@ -505,7 +505,7 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     return txt
 
 
-def label_line(ax, line, label, color='0.5', fs=14, halign='left', scale='linear'):
+def label_line(ax, line, label, color='0.5', fs=14, halign='left', scale='linear', clip_on=True):
     """Add an annotation to the given line with appropriate placement and rotation.
 
     Based on code from:
@@ -557,20 +557,12 @@ def label_line(ax, line, label, color='0.5', fs=14, halign='left', scale='linear
         raise ValueError("Unrecognized `halign` = '{}'.".format(halign))
 
     yy = np.interp(xx, xdata, ydata)
-    # print(xx, yy)
-    # # Limit to displayed coordinates
-    # yy = np.maximum(yy, ylim[0])
-    # yy = np.minimum(yy, ylim[1])
-    # print("\t", xx, yy)
-    # xx = np.interp(yy, ydata, xdata)
-    # print("\t", xx, yy)
 
-    # xytext = (10, 10)
+    # Add Annotation to Text
     xytext = (0, 0)
     text = ax.annotate(label, xy=(xx, yy), xytext=xytext, textcoords='offset points',
-                       size=fs, color=color, zorder=1,
+                       size=fs, color=color, zorder=1, clip_on=clip_on,
                        horizontalalignment=halign, verticalalignment='center_baseline')
-
     sp1 = ax.transData.transform_point((x1, y1))
     sp2 = ax.transData.transform_point((x2, y2))
 
