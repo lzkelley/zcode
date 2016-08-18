@@ -1417,11 +1417,14 @@ def full_extent(ax, pad=0.0, invert=None):
     return bbox
 
 
-def position_to_extent(fig, ax, loc, pad=0.0, halign='left', valign='lower'):
+def position_to_extent(fig, ref, loc, item=None, pad=0.0, halign='left', valign='lower'):
     """Reposition axis so that origin of 'full_extent' is at given `loc`.
     """
-    bbox = full_extent(ax, pad=pad, invert=fig.transFigure)
-    ax_bbox = ax.get_position()
+    if item is None:
+        item = ref
+
+    bbox = full_extent(ref, pad=pad, invert=fig.transFigure)
+    ax_bbox = ref.get_position()
 
     if halign.startswith('r'):
         dx = ax_bbox.x1 - bbox.x1
@@ -1444,7 +1447,7 @@ def position_to_extent(fig, ax, loc, pad=0.0, halign='left', valign='lower'):
     else:
         raise ValueError("`loc` must be 2 or 4 long: [x, y, (width, height)]")
 
-    ax.set_position(new_loc)
+    item.set_position(new_loc)
     return
 
 
@@ -1591,7 +1594,7 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
     """
     if loc[0] == 't' or loc[0] == 'u':
         if valign is None:
-            valign = 'upper'
+            valign = 'top'
         if y is None:
             y = 1 - pad
     elif loc[0] == 'b' or loc[0] == 'l':
