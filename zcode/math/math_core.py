@@ -20,6 +20,7 @@ Functions
 -   frexp10                  - Decompose a float into mantissa and exponent (base 10).
 -   groupDigitized           - Get a list of array indices corresponding to each bin.
 -   mono                     - Check for monotonicity in the given array.
+-   limit                    -
 
 -   _comparisonFunction      -
 -   _comparisonFilter        -
@@ -34,10 +35,13 @@ import numpy as np
 import warnings
 import numbers
 
-__all__ = ['argextrema', 'around', 'asBinEdges', 'contiguousInds', 'frexp10', 'groupDigitized',
-           'indsWithin', 'midpoints', 'minmax',  'mono', 'ordered_groups', 'really1d', 'renumerate',
+__all__ = ['argextrema', 'around', 'asBinEdges', 'contiguousInds',
+           'frexp10', 'groupDigitized',
+           'indsWithin', 'midpoints', 'minmax',  'mono', 'limit',
+           'ordered_groups', 'really1d', 'renumerate',
            'sliceForAxis', 'spacing', 'strArray', 'vecmag', 'within',
-           'comparison_filter', '_comparisonFunction', '_comparison_function', '_infer_scale']
+           'comparison_filter', '_comparisonFunction', '_comparison_function',
+           '_infer_scale']
 
 
 def argextrema(arr, type, filter=None):
@@ -534,6 +538,32 @@ def mono(arr, type='g', axis=-1):
     delta = np.diff(arr, axis=axis)
     retval = np.all(func(delta, 0.0))
     return retval
+
+
+def limit(val, arr):
+    """Limit the given value(s) to given bounds.
+
+    Arguments
+    ---------
+    val : (N,) scalar or array of scalar
+        Value(s) to be limited.
+    arr : (M,) array of scalar
+        The extrema by which to bound.
+
+    Returns
+    -------
+    new : (N,) scalar or array of scalar
+        Limited values, same size as input `val`.
+
+    """
+    # Make copy
+    new = np.array(val)
+    extr = minmax(arr)
+    # Enforce lower bound
+    new = np.maximum(new, extr[0])
+    # Enforce upper bound
+    new = np.minimum(new, extr[1])
+    return new
 
 
 def ordered_groups(values, targets, inds=None, dir='above', include=False):
