@@ -210,7 +210,7 @@ def cumstats(arr):
     return ave, std
 
 
-def sigma(sig, side='in'):
+def sigma(sig, side='in', boundaries=False):
     """Convert from standard deviation 'sigma' to percentiles in/out-side the normal distribution.
 
     Arguments
@@ -219,6 +219,8 @@ def sigma(sig, side='in'):
         Standard deviations.
     side : str, {'in', 'out'}
         Calculate percentiles inside (i.e. [-sig, sig]) or ouside (i.e. [-inf, -sig] U [sig, inf])
+    boundaries : bool
+        Whether boundaries should be given ('True'), or the area ('False').
 
     Returns
     -------
@@ -240,6 +242,16 @@ def sigma(sig, side='in'):
     # Convert to area inside [-sig, sig]
     if inside:
         vals = 1.0 - vals
+
+    # Convert from area to locations of boundaries (fractions)
+    if boundaries:
+        if inside:
+            vlo = 0.5*(1 - vals)
+            vhi = 0.5*(1 + vals)
+        else:
+            vlo = 0.5*vals
+            vhi = 1.0 - 0.5*vals
+        return vlo, vhi
 
     return vals
 

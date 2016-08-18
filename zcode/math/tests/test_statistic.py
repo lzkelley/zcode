@@ -56,6 +56,7 @@ class TestStatistic(object):
         assert_true(np.allclose(conf[:, 0], true_conf[0]))
         assert_true(np.allclose(conf[:, 1], true_conf[1]))
         assert_true(np.allclose(xbins, true_xbins))
+        return
 
     def test_sigma(self):
         from zcode.math import statistic
@@ -63,16 +64,34 @@ class TestStatistic(object):
         inside = [0.68268949213708585, 0.95449973610364158]
         outside = 1 - np.array(inside)
 
+        # Areas
         ret_inside = statistic.sigma(sigma, side='in')
         ret_outside = statistic.sigma(sigma, side='out')
         print("sigma = ", sigma)
         print("inside = ", inside)
         print("ret_inside = ", ret_inside)
-        print("inside = ", outside)
+        print("outside = ", outside)
         print("ret_outside = ", ret_outside)
         assert_true(np.allclose(inside, ret_inside))
         assert_true(np.allclose(outside, ret_outside))
 
+        # Boundaries
+        sig_1 = 1.0
+        sig_2 = 2.0
+        inside_1 = [0.158655253931, 0.841344746069]
+        outside_2 = [0.0227501319482, 0.977249868052]
+
+        ret_inside = statistic.sigma(sig_1, side='in', boundaries=True)
+        ret_outside = statistic.sigma(sig_2, side='out', boundaries=True)
+        print("sigma_1 = ", sig_1)
+        print("inside_1 = ", inside_1)
+        print("ret_inside = ", ret_inside)
+        print("sigma_2 = ", sig_2)
+        print("outside_2 = ", outside_2)
+        print("ret_outside = ", ret_outside)
+        assert_true(np.allclose(inside_1, ret_inside))
+        assert_true(np.allclose(outside_2, ret_outside))
+        return
 
 # Run all methods as if with `nosetests ...`
 if __name__ == "__main__":

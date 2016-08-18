@@ -37,6 +37,8 @@ Current
     +   statistic.py
         -   `confidence_intervals`
             +   BUG: fixed issue where multidimensional array input was leading to incorrectly shaped output arrays.
+        -   `sigma`
+            +   ENH: added new parameter 'boundaries' to determine whether a pair of boundaries are given for the confidence interval, or for normal behavior where the area is given.  Also added tests.
     +   tests/
         -   test_math_core.py
             +   `test_argnearest` [new-function]
