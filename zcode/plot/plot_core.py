@@ -438,7 +438,7 @@ def transform(ax, trans, fig=None):
 
 
 def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
-         fs=16, trans=None, **kwargs):
+         fs=16, trans=None, pad=None, **kwargs):
     """Add text to figure.
 
     Wrapper for the `matplotlib.figure.Figure.text` method.
@@ -481,11 +481,14 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     if loc is not None:
         x, y, halign, valign = _loc_str_to_pars(loc, x=x, y=y, halign=halign, valign=valign)
 
+    if pad is None:
+        pad = _PAD
+
     # Set default values
     if x is None:
         x = 0.5
     if y is None:
-        y = 1 - _PAD
+        y = 1 - pad
     if halign is None:
         halign = 'center'
     if valign is None:
@@ -1685,7 +1688,7 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
         if y is None:
             y = 0.5
     else:
-        raise ValueError("Unrecognized `loc`[0] = '{}'.".format(loc[0]))
+        raise ValueError("Unrecognized `loc`[0] = '{}' (`loc` = '{}'.".format(loc[0], loc))
 
     if loc[1] == 'l':
         if halign is None:
@@ -1703,7 +1706,7 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
         if x is None:
             x = 0.5
     else:
-        raise ValueError("Unrecognized `loc`[1] = '{}'.".format(loc[1]))
+        raise ValueError("Unrecognized `loc`[1] = '{}' (`log` = '{}'.".format(loc[1], loc))
 
     return x, y, halign, valign
 

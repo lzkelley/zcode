@@ -22,6 +22,8 @@ Future / To-Do
             (instead of just the central 2D histogram).
     +   plot_core.py
         -   Finish 'set_ticks' method.
+        -   `text`
+            -   [ENH]: Add `pad` parameter.
 
 
 Current
