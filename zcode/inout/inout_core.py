@@ -23,6 +23,7 @@ Functions
 -   ascii_table              - Print a table with the given contents to output.
 -   modify_exists            - Modify the given filename if it already exists.
 -   iterable_notstring       - Return True' if the argument is an iterable and not a string type.
+-   str_format_dict          - Pretty-format a dict into a nice looking string.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -754,3 +755,22 @@ def iterable_notstring(var):
     """Return True' if the argument is an iterable and not a string type.
     """
     return not isinstance(var, six.string_types) and isinstance(var, collections.Iterable)
+
+
+def str_format_dict(jdict):
+    """Pretty-format a dictionary into a nice looking string using the `json` package.
+
+    Arguments
+    ---------
+    jdict : dict,
+        Input dictionary to be formatted.
+
+    Returns
+    -------
+    jstr : str,
+        Nicely formatted string.
+
+    """
+    import json
+    jstr = json.dumps({'4': 5, '6': 7}, sort_keys=True, indent=4, separators=(',', ': '))
+    return jstr

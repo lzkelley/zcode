@@ -32,6 +32,8 @@ Current
     +   inout_core.py
         -   `npzToDict`
             +   BUG: issue loading npz across python2-python3 transition.  Attempt to resolve.
+        -   `str_format_dict` [new-function]
+            -   New function to pretty-print a dictionary object into a string (uses `json`).
 -   math/
     +   math_core.py
         -   `argnearest` [new-function]
