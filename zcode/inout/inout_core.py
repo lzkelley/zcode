@@ -24,6 +24,7 @@ Functions
 -   modify_exists            - Modify the given filename if it already exists.
 -   iterable_notstring       - Return True' if the argument is an iterable and not a string type.
 -   str_format_dict          - Pretty-format a dict into a nice looking string.
+-   par_dir                  - Get parent (absolute) directory name from given file/directory.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -38,11 +39,13 @@ import warnings
 import numpy as np
 import collections
 
-__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize',
+from zcode import utils
+
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'get_file_size',
            'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
            'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
-           'iterable_notstring']
+           'iterable_notstring', 'str_format_dict', 'par_dir']
 
 
 class _Keys_Meta(type):
@@ -188,25 +191,32 @@ def bytesString(bytes, precision=1):
     return strSize
 
 
-def getFileSize(fnames, precision=1):
+def getFileSize(*args, **kwargs):
+    utils.dep_warn("getFileSize", newname="get_file_size")
+    return get_file_size(*args, **kwargs)
+
+
+def get_file_size(fnames, precision=1):
     """Return a human-readable size of a file or set of files.
 
     Arguments
     ---------
-    fnames : <string> or list/array of <string>, paths to target file(s)
-    precisions : <int>, desired decimal precision of output
+    fnames : str or list
+        Paths to target file(s)
+    precisions : int,
+        Sesired decimal precision of output
 
     Returns
     -------
-    byteStr : <string>, human-readable size of file(s)
+    byteStr : str
+        Human-readable size of file(s)
 
     """
-
-    ftype = type(fnames)
-    if(ftype is not list and ftype is not np.ndarray): fnames = [fnames]
+    fnames = np.atleast_1d(fnames)
 
     byteSize = 0.0
-    for fil in fnames: byteSize += os.path.getsize(fil)
+    for fil in fnames:
+        byteSize += os.path.getsize(fil)
 
     byteStr = bytesString(byteSize, precision)
     return byteStr
@@ -282,7 +292,11 @@ def checkPath(tpath, create=True):
     if len(path) > 0:
         if not os.path.isdir(path):
             if create:
-                os.makedirs(path)
+                try:
+                    os.makedirs(path)
+                except FileExistsError:
+                    if not os.path.isdir(path):
+                        raise
             else:
                 return None
 
@@ -774,3 +788,9 @@ def str_format_dict(jdict):
     import json
     jstr = json.dumps({'4': 5, '6': 7}, sort_keys=True, indent=4, separators=(',', ': '))
     return jstr
+
+
+def par_dir(idir):
+    """Get parent (absolute) directory name from given file/directory.
+    """
+    return os.path.split(os.path.abspath(idir))[0]
