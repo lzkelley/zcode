@@ -57,6 +57,9 @@ Current
     +   Hist2D.py
         -   `plot2DHist`
             +   BUG: fixed issue where grid indices were reversed -- caused errors in non-square grids.
+            +   BUG: contour lines were using a different grid for some reason (unknown), was messing up edges and spacings.
+            +   BUG: default `fs=None` to not change the preset font size.
+            +   BUG: in `plot2DHistProj()`, errors when x and y projection axes were turned off. 
     +   plot_core.py
         -   `label_line` [new-function]
             +   ENH: new function to add an annotation to a given line with the appropriate placement and rotation.

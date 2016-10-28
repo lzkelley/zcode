@@ -180,14 +180,18 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     # Filter input data
     if filter is not None:
         # Make sure `filter` is an iterable pair
-        if weights is None: num = 2
-        else:               num = 3
+        # if weights is None:
+        #     num = 2
+        # else:
+        #     num = 3
 
-        if not np.iterable(filter): filter = num*[filter]
-        elif len(filter) == 1: filter = num*[filter[0]]
+        if not np.iterable(filter):
+            filter = 3*[filter]
+        elif len(filter) == 1:
+            filter = 3*[filter[0]]
 
-        if len(filter) != num:
-            raise ValueError("If `weights` are provided, number of `filter` values must match.")
+        # if len(filter) != num:
+        #     raise ValueError("If `weights` are provided, number of `filter` values must match.")
 
         # Filter `xvals`
         if filter[0] is not None:
@@ -323,13 +327,23 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
         # Colors
         # X-projection
-        colhist_xp = np.array(hist_xp)
-        # Enforce positive values for colors in log-plots.
-        if smap.log:
-            tmin, tmax = zmath.minmax(colhist_xp, filter='g')
-            colhist_xp = np.maximum(colhist_xp, tmin)
-        colors_xp = smap.to_rgba(colhist_xp)
-        colors_yp = smap.to_rgba(hist_yp)
+        if xpax:
+            colhist_xp = np.array(hist_xp)
+            # Enforce positive values for colors in log-plots.
+            if smap.log:
+                tmin, tmax = zmath.minmax(colhist_xp, filter='g')
+                colhist_xp = np.maximum(colhist_xp, tmin)
+            colors_xp = smap.to_rgba(colhist_xp)
+
+        if ypax:
+            colhist_yp = np.array(hist_yp)
+            # Enforce positive values for colors in log-plots.
+            if smap.log:
+                tmin, tmax = zmath.minmax(colhist_yp, filter='g')
+                colhist_xp = np.maximum(colhist_yp, tmin)
+            colors_yp = smap.to_rgba(colhist_yp)
+
+        # colors_yp = smap.to_rgba(hist_yp)
 
     # Scatter Plot
     else:
@@ -407,7 +421,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
 def plot2DHist(ax, xvals, yvals, hist,
                cax=None, cbax=None, cscale='log', cmap=None, smap=None, extrema=None,
-               contours=None, clabel={}, fs=12, rasterized=True, scale='log',
+               contours=None, clabel={}, fs=None, rasterized=True, scale='log',
                title=None, labels=None, overlay=None, overlay_fmt="", **kwargs):
     """Plot the given 2D histogram of data.
 
@@ -445,6 +459,12 @@ def plot2DHist(ax, xvals, yvals, hist,
         A scalar-mappable object to use for colormaps, or `None` for one to be created.
     extrema : (2,) array_like of scalars
         Minimum and maximum values for colormap scaling.
+    contours : (L,) array_like of scalar or `None`
+        Histogram values at which to draw contours using the `plt.contour` `levels` argument.
+    clabel : dict or `None`
+        If `None`, no contours labels are drawn, otherwise labels are drawn on the contours,
+        where additional labeling parameters can be passed in the `clabel` dictionary.
+
     labels : (2,) or (3,) array_like of strings
         The first two string are the 'x' and 'y' axis labels respectively.  If a third string is
         provided it is used as the colorbar label.
@@ -542,14 +562,22 @@ def plot2DHist(ax, xvals, yvals, hist,
         else:
             levels = np.array(contours)
 
-        xg, yg = np.meshgrid(zmath.midpoints(xvals, log=True), zmath.midpoints(yvals, log=True))
-        cs = ax.contour(xg, yg, hist[:-1, :-1].T, colors='0.25', norm=smap.norm,
+        # xg, yg = np.meshgrid(zmath.midpoints(xvals, log=True), zmath.midpoints(yvals, log=True))
+        # cs = ax.contour(xg, yg, hist[:-1, :-1].T, colors='0.25', norm=smap.norm,
+        #                 levels=levels, linewidths=4.0, antialiased=True)
+        # ax.contour(xg, yg, hist[:-1, :-1].T, cmap=smap.cmap, norm=smap.norm,
+        #            levels=levels, linewidths=1.5, antialiased=True)
+        # if levels is not None and clabel is not None:
+        #     clabel.setdefault('inline', True)
+        #     plt.clabel(cs, **clabel)
+
+        cs = ax.contour(xgrid, ygrid, hist.T, colors='0.25', norm=smap.norm,
                         levels=levels, linewidths=4.0, antialiased=True)
-        ax.contour(xg, yg, hist[:-1, :-1].T, cmap=smap.cmap, norm=smap.norm,
+        ax.contour(xgrid, ygrid, hist.T, cmap=smap.cmap, norm=smap.norm,
                    levels=levels, linewidths=1.5, antialiased=True)
-        # plt.clabel(cs, inline=1, fontsize=fs, fmt='%.0e')
         if levels is not None and clabel is not None:
-            plt.clabel(cs, inline=1, **clabel)
+            clabel.setdefault('inline', True)
+            plt.clabel(cs, **clabel)
 
     plot_core.setLim(ax, 'x', data=xvals)
     plot_core.setLim(ax, 'y', data=yvals)
