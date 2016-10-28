@@ -477,12 +477,13 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
         elif isinstance(art, mpl.axes.Axes):
             trans = art.transAxes
 
-    # If a location string is given, convert to parameters
-    if loc is not None:
-        x, y, halign, valign = _loc_str_to_pars(loc, x=x, y=y, halign=halign, valign=valign)
-
     if pad is None:
         pad = _PAD
+
+    # If a location string is given, convert to parameters
+    if loc is not None:
+        x, y, halign, valign = _loc_str_to_pars(
+            loc, x=x, y=y, halign=halign, valign=valign, pad=pad)
 
     # Set default values
     if x is None:
@@ -751,7 +752,8 @@ def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=
         cmap = palette(color, n_colors=num, as_cmap=True)
 
     cols = [cmap(it) for it in nums]
-    if ax is not None: ax.set_color_cycle(cols[::-1])
+    if ax is not None:
+        ax.set_color_cycle(cols[::-1])
     return cols
 
 
@@ -846,23 +848,43 @@ def color_set(num, black=False, cset='xkcd'):
         colors = ['black'] + colors
 
     ncol = len(colors)
-    # Make sure enough colors are available
+    # If more colors are requested than are available, fallback to `color_cycle`
     if num > ncol:
-        raise ValueError("Limited to {} colors, cannot produce `num` = '{}'.".format(ncol, num))
+        # raise ValueError("Limited to {} colors, cannot produce `num` = '{}'.".format(ncol, num))
+        colors = color_cycle(num)
+        return colors
 
     return colors[:num]
 
 
-def setGrid(ax, val=True, axis='both', below=True, major=True, minor=True):
+def setGrid(ax, val=True, axis='both', c=None, ls='-', clear=True,
+            below=True, major=True, minor=True, zorder=2, alpha=None):
     """Configure the axes' grid.
     """
-    ax.grid(False, which='both', axis='both')
+    if clear:
+        ax.grid(False, which='both', axis='both')
     ax.set_axisbelow(below)
     if val:
         if major:
-            ax.grid(True, which='major', axis=axis, c='0.60', ls='-')
+            if c is None:
+                _c = '0.60'
+            else:
+                _c = c
+            if alpha is None:
+                _alpha = 0.8
+            else:
+                _alpha = alpha
+            ax.grid(True, which='major', axis=axis, c=_c, ls=ls, zorder=zorder, alpha=_alpha)
         if minor:
-            ax.grid(True, which='minor', axis=axis, c='0.85', ls='-')
+            if c is None:
+                _c = '0.85'
+            else:
+                _c = c
+            if alpha is None:
+                _alpha = 0.5
+            else:
+                _alpha = alpha
+            ax.grid(True, which='minor', axis=axis, c=_c, ls=ls, zorder=zorder, alpha=_alpha)
     return
 
 

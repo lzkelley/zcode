@@ -59,12 +59,15 @@ Current
             +   BUG: fixed issue where grid indices were reversed -- caused errors in non-square grids.
             +   BUG: contour lines were using a different grid for some reason (unknown), was messing up edges and spacings.
             +   BUG: default `fs=None` to not change the preset font size.
-            +   BUG: in `plot2DHistProj()`, errors when x and y projection axes were turned off. 
+        -   `plot2DHistProj`
+            +   BUG: errors when x and y projection axes were turned off. 
     +   plot_core.py
         -   `label_line` [new-function]
             +   ENH: new function to add an annotation to a given line with the appropriate placement and rotation.
         -   `text`
             +   ENH: now accepts a `loc` argument, a two-letter string which describes the location at which the text will be placed.
+        -   `setGrid`
+            +   ENH: added new arguments for color and alpha.
 -   `utils.py` [new-file]
     -   New file for general purpose, internal methods, etc.
     -   `dep_warn` [new-function]
