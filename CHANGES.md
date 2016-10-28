@@ -62,6 +62,11 @@ Current
             +   ENH: new function to add an annotation to a given line with the appropriate placement and rotation.
         -   `text`
             +   ENH: now accepts a `loc` argument, a two-letter string which describes the location at which the text will be placed.
+-   `utils.py` [new-file]
+    -   New file for general purpose, internal methods, etc.
+    -   `dep_warn` [new-function]
+        -   Function for sending deprecation warnings.
+
 
 
 [0.0.8] - 2016/05/15
