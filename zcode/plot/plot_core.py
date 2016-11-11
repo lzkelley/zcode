@@ -14,6 +14,7 @@ Functions
 -   unifyAxesLimits      - Set limits on all given axes to match global extrema.
 -   color_cycle          - Create a range of colors.
 -   colormap             - Create a colormap from scalars to colors.
+-   cut_colormap         - Select a truncated subset of the given colormap.
 -   color_set            - Retrieve a (small) set of color-strings with hand picked values.
 -   setGrid              - Configure the axes' grid.
 -   skipTicks            - skip some tick marks
@@ -757,7 +758,7 @@ def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=
     return cols
 
 
-def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
+def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, right=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
@@ -773,6 +774,12 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
         Color specification for values below range.
     over : str or `None`
         Color specification for values above range.
+    left : float {0.0, 1.0} or `None`
+        Truncate the left edge of the colormap to this value.
+        If `None`, 0.0 used (if `right` is provided).
+    right : float {0.0, 1.0} or `None`
+        Truncate the right edge of the colormap to this value
+        If `None`, 1.0 used (if `left` is provided).
 
     Returns
     -------
@@ -780,11 +787,25 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
         Scalar mappable object which contains the members:
         `norm`, `cmap`, and the function `to_rgba`.
 
+    Notes
+    -----
+    -   Truncation:
+        -   If neither `left` nor `right` is given, no truncation is performed.
+        -   If only one is given, the other is set to the extreme value: 0.0 or 1.0.
+
     """
 
     if cmap is None: cmap = 'jet'
-
     if isinstance(cmap, six.string_types): cmap = plt.get_cmap(cmap)
+
+    # Select a truncated subsection of the colormap
+    if (left is not None) or (right is not None):
+        if left is None:
+            left = 0.0
+        if right is None:
+            right = 1.0
+        cmap = cut_colormap(cmap, left, right)
+
     if under is not None: cmap.set_under(under)
     if over is not None: cmap.set_over(over)
 
@@ -816,6 +837,34 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
     smap.log = log
 
     return smap
+
+
+def cut_colormap(cmap, min=0.0, max=1.0, n=100):
+    """Select a truncated subset of the given colormap.
+
+    Code from: http://stackoverflow.com/a/18926541/230468
+
+    Arguments
+    ---------
+    cmap : `matplotlib.colors.Colormap`
+        Colormap to truncate
+    min : float, {0.0, 1.0}
+        Minimum edge of the colormap
+    max : float, {0.0, 1.0}
+        Maximum edge of the colormap
+    n : int
+        Number of points to use for sampling
+
+    Returns
+    -------
+    new_cmap : `matplotlib.colors.Colormap`
+        Truncated colormap.
+
+    """
+    name = 'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=min, b=max)
+    new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        name, cmap(np.linspace(min, max, n)))
+    return new_cmap
 
 
 def color_set(num, black=False, cset='xkcd'):

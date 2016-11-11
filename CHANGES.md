@@ -62,6 +62,10 @@ Current
         -   `plot2DHistProj`
             +   BUG: errors when x and y projection axes were turned off. 
     +   plot_core.py
+        -   `colormap`
+            -   ENH: added `left` and `right` parameters to allow truncation of colormaps.
+        -   `cut_colormap` [new-function]
+            -   ENH: new function to truncate the given colormap.
         -   `label_line` [new-function]
             +   ENH: new function to add an annotation to a given line with the appropriate placement and rotation.
         -   `text`
