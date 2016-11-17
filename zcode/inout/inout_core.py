@@ -25,6 +25,8 @@ Functions
 -   iterable_notstring       - Return True' if the argument is an iterable and not a string type.
 -   str_format_dict          - Pretty-format a dict into a nice looking string.
 -   par_dir                  - Get parent (absolute) directory name from given file/directory.
+-   top_dir                  - Get the top level directory name from the given path.
+
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -45,7 +47,7 @@ __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'g
            'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
            'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
-           'iterable_notstring', 'str_format_dict', 'par_dir']
+           'iterable_notstring', 'str_format_dict', 'top_dir'] # 'par_dir']
 
 
 class _Keys_Meta(type):
@@ -790,7 +792,31 @@ def str_format_dict(jdict):
     return jstr
 
 
+'''
 def par_dir(idir):
     """Get parent (absolute) directory name from given file/directory.
     """
     return os.path.split(os.path.abspath(idir))[0]
+'''
+
+
+def top_dir(idir):
+    """Get the top level directory name from the given path.
+
+    e.g. top_dir("/Users/lzkelley/Programs/zcode/zcode/")             -> "zcode"
+         top_dir("/Users/lzkelley/Programs/zcode/zcode")              -> "zcode"
+         top_dir("/Users/lzkelley/Programs/zcode/zcode/constants.py") -> "zcode"
+    """
+    # Removing trailing slash if included
+    if idir.endswith('/'):
+        idir = idir[:-1]
+
+    # If this is already a directory, then `basename` is the top-level directory
+    if os.path.isdir(idir):
+        top = os.path.basename(idir)
+    # Otherwise, split path first
+    else:
+        idir, fil = os.path.split(idir)
+        top = os.path.basename(idir)
+
+    return top

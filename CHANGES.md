@@ -37,7 +37,10 @@ Current
         -   `getFileSize` ==> `get_file_size` [deprecation]
             -   Also improve behavior to accept single or list of filenames.
         -  `par_dir` [new-function]
+            -   !!NOTE: not sure if this is a good one... commented out for now!!
             -   Method which returns the parent directory of the given path.
+        -  `top_dir` [new-function]
+            -   Method which returns the top-most directory from the given path.
 -   math/
     +   math_core.py
         -   `argnearest` [new-function]
