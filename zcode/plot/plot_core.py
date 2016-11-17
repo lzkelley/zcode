@@ -510,7 +510,8 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     return txt
 
 
-def label_line(ax, line, label, color='0.5', fs=14, halign='left', scale='linear', clip_on=True):
+def label_line(ax, line, label, color='0.5', fs=14, halign='left', scale='linear', clip_on=True,
+               halign_scale=1.0):
     """Add an annotation to the given line with appropriate placement and rotation.
 
     Based on code from:
@@ -550,13 +551,13 @@ def label_line(ax, line, label, color='0.5', fs=14, halign='left', scale='linear
     log = _scale_to_log_flag(scale)
 
     if halign.startswith('l'):
-        xx = x1
+        xx = x1*halign_scale
         halign = 'left'
     elif halign.startswith('r'):
-        xx = x2
+        xx = halign_scale*x2
         halign = 'right'
     elif halign.startswith('c'):
-        xx = zmath.midpoints([x1, x2], log=log)
+        xx = zmath.midpoints([x1, x2], log=log)*halign_scale
         halign = 'center'
     else:
         raise ValueError("Unrecognized `halign` = '{}'.".format(halign))
