@@ -41,6 +41,8 @@ Current
             -   Method which returns the parent directory of the given path.
         -  `top_dir` [new-function]
             -   Method which returns the top-most directory from the given path.
+        -  `underline` [new-function]
+            -   Append a newline to the given string with repeated characters (e.g. '-')
 -   math/
     +   math_core.py
         -   `argnearest` [new-function]

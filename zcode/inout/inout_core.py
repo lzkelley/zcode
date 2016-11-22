@@ -26,7 +26,7 @@ Functions
 -   str_format_dict          - Pretty-format a dict into a nice looking string.
 -   par_dir                  - Get parent (absolute) directory name from given file/directory.
 -   top_dir                  - Get the top level directory name from the given path.
-
+-   underline                - Add a new line of characters appended to the given string.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -47,7 +47,7 @@ __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'g
            'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
            'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
-           'iterable_notstring', 'str_format_dict', 'top_dir'] # 'par_dir']
+           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline']  # 'par_dir']
 
 
 class _Keys_Meta(type):
@@ -820,3 +820,13 @@ def top_dir(idir):
         top = os.path.basename(idir)
 
     return top
+
+
+def underline(in_str, char=None):
+    """Return a copy of the input string with a new line of '-' appended, with matching length.
+    """
+    if char is None:
+        char = '-'
+    use_str = in_str.split("\n")[-1]
+    out_str = in_str + "\n" + char*len(use_str)
+    return out_str
