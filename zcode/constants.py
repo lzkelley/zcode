@@ -18,6 +18,7 @@ RSOL = ap.constants.R_sun.cgs.value
 PC = ap.constants.pc.cgs.value
 AU = ap.constants.au.cgs.value
 YR = ap.units.year.to(ap.units.s)
+DAY = 86400.0                                   # Day in seconds
 
 MELC = ap.constants.m_e.cgs.value
 MPRT = ap.constants.m_p.cgs.value

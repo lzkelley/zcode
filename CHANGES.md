@@ -77,6 +77,8 @@ Current
             +   ENH: now accepts a `loc` argument, a two-letter string which describes the location at which the text will be placed.
         -   `setGrid`
             +   ENH: added new arguments for color and alpha.
+-   `constants.py`
+    -   Added `DAY` (in seconds) variable.
 -   `utils.py` [new-file]
     -   New file for general purpose, internal methods, etc.
     -   `dep_warn` [new-function]
