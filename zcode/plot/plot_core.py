@@ -630,10 +630,12 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
     """
     if isinstance(art, mpl.figure.Figure):
         ax = art.axes[0]
-        if trans is None: trans = art.transFigure
+        if trans is None:
+            trans = art.transFigure
     elif isinstance(art, mpl.axes.Axes):
         ax = art
-        if trans is None: trans = ax.transAxes
+        if trans is None:
+            trans = ax.transAxes
 
     if 'handlelength' not in kwargs:
         kwargs['handlelength'] = _HANDLE_LENGTH
@@ -642,8 +644,8 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
     # `alpha` should actually be `framealpha`
     if 'alpha' in kwargs:
         warnings.warn("For legends, use `framealpha` instead of `alpha`.")
-        kwargs['framealpha'] = kwargs['alpha']
-        del kwargs['alpha']
+        kwargs['framealpha'] = kwargs.pop('alpha')
+        # del kwargs['alpha']
 
     # Override alignment using `loc` argument
     if loc is not None:
@@ -662,7 +664,8 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
         alignStr += " " + halign
 
     prop_dict = {'size': fs}
-    if mono: prop_dict['family'] = 'monospace'
+    if mono:
+        prop_dict['family'] = 'monospace'
     leg = ax.legend(keys, names, prop=prop_dict,
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
     if fs_title is not None:
