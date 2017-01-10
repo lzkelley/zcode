@@ -26,6 +26,10 @@ Future / To-Do
             -   [ENH]: Add `pad` parameter.
         -   `_loc_str_to_pars`
             -   [BUG]: Was using 'lower' instead of 'bottom', triggering warning.
+-   inout/
+    -   inout_core.py
+        -   `warn_with_traceback` [new-function]
+            -   Used to override builtin `warnings.showwarning` method, will include traceback inforamtion in warning report.
 
 
 Current

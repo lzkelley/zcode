@@ -27,6 +27,7 @@ Functions
 -   par_dir                  - Get parent (absolute) directory name from given file/directory.
 -   top_dir                  - Get the top level directory name from the given path.
 -   underline                - Add a new line of characters appended to the given string.
+-   warn_with_traceback      - Include traceback information in warnings.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -47,7 +48,7 @@ __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'g
            'countLines', 'estimateLines',
            'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
            'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
-           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline']  # 'par_dir']
+           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback']
 
 
 class _Keys_Meta(type):
@@ -830,3 +831,18 @@ def underline(in_str, char=None):
     use_str = in_str.split("\n")[-1]
     out_str = in_str + "\n" + char*len(use_str)
     return out_str
+
+
+def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
+    """Use this method in place of `warnings.showwarning` to include traceback information.
+
+    Use:
+        `warnings.showwarning = warn_with_traceback`
+
+    Taken from: http://stackoverflow.com/a/22376126/230468
+    """
+    import traceback
+    traceback.print_stack()
+    log = file if hasattr(file, 'write') else sys.stderr
+    log.write(warnings.formatwarning(message, category, filename, lineno, line))
+    return
