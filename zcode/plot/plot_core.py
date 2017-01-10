@@ -1754,7 +1754,7 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
             y = 1 - pad
     elif loc[0] == 'b' or loc[0] == 'l':
         if valign is None:
-            valign = 'lower'
+            valign = 'bottom'
         if y is None:
             y = pad
     elif loc[0] == 'c':

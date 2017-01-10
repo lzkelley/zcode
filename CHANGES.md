@@ -24,6 +24,8 @@ Future / To-Do
         -   Finish 'set_ticks' method.
         -   `text`
             -   [ENH]: Add `pad` parameter.
+        -   `_loc_str_to_pars`
+            -   [BUG]: Was using 'lower' instead of 'bottom', triggering warning.
 
 
 Current
