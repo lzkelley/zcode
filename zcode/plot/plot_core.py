@@ -491,19 +491,8 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
         x = 0.5
     if y is None:
         y = 1 - pad
-    if halign is None:
-        halign = 'center'
-    if valign is None:
-        valign = 'top'
 
-    if valign == 'upper':
-        warnings.warn("Use `'top'` not `'upper'`!")
-        valign = 'top'
-
-    if valign == 'lower':
-        warnings.warn("Use `'bottom'` not `'lower'`!")
-        valign = 'bottom'
-
+    halign, valign = _parse_align(halign, valign)
     txt = art.text(x, y, pstr, size=fs, transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
@@ -1784,6 +1773,36 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
         raise ValueError("Unrecognized `loc`[1] = '{}' (`log` = '{}'.".format(loc[1], loc))
 
     return x, y, halign, valign
+
+
+def _parse_align(halign=None, valign=None):
+    if halign is None:
+        halign = 'center'
+    if valign is None:
+        valign = 'top'
+
+    if halign.startswith('l'):
+        halign = 'left'
+    elif halign.startswith('c'):
+        halign = 'center'
+    elif halign.startswith('r'):
+        halign = 'right'
+
+    if valign.startswith('t'):
+        valign = 'top'
+    elif valign.startswith('c'):
+        valign = 'center'
+    elif valign.startswith('b'):
+        valign = 'bottom'
+
+    if valign == 'upper':
+        warnings.warn("Use `'top'` not `'upper'`!")
+        valign = 'top'
+
+    if valign == 'lower':
+        warnings.warn("Use `'bottom'` not `'lower'`!")
+        valign = 'bottom'
+    return halign, valign
 
 
 '''

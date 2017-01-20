@@ -81,6 +81,7 @@ Current
             +   ENH: new function to add an annotation to a given line with the appropriate placement and rotation.
         -   `text`
             +   ENH: now accepts a `loc` argument, a two-letter string which describes the location at which the text will be placed.
+            +   ENH: `halign` and `valign` are now passed through the new `_parse_align()` method which will process/filter the alignment strings.  e.g. 'l' is now converted to 'left' as required for matplotlib.
         -   `setGrid`
             +   ENH: added new arguments for color and alpha.
 -   `constants.py`
