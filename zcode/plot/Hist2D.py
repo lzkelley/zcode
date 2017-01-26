@@ -484,8 +484,10 @@ def plot2DHist(ax, xvals, yvals, hist,
     cblab = 'Counts'
     xgrid, ygrid = np.meshgrid(xvals, yvals)
     hist = np.asarray(hist)
-    if plot_core._scale_to_log_flag(cscale): filter = 'g'
-    else:                                    filter = None
+    if plot_core._scale_to_log_flag(cscale):
+        filter = 'g'
+    else:
+        filter = None
     extrema = _set_extrema(extrema, hist, filter=filter)
 
     # Make sure the given `scale` is valid
@@ -562,22 +564,13 @@ def plot2DHist(ax, xvals, yvals, hist,
         else:
             levels = np.array(contours)
 
-        # xg, yg = np.meshgrid(zmath.midpoints(xvals, log=True), zmath.midpoints(yvals, log=True))
-        # cs = ax.contour(xg, yg, hist[:-1, :-1].T, colors='0.25', norm=smap.norm,
-        #                 levels=levels, linewidths=4.0, antialiased=True)
-        # ax.contour(xg, yg, hist[:-1, :-1].T, cmap=smap.cmap, norm=smap.norm,
-        #            levels=levels, linewidths=1.5, antialiased=True)
-        # if levels is not None and clabel is not None:
-        #     clabel.setdefault('inline', True)
-        #     plt.clabel(cs, **clabel)
-
-        cs = ax.contour(xgrid, ygrid, hist.T, colors='0.25', norm=smap.norm,
-                        levels=levels, linewidths=4.0, antialiased=True)
-        ax.contour(xgrid, ygrid, hist.T, cmap=smap.cmap, norm=smap.norm,
-                   levels=levels, linewidths=1.5, antialiased=True)
+        ax.contour(xgrid, ygrid, hist.T, colors='0.50', norm=smap.norm,
+                        levels=levels, linewidths=5.0, antialiased=True, zorder=10, alpha=0.4)
+        cs = ax.contour(xgrid, ygrid, hist.T, cmap=smap.cmap, norm=smap.norm,
+                   levels=levels, linewidths=2.5, antialiased=True, zorder=11, alpha=0.8)
         if levels is not None and clabel is not None:
             clabel.setdefault('inline', True)
-            plt.clabel(cs, **clabel)
+            plt.clabel(cs, **clabel, zorder=50)
 
     plot_core.setLim(ax, 'x', data=xvals)
     plot_core.setLim(ax, 'y', data=yvals)
