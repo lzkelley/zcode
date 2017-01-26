@@ -788,8 +788,10 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, ri
 
     """
 
-    if cmap is None: cmap = 'jet'
-    if isinstance(cmap, six.string_types): cmap = plt.get_cmap(cmap)
+    if cmap is None:
+        cmap = 'jet'
+    if isinstance(cmap, six.string_types):
+        cmap = plt.get_cmap(cmap)
 
     # Select a truncated subsection of the colormap
     if (left is not None) or (right is not None):
@@ -799,8 +801,10 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, ri
             right = 1.0
         cmap = cut_colormap(cmap, left, right)
 
-    if under is not None: cmap.set_under(under)
-    if over is not None: cmap.set_over(over)
+    if under is not None:
+        cmap.set_under(under)
+    if over is not None:
+        cmap.set_over(over)
 
     if scale is None:
         if np.size(args) > 1 and np.all(args > 0.0):
@@ -815,12 +819,16 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, ri
         filter = None
 
     # Determine minimum and maximum
-    if np.size(args) > 1: min, max = zmath.minmax(args, filter=filter)
-    else:                 min, max = 0, np.int(args)-1
+    if np.size(args) > 1:
+        min, max = zmath.minmax(args, filter=filter)
+    else:
+        min, max = 0, np.int(args)-1
 
     # Create normalization
-    if log: norm = mpl.colors.LogNorm(vmin=min, vmax=max)
-    else:   norm = mpl.colors.Normalize(vmin=min, vmax=max)
+    if log:
+        norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+    else:
+        norm = mpl.colors.Normalize(vmin=min, vmax=max)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
