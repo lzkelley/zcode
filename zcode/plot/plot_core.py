@@ -1135,14 +1135,19 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
 
     # Determine color if included in ``kwargs``
     col = 'black'
-    if kwargs.get('color') is not None: col = kwargs.get('color')
-    elif kwargs.get('c') is not None: col = kwargs.get('c')
+    if kwargs.get('color') is not None:
+        col = kwargs.get('color')
+    elif kwargs.get('c') is not None:
+        col = kwargs.get('c')
 
     # Extend bin edges if needed
     if len(edges) != len(hist)+1:
-        if extend == 'left': edges = np.concatenate([[zmath.extend(edges)[0]], edges])
-        elif extend == 'right': edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
-        else: raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend`` given")
+        if extend == 'left':
+            edges = np.concatenate([[zmath.extend(edges)[0]], edges])
+        elif extend == 'right':
+            edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
+        else:
+            raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend`` given")
 
     # Construct plot points to manually create a step-plot
     xval, yval = _histLine(edges, hist)
@@ -1178,8 +1183,10 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
     # Add a fill region
     if fill is not None:
         ylim = ax.get_ylim()
-        if type(fill) == dict: filldict = fill
-        else:                  filldict = dict()
+        if type(fill) == dict:
+            filldict = fill
+        else:
+            filldict = dict()
         ax.fill_between(xval, yval, 0.1*ylim[0], **filldict)
         ax.set_ylim(ylim)
 
