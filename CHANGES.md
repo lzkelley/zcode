@@ -22,14 +22,6 @@ Future / To-Do
             (instead of just the central 2D histogram).
     +   plot_core.py
         -   Finish 'set_ticks' method.
-        -   `text`
-            -   [ENH]: Add `pad` parameter.
-        -   `_loc_str_to_pars`
-            -   [BUG]: Was using 'lower' instead of 'bottom', triggering warning.
--   inout/
-    -   inout_core.py
-        -   `warn_with_traceback` [new-function]
-            -   Used to override builtin `warnings.showwarning` method, will include traceback inforamtion in warning report.
 
 
 Current
@@ -49,6 +41,8 @@ Current
             -   Method which returns the top-most directory from the given path.
         -  `underline` [new-function]
             -   Append a newline to the given string with repeated characters (e.g. '-')
+        -   `warn_with_traceback` [new-function]
+            -   Used to override builtin `warnings.showwarning` method, will include traceback information in warning report.
     -   `log.py`
         -   `getLogger`
             -   Attached a function to new logger instances which will both log an error and raise one.  Just call `log.raise_error(msg)` on the returned `log` instance.
@@ -83,10 +77,13 @@ Current
         -   `label_line` [new-function]
             +   ENH: new function to add an annotation to a given line with the appropriate placement and rotation.
         -   `text`
+            +   ENH: Add `pad` parameter.
             +   ENH: now accepts a `loc` argument, a two-letter string which describes the location at which the text will be placed.
             +   ENH: `halign` and `valign` are now passed through the new `_parse_align()` method which will process/filter the alignment strings.  e.g. 'l' is now converted to 'left' as required for matplotlib.
         -   `setGrid`
             +   ENH: added new arguments for color and alpha.
+        -   `_loc_str_to_pars`
+            -   [BUG]: Was using 'lower' instead of 'bottom', triggering warning.
 -   `constants.py`
     -   Added `DAY` (in seconds) variable.
 -   `utils.py` [new-file]
