@@ -12,6 +12,7 @@ Functions
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from datetime import datetime
 import logging
 import inspect
 import numpy as np
@@ -126,6 +127,16 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
         raise error(msg)
     # Not entirely sure why this works, but it seems to
     logger.raise_error = _raise.__get__(logger)
+
+    # Add a `after` method to log how long something took
+    # ---------------------------------------------------
+    def _after(self, msg, beg, beg_all=None, lvl=logging.INFO):
+        _str = "{} after {}".format(msg, datetime.now()-beg)
+        if beg_all is not None:
+            _str += " ({})".format(datetime.now()-beg_all)
+        self.log(lvl, _str)
+    # Not entirely sure why this works, but it seems to
+    logger.after = _after.__get__(logger)
 
     return logger
 

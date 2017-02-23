@@ -46,6 +46,7 @@ Current
     -   `log.py`
         -   `getLogger`
             -   Attached a function to new logger instances which will both log an error and raise one.  Just call `log.raise_error(msg)` on the returned `log` instance.
+            -   Attached a function `log.after(msg, beg)` to report how long something took (automatically calculated).
 -   math/
     +   math_core.py
         -   `argnearest` [new-function]
