@@ -49,6 +49,9 @@ Current
             -   Method which returns the top-most directory from the given path.
         -  `underline` [new-function]
             -   Append a newline to the given string with repeated characters (e.g. '-')
+    -   `log.py`
+        -   `getLogger`
+            -   Attached a function to new logger instances which will both log an error and raise one.  Just call `log.raise_error(msg)` on the returned `log` instance.
 -   math/
     +   math_core.py
         -   `argnearest` [new-function]
