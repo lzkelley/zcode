@@ -59,7 +59,9 @@ Current
         -   `sigma`
             +   ENH: added new parameter 'boundaries' to determine whether a pair of boundaries are given for the confidence interval, or for normal behavior where the area is given.  Also added tests.
         -   `percentiles` [new-function]
-            -   Function which calculates percentiles (like `np.percentiles`) but with optional weighting of values.
+            -   Function which calculates percentiles (like `np.percentile`) but with optional weighting of values.
+        -   `stats_str`
+            -   Changes to use local `percentiles` function instead of `np.percentile`.  Added `weights` argument, and converted from using input percentile arguments in [0, 100] range to fractions: [0.0, 1.0] range.
     +   tests/
         -   test_math_core.py
             +   `test_argnearest` [new-function]

@@ -280,7 +280,7 @@ def stats(vals, median=False):
     return ave, std
 
 
-def stats_str(data, percs=[0, 16, 50, 84, 100], ave=True, std=False,
+def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=True, std=False, weights=None,
               format='', label='Statistics: '):
     """Return a string with the statistics of the given array.
 
@@ -308,7 +308,8 @@ def stats_str(data, percs=[0, 16, 50, 84, 100], ave=True, std=False,
     data = np.asarray(data)
     percs = np.atleast_1d(percs)
     percs_flag = False
-    if percs is not None and len(percs): percs_flag = True
+    if percs is not None and len(percs):
+        percs_flag = True
 
     out = label
     form = "{{{}}}".format(format)
@@ -316,14 +317,17 @@ def stats_str(data, percs=[0, 16, 50, 84, 100], ave=True, std=False,
         out += "ave = " + form.format(np.average(data))
         if std or percs_flag:
             out += ", "
+
     if std:
         out += "std = " + form.format(np.std(data))
         if percs_flag:
             out += ", "
+
     if percs_flag:
-        tiles = np.percentile(data, percs)
+        # tiles = np.percentile(data, percs)
+        tiles = percentiles(data, percs, weights=weights)
         out += "percentiles: [" + ", ".join(form.format(tt) for tt in tiles) + "]"
-        out += ", for (" + ", ".join("{:.1f}%".format(pp) for pp in percs) + ")"
+        out += ", for (" + ", ".join("{:.1f}%".format(100*pp) for pp in percs) + ")"
 
     return out
 
