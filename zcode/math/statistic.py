@@ -19,7 +19,7 @@ import scipy as sp
 from . import math_core
 
 __all__ = ['confidenceBands', 'confidence_bands', 'confidenceIntervals', 'confidence_intervals',
-           'cumstats', 'sigma', 'stats', 'stats_str']
+           'cumstats', 'sigma', 'stats', 'stats_str', 'percentiles']
 
 
 def confidenceBands(*args, **kwargs):
@@ -326,3 +326,43 @@ def stats_str(data, percs=[0, 16, 50, 84, 100], ave=True, std=False,
         out += ", for (" + ", ".join("{:.1f}%".format(pp) for pp in percs) + ")"
 
     return out
+
+
+def percentiles(values, percentiles, weights=None, values_sorted=False):
+    """Computer weighted percentiles.
+
+    Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
+
+    Arguments
+    ---------
+    values: (N,)
+        input data
+    percentiles: (M,) scalar [0.0, 1.0]
+        Desired percentiles of the data.
+    weights: (N,) or `None`
+        Weighted for each input data point in `values`.
+    values_sorted: bool
+        If True, then input values are assumed to already be sorted.
+
+    Returns
+    -------
+    percs : (M,) float
+        Array of percentiles of the weighted input data.
+
+    """
+    values = np.array(values)
+    percentiles = np.array(percentiles)
+    if weights is None:
+        weights = np.ones_like(values)
+    weights = np.array(weights)
+    assert np.all(percentiles >= 0) and np.all(percentiles <= 1), 'percentiles should be in [0, 1]'
+
+    if not values_sorted:
+        sorter = np.argsort(values)
+        values = values[sorter]
+        weights = weights[sorter]
+
+    weighted_quantiles = np.cumsum(weights) - 0.5 * weights
+    weighted_quantiles /= np.sum(weights)
+    percs = np.interp(percentiles, weighted_quantiles, values)
+    return percs
