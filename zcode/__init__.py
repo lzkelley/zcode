@@ -8,7 +8,7 @@ from . import inout
 from . import constants
 
 __author__ = "Luke Zoltan Kelley"
-__version__ = "0.0.8"
+__version__ = "0.0.9"
 __email__ = "lkelley@cfa.harvard.edu"
 __status__ = "Development"
 

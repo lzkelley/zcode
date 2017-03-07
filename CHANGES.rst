@@ -26,6 +26,11 @@ Future / To-Do
 
 Current
 -------
+
+
+
+[0.0.9] - 2017/03/07
+--------------------
 -   inout/
     +   inout_core.py
         -   `npzToDict`
