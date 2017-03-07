@@ -53,6 +53,7 @@ Current
             +   Find the arguments in one array closest to those in another.
         -   `limit` [new-function]
             +   Limit the given value(s) to the given extrema. 
+        -   `str_array` <== `strArray`
     +   statistic.py
         -   `confidence_intervals`
             +   BUG: fixed issue where multidimensional array input was leading to incorrectly shaped output arrays.
@@ -81,6 +82,8 @@ Current
             -   ENH: new function to truncate the given colormap.
         -   `label_line` [new-function]
             +   ENH: new function to add an annotation to a given line with the appropriate placement and rotation.
+        -   `plotConfFill`
+            -   ENH: convert passed confidence intervals to np.array as needed.
         -   `text`
             +   ENH: Add `pad` parameter.
             +   ENH: now accepts a `loc` argument, a two-letter string which describes the location at which the text will be placed.

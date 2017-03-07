@@ -1360,10 +1360,9 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
         A patch for each confidence inteval (for use on legend).
 
     """
-
-    # ll, = ax.plot(rads, med, '-', color=color, lw=lw)
-    # if dashes is not None:
-    #     ll.set_dashes(dashes)
+    conf = np.atleast_2d(conf)
+    if conf.shape[-1] != 2:
+        raise ValueError("Last dimension of `conf` must be 2!")
 
     # `conf` has shape ``(num-rads, num-conf-ints, 2)``
     if conf.ndim == 2:
@@ -1383,12 +1382,10 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
     _pp = None
     for jj in xrange(numConf):
         # Set fill-opacity
-        if np.size(fillalpha) == numConf: falph = fillalpha
-        else:                             falph = np.power(fillalpha, jj+1)
-
-        # Create a dummy-patch to return for a legend of confidence-intervals
-        # pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
-        # confPatches.append(pp[0])
+        if np.size(fillalpha) == numConf:
+            falph = fillalpha
+        else:
+            falph = np.power(fillalpha, jj+1)
 
         xx = np.array(rads)
         ylo = np.array(conf[:, jj, 0])
