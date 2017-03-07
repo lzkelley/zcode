@@ -423,7 +423,7 @@ Current
         -   Enhanced the `spline` function, and removed the secondary functions `logSpline` and
             `logSpline_resample`.  The former is included in the new functionality of `spline`,
             and the latter is too simple to warrant its own function.
-        -   `strArray [new-function]
+        -   `strArray` [new-function]
             +   Creates a string representation of a numerical array.
         -   `indsWIthin` [new-function]
             +   Finds the indices of an array within the bounds of the given extrema.
