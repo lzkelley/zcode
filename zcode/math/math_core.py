@@ -2,16 +2,17 @@
 
 Functions
 ---------
+-   argextrema               - Find the index of the extrema in the input array.
+-   argnearest               - Find the indices in one array closest to those in a second array.
 -   around                   - Round the given value to arbitrary decimal points, in any direction.
 -   contiguousInds           - Find the largest segment of contiguous array values
 -   within                   - Test whether a value is within the bounds of another.
 -   indsWithin               - Find the indices within the given extrema.
 -   minmax                   - Find the min and max of given values.
 -   really1d                 - Test whether an array_like is really 1D (e.g. not jagged array).
--   argextrema               - Find the index of the extrema in the input array.
 -   spacing                  - Create an even spacing between extrema from given data.
 -   asBinEdges               - Create bin-edges if the given `bins` do not already give them.
--   strArray                 - Create a string representation of a numerical array.
+-   str_array                 - Create a string representation of a numerical array.
 -   sliceForAxis             - Array slicing object which slices only the target axis.
 -   midpoints                - Return the midpoints between values in the given array.
 -   vecmag                   - find the magnitude/distance of/between vectors.
@@ -19,6 +20,7 @@ Functions
 -   frexp10                  - Decompose a float into mantissa and exponent (base 10).
 -   groupDigitized           - Get a list of array indices corresponding to each bin.
 -   mono                     - Check for monotonicity in the given array.
+-   limit                    -
 
 -   _comparisonFunction      -
 -   _comparisonFilter        -
@@ -33,11 +35,75 @@ import numpy as np
 import warnings
 import numbers
 
-__all__ = ['around', 'contiguousInds', 'within', 'indsWithin', 'minmax', 'really1d',
-           'argextrema', 'spacing', 'asBinEdges', 'strArray', 'sliceForAxis', 'midpoints',
-           'vecmag', 'renumerate', 'frexp10', 'groupDigitized',
-           'mono', 'ordered_groups', 'comparison_filter',
-           '_comparisonFunction', '_comparison_function', '_infer_scale']
+__all__ = ['argextrema', 'around', 'asBinEdges', 'contiguousInds',
+           'frexp10', 'groupDigitized',
+           'indsWithin', 'midpoints', 'minmax',  'mono', 'limit',
+           'ordered_groups', 'really1d', 'renumerate',
+           'sliceForAxis', 'spacing', 'str_array', 'vecmag', 'within',
+           'comparison_filter', '_comparisonFunction', '_comparison_function',
+           '_infer_scale']
+
+
+def argextrema(arr, type, filter=None):
+    """Find the index of the desired type of extrema in the input array.
+    """
+    # Valid filters, NOTE: do *not* include 'e' (equals), doesn't make sense here.
+    good_filter = [None, 'g', 'ge', 'l', 'le']
+    if(filter not in good_filter):
+        raise ValueError("Filter '%s' Unrecognized." % (type))
+    # Make sure `type` is valid
+    good_type = ['min', 'max']
+    if(not np.any([type.startswith(gt) for gt in good_type])):
+        raise ValueError("Type '%s' Unrecognized." % (type))
+    # Make sure input array `arr` is valid (1D)
+    arr = np.asarray(arr)
+    if(arr.ndim != 1 or arr[0].ndim != 0):
+        raise ValueError("Only 1D arrays currently supported.")
+
+    if(type.startswith('min')):
+        func = np.argmin
+    elif(type.startswith('max')):
+        func = np.argmax
+
+    # Find whether the `filter` criteria is True
+    if(filter):
+        filterFunc = _comparisonFunction(filter)
+        sel = filterFunc(arr, 0.0)
+    # If no filter (`None`), all values are valid
+    else:
+        sel = np.ones_like(arr, dtype=bool)
+
+    # Find the extrema within the valid (`sel`) subset
+    ind = func(arr[sel])
+    # Convert to index wrt the full input array
+    ind = np.where(sel)[0][ind]
+    return ind
+
+
+def argnearest(options, targets):
+    """Find the indices of elements in the `options` array closest to those in the `targets` array.
+
+    Arguments
+    ---------
+    options : (N,) array of scalar
+        Find indices for elements in this array.
+    targets : (M,) array of scalar
+        Look for elements in the `options` array closest to these `targets` values.
+
+    Returns
+    -------
+    idx : (M,) array of int
+        Indices of `options` nearest `targets`.  May include duplicates.
+
+    """
+    options = np.atleast_1d(options)
+    targets = np.atleast_1d(targets)
+    idx = np.searchsorted(options, targets, side="left").clip(max=options.size-1)
+    dist_lo = np.fabs(targets - options[idx-1])
+    dist_hi = np.fabs(targets - options[idx])
+    mask = (idx > 0) & ((idx == options.size) | (dist_lo < dist_hi))
+    idx = idx - mask
+    return idx
 
 
 def around(val, decimals=0, scale='log', dir='near'):
@@ -125,6 +191,81 @@ def around(val, decimals=0, scale='log', dir='near'):
     return rnd
 
 
+def asBinEdges(bins, data, scale='lin'):
+    """Create bin-edges if the given `bins` do not already give them.
+
+    Code based on 'scipy.stats._binned_statistic.binned_statistic_dd'.
+
+    Arguments
+    ---------
+    bins : int, array_like of int, or array_like of scalars
+        Specification for bins.  This must be one of:
+        * int, specifying the number of bins to create with scaling `scale`, in *all* dimensions.
+        * array_like of int, specifying the number of bins to create in *each* dimension.
+        * array_like of scalars, specifying the (left and right) edges for bins of *1D* data.
+        * list of array_like of scalars, specifying the (left and right) edges for bins in
+          each dimension.
+    data : (M,[D]) array_like of scalars
+        Input data with which to construct bin-edges, or determine validity of given bin-edges.
+        This can be one-dimensional with shape (M), or D-dimensional with shape (M,D).
+    scale : str
+        Specification for spacing of bin edges {'lin', 'log'}.  Ignored if bin-edges are given
+        explicitly in `bins`.
+
+    Returns
+    -------
+    bins : list of array_like float
+        For 1D input data, this will be a single array of `N+1` bin edges for `N` bins.
+        If the input data is `D`-Dimensional, then this will be a list of `D` arrays of bin edges,
+        each element of which can have a different number of bins.
+
+    """
+    data = np.asarray(data)
+    ndim = data.ndim
+    edges = ndim * [None]
+
+    try:
+        M = len(bins)
+        if M != ndim:
+            flag_1d = really1d(bins)
+            if flag_1d:
+                bins = [np.asarray(bins, float)]
+
+            if not flag_1d or len(bins) != ndim:
+                raise ValueError('The dimension of bins must be equal '
+                                 'to the dimension of the sample x.')
+    except TypeError:
+        bins = ndim * [bins]
+
+    # If `scale` is a single value for all dimensions
+    if(np.ndim(scale) == 0):
+        scale = ndim * [scale]
+    # otherwise `scale` must be specified for each dimension
+    elif(np.size(scale) != ndim):
+        raise ValueError("`scale` must be a single value or a value for each dimension.")
+
+    # Find range for each dimension
+    smin = np.atleast_1d(np.array(data.min(axis=0), float))
+    smax = np.atleast_1d(np.array(data.max(axis=0), float))
+    # Make sure the bins have a finite width.
+    for i in xrange(len(smin)):
+        if smin[i] == smax[i]:
+            smin[i] = smin[i] - 0.5
+            smax[i] = smax[i] + 0.5
+
+    # Create arrays describing edges of bins
+    for ii in xrange(ndim):
+        if np.isscalar(bins[ii]):
+            edges[ii] = spacing([smin[ii], smax[ii]], scale[ii], num=bins[ii] + 1)
+        else:
+            edges[ii] = np.asarray(bins[ii], float)
+
+    if(ndim == 1):
+        edges = edges[0]
+
+    return edges
+
+
 def contiguousInds(args):
     """Find the longest contiguous segment of positive values in the array.
     """
@@ -156,37 +297,87 @@ def contiguousInds(args):
     return inds
 
 
-def within(vals, extr, edges=True, all=False, inv=False):
-    """Test whether a value or array is within the bounds of another.
+def frexp10(vals):
+    """Return the mantissa and exponent in base 10.
 
     Arguments
     ---------
-       vals   <scalar>([N]) : test value(s)
-       extr  <scalar>[M]    : array or span to compare with
-       edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
-       all   <bool>         : optional, whether All values are within bounds (single return `bool`)
-       inv   <bool>         : optional, invert results (i.e. `True` ==> `False` and visa-versa)
+    vals : (N,) array_like of float
+        Values to be converted.
 
     Returns
     -------
-       <bool> : True if within, False otherwise
+    man : (N,) array_like of float
+        Mantissa.
+    exp : (N,) array_like of float
+        Exponent
+    """
+    # Find exponent of absolute value
+    exp = np.floor(np.log10(np.fabs(vals)))
+    # Positive/negative is still included here
+    man = vals / np.power(10.0, exp)
+    return man, exp
+
+
+def groupDigitized(arr, bins, edges='right'):
+    """Get a list of array indices corresponding to each bin.
+
+    Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
+    bin, finds the list of array indices which belong in that bin.
+
+    The specification for `bins` can be either monotonically increasing or decreasing, following
+    the rules of ``numpy.digitize`` (which is used internally).
+
+    Arguments
+    ---------
+    arr : array_like of scalars
+        Values to digitize and group.
+    bins : (N,) array_like or scalars
+        Bin edges to digitize and group by.
+    edges : str, {'[r]ight', '[l]eft'}
+        Whether bin edges correspond to 'right' or 'left' side of the bins.
+        Only the first letter is tested, and either case (lower/upper) is allowed.
+
+    Returns
+    -------
+    groups : (N,) list of int arrays
+        Each list contains the ``arr`` indices belonging to each corresponding bin.
+
+
+    Examples
+    --------
+        >>> arr = [0.0, 1.3, 1.8, 2.1]
+        >>> bins = [1.0, 2.0, 3.0]
+        >>> zcode.Math.groupDigitized(arr, bins, right=True)
+        [array([0]), array([1, 2]), array([3])]
+        >>> zcode.Math.groupDigitized(arr, bins, right=False)
+        [array([1, 2]), array([3]), array([])]
+
+    See Also
+    --------
+    -   ``scipy.stats.binned_statistic``
+    -   ``numpy.digitize``
 
     """
+    edges = edges.lower()
+    if edges.startswith('r'): right = True
+    elif edges.startswith('l'): right = False
+    else: RuntimeError("``edges`` must be 'right' or 'left'!")
 
-    extr_bnds = minmax(extr)
+    # `numpy.digitize` always assumes `bins` are right-edges (in effect)
+    shift = 0
+    # If we want 'left' bin edges, such shift each bin leftwards
+    if not right: shift = -1
 
-    # Include edges for WITHIN bounds (thus not including is outside)
-    if(edges): retval = np.asarray(((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])))
-    # Don't include edges for WITHIN  (thus include them for outside)
-    else:      retval = np.asarray(((vals > extr_bnds[0]) & (vals < extr_bnds[1])))
+    # Find in which bin each element of arr belongs
+    pos = np.digitize(arr, bins, right=right) + shift
 
-    # Convert to single return value
-    if(all): retval = np.all(retval)
+    groups = []
+    # Group indices by bin number
+    for ii in xrange(len(bins)):
+        groups.append(np.where(pos == ii)[0])
 
-    # Invert results
-    if(inv): retval = np.invert(retval)
-
-    return retval
+    return groups
 
 
 def indsWithin(vals, extr, edges=True):
@@ -200,6 +391,51 @@ def indsWithin(vals, extr, edges=True):
         inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
 
     return inds
+
+
+def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
+    """Return the midpoints between values in the given array.
+
+    If the given array is N-dimensional, midpoints are calculated from the last dimension.
+
+    Arguments
+    ---------
+        arr : ndarray of scalars,
+            Input array.
+        log : bool,
+            Find midpoints in log-space.
+        frac : float,
+            Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
+        axis : int,
+            Which axis about which to find the midpoints.
+
+    Returns
+    -------
+        mids : ndarray of floats,
+            The midpoints of the input array.
+            The resulting shape will be the same as the input array `arr`, except that
+            `mids.shape[axis] == arr.shape[axis]-1`.
+
+    """
+
+    if(np.shape(arr)[axis] < 2):
+        raise RuntimeError("Input ``arr`` does not have a valid shape!")
+
+    # Convert to log-space
+    if(log): user = np.log10(arr)
+    else:    user = np.array(arr)
+
+    diff = np.diff(user, axis=axis)
+
+    #     skip the last element, or the last axis
+    cut = sliceForAxis(user, axis=axis, stop=-1)
+    start = user[cut]
+    mids = start + frac*diff
+
+    if(log): mids = np.power(10.0, mids)
+    if(squeeze): mids = mids.squeeze()
+
+    return mids
 
 
 def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None, round_scale='log'):
@@ -276,6 +512,132 @@ def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None, ro
     return minmax
 
 
+def mono(arr, type='g', axis=-1):
+    """Check for monotonicity in the given array.
+
+    Arguments
+    ---------
+    arr : array_like scalars
+        Input array to check.
+    type : str
+        Type of monotonicity to look for:
+        * 'g' :
+
+    Returns
+    -------
+    retval : bool
+        Whether the input array is monotonic in the desired sense.
+
+    """
+    arr = np.atleast_1d(arr)
+    if arr.size == 1: return True
+    good_type = ['g', 'ge', 'l', 'le', 'e']
+    assert type in good_type, "Type '%s' Unrecognized." % (type)
+    # Retrieve the numpy comparison function (e.g. np.greater) for the given `type` (e.g. 'g')
+    func = _comparisonFunction(type)
+    delta = np.diff(arr, axis=axis)
+    retval = np.all(func(delta, 0.0))
+    return retval
+
+
+def limit(val, arr):
+    """Limit the given value(s) to given bounds.
+
+    Arguments
+    ---------
+    val : (N,) scalar or array of scalar
+        Value(s) to be limited.
+    arr : (M,) array of scalar
+        The extrema by which to bound.
+
+    Returns
+    -------
+    new : (N,) scalar or array of scalar
+        Limited values, same size as input `val`.
+
+    """
+    # Make copy
+    new = np.array(val)
+    extr = minmax(arr)
+    # Enforce lower bound
+    new = np.maximum(new, extr[0])
+    # Enforce upper bound
+    new = np.minimum(new, extr[1])
+    return new
+
+
+def ordered_groups(values, targets, inds=None, dir='above', include=False):
+    """Find the locations in ordering indices to break the given values into target groups.
+
+    Arguments
+    ---------
+    values : (N,) array_like of scalar
+        Values to order by.
+    targets : scalar or (M,) array_like of scalar
+        Target locations at which to divide `values` into groups.
+    inds : (L,) array_like of int or `None`
+        Subset of elements in the input `values` to consider.
+    dir : str {'a', 'b'}
+        Consider elements 'a'bove or 'b'elow each `targets` value.
+    include : bool
+        Include the `targets` values themselves in the groups.
+        See: Example[1]
+
+    Returns
+    -------
+    locs : int or (M,) array of int
+        Locations in the array of sorting indices `sorter` at which to divide groups.
+        If the given `targets` is a scalar, then the returned `locs` is also.
+    sorter : (N,) [or (L,) if `inds` is provided] of int
+        Indices to sort the input array `values`, [or `values[inds]` if `inds` is provided].
+
+    Examples
+    --------
+    # [1] Inclusive vs. Exclusive  and  Scalar vs. array_like input
+    >>> ordered_groups([5, 4, 3, 2], 3, dir='b', include=False)
+    1
+    >>> ordered_groups([5, 4, 3, 2], [3], dir='b', include=True)
+    [2]
+
+    """
+    values = np.asarray(values)
+    nval = values.size
+    scalar = False
+    if np.ndim(targets) == 0:
+        scalar = True
+    targets = np.atleast_1d(targets)
+    if dir.startswith('a'):
+        above = True
+        if include: side = 'left'
+        else: side = 'right'
+    elif dir.startswith('b'):
+        above = False
+        if include: side = 'right'
+        else: side = 'left'
+    else:
+        raise ValueError("`dir` = '{}' must be either 'a'bove or 'b'elow.".format(dir))
+
+    if not mono(targets):
+        raise ValueError("`targets` must be in increasing order.")
+
+    if inds is None:
+        inds = np.arange(nval)
+
+    # Find indices to sort by `mass_ratio`
+    sorter = np.argsort(values[inds])
+    # Find the locations in the sorted array at which the desired `mrats` occur.
+    locs = np.searchsorted(values[inds], targets, sorter=sorter, side=side)
+    # Reverse sorter so to get elements ABOVE target mass-ratios
+    if above:
+        sorter = sorter[::-1]
+        locs = inds.size - locs
+
+    if scalar:
+        locs = np.asscalar(locs)
+
+    return locs, sorter
+
+
 def really1d(arr):
     """Test whether an array_like is really 1D (i.e. not a jagged ND array).
 
@@ -303,40 +665,50 @@ def really1d(arr):
     return True
 
 
-def argextrema(arr, type, filter=None):
-    """Find the index of the desired type of extrema in the input array.
+def renumerate(arr):
     """
-    # Valid filters, NOTE: do *not* include 'e' (equals), doesn't make sense here.
-    good_filter = [None, 'g', 'ge', 'l', 'le']
-    if(filter not in good_filter):
-        raise ValueError("Filter '%s' Unrecognized." % (type))
-    # Make sure `type` is valid
-    good_type = ['min', 'max']
-    if(not np.any([type.startswith(gt) for gt in good_type])):
-        raise ValueError("Type '%s' Unrecognized." % (type))
-    # Make sure input array `arr` is valid (1D)
-    arr = np.asarray(arr)
-    if(arr.ndim != 1 or arr[0].ndim != 0):
-        raise ValueError("Only 1D arrays currently supported.")
+    Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
+    """
+    return zip(reversed(range(len(arr))), reversed(arr))
 
-    if(type.startswith('min')):
-        func = np.argmin
-    elif(type.startswith('max')):
-        func = np.argmax
 
-    # Find whether the `filter` criteria is True
-    if(filter):
-        filterFunc = _comparisonFunction(filter)
-        sel = filterFunc(arr, 0.0)
-    # If no filter (`None`), all values are valid
+def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
+    """
+    Creates an array slicing object which slices only the target axis.
+
+    If ``arr`` is a single number, it is taken as the number of dimensions to create the slice for.
+    Otherwise, the ndim of ``arr`` is used.
+
+    Arguments
+    ---------
+        arr   <obj>    : integer number of dimensions, or N-Dim array of objects to retrieve ndim
+        axis  <int>    : target axis (`-1` for last)
+        start <int>    : None for default
+        stop  <int>    : None for default
+        step  <int>    : None for default
+
+    Returns
+    -------
+        cut   <obj>[N] : list of `slice` objects for each dimension, only slicing on ``axis``
+
+    """
+
+    if(start is stop is step is None):
+        raise RuntimeError("``start``,``stop``, or ``step`` required!")
+
+    ndim = np.ndim(arr)
+    if(ndim == 0): ndim = arr
+
+    if(ndim > 1):
+        #     Create an object to slice all elements of all dims
+        cut = [slice(None)]*ndim
+        #     Exclude the last element of the last dimension
+        cut[axis] = slice(start, stop, step)
     else:
-        sel = np.ones_like(arr, dtype=bool)
+        if(axis != 0 and axis != -1): raise RuntimeError("cannot slice nonexistent axis!")
+        cut = slice(start, stop, step)
 
-    # Find the extrema within the valid (`sel`) subset
-    ind = func(arr[sel])
-    # Convert to index wrt the full input array
-    ind = np.where(sel)[0][ind]
-    return ind
+    return cut
 
 
 def spacing(data, scale='log', num=100, filter=None, integers=False):
@@ -423,82 +795,7 @@ def spacing(data, scale='log', num=100, filter=None, integers=False):
     return spaced
 
 
-def asBinEdges(bins, data, scale='lin'):
-    """Create bin-edges if the given `bins` do not already give them.
-
-    Code based on 'scipy.stats._binned_statistic.binned_statistic_dd'.
-
-    Arguments
-    ---------
-    bins : int, array_like of int, or array_like of scalars
-        Specification for bins.  This must be one of:
-        * int, specifying the number of bins to create with scaling `scale`, in *all* dimensions.
-        * array_like of int, specifying the number of bins to create in *each* dimension.
-        * array_like of scalars, specifying the (left and right) edges for bins of *1D* data.
-        * list of array_like of scalars, specifying the (left and right) edges for bins in
-          each dimension.
-    data : (M,[D]) array_like of scalars
-        Input data with which to construct bin-edges, or determine validity of given bin-edges.
-        This can be one-dimensional with shape (M), or D-dimensional with shape (M,D).
-    scale : str
-        Specification for spacing of bin edges {'lin', 'log'}.  Ignored if bin-edges are given
-        explicitly in `bins`.
-
-    Returns
-    -------
-    bins : list of array_like float
-        For 1D input data, this will be a single array of `N+1` bin edges for `N` bins.
-        If the input data is `D`-Dimensional, then this will be a list of `D` arrays of bin edges,
-        each element of which can have a different number of bins.
-
-    """
-    data = np.asarray(data)
-    ndim = data.ndim
-    edges = ndim * [None]
-
-    try:
-        M = len(bins)
-        if M != ndim:
-            flag_1d = really1d(bins)
-            if flag_1d:
-                bins = [np.asarray(bins, float)]
-
-            if not flag_1d or len(bins) != ndim:
-                raise ValueError('The dimension of bins must be equal '
-                                 'to the dimension of the sample x.')
-    except TypeError:
-        bins = ndim * [bins]
-
-    # If `scale` is a single value for all dimensions
-    if(np.ndim(scale) == 0):
-        scale = ndim * [scale]
-    # otherwise `scale` must be specified for each dimension
-    elif(np.size(scale) != ndim):
-        raise ValueError("`scale` must be a single value or a value for each dimension.")
-
-    # Find range for each dimension
-    smin = np.atleast_1d(np.array(data.min(axis=0), float))
-    smax = np.atleast_1d(np.array(data.max(axis=0), float))
-    # Make sure the bins have a finite width.
-    for i in xrange(len(smin)):
-        if smin[i] == smax[i]:
-            smin[i] = smin[i] - 0.5
-            smax[i] = smax[i] + 0.5
-
-    # Create arrays describing edges of bins
-    for ii in xrange(ndim):
-        if np.isscalar(bins[ii]):
-            edges[ii] = spacing([smin[ii], smax[ii]], scale[ii], num=bins[ii] + 1)
-        else:
-            edges[ii] = np.asarray(bins[ii], float)
-
-    if(ndim == 1):
-        edges = edges[0]
-
-    return edges
-
-
-def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
+def str_array(arr, first=4, last=4, delim=", ", format=":.4e"):
     """Create a string representation of a numerical array.
 
     Arguments
@@ -528,7 +825,7 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
         last = 0
 
     # Create the style specification
-    form = "{:%s}" % (format)
+    form = "{{{}}}".format(format)
 
     arrStr = "["
     # Add the first `first` elements
@@ -546,90 +843,6 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
     arrStr += "]"
 
     return arrStr
-
-
-def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
-    """
-    Creates an array slicing object which slices only the target axis.
-
-    If ``arr`` is a single number, it is taken as the number of dimensions to create the slice for.
-    Otherwise, the ndim of ``arr`` is used.
-
-    Arguments
-    ---------
-        arr   <obj>    : integer number of dimensions, or N-Dim array of objects to retrieve ndim
-        axis  <int>    : target axis (`-1` for last)
-        start <int>    : None for default
-        stop  <int>    : None for default
-        step  <int>    : None for default
-
-    Returns
-    -------
-        cut   <obj>[N] : list of `slice` objects for each dimension, only slicing on ``axis``
-
-    """
-
-    if(start is stop is step is None):
-        raise RuntimeError("``start``,``stop``, or ``step`` required!")
-
-    ndim = np.ndim(arr)
-    if(ndim == 0): ndim = arr
-
-    if(ndim > 1):
-        #     Create an object to slice all elements of all dims
-        cut = [slice(None)]*ndim
-        #     Exclude the last element of the last dimension
-        cut[axis] = slice(start, stop, step)
-    else:
-        if(axis != 0 and axis != -1): raise RuntimeError("cannot slice nonexistent axis!")
-        cut = slice(start, stop, step)
-
-    return cut
-
-
-def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
-    """Return the midpoints between values in the given array.
-
-    If the given array is N-dimensional, midpoints are calculated from the last dimension.
-
-    Arguments
-    ---------
-        arr : ndarray of scalars,
-            Input array.
-        log : bool,
-            Find midpoints in log-space.
-        frac : float,
-            Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
-        axis : int,
-            Which axis about which to find the midpoints.
-
-    Returns
-    -------
-        mids : ndarray of floats,
-            The midpoints of the input array.
-            The resulting shape will be the same as the input array `arr`, except that
-            `mids.shape[axis] == arr.shape[axis]-1`.
-
-    """
-
-    if(np.shape(arr)[axis] < 2):
-        raise RuntimeError("Input ``arr`` does not have a valid shape!")
-
-    # Convert to log-space
-    if(log): user = np.log10(arr)
-    else:    user = np.array(arr)
-
-    diff = np.diff(user, axis=axis)
-
-    #     skip the last element, or the last axis
-    cut = sliceForAxis(user, axis=axis, stop=-1)
-    start = user[cut]
-    mids = start + frac*diff
-
-    if(log): mids = np.power(10.0, mids)
-    if(squeeze): mids = mids.squeeze()
-
-    return mids
 
 
 def vecmag(r1, r2=None):
@@ -659,194 +872,37 @@ def vecmag(r1, r2=None):
     return dist
 
 
-def renumerate(arr):
-    """
-    Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
-    """
-    return zip(reversed(range(len(arr))), reversed(arr))
-
-
-def frexp10(vals):
-    """Return the mantissa and exponent in base 10.
+def within(vals, extr, edges=True, all=False, inv=False):
+    """Test whether a value or array is within the bounds of another.
 
     Arguments
     ---------
-    vals : (N,) array_like of float
-        Values to be converted.
+       vals   <scalar>([N]) : test value(s)
+       extr  <scalar>[M]    : array or span to compare with
+       edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
+       all   <bool>         : optional, whether All values are within bounds (single return `bool`)
+       inv   <bool>         : optional, invert results (i.e. `True` ==> `False` and visa-versa)
 
     Returns
     -------
-    man : (N,) array_like of float
-        Mantissa.
-    exp : (N,) array_like of float
-        Exponent
-    """
-    # Find exponent of absolute value
-    exp = np.floor(np.log10(np.fabs(vals)))
-    # Positive/negative is still included here
-    man = vals / np.power(10.0, exp)
-    return man, exp
-
-
-def groupDigitized(arr, bins, edges='right'):
-    """Get a list of array indices corresponding to each bin.
-
-    Uses ``numpy.digitize`` to find which bin each element of ``arr`` belongs in.  Then, for each
-    bin, finds the list of array indices which belong in that bin.
-
-    The specification for `bins` can be either monotonically increasing or decreasing, following
-    the rules of ``numpy.digitize`` (which is used internally).
-
-    Arguments
-    ---------
-    arr : array_like of scalars
-        Values to digitize and group.
-    bins : (N,) array_like or scalars
-        Bin edges to digitize and group by.
-    edges : str, {'[r]ight', '[l]eft'}
-        Whether bin edges correspond to 'right' or 'left' side of the bins.
-        Only the first letter is tested, and either case (lower/upper) is allowed.
-
-    Returns
-    -------
-    groups : (N,) list of int arrays
-        Each list contains the ``arr`` indices belonging to each corresponding bin.
-
-
-    Examples
-    --------
-        >>> arr = [0.0, 1.3, 1.8, 2.1]
-        >>> bins = [1.0, 2.0, 3.0]
-        >>> zcode.Math.groupDigitized(arr, bins, right=True)
-        [array([0]), array([1, 2]), array([3])]
-        >>> zcode.Math.groupDigitized(arr, bins, right=False)
-        [array([1, 2]), array([3]), array([])]
-
-    See Also
-    --------
-    -   ``scipy.stats.binned_statistic``
-    -   ``numpy.digitize``
+       <bool> : True if within, False otherwise
 
     """
-    edges = edges.lower()
-    if edges.startswith('r'): right = True
-    elif edges.startswith('l'): right = False
-    else: RuntimeError("``edges`` must be 'right' or 'left'!")
 
-    # `numpy.digitize` always assumes `bins` are right-edges (in effect)
-    shift = 0
-    # If we want 'left' bin edges, such shift each bin leftwards
-    if not right: shift = -1
+    extr_bnds = minmax(extr)
 
-    # Find in which bin each element of arr belongs
-    pos = np.digitize(arr, bins, right=right) + shift
+    # Include edges for WITHIN bounds (thus not including is outside)
+    if(edges): retval = np.asarray(((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])))
+    # Don't include edges for WITHIN  (thus include them for outside)
+    else:      retval = np.asarray(((vals > extr_bnds[0]) & (vals < extr_bnds[1])))
 
-    groups = []
-    # Group indices by bin number
-    for ii in xrange(len(bins)):
-        groups.append(np.where(pos == ii)[0])
+    # Convert to single return value
+    if(all): retval = np.all(retval)
 
-    return groups
+    # Invert results
+    if(inv): retval = np.invert(retval)
 
-
-def mono(arr, type='g', axis=-1):
-    """Check for monotonicity in the given array.
-
-    Arguments
-    ---------
-    arr : array_like scalars
-        Input array to check.
-    type : str
-        Type of monotonicity to look for:
-        * 'g' :
-
-    Returns
-    -------
-    retval : bool
-        Whether the input array is monotonic in the desired sense.
-
-    """
-    arr = np.atleast_1d(arr)
-    if arr.size == 1: return True
-    good_type = ['g', 'ge', 'l', 'le', 'e']
-    assert type in good_type, "Type '%s' Unrecognized." % (type)
-    # Retrieve the numpy comparison function (e.g. np.greater) for the given `type` (e.g. 'g')
-    func = _comparisonFunction(type)
-    delta = np.diff(arr, axis=axis)
-    retval = np.all(func(delta, 0.0))
     return retval
-
-
-def ordered_groups(values, targets, inds=None, dir='above', include=False):
-    """Find the locations in ordering indices to break the given values into target groups.
-
-    Arguments
-    ---------
-    values : (N,) array_like of scalar
-        Values to order by.
-    targets : scalar or (M,) array_like of scalar
-        Target locations at which to divide `values` into groups.
-    inds : (L,) array_like of int or `None`
-        Subset of elements in the input `values` to consider.
-    dir : str {'a', 'b'}
-        Consider elements 'a'bove or 'b'elow each `targets` value.
-    include : bool
-        Include the `targets` values themselves in the groups.
-        See: Example[1]
-
-    Returns
-    -------
-    locs : int or (M,) array of int
-        Locations in the array of sorting indices `sorter` at which to divide groups.
-        If the given `targets` is a scalar, then the returned `locs` is also.
-    sorter : (N,) [or (L,) if `inds` is provided] of int
-        Indices to sort the input array `values`, [or `values[inds]` if `inds` is provided].
-
-    Examples
-    --------
-    # [1] Inclusive vs. Exclusive  and  Scalar vs. array_like input
-    >>> ordered_groups([5, 4, 3, 2], 3, dir='b', include=False)
-    1
-    >>> ordered_groups([5, 4, 3, 2], [3], dir='b', include=True)
-    [2]
-
-    """
-    values = np.asarray(values)
-    nval = values.size
-    scalar = False
-    if np.ndim(targets) == 0:
-        scalar = True
-    targets = np.atleast_1d(targets)
-    if dir.startswith('a'):
-        above = True
-        if include: side = 'left'
-        else: side = 'right'
-    elif dir.startswith('b'):
-        above = False
-        if include: side = 'right'
-        else: side = 'left'
-    else:
-        raise ValueError("`dir` = '{}' must be either 'a'bove or 'b'elow.".format(dir))
-
-    if not mono(targets):
-        raise ValueError("`targets` must be in increasing order.")
-
-    if inds is None:
-        inds = np.arange(nval)
-
-    # Find indices to sort by `mass_ratio`
-    sorter = np.argsort(values[inds])
-    # Find the locations in the sorted array at which the desired `mrats` occur.
-    locs = np.searchsorted(values[inds], targets, sorter=sorter, side=side)
-    # Reverse sorter so to get elements ABOVE target mass-ratios
-    if above:
-        sorter = sorter[::-1]
-        locs = inds.size - locs
-
-    if scalar:
-        locs = np.asscalar(locs)
-
-    return locs, sorter
 
 
 def _comparisonFunction(comp):
@@ -1024,44 +1080,3 @@ def _flagsToFilter(positive, nonzero, filter=None, source=None):
 def _infer_scale(args):
     if np.all(args > 0.0): return 'log'
     return 'lin'
-
-
-'''
-def createSlice(index, max):
-    """
-    Create an array slicing object.
-
-    Arguments
-    ---------
-        index <obj> : int, list of int, or 'None'
-        max   <int> : length of array to be sliced.
-
-    Returns
-    -------
-        ids <int>([N]) : indices included in slice.
-        cut <obj>      : Slicing object, either `slice` or `np.array`.
-
-    """
-
-    import numbers
-    # Single Value
-    if(isinstance(index, numbers.Integral)):
-        cut = slice(index, index+1)
-        ids = np.arange(index, index+1)
-    # Range of values
-    elif(np.iterable(index)):
-        cut = index
-        ids = index
-    else:
-        if(index is not None):
-            self.log.error("Unrecognized `index` = '%s'!" % (str(index)))
-            self.log.warning("Returning all entries")
-
-        cut = slice(None)
-        ids = np.arange(max)
-
-
-    return ids, cut
-
-# } createSlice()
-'''

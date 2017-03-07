@@ -29,6 +29,85 @@ Current
 
 
 
+[0.0.9] - 2017/03/07
+--------------------
+-   inout/
+    +   inout_core.py
+        -   `npzToDict`
+            +   BUG: issue loading npz across python2-python3 transition.  Attempt to resolve.
+        -   `str_format_dict` [new-function]
+            -   New function to pretty-print a dictionary object into a string (uses `json`).
+        -   `getFileSize` ==> `get_file_size` [deprecation]
+            -   Also improve behavior to accept single or list of filenames.
+        -   `getProgressBar` [DELETED]
+            -   Should use `tqdm` functions instead.
+        -  `par_dir` [new-function]
+            -   !!NOTE: not sure if this is a good one... commented out for now!!
+            -   Method which returns the parent directory of the given path.
+        -  `top_dir` [new-function]
+            -   Method which returns the top-most directory from the given path.
+        -  `underline` [new-function]
+            -   Append a newline to the given string with repeated characters (e.g. '-')
+        -   `warn_with_traceback` [new-function]
+            -   Used to override builtin `warnings.showwarning` method, will include traceback information in warning report.
+    -   `log.py`
+        -   `getLogger`
+            -   Attached a function to new logger instances which will both log an error and raise one.  Just call `log.raise_error(msg)` on the returned `log` instance.
+            -   Attached a function `log.after(msg, beg)` to report how long something took (automatically calculated).
+-   math/
+    +   math_core.py
+        -   `argnearest` [new-function]
+            +   Find the arguments in one array closest to those in another.
+        -   `limit` [new-function]
+            +   Limit the given value(s) to the given extrema. 
+        -   `str_array` <== `strArray`
+    +   statistic.py
+        -   `confidence_intervals`
+            +   BUG: fixed issue where multidimensional array input was leading to incorrectly shaped output arrays.
+        -   `sigma`
+            +   ENH: added new parameter 'boundaries' to determine whether a pair of boundaries are given for the confidence interval, or for normal behavior where the area is given.  Also added tests.
+        -   `percentiles` [new-function]
+            -   Function which calculates percentiles (like `np.percentile`) but with optional weighting of values.
+        -   `stats_str`
+            -   Changes to use local `percentiles` function instead of `np.percentile`.  Added `weights` argument, and converted from using input percentile arguments in [0, 100] range to fractions: [0.0, 1.0] range.
+            -   Set `ave=False`, and remove `label` parameter.  Should be added manually on str is used from the calling code.
+    +   tests/
+        -   test_math_core.py
+            +   `test_argnearest` [new-function]
+                -   Test the new `argnearest` function.
+-   plot/
+    +   Hist2D.py
+        -   `plot2DHist`
+            +   BUG: fixed issue where grid indices were reversed -- caused errors in non-square grids.
+            +   BUG: contour lines were using a different grid for some reason (unknown), was messing up edges and spacings.
+            +   BUG: default `fs=None` to not change the preset font size.
+        -   `plot2DHistProj`
+            +   BUG: errors when x and y projection axes were turned off. 
+    +   plot_core.py
+        -   `colormap`
+            -   ENH: added `left` and `right` parameters to allow truncation of colormaps.
+        -   `cut_colormap` [new-function]
+            -   ENH: new function to truncate the given colormap.
+        -   `label_line` [new-function]
+            +   ENH: new function to add an annotation to a given line with the appropriate placement and rotation.
+        -   `plotConfFill`
+            -   ENH: convert passed confidence intervals to np.array as needed.
+        -   `text`
+            +   ENH: Add `pad` parameter.
+            +   ENH: now accepts a `loc` argument, a two-letter string which describes the location at which the text will be placed.
+            +   ENH: `halign` and `valign` are now passed through the new `_parse_align()` method which will process/filter the alignment strings.  e.g. 'l' is now converted to 'left' as required for matplotlib.
+        -   `setGrid`
+            +   ENH: added new arguments for color and alpha.
+        -   `_loc_str_to_pars`
+            -   [BUG]: Was using 'lower' instead of 'bottom', triggering warning.
+-   `constants.py`
+    -   Added `DAY` (in seconds) variable.
+-   `utils.py` [new-file]
+    -   New file for general purpose, internal methods, etc.
+    -   `dep_warn` [new-function]
+        -   Function for sending deprecation warnings.
+
+
 
 [0.0.8] - 2016/05/15
 --------------------
@@ -349,7 +428,7 @@ Current
         -   Enhanced the `spline` function, and removed the secondary functions `logSpline` and
             `logSpline_resample`.  The former is included in the new functionality of `spline`,
             and the latter is too simple to warrant its own function.
-        -   `strArray [new-function]
+        -   `strArray` [new-function]
             +   Creates a string representation of a numerical array.
         -   `indsWIthin` [new-function]
             +   Finds the indices of an array within the bounds of the given extrema.

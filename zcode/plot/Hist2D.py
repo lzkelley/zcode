@@ -31,7 +31,7 @@ _LEFT = 0.09
 _RIGHT = 0.92     # Location of right of plots
 _BOTTOM = 0.09
 _TOP = 0.90       # Location of top of plots
-
+_PAD = 0.03
 _CB_WID = 0.02
 _CB_WPAD = 0.1
 _BAR_ALPHA = 0.8
@@ -42,7 +42,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0, alpha=1.0,
                    cmap=None, smap=None, type='hist', scale_to_cbar=True,
                    fs=12, scale='log', histScale='log', labels=None, cbar=True,
-                   overlay=False, overlay_fmt='',
+                   overlay=None, overlay_fmt=None,
                    left=_LEFT, bottom=_BOTTOM, right=_RIGHT, top=_TOP, lo=None, hi=None,
                    overall=False, overall_bins=20, overall_wide=False, overall_cumulative=False):
     """Plot a 2D histogram with projections of one or both axes.
@@ -102,11 +102,11 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     labels : (2,) str
     cbar : bool,
         Add a colorbar.
-    overlay : str or None, if str {'counts', 'values'}
+    overlay : str or 'None', if str {'counts', 'values'}
         Print a str on each bin writing,
         'counts' - the number of values included in that bin, or
         'values' - the value of the bin itself.
-    overlay_fmt : str
+    overlay_fmt : str or 'None'
         Format specification on overlayed values, e.g. "02d" (no colon or brackets).
     left : float {0.0, 1.0}
         Location of the left edge of axes relative to the figure.
@@ -180,14 +180,18 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     # Filter input data
     if filter is not None:
         # Make sure `filter` is an iterable pair
-        if weights is None: num = 2
-        else:               num = 3
+        # if weights is None:
+        #     num = 2
+        # else:
+        #     num = 3
 
-        if not np.iterable(filter): filter = num*[filter]
-        elif len(filter) == 1: filter = num*[filter[0]]
+        if not np.iterable(filter):
+            filter = 3*[filter]
+        elif len(filter) == 1:
+            filter = 3*[filter[0]]
 
-        if len(filter) != num:
-            raise ValueError("If `weights` are provided, number of `filter` values must match.")
+        # if len(filter) != num:
+        #     raise ValueError("If `weights` are provided, number of `filter` values must match.")
 
         # Filter `xvals`
         if filter[0] is not None:
@@ -296,8 +300,12 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
             # Overlay the values themselves
             if overlay.startswith('val'):
                 overlay_values = hist_2d
+                if overlay_fmt is None:
+                    overlay_fmt = ''
             # Get the 'counts' to overlay on plot
             else:
+                if overlay_fmt is None:
+                    overlay_fmt = 'd'
                 try:
                     overlay_values, xedges_2d, yedges_2d, binnums = sp.stats.binned_statistic_2d(
                         xvals, yvals, weights, statistic='count', bins=[xbins, ybins],
@@ -310,6 +318,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
                     overlay_values = _cumulative_stat2d(
                         np.ones_like(xvals), overlay_values.shape, binnums, 'count', cumulative)
 
+                overlay_values = overlay_values.astype(int)
+
         pcm, smap, cbar = plot2DHist(prax, xedges_2d, yedges_2d, hist_2d, cscale=histScale,
                                      cbax=cbax, labels=labels, cmap=cmap, smap=smap,
                                      extrema=extrema, fs=fs, scale=scale,
@@ -317,22 +327,33 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
         # Colors
         # X-projection
-        colhist_xp = np.array(hist_xp)
-        # Enforce positive values for colors in log-plots.
-        if smap.log:
-            tmin, tmax = zmath.minmax(colhist_xp, filter='g')
-            colhist_xp = np.maximum(colhist_xp, tmin)
-        colors_xp = smap.to_rgba(colhist_xp)
-        colors_yp = smap.to_rgba(hist_yp)
+        if xpax:
+            colhist_xp = np.array(hist_xp)
+            # Enforce positive values for colors in log-plots.
+            if smap.log:
+                tmin, tmax = zmath.minmax(colhist_xp, filter='g')
+                colhist_xp = np.maximum(colhist_xp, tmin)
+            colors_xp = smap.to_rgba(colhist_xp)
+
+        if ypax:
+            colhist_yp = np.array(hist_yp)
+            # Enforce positive values for colors in log-plots.
+            if smap.log:
+                tmin, tmax = zmath.minmax(colhist_yp, filter='g')
+                colhist_xp = np.maximum(colhist_yp, tmin)
+            colors_yp = smap.to_rgba(colhist_yp)
+
+        # colors_yp = smap.to_rgba(hist_yp)
 
     # Scatter Plot
     else:
         colors = smap.to_rgba(weights)
         prax.scatter(xvals, yvals, c=colors, alpha=alpha)
 
-        cbar = plt.colorbar(smap, cax=cbax)
-        cbar.set_label(cblabel, fontsize=fs)
-        cbar.ax.tick_params(labelsize=fs)
+        if cbar:
+            cbar = plt.colorbar(smap, cax=cbax)
+            cbar.set_label(cblabel, fontsize=fs)
+            cbar.ax.tick_params(labelsize=fs)
 
         # Make projection colors all grey
         colors_xp = '0.8'
@@ -400,7 +421,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
 def plot2DHist(ax, xvals, yvals, hist,
                cax=None, cbax=None, cscale='log', cmap=None, smap=None, extrema=None,
-               contours=None, clabel={}, fs=12, rasterized=True, scale='log',
+               contours=None, clabel={}, fs=None, rasterized=True, scale='log',
                title=None, labels=None, overlay=None, overlay_fmt="", **kwargs):
     """Plot the given 2D histogram of data.
 
@@ -438,6 +459,12 @@ def plot2DHist(ax, xvals, yvals, hist,
         A scalar-mappable object to use for colormaps, or `None` for one to be created.
     extrema : (2,) array_like of scalars
         Minimum and maximum values for colormap scaling.
+    contours : (L,) array_like of scalar or `None`
+        Histogram values at which to draw contours using the `plt.contour` `levels` argument.
+    clabel : dict or `None`
+        If `None`, no contours labels are drawn, otherwise labels are drawn on the contours,
+        where additional labeling parameters can be passed in the `clabel` dictionary.
+
     labels : (2,) or (3,) array_like of strings
         The first two string are the 'x' and 'y' axis labels respectively.  If a third string is
         provided it is used as the colorbar label.
@@ -457,8 +484,10 @@ def plot2DHist(ax, xvals, yvals, hist,
     cblab = 'Counts'
     xgrid, ygrid = np.meshgrid(xvals, yvals)
     hist = np.asarray(hist)
-    if plot_core._scale_to_log_flag(cscale): filter = 'g'
-    else:                                    filter = None
+    if plot_core._scale_to_log_flag(cscale):
+        filter = 'g'
+    else:
+        filter = None
     extrema = _set_extrema(extrema, hist, filter=filter)
 
     # Make sure the given `scale` is valid
@@ -514,8 +543,8 @@ def plot2DHist(ax, xvals, yvals, hist,
                 overlay.shape, hist.shape))
 
         # Remember these are transposes
-        for ii in range(xgrid.shape[0] - 1):
-            for jj in range(xgrid.shape[1] - 1):
+        for ii in range(xgrid.shape[1] - 1):
+            for jj in range(xgrid.shape[0] - 1):
                 if scale[0].startswith('log'):
                     xx = np.sqrt(xgrid[jj, ii] * xgrid[jj, ii+1])
                 else:
@@ -535,14 +564,13 @@ def plot2DHist(ax, xvals, yvals, hist,
         else:
             levels = np.array(contours)
 
-        xg, yg = np.meshgrid(zmath.midpoints(xvals, log=True), zmath.midpoints(yvals, log=True))
-        cs = ax.contour(xg, yg, hist[:-1, :-1].T, colors='0.25', norm=smap.norm,
-                        levels=levels, linewidths=4.0, antialiased=True)
-        ax.contour(xg, yg, hist[:-1, :-1].T, cmap=smap.cmap, norm=smap.norm,
-                   levels=levels, linewidths=1.5, antialiased=True)
-        # plt.clabel(cs, inline=1, fontsize=fs, fmt='%.0e')
+        ax.contour(xgrid, ygrid, hist.T, colors='0.50', norm=smap.norm,
+                        levels=levels, linewidths=5.0, antialiased=True, zorder=10, alpha=0.4)
+        cs = ax.contour(xgrid, ygrid, hist.T, cmap=smap.cmap, norm=smap.norm,
+                   levels=levels, linewidths=2.5, antialiased=True, zorder=11, alpha=0.8)
         if levels is not None and clabel is not None:
-            plt.clabel(cs, inline=1, **clabel)
+            clabel.setdefault('inline', True)
+            plt.clabel(cs, **clabel, zorder=50)
 
     plot_core.setLim(ax, 'x', data=xvals)
     plot_core.setLim(ax, 'y', data=yvals)
@@ -587,7 +615,7 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
 
     if yproj:
         prim_wid = useable[0]*wratio
-        ypro_wid = useable[0]*(1.0-wratio)
+        ypro_wid = useable[0]*(1.0-wratio-_PAD)
     else:
         prim_wid = useable[0]
 
@@ -610,8 +638,10 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
     # Add x-projection axes on top-left
     if xproj:
         xpax = fig.add_axes([left, bottom+prim_hit+pad, prim_wid, xpro_hit-pad])
-        xpax.set(xscale=scale[0], yscale=histScale, ylabel=histLab, xlabel=labels[0])
+        xpax.set(xscale=scale[0], yscale=histScale, ylabel=histLab)
+        xpax.set_xlabel(labels[0], labelpad=fs*0.6)
         xpax.xaxis.set_label_position('top')
+        # xpax.xaxis.label_pad = 30
         xpax.tick_params(axis='both', which='major', labelsize=fs)
         plot_core.setGrid(xpax, True, axis='y')
 
@@ -638,7 +668,8 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
             ov_size = [ypro_wid - pad, xpro_hit - pad]
 
         ovax = fig.add_axes(ov_loc + ov_size)
-        ovax.set(xscale=histScale, xlabel=histLab, ylabel='Number')
+        ovax.set(xscale=histScale, ylabel='Number')
+        ovax.set_xlabel(histLab, labelpad=fs*0.6)
         ovax.tick_params(axis='both', which='major', labelsize=fs)
         # Move the y ticks/labels to the right
         ovax.yaxis.tick_right()

@@ -12,6 +12,7 @@ Functions
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from datetime import datetime
 import logging
 import inspect
 import numpy as np
@@ -71,21 +72,26 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
 
     """
 
-    if tofile is None and not tostr: raise ValueError("Must log to something!")
+    if (tofile is None) and (not tostr):
+        raise ValueError("Must log to something!")
 
     logger = logging.getLogger(name)
     # Make sure handlers don't get duplicated (ipython issue)
-    while len(logger.handlers) > 0: logger.handlers.pop()
+    while len(logger.handlers) > 0:
+        logger.handlers.pop()
     # Prevents duplication or something something...
     logger.propagate = 0
 
     # Determine and Set Logging Levels
-    if fileLevel is None: fileLevel = logging.DEBUG
-    if strLevel is None: strLevel = logging.WARNING
-    #     Logger object must be at minimum level
-    logger.setLevel(np.min([fileLevel, strLevel]))
+    if fileLevel is None:
+        fileLevel = logging.DEBUG
+    if strLevel is None:
+        strLevel = logging.WARNING
+    #     Logger object must be at minimum level (`np` int doesnt work, need regular int)
+    logger.setLevel(int(np.min([fileLevel, strLevel]).astype(int)))
 
-    if dateFmt is None: dateFmt = '%Y/%m/%d %H:%M:%S'
+    if dateFmt is None:
+        dateFmt = '%Y/%m/%d %H:%M:%S'
 
     # Log to file
     # -----------
@@ -113,6 +119,24 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
         strHandler.setFormatter(strFormatter)
         strHandler.setLevel(strLevel)
         logger.addHandler(strHandler)
+
+    # Add a `raise` method to both log an error and raise one
+    # -------------------------------------------------------
+    def _raise(self, msg, error=RuntimeError):
+        self.error(msg)
+        raise error(msg)
+    # Not entirely sure why this works, but it seems to
+    logger.raise_error = _raise.__get__(logger)
+
+    # Add a `after` method to log how long something took
+    # ---------------------------------------------------
+    def _after(self, msg, beg, beg_all=None, lvl=logging.INFO):
+        _str = "{} after {}".format(msg, datetime.now()-beg)
+        if beg_all is not None:
+            _str += " ({})".format(datetime.now()-beg_all)
+        self.log(lvl, _str)
+    # Not entirely sure why this works, but it seems to
+    logger.after = _after.__get__(logger)
 
     return logger
 

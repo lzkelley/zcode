@@ -23,6 +23,11 @@ Functions
 -   ascii_table              - Print a table with the given contents to output.
 -   modify_exists            - Modify the given filename if it already exists.
 -   iterable_notstring       - Return True' if the argument is an iterable and not a string type.
+-   str_format_dict          - Pretty-format a dict into a nice looking string.
+-   par_dir                  - Get parent (absolute) directory name from given file/directory.
+-   top_dir                  - Get the top level directory name from the given path.
+-   underline                - Add a new line of characters appended to the given string.
+-   warn_with_traceback      - Include traceback information in warnings.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -37,11 +42,13 @@ import warnings
 import numpy as np
 import collections
 
-__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize',
+from zcode import utils
+
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'get_file_size',
            'countLines', 'estimateLines',
-           'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
+           'checkPath', 'dictToNPZ', 'npzToDict', 'combineFiles', 'checkURL',
            'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
-           'iterable_notstring']
+           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback']
 
 
 class _Keys_Meta(type):
@@ -187,25 +194,32 @@ def bytesString(bytes, precision=1):
     return strSize
 
 
-def getFileSize(fnames, precision=1):
+def getFileSize(*args, **kwargs):
+    utils.dep_warn("getFileSize", newname="get_file_size")
+    return get_file_size(*args, **kwargs)
+
+
+def get_file_size(fnames, precision=1):
     """Return a human-readable size of a file or set of files.
 
     Arguments
     ---------
-    fnames : <string> or list/array of <string>, paths to target file(s)
-    precisions : <int>, desired decimal precision of output
+    fnames : str or list
+        Paths to target file(s)
+    precisions : int,
+        Sesired decimal precision of output
 
     Returns
     -------
-    byteStr : <string>, human-readable size of file(s)
+    byteStr : str
+        Human-readable size of file(s)
 
     """
-
-    ftype = type(fnames)
-    if(ftype is not list and ftype is not np.ndarray): fnames = [fnames]
+    fnames = np.atleast_1d(fnames)
 
     byteSize = 0.0
-    for fil in fnames: byteSize += os.path.getsize(fil)
+    for fil in fnames:
+        byteSize += os.path.getsize(fil)
 
     byteStr = bytesString(byteSize, precision)
     return byteStr
@@ -281,7 +295,11 @@ def checkPath(tpath, create=True):
     if len(path) > 0:
         if not os.path.isdir(path):
             if create:
-                os.makedirs(path)
+                try:
+                    os.makedirs(path)
+                except FileExistsError:
+                    if not os.path.isdir(path):
+                        raise
             else:
                 return None
 
@@ -335,44 +353,39 @@ def npzToDict(npz):
        Output dictionary with key-values from npz file.
 
     """
-    if(isinstance(npz, six.string_types)): npz = np.load(npz)
 
-    newDict = {}
-    for key in list(npz.keys()):
-        vals = npz[key]
-        # Extract objects (e.g. dictionaries) packaged into size=1 arrays
-        if(np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) and
-           vals.dtype.type is np.object_):
-            vals = vals.item()
+    try:
+        if isinstance(npz, six.string_types):
+            # Use `fix_imports` to try to resolve python2 to python3 issues.
+            _npz = np.load(npz, fix_imports=True)
+        else:
+            _npz = npz
+        newDict = _convert_npz_to_dict(_npz)
 
-        newDict[key] = vals
+    except Exception:
+        warnings.warn("Normal load of `{}` failed ... trying different encoding".format(
+            npz))
+        if isinstance(npz, six.string_types):
+            # Use `fix_imports` to try to resolve python2 to python3 issues.
+            _npz = np.load(npz, fix_imports=True, encoding="bytes")
+        else:
+            _npz = npz
+        newDict = _convert_npz_to_dict(_npz)
 
     return newDict
 
 
-def getProgressBar(maxval, width=100):
-    """Wrapper to create a progressbar object with default settings.
+def _convert_npz_to_dict(npz):
+    newDict = {}
+    for key in list(npz.keys()):
+        vals = npz[key]
+        # Extract objects (e.g. dictionaries) packaged into size=1 arrays
+        if ((np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) and
+             vals.dtype.type is np.object_)):
+            vals = vals.item()
 
-    Use ``pbar.start()``, ``pbar.update(N)`` and ``pbar.finish()``
-    """
-
-    import progressbar
-
-    # Set Progress Bar Parameters
-    widgets = [
-        progressbar.Percentage(),
-        ' ', progressbar.Bar(),
-        ' ']
-
-    try:
-        widgets.append(progressbar.AdaptiveETA())
-    except:
-        widgets.append(progressbar.ETA())
-
-    # Start Progress Bar
-    pbar = progressbar.ProgressBar(widgets=widgets, maxval=maxval, term_width=width)
-
-    return pbar
+        newDict[key] = vals
+    return newDict
 
 
 def combineFiles(inFilenames, outFilename, verbose=False):
@@ -394,26 +407,26 @@ def combineFiles(inFilenames, outFilename, verbose=False):
     nums = len(inFilenames)
 
     # Open output file for writing
-    if(verbose): pbar = getProgressBar(nums)
+    if verbose: pbar = getProgressBar(nums)
     with open(outFilename, 'w') as outfil:
 
         # Iterate over input files
         for ii, inname in enumerate(inFilenames):
             inSize += os.path.getsize(inname)
-            if(verbose): pbar.update(ii)
+            if verbose: pbar.update(ii)
 
             # Open input file for reading
             with open(inname, 'r') as infil:
                 # Iterate over input file lines
                 for line in infil: outfil.write(line)
 
-    if(verbose): pbar.finish()
+    if verbose: pbar.finish()
 
     outSize = os.path.getsize(outFilename)
     inStr = bytesString(inSize)
     outStr = bytesString(outSize)
 
-    if(verbose): print(" - - - Total input size = %s, output size = %s" % (inStr, outStr))
+    if verbose: print("Total input size = %s, output size = %s" % (inStr, outStr))
     return
 
 
@@ -734,3 +747,69 @@ def iterable_notstring(var):
     """Return True' if the argument is an iterable and not a string type.
     """
     return not isinstance(var, six.string_types) and isinstance(var, collections.Iterable)
+
+
+def str_format_dict(jdict):
+    """Pretty-format a dictionary into a nice looking string using the `json` package.
+
+    Arguments
+    ---------
+    jdict : dict,
+        Input dictionary to be formatted.
+
+    Returns
+    -------
+    jstr : str,
+        Nicely formatted string.
+
+    """
+    import json
+    jstr = json.dumps({'4': 5, '6': 7}, sort_keys=True, indent=4, separators=(',', ': '))
+    return jstr
+
+
+def top_dir(idir):
+    """Get the top level directory name from the given path.
+
+    e.g. top_dir("/Users/lzkelley/Programs/zcode/zcode/")             -> "zcode"
+         top_dir("/Users/lzkelley/Programs/zcode/zcode")              -> "zcode"
+         top_dir("/Users/lzkelley/Programs/zcode/zcode/constants.py") -> "zcode"
+    """
+    # Removing trailing slash if included
+    if idir.endswith('/'):
+        idir = idir[:-1]
+
+    # If this is already a directory, then `basename` is the top-level directory
+    if os.path.isdir(idir):
+        top = os.path.basename(idir)
+    # Otherwise, split path first
+    else:
+        idir, fil = os.path.split(idir)
+        top = os.path.basename(idir)
+
+    return top
+
+
+def underline(in_str, char=None):
+    """Return a copy of the input string with a new line of '-' appended, with matching length.
+    """
+    if char is None:
+        char = '-'
+    use_str = in_str.split("\n")[-1]
+    out_str = in_str + "\n" + char*len(use_str)
+    return out_str
+
+
+def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
+    """Use this method in place of `warnings.showwarning` to include traceback information.
+
+    Use:
+        `warnings.showwarning = warn_with_traceback`
+
+    Taken from: http://stackoverflow.com/a/22376126/230468
+    """
+    import traceback
+    traceback.print_stack()
+    log = file if hasattr(file, 'write') else sys.stderr
+    log.write(warnings.formatwarning(message, category, filename, lineno, line))
+    return

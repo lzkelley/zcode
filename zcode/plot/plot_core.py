@@ -9,10 +9,12 @@ Functions
 -   zoom                 - Zoom-in at a certain location on the given axes.
 -   stretchAxes          - Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
 -   text                 - Add text to figure.
+-   label_line           - Add text to line
 -   legend               - Add a legend to the given figure.
 -   unifyAxesLimits      - Set limits on all given axes to match global extrema.
 -   color_cycle          - Create a range of colors.
 -   colormap             - Create a colormap from scalars to colors.
+-   cut_colormap         - Select a truncated subset of the given colormap.
 -   color_set            - Retrieve a (small) set of color-strings with hand picked values.
 -   setGrid              - Configure the axes' grid.
 -   skipTicks            - skip some tick marks
@@ -58,11 +60,15 @@ import seaborn.apionly as sns
 import zcode.math as zmath
 import zcode.inout as zio
 
-__all__ = ['setAxis', 'twinAxis', 'setLim', 'set_ticks', 'zoom', 'stretchAxes', 'text', 'legend',
-           'unifyAxesLimits', 'color_cycle',
-           'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
-           'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
-           'line_label', 'full_extent', 'position_to_extent', 'backdrop', '_histLine']
+__all__ = ['setAxis', 'twinAxis', 'setLim', 'set_ticks', 'zoom',
+           'stretchAxes', 'text', 'label_line', 'legend',
+           'unifyAxesLimits', 'color_cycle', 'transform',
+           'colorCycle', 'colormap', 'color_set', 'setGrid',
+           'skipTicks', 'saveFigure', 'strSciNot',
+           'plotHistLine', 'plotSegmentedLine', 'plotScatter',
+           'plotHistBars', 'plotConfFill',
+           'line_label', 'full_extent', 'position_to_extent',
+           'backdrop', '_histLine']
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -71,10 +77,10 @@ _COLOR_SET = ['blue', 'red', 'green', 'purple',
               'orange', 'cyan', 'brown', 'gold', 'pink',
               'forestgreen', 'grey', 'olive', 'coral', 'yellow']
 
-_COLOR_SET_XKCD = ["blue", "red", "green", "purple", "orange",
-                   "azure", "brown", "pink", "magenta", "windows blue",
-                   "amber", "teal", "light blue", "rose", "turquoise",
-                   "lavender", "slate blue", "cyan", "lime green", "greyish",
+_COLOR_SET_XKCD = ["blue", "red", "green", "purple", "cyan", "orange",
+                   "pink", "brown", "magenta", "amber", "slate blue",
+                   "teal", "light blue", "lavender", "rose", "turquoise", "azure",
+                   "lime green", "greyish", "windows blue",
                    "faded green", "mustard", "brick red", "dusty purple"]
 
 _LW_OUTLINE = 0.8
@@ -112,8 +118,8 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
     """
 
-    assert axis in ['x', 'y'],                          "``axis`` must be `x` or `y`!"
-    assert trans in ['axes', 'figure'],                  "``trans`` must be `axes` or `figure`!"
+    assert axis in ['x', 'y'], "``axis`` must be `x` or `y`!"
+    assert trans in ['axes', 'figure'], "``trans`` must be `axes` or `figure`!"
     assert side in VALID_SIDES, "``side`` must be in '%s'" % (VALID_SIDES)
 
     # Set tick colors and font-sizes
@@ -122,74 +128,77 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     ax.tick_params(axis=axis, which='major', size=ts)
 
     # Set Grid Lines
-    # ax.grid(grid, which='both', axis=axis)
-    # setGrid(ax, grid, axis=axis)
     setGrid(ax, grid, axis='both')
 
-    if(axis == 'x'):
+    if axis == 'x':
         ax.xaxis.label.set_color(c)
         offt = ax.get_xaxis().get_offset_text()
 
-        if(side is None):
-            if(pos is None):
+        if side is None:
+            if pos is None:
                 side = 'bottom'
             else:
-                if(pos < 0.5): side = 'bottom'
-                else:            side = 'top'
+                if pos < 0.5:
+                    side = 'bottom'
+                else:
+                    side = 'top'
 
-        if(pos is not None):
+        if pos is not None:
             offt.set_y(pos)
             ax.xaxis.set_label_position(side)
             ax.xaxis.set_ticks_position(side)
 
-        if(lim is not None):
-            if(np.size(lim) > 2): lim = zmath.minmax(lim)
+        if lim is not None:
+            if np.size(lim) > 2: lim = zmath.minmax(lim)
             ax.set_xlim(lim)
 
-        if(invert): ax.invert_xaxis()
-        if(not ticks):
+        if invert: ax.invert_xaxis()
+        if not ticks:
             for tlab in ax.xaxis.get_ticklabels(): tlab.set_visible(False)
 
     else:
         ax.yaxis.label.set_color(c)
         offt = ax.get_yaxis().get_offset_text()
 
-        if(side is None):
-            if(pos is None):
+        if side is None:
+            if pos is None:
                 side = 'left'
             else:
-                if(pos < 0.5): side = 'left'
-                else:            side = 'right'
+                if pos < 0.5:
+                    side = 'left'
+                else:
+                    side = 'right'
 
-        if(pos is not None):
+        if pos is not None:
             offt.set_x(pos)
 
         ax.yaxis.set_label_position(side)
         ax.yaxis.set_ticks_position(side)
 
-        if(lim is not None): ax.set_ylim(lim)
+        if lim is not None: ax.set_ylim(lim)
 
-        if(invert): ax.invert_yaxis()
-        if(not ticks):
+        if invert:
+            ax.invert_yaxis()
+        if not ticks:
             for tlab in ax.yaxis.get_ticklabels(): tlab.set_visible(False)
 
     # Set Spine colors
     ax.spines[side].set_color(c)
-    if(pos is not None):
+    if pos is not None:
         ax.set_frame_on(True)
         ax.spines[side].set_position((trans, pos))
         ax.spines[side].set_visible(True)
         ax.patch.set_visible(False)
 
     # Set Axis Scaling
-    if(scale is not None): _setAxis_scale(ax, axis, scale, thresh=thresh)
+    if scale is not None: _setAxis_scale(ax, axis, scale, thresh=thresh)
 
     # Set Axis Label
     _setAxis_label(ax, axis, label, fs=fs, c=c)
 
-    if(stretch != 1.0):
-        if(axis == 'x'): ax = stretchAxes(ax, xs=stretch)
-        elif(axis == 'y'): ax = stretchAxes(ax, ys=stretch)
+    if stretch != 1.0:
+        if axis == 'x': ax = stretchAxes(ax, xs=stretch)
+        elif axis == 'y': ax = stretchAxes(ax, ys=stretch)
 
     offt.set_color(c)
     return ax
@@ -198,10 +207,10 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 def twinAxis(ax, axis='x', pos=1.0, **kwargs):
     """
     """
-    if(axis == 'x'):
+    if axis == 'x':
         tw = ax.twinx()
         setax = 'y'
-    elif(axis == 'y'):
+    elif axis == 'y':
         tw = ax.twiny()
         setax = 'x'
     else:
@@ -247,10 +256,10 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
     AT_VALID = [AT_LEAST, AT_EXACTLY, AT_MOST]
     assert at in AT_VALID, "``at`` must be in {'%s'}!" % (str(AT_VALID))
 
-    if(axis == 'y'):
+    if axis == 'y':
         get_lim = ax.get_ylim
         set_lim = ax.set_ylim
-    elif(axis == 'x'):
+    elif axis == 'x':
         get_lim = ax.get_xlim
         set_lim = ax.set_xlim
     else:
@@ -259,54 +268,54 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
     lims = np.array(get_lim())
 
     # Set Range/Span of Limits
-    if(range):
-        if(lo is not None):
-            if(at == AT_EXACTLY):
+    if range:
+        if lo is not None:
+            if at == AT_EXACTLY:
                 lims[0] = lims[1]/lo
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[0] = np.max([lims[0], lims[0]/lo])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[0] = np.min([lims[0], lims[0]/lo])
-        elif(hi is not None):
-            if(at == AT_EXACTLY):
+        elif hi is not None:
+            if at == AT_EXACTLY:
                 lims[1] = lims[1]*hi
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[1] = np.max([lims[1], lims[1]*hi])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[1] = np.min([lims[1], lims[1]*hi])
         else:
             raise RuntimeError("``lo`` or ``hi`` must be provided!")
 
     # Set Limits explicitly
     else:
-        if(lo is not None):
-            if(at == AT_EXACTLY):
+        if lo is not None:
+            if at == AT_EXACTLY:
                 lims[0] = lo
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[0] = np.max([lims[0], lo])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[0] = np.min([lims[0], lo])
             else:
                 raise ValueError("Unrecognized `at` = '%s'" % (at))
-        elif(data is not None):
+        elif data is not None:
             lims[0] = np.min(data)
 
-        if(hi is not None):
-            if(at == AT_EXACTLY):
+        if hi is not None:
+            if at == AT_EXACTLY:
                 lims[1] = hi
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[1] = np.max([lims[1], hi])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[1] = np.min([lims[1], hi])
             else:
                 raise ValueError("Unrecognized `at` = '%s'" % (at))
-        elif(data is not None):
+        elif data is not None:
             lims[1] = np.max(data)
 
     # Actually set the axes limits
     set_lim(lims)
-    if(invert):
-        if(axis == 'x'): ax.invert_xaxis()
+    if invert:
+        if axis == 'x': ax.invert_xaxis()
         else:            ax.invert_yaxis()
 
     return
@@ -335,11 +344,11 @@ def zoom(ax, loc, axis='x', scale=2.0):
     """
 
     # Choose functions based on target axis
-    if(axis == 'x'):
+    if axis == 'x':
         axScale = ax.get_xscale()
         lim = ax.get_xlim()
         set_lim = ax.set_xlim
-    elif(axis == 'y'):
+    elif axis == 'y':
         axScale = ax.get_yscale()
         lim = ax.get_ylim()
         set_lim = ax.set_ylim
@@ -349,15 +358,15 @@ def zoom(ax, loc, axis='x', scale=2.0):
     lim = np.array(lim)
 
     # Determine axis scaling
-    if(axScale.startswith('lin')):
+    if axScale.startswith('lin'):
         log = False
-    elif(axScale.startswith('log')):
+    elif axScale.startswith('log'):
         log = True
     else:
         raise ValueError("``axScale`` '%s' not implemented!" % (str(axScale)))
 
     # Convert to log if appropriate
-    if(log):
+    if log:
         lim = np.log10(lim)
         loc = np.log10(loc)
 
@@ -365,7 +374,7 @@ def zoom(ax, loc, axis='x', scale=2.0):
     delta = np.diff(zmath.minmax(lim))[0]
     lim = np.array([loc - (0.5/scale)*delta, loc + (0.5/scale)*delta])
     # Convert back to linear if appropriate
-    if(log): lim = np.power(10.0, lim)
+    if log: lim = np.power(10.0, lim)
     set_lim(lim)
 
     return lim
@@ -382,8 +391,8 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     xlims = np.array(ax.get_xlim())
     ylims = np.array(ax.get_ylim())
 
-    if(xlog): xlims = np.log10(xlims)
-    if(ylog): ylims = np.log10(ylims)
+    if xlog: xlims = np.log10(xlims)
+    if ylog: ylims = np.log10(ylims)
 
     xlims = [xlims[0] + 0.5*(1.0-xs)*(xlims[1]-xlims[0]),
              xlims[1] + 0.5*(1.0-xs)*(xlims[0]-xlims[1])]
@@ -391,8 +400,8 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     ylims = [ylims[0] + 0.5*(1.0-ys)*(ylims[1]-ylims[0]),
              ylims[1] + 0.5*(1.0-ys)*(ylims[0]-ylims[1])]
 
-    if(xlog): xlims = np.power(10.0, xlims)
-    if(ylog): ylims = np.power(10.0, ylims)
+    if xlog: xlims = np.power(10.0, xlims)
+    if ylog: ylims = np.power(10.0, ylims)
 
     ax.set_xlim(xlims)
     ax.set_ylim(ylims)
@@ -400,14 +409,44 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     return ax
 
 
-def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=None, **kwargs):
+def transform(ax, trans, fig=None):
+    """Create a (blended) transformation.
+    """
+    if np.size(trans) == 1 and isinstance(trans, six.string_types):
+        trans = [trans]
+    elif np.size(trans) != 2:
+        raise ValueError("`trans` = '{}' must be a string or pair of strings.".format(trans))
+
+    forms = []
+    for tt in trans:
+        if tt.startswith('ax'):
+            forms.append(ax.transAxes)
+        elif tt.startswith('data'):
+            forms.append(ax.transData)
+        elif tt.startswith('fig'):
+            if fig is None:
+                raise ValueError("trans = '{}' requires a `fig` object".format(tt))
+            forms.append(fig.transFigure)
+        else:
+            raise ValueError("Unrecognized transform '{}'".format(tt))
+
+    if len(forms) == 1:
+        transform = forms[0]
+    else:
+        transform = mpl.transforms.blended_transform_factory(forms[0], forms[1])
+
+    return transform
+
+
+def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
+         fs=16, trans=None, pad=None, **kwargs):
     """Add text to figure.
 
     Wrapper for the `matplotlib.figure.Figure.text` method.
 
     Arguments
     ---------
-    fig : `matplotlib.figure.Figure` object,
+    art : `matplotlib.figure.Figure` or `matplotlib.axes.Axes` object,
     pstr : str,
         String to be printed.
     x : float,
@@ -434,27 +473,107 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
     """
     # if trans is None: trans = fig.transFigure
     if trans is None:
-        if isinstance(fig, mpl.figure.Figure):
-            trans = fig.transFigure
-        elif isinstance(fig, mpl.axes.Axes):
-            trans = fig.transAxes
+        if isinstance(art, mpl.figure.Figure):
+            trans = art.transFigure
+        elif isinstance(art, mpl.axes.Axes):
+            trans = art.transAxes
 
-    if valign == 'upper':
-        warnings.warn("Use `'top'` not `'upper'`!")
-        valign = 'top'
+    if pad is None:
+        pad = _PAD
 
-    if valign == 'lower':
-        warnings.warn("Use `'bottom'` not `'lower'`!")
-        valign = 'bottom'
+    # If a location string is given, convert to parameters
+    if loc is not None:
+        x, y, halign, valign = _loc_str_to_pars(
+            loc, x=x, y=y, halign=halign, valign=valign, pad=pad)
 
-    txt = fig.text(x, y, pstr, size=fs, transform=trans,  # family='monospace',
+    # Set default values
+    if x is None:
+        x = 0.5
+    if y is None:
+        y = 1 - pad
+
+    halign, valign = _parse_align(halign, valign)
+    txt = art.text(x, y, pstr, size=fs, transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
 
 
+def label_line(ax, line, label, color='0.5', fs=14, halign='left', scale='linear', clip_on=True,
+               halign_scale=1.0):
+    """Add an annotation to the given line with appropriate placement and rotation.
+
+    Based on code from:
+        [How to rotate matplotlib annotation to match a line?]
+        (http://stackoverflow.com/a/18800233/230468)
+        User: [Adam](http://stackoverflow.com/users/321772/adam)
+
+    Arguments
+    ---------
+    ax : `matplotlib.axes.Axes` object
+        Axes on which the label should be added.
+    line : `matplotlib.lines.Line2D` object
+        Line which is being labeled.
+    label : str
+        Text which should be drawn as the label.
+    ...
+
+    Returns
+    -------
+    text : `matplotlib.text.Text` object
+
+    """
+    xlim = np.array(ax.get_xlim())
+    ylim = np.array(ax.get_ylim())
+
+    xdata, ydata = line.get_data()
+    x1 = xdata[0]
+    x2 = xdata[-1]
+    y1 = ydata[0]
+    y2 = ydata[-1]
+    # Limit the edges to the plotted area
+    x1, x2 = zmath.limit([x1, x2], xlim)
+    y1, y2 = np.interp([x1, x2], xdata, ydata)
+    y1, y2 = zmath.limit([y1, y2], ylim)
+    x1, x2 = np.interp([y1, y2], ydata, xdata)
+
+    log = _scale_to_log_flag(scale)
+
+    if halign.startswith('l'):
+        xx = x1*halign_scale
+        halign = 'left'
+    elif halign.startswith('r'):
+        xx = halign_scale*x2
+        halign = 'right'
+    elif halign.startswith('c'):
+        xx = zmath.midpoints([x1, x2], log=log)*halign_scale
+        halign = 'center'
+    else:
+        raise ValueError("Unrecognized `halign` = '{}'.".format(halign))
+
+    yy = np.interp(xx, xdata, ydata)
+
+    # Add Annotation to Text
+    xytext = (0, 0)
+    text = ax.annotate(label, xy=(xx, yy), xytext=xytext, textcoords='offset points',
+                       size=fs, color=color, zorder=1, clip_on=clip_on,
+                       horizontalalignment=halign, verticalalignment='center_baseline')
+    sp1 = ax.transData.transform_point((x1, y1))
+    sp2 = ax.transData.transform_point((x2, y2))
+
+    rise = (sp2[1] - sp1[1])
+    run = (sp2[0] - sp1[0])
+
+    slope_degrees = np.degrees(np.arctan2(rise, run))
+    text.set_rotation_mode('anchor')
+    text.set_rotation(slope_degrees)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return text
+
+
 def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs=12, trans=None,
-           fs_title=None, loc=None, mono=False, **kwargs):
+           fs_title=None, loc=None, mono=False, zorder=None, **kwargs):
     """Add a legend to the given figure.
 
     Wrapper for the `matplotlib.pyplot.Legend` method.
@@ -500,10 +619,12 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
     """
     if isinstance(art, mpl.figure.Figure):
         ax = art.axes[0]
-        if trans is None: trans = art.transFigure
+        if trans is None:
+            trans = art.transFigure
     elif isinstance(art, mpl.axes.Axes):
         ax = art
-        if trans is None: trans = ax.transAxes
+        if trans is None:
+            trans = ax.transAxes
 
     if 'handlelength' not in kwargs:
         kwargs['handlelength'] = _HANDLE_LENGTH
@@ -512,33 +633,12 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
     # `alpha` should actually be `framealpha`
     if 'alpha' in kwargs:
         warnings.warn("For legends, use `framealpha` instead of `alpha`.")
-        kwargs['framealpha'] = kwargs['alpha']
-        del kwargs['alpha']
+        kwargs['framealpha'] = kwargs.pop('alpha')
+        # del kwargs['alpha']
 
     # Override alignment using `loc` argument
     if loc is not None:
-        if loc[0] == 't' or loc[0] == 'u':
-            valign = 'upper'
-            if y is None: y = 1 - _PAD
-        elif loc[0] == 'b' or loc[0] == 'l':
-            valign = 'lower'
-            if y is None: y = _PAD
-        elif loc[0] == 'c':
-            valign = 'center'
-            if y is None: y = 0.5
-        else:
-            raise ValueError("Unrecognized `loc`[0] = '{}'.".format(loc[0]))
-        if loc[1] == 'l':
-            halign = 'left'
-            if x is None: x = _PAD
-        elif loc[1] == 'r':
-            halign = 'right'
-            if x is None: x = 1 - _PAD
-        elif loc[1] == 'c':
-            halign = 'center'
-            if x is None: x = 0.5
-        else:
-            raise ValueError("Unrecognized `loc`[1] = '{}'.".format(loc[1]))
+        x, y, halign, valign = _loc_str_to_pars(loc)
 
     if valign == 'top':
         valign = 'upper'
@@ -553,11 +653,15 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
         alignStr += " " + halign
 
     prop_dict = {'size': fs}
-    if mono: prop_dict['family'] = 'monospace'
+    if mono:
+        prop_dict['family'] = 'monospace'
     leg = ax.legend(keys, names, prop=prop_dict,
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
     if fs_title is not None:
         plt.setp(leg.get_title(), fontsize=fs_title)
+
+    if zorder is not None:
+        leg.set_zorder(10)
 
     return leg
 
@@ -642,11 +746,12 @@ def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=
         cmap = palette(color, n_colors=num, as_cmap=True)
 
     cols = [cmap(it) for it in nums]
-    if ax is not None: ax.set_color_cycle(cols[::-1])
+    if ax is not None:
+        ax.set_color_cycle(cols[::-1])
     return cols
 
 
-def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
+def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, right=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
@@ -662,6 +767,12 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
         Color specification for values below range.
     over : str or `None`
         Color specification for values above range.
+    left : float {0.0, 1.0} or `None`
+        Truncate the left edge of the colormap to this value.
+        If `None`, 0.0 used (if `right` is provided).
+    right : float {0.0, 1.0} or `None`
+        Truncate the right edge of the colormap to this value
+        If `None`, 1.0 used (if `left` is provided).
 
     Returns
     -------
@@ -669,13 +780,31 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
         Scalar mappable object which contains the members:
         `norm`, `cmap`, and the function `to_rgba`.
 
+    Notes
+    -----
+    -   Truncation:
+        -   If neither `left` nor `right` is given, no truncation is performed.
+        -   If only one is given, the other is set to the extreme value: 0.0 or 1.0.
+
     """
 
-    if cmap is None: cmap = 'jet'
+    if cmap is None:
+        cmap = 'jet'
+    if isinstance(cmap, six.string_types):
+        cmap = plt.get_cmap(cmap)
 
-    if isinstance(cmap, six.string_types): cmap = plt.get_cmap(cmap)
-    if under is not None: cmap.set_under(under)
-    if over is not None: cmap.set_over(over)
+    # Select a truncated subsection of the colormap
+    if (left is not None) or (right is not None):
+        if left is None:
+            left = 0.0
+        if right is None:
+            right = 1.0
+        cmap = cut_colormap(cmap, left, right)
+
+    if under is not None:
+        cmap.set_under(under)
+    if over is not None:
+        cmap.set_over(over)
 
     if scale is None:
         if np.size(args) > 1 and np.all(args > 0.0):
@@ -690,12 +819,16 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
         filter = None
 
     # Determine minimum and maximum
-    if np.size(args) > 1: min, max = zmath.minmax(args, filter=filter)
-    else:                 min, max = 0, np.int(args)-1
+    if np.size(args) > 1:
+        min, max = zmath.minmax(args, filter=filter)
+    else:
+        min, max = 0, np.int(args)-1
 
     # Create normalization
-    if log: norm = mpl.colors.LogNorm(vmin=min, vmax=max)
-    else:   norm = mpl.colors.Normalize(vmin=min, vmax=max)
+    if log:
+        norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+    else:
+        norm = mpl.colors.Normalize(vmin=min, vmax=max)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -705,6 +838,34 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
     smap.log = log
 
     return smap
+
+
+def cut_colormap(cmap, min=0.0, max=1.0, n=100):
+    """Select a truncated subset of the given colormap.
+
+    Code from: http://stackoverflow.com/a/18926541/230468
+
+    Arguments
+    ---------
+    cmap : `matplotlib.colors.Colormap`
+        Colormap to truncate
+    min : float, {0.0, 1.0}
+        Minimum edge of the colormap
+    max : float, {0.0, 1.0}
+        Maximum edge of the colormap
+    n : int
+        Number of points to use for sampling
+
+    Returns
+    -------
+    new_cmap : `matplotlib.colors.Colormap`
+        Truncated colormap.
+
+    """
+    name = 'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=min, b=max)
+    new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        name, cmap(np.linspace(min, max, n)))
+    return new_cmap
 
 
 def color_set(num, black=False, cset='xkcd'):
@@ -737,21 +898,43 @@ def color_set(num, black=False, cset='xkcd'):
         colors = ['black'] + colors
 
     ncol = len(colors)
-    # Make sure enough colors are available
+    # If more colors are requested than are available, fallback to `color_cycle`
     if num > ncol:
-        raise ValueError("Limited to {} colors, cannot produce `num` = '{}'.".format(ncol, num))
+        # raise ValueError("Limited to {} colors, cannot produce `num` = '{}'.".format(ncol, num))
+        colors = color_cycle(num)
+        return colors
 
     return colors[:num]
 
 
-def setGrid(ax, val, axis='both', below=True):
+def setGrid(ax, val=True, axis='both', c=None, ls='-', clear=True,
+            below=True, major=True, minor=True, zorder=2, alpha=None):
     """Configure the axes' grid.
     """
-    ax.grid(False, which='both', axis='both')
+    if clear:
+        ax.grid(False, which='both', axis='both')
     ax.set_axisbelow(below)
     if val:
-        ax.grid(True, which='major', axis=axis, c='0.50', ls='-')
-        ax.grid(True, which='minor', axis=axis, c='0.75', ls='-')
+        if major:
+            if c is None:
+                _c = '0.60'
+            else:
+                _c = c
+            if alpha is None:
+                _alpha = 0.8
+            else:
+                _alpha = alpha
+            ax.grid(True, which='major', axis=axis, c=_c, ls=ls, zorder=zorder, alpha=_alpha)
+        if minor:
+            if c is None:
+                _c = '0.85'
+            else:
+                _c = c
+            if alpha is None:
+                _alpha = 0.5
+            else:
+                _alpha = alpha
+            ax.grid(True, which='minor', axis=axis, c=_c, ls=ls, zorder=zorder, alpha=_alpha)
     return
 
 
@@ -983,7 +1166,7 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
     line, = ax.plot(xval, yval, **kwargs)
 
     # Add yerror-bars
-    if(yerr is not None):
+    if yerr is not None:
         xmid = zmath.midpoints(edges)
 
         if nonzero:
@@ -1017,7 +1200,7 @@ def plotSegmentedLine(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], lw=
     # conver to normalization
     norm = plt.Normalize(norm[0], norm[1])
 
-    if(zz is None): zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
+    if zz is None: zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
     else:             zz = np.asarray(zz)
 
     segments = _make_segments(xx, yy)
@@ -1035,15 +1218,15 @@ def plotScatter(ax, xx, yy, scalex='log', scaley='log',
     """
     COL = COL_CORR
 
-    if(size is None): size = [30, 6]
-    if(color is None): color = ['0.25', COL]
-    if(alpha is None): alpha = [0.5, 0.8]
+    if size is None: size = [30, 6]
+    if color is None: color = ['0.25', COL]
+    if alpha is None: alpha = [0.5, 0.8]
 
     ax.scatter(xx, yy, s=size[0], color=color[0], alpha=alpha[0], **kwargs)
     pnts = ax.scatter(xx, yy, s=size[1], color=color[1], alpha=alpha[1], **kwargs)
 
     # Add Contours
-    if(cont):
+    if cont:
         NUM = 4
         CMAP = 'jet'
         res = 0.3*np.sqrt(len(xx))
@@ -1177,10 +1360,9 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
         A patch for each confidence inteval (for use on legend).
 
     """
-
-    # ll, = ax.plot(rads, med, '-', color=color, lw=lw)
-    # if dashes is not None:
-    #     ll.set_dashes(dashes)
+    conf = np.atleast_2d(conf)
+    if conf.shape[-1] != 2:
+        raise ValueError("Last dimension of `conf` must be 2!")
 
     # `conf` has shape ``(num-rads, num-conf-ints, 2)``
     if conf.ndim == 2:
@@ -1200,12 +1382,10 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
     _pp = None
     for jj in xrange(numConf):
         # Set fill-opacity
-        if np.size(fillalpha) == numConf: falph = fillalpha
-        else:                             falph = np.power(fillalpha, jj+1)
-
-        # Create a dummy-patch to return for a legend of confidence-intervals
-        # pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
-        # confPatches.append(pp[0])
+        if np.size(fillalpha) == numConf:
+            falph = fillalpha
+        else:
+            falph = np.power(fillalpha, jj+1)
 
         xx = np.array(rads)
         ylo = np.array(conf[:, jj, 0])
@@ -1251,7 +1431,7 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
     return linePatch, confPatches
 
 
-def line_label(ax, pos, label, dir='v', loc='top',
+def line_label(ax, pos, label, dir='v', loc='top', xx=None, yy=None, ha=None, va=None,
                line_kwargs={}, text_kwargs={}, dashes=None, rot=None):
     """Plot a vertical line, and give it a label outside the axes.
 
@@ -1298,50 +1478,56 @@ def line_label(ax, pos, label, dir='v', loc='top',
 
     # Set alignment
     if tloc.startswith('l'):
-        ha = 'right'
-        va = 'center'
+        _ha = 'right'
+        _va = 'center'
     elif tloc.startswith('r'):
-        ha = 'left'
-        va = 'center'
+        _ha = 'left'
+        _va = 'center'
     elif tloc.startswith('t'):
-        ha = 'center'
-        va = 'bottom'
+        _ha = 'center'
+        _va = 'bottom'
     elif tloc.startswith('b'):
-        ha = 'center'
-        va = 'top'
+        _ha = 'center'
+        _va = 'top'
+
+    if ha is None: ha = _ha
+    if va is None: va = _va
 
     # Add vertical line
     if VERT:
         ll = ax.axvline(pos, **line_kwargs)
         trans = mpl.transforms.blended_transform_factory(ax.transData, ax.transAxes)
         if tloc.startswith('l'):
-            xx = pos
-            yy = 0.5
+            _xx = pos
+            _yy = 0.5
         elif tloc.startswith('r'):
-            xx = pos
-            yy = 0.5
+            _xx = pos
+            _yy = 0.5
         elif tloc.startswith('t'):
-            xx = pos
-            yy = 1.0 + _PAD
+            _xx = pos
+            _yy = 1.0 + _PAD
         elif tloc.startswith('b'):
-            xx = pos
-            yy = 0.0 - _PAD
+            _xx = pos
+            _yy = 0.0 - _PAD
     # Add horizontal line
     else:
         ll = ax.axhline(pos, **line_kwargs)
         trans = mpl.transforms.blended_transform_factory(ax.transAxes, ax.transData)
         if tloc.startswith('l'):
-            xx = 0.0 - _PAD
-            yy = pos
+            _xx = 0.0 - _PAD
+            _yy = pos
         elif tloc.startswith('r'):
-            xx = 1.0 + _PAD
-            yy = pos
+            _xx = 1.0 + _PAD
+            _yy = pos
         elif tloc.startswith('t'):
-            xx = 0.5
-            yy = pos
+            _xx = 0.5
+            _yy = pos
         elif tloc.startswith('b'):
-            xx = 0.5
-            yy = pos
+            _xx = 0.5
+            _yy = pos
+
+    if xx is None: xx = _xx
+    if yy is None: yy = _yy
 
     if dashes: ll.set_dashes(dashes)
 
@@ -1380,11 +1566,14 @@ def full_extent(ax, pad=0.0, invert=None):
     return bbox
 
 
-def position_to_extent(fig, ax, loc, pad=0.0, halign='left', valign='lower'):
+def position_to_extent(fig, ref, loc, item=None, pad=0.0, halign='left', valign='lower'):
     """Reposition axis so that origin of 'full_extent' is at given `loc`.
     """
-    bbox = full_extent(ax, pad=pad, invert=fig.transFigure)
-    ax_bbox = ax.get_position()
+    if item is None:
+        item = ref
+
+    bbox = full_extent(ref, pad=pad, invert=fig.transFigure)
+    ax_bbox = ref.get_position()
 
     if halign.startswith('r'):
         dx = ax_bbox.x1 - bbox.x1
@@ -1407,7 +1596,7 @@ def position_to_extent(fig, ax, loc, pad=0.0, halign='left', valign='lower'):
     else:
         raise ValueError("`loc` must be 2 or 4 long: [x, y, (width, height)]")
 
-    ax.set_position(new_loc)
+    item.set_position(new_loc)
     return
 
 
@@ -1468,10 +1657,10 @@ def backdrop(fig, obj, pad=0.0, union=False, group=False, draw=True, **kwargs):
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
-    if(scale.startswith('lin')): scale = 'linear'
-    if(scale == 'symlog'): thresh = 1.0
-    if(axis == 'x'): ax.set_xscale(scale, linthreshx=thresh)
-    elif(axis == 'y'): ax.set_yscale(scale, linthreshy=thresh)
+    if scale.startswith('lin'): scale = 'linear'
+    if scale == 'symlog': thresh = 1.0
+    if axis == 'x': ax.set_xscale(scale, linthreshx=thresh)
+    elif axis == 'y': ax.set_yscale(scale, linthreshy=thresh)
     else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
     return
 
@@ -1537,18 +1726,102 @@ def _get_cmap(cmap):
     else:
         raise ValueError("`cmap` '{}' is not a valid colormap or colormap name".format(cmap))
 
+
+def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
+    """Convert from a string location specification to the specifying parameters.
+
+    If any of the specifying parameters: {x, y, halign, valign}, are 'None', they are set to
+    default values.
+
+    Returns
+    -------
+    x : float
+    y : float
+    halign : str
+    valign : str
+
+    """
+    if loc[0] == 't' or loc[0] == 'u':
+        if valign is None:
+            valign = 'top'
+        if y is None:
+            y = 1 - pad
+    elif loc[0] == 'b' or loc[0] == 'l':
+        if valign is None:
+            valign = 'bottom'
+        if y is None:
+            y = pad
+    elif loc[0] == 'c':
+        if valign is None:
+            valign = 'center'
+        if y is None:
+            y = 0.5
+    else:
+        raise ValueError("Unrecognized `loc`[0] = '{}' (`loc` = '{}'.".format(loc[0], loc))
+
+    if loc[1] == 'l':
+        if halign is None:
+            halign = 'left'
+        if x is None:
+            x = pad
+    elif loc[1] == 'r':
+        if halign is None:
+            halign = 'right'
+        if x is None:
+            x = 1 - pad
+    elif loc[1] == 'c':
+        if halign is None:
+            halign = 'center'
+        if x is None:
+            x = 0.5
+    else:
+        raise ValueError("Unrecognized `loc`[1] = '{}' (`log` = '{}'.".format(loc[1], loc))
+
+    return x, y, halign, valign
+
+
+def _parse_align(halign=None, valign=None):
+    if halign is None:
+        halign = 'center'
+    if valign is None:
+        valign = 'top'
+
+    if halign.startswith('l'):
+        halign = 'left'
+    elif halign.startswith('c'):
+        halign = 'center'
+    elif halign.startswith('r'):
+        halign = 'right'
+
+    if valign.startswith('t'):
+        valign = 'top'
+    elif valign.startswith('c'):
+        valign = 'center'
+    elif valign.startswith('b'):
+        valign = 'bottom'
+
+    if valign == 'upper':
+        warnings.warn("Use `'top'` not `'upper'`!")
+        valign = 'top'
+
+    if valign == 'lower':
+        warnings.warn("Use `'bottom'` not `'lower'`!")
+        valign = 'bottom'
+    return halign, valign
+
+
 '''
 def rescale(ax, which='both'):
     """
     """
 
-    if(which == 'x'):
+    if which == 'x':
         scaley = False
         scalex = True
-    elif(which == 'y'):
+    elif which == 'y':
         scaley = True
         scalex = True
-    elif(which == 'both'):
+    elif which == 'both':
         scaley = True
         scalex = True
     else:

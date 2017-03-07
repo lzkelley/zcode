@@ -19,7 +19,7 @@ import scipy as sp
 from . import math_core
 
 __all__ = ['confidenceBands', 'confidence_bands', 'confidenceIntervals', 'confidence_intervals',
-           'cumstats', 'sigma', 'stats', 'stats_str']
+           'cumstats', 'sigma', 'stats', 'stats_str', 'percentiles']
 
 
 def confidenceBands(*args, **kwargs):
@@ -127,10 +127,11 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
     ---------
     vals : array_like of scalars
         Data over which to calculate confidence intervals.
+        This can be an arbitrarily shaped ndarray.
     ci : (M,) array_like of floats
         List of desired confidence intervals as fractions (e.g. `[0.68, 0.95]`)
-    axis : int
-        Axis over which to calculate confidence intervals.
+    axis : int or None
+        Axis over which to calculate confidence intervals, or 'None' to marginalize over all axes.
     filter : str or `None`
         Filter the input array with a boolean comparison to zero.
         If no values remain after filtering, ``NaN, NaN`` is returned.
@@ -140,10 +141,16 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
     med : scalar
         Median of the input data.
         `None` if there are no values (e.g. after filtering).
-    conf : ndarray of scalar
+    conf : ([L, ]M, 2) ndarray of scalar
         Bounds for each confidence interval.  Shape depends on the number of confidence intervals
-        passed in `ci`, and also the input shape of `vals`.
+        passed in `ci`, and the input shape of `vals`.
         `None` if there are no values (e.g. after filtering).
+        If `vals` is 1D or `axis` is 'None', then the output shape will be (M, 2).
+        If `vals` has more than one-dimension, and `axis` is not 'None', then the shape `L`
+        will be the shape of `vals`, minus the `axis` axis.
+        For example,
+            if ``vals.shape = (4,3,5)` and `axis=1`, then `L = (4,5)`
+            the final output shape will be: (4,5,M,2).
 
     """
     ci = np.atleast_1d(ci)
@@ -157,10 +164,17 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
 
     # Calculate confidence-intervals and median
     cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
+    # This produces an ndarray with shape `[M, 2(, L)]`
+    #    If ``axis is None`` or `np.ndim(vals) == 1` then the shape will be simply `[M, 2]`
+    #    Otherwise, `L` will be the shape of `vals` without axis `axis`.
     conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
              np.percentile(vals, 100.0*cdf[1], axis=axis)]
             for cdf in cdf_vals]
     conf = np.array(conf)
+    # Reshape from `[M, 2, L]` to `[L, M, 2]`
+    if np.ndim(vals) > 1 and axis is not None:
+        conf = np.moveaxis(conf, 2, 0)
+
     med = np.percentile(vals, 50.0, axis=axis)
     if len(conf) == 1:
         conf = conf[0]
@@ -196,7 +210,7 @@ def cumstats(arr):
     return ave, std
 
 
-def sigma(sig, side='in'):
+def sigma(sig, side='in', boundaries=False):
     """Convert from standard deviation 'sigma' to percentiles in/out-side the normal distribution.
 
     Arguments
@@ -205,6 +219,8 @@ def sigma(sig, side='in'):
         Standard deviations.
     side : str, {'in', 'out'}
         Calculate percentiles inside (i.e. [-sig, sig]) or ouside (i.e. [-inf, -sig] U [sig, inf])
+    boundaries : bool
+        Whether boundaries should be given ('True'), or the area ('False').
 
     Returns
     -------
@@ -226,6 +242,16 @@ def sigma(sig, side='in'):
     # Convert to area inside [-sig, sig]
     if inside:
         vals = 1.0 - vals
+
+    # Convert from area to locations of boundaries (fractions)
+    if boundaries:
+        if inside:
+            vlo = 0.5*(1 - vals)
+            vhi = 0.5*(1 + vals)
+        else:
+            vlo = 0.5*vals
+            vhi = 1.0 - 0.5*vals
+        return vlo, vhi
 
     return vals
 
@@ -254,8 +280,8 @@ def stats(vals, median=False):
     return ave, std
 
 
-def stats_str(data, percs=[0, 16, 50, 84, 100], ave=True, std=False,
-              format='', label='Statistics: '):
+def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, weights=None,
+              format=''):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -270,8 +296,6 @@ def stats_str(data, percs=[0, 16, 50, 84, 100], ave=True, std=False,
         Include standard-deviation in output.
     format : str
         Formatting for all numerical output, (e.g. `":.2f"`).
-    label : str
-        String to prepend output with, (e.g. '<label> Statistics: ...')
 
     Output
     ------
@@ -281,22 +305,70 @@ def stats_str(data, percs=[0, 16, 50, 84, 100], ave=True, std=False,
     """
     data = np.asarray(data)
     percs = np.atleast_1d(percs)
-    percs_flag = False
-    if percs is not None and len(percs): percs_flag = True
+    if np.any(percs > 1.0):
+        warnings.warn("WARNING: zcode.math.statistic: input `percs` should be [0.0, 1.0], "
+                      "dividing these by 100.0!")
+        percs /= 100.0
 
-    out = label
+    percs_flag = False
+    if percs is not None and len(percs):
+        percs_flag = True
+
+    out = ""
     form = "{{{}}}".format(format)
     if ave:
         out += "ave = " + form.format(np.average(data))
         if std or percs_flag:
             out += ", "
+
     if std:
         out += "std = " + form.format(np.std(data))
         if percs_flag:
             out += ", "
+
     if percs_flag:
-        tiles = np.percentile(data, percs)
-        out += "percentiles: [" + ", ".join(form.format(tt) for tt in tiles) + "]"
-        out += ", for (" + ", ".join("{:.1f}%".format(pp) for pp in percs) + ")"
+        tiles = percentiles(data, percs, weights=weights)
+        out += "[" + ", ".join(form.format(tt) for tt in tiles) + "]"
+        out += ", for (" + ", ".join("{:.1f}%".format(100*pp) for pp in percs) + ")"
 
     return out
+
+
+def percentiles(values, percentiles, weights=None, values_sorted=False):
+    """Computer weighted percentiles.
+
+    Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
+
+    Arguments
+    ---------
+    values: (N,)
+        input data
+    percentiles: (M,) scalar [0.0, 1.0]
+        Desired percentiles of the data.
+    weights: (N,) or `None`
+        Weighted for each input data point in `values`.
+    values_sorted: bool
+        If True, then input values are assumed to already be sorted.
+
+    Returns
+    -------
+    percs : (M,) float
+        Array of percentiles of the weighted input data.
+
+    """
+    values = np.array(values)
+    percentiles = np.array(percentiles)
+    if weights is None:
+        weights = np.ones_like(values)
+    weights = np.array(weights)
+    assert np.all(percentiles >= 0) and np.all(percentiles <= 1), 'percentiles should be in [0, 1]'
+
+    if not values_sorted:
+        sorter = np.argsort(values)
+        values = values[sorter]
+        weights = weights[sorter]
+
+    weighted_quantiles = np.cumsum(weights) - 0.5 * weights
+    weighted_quantiles /= np.sum(weights)
+    percs = np.interp(percentiles, weighted_quantiles, values)
+    return percs
