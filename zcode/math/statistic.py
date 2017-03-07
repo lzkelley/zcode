@@ -280,8 +280,8 @@ def stats(vals, median=False):
     return ave, std
 
 
-def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=True, std=False, weights=None,
-              format='', label='Statistics: '):
+def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, weights=None,
+              format=''):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -296,8 +296,6 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=True, std=False, we
         Include standard-deviation in output.
     format : str
         Formatting for all numerical output, (e.g. `":.2f"`).
-    label : str
-        String to prepend output with, (e.g. '<label> Statistics: ...')
 
     Output
     ------
@@ -316,7 +314,7 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=True, std=False, we
     if percs is not None and len(percs):
         percs_flag = True
 
-    out = label
+    out = ""
     form = "{{{}}}".format(format)
     if ave:
         out += "ave = " + form.format(np.average(data))
@@ -329,9 +327,8 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=True, std=False, we
             out += ", "
 
     if percs_flag:
-        # tiles = np.percentile(data, percs)
         tiles = percentiles(data, percs, weights=weights)
-        out += "percentiles: [" + ", ".join(form.format(tt) for tt in tiles) + "]"
+        out += "[" + ", ".join(form.format(tt) for tt in tiles) + "]"
         out += ", for (" + ", ".join("{:.1f}%".format(100*pp) for pp in percs) + ")"
 
     return out

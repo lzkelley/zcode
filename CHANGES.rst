@@ -63,6 +63,7 @@ Current
             -   Function which calculates percentiles (like `np.percentile`) but with optional weighting of values.
         -   `stats_str`
             -   Changes to use local `percentiles` function instead of `np.percentile`.  Added `weights` argument, and converted from using input percentile arguments in [0, 100] range to fractions: [0.0, 1.0] range.
+            -   Set `ave=False`, and remove `label` parameter.  Should be added manually on str is used from the calling code.
     +   tests/
         -   test_math_core.py
             +   `test_argnearest` [new-function]
