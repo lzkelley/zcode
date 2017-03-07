@@ -34,6 +34,8 @@ Current
             -   New function to pretty-print a dictionary object into a string (uses `json`).
         -   `getFileSize` ==> `get_file_size` [deprecation]
             -   Also improve behavior to accept single or list of filenames.
+        -   `getProgressBar` [DELETED]
+            -   Should use `tqdm` functions instead.
         -  `par_dir` [new-function]
             -   !!NOTE: not sure if this is a good one... commented out for now!!
             -   Method which returns the parent directory of the given path.

@@ -46,7 +46,7 @@ from zcode import utils
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'get_file_size',
            'countLines', 'estimateLines',
-           'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
+           'checkPath', 'dictToNPZ', 'npzToDict', 'combineFiles', 'checkURL',
            'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback']
 
@@ -386,31 +386,6 @@ def _convert_npz_to_dict(npz):
 
         newDict[key] = vals
     return newDict
-
-
-def getProgressBar(maxval, width=100):
-    """Wrapper to create a progressbar object with default settings.
-
-    Use ``pbar.start()``, ``pbar.update(N)`` and ``pbar.finish()``
-    """
-
-    import progressbar
-
-    # Set Progress Bar Parameters
-    widgets = [
-        progressbar.Percentage(),
-        ' ', progressbar.Bar(),
-        ' ']
-
-    try:
-        widgets.append(progressbar.AdaptiveETA())
-    except:
-        widgets.append(progressbar.ETA())
-
-    # Start Progress Bar
-    pbar = progressbar.ProgressBar(widgets=widgets, maxval=maxval, term_width=width)
-
-    return pbar
 
 
 def combineFiles(inFilenames, outFilename, verbose=False):
@@ -791,14 +766,6 @@ def str_format_dict(jdict):
     import json
     jstr = json.dumps({'4': 5, '6': 7}, sort_keys=True, indent=4, separators=(',', ': '))
     return jstr
-
-
-'''
-def par_dir(idir):
-    """Get parent (absolute) directory name from given file/directory.
-    """
-    return os.path.split(os.path.abspath(idir))[0]
-'''
 
 
 def top_dir(idir):
