@@ -27,6 +27,9 @@ Future / To-Do
 Current
 -------
 -  `inout/`
+    -   `inout_core.py`
+        -   `modify_exists()`
+            -   If, for some reason, the new filename already exists, raise a warning and then bootstrap to modify the filename again.  Previously the code would raise an error.
     -   `log.py`
         -   Add method `after()` to logger objects which report a message and duration for execution.
 -   `plot/`

@@ -738,7 +738,9 @@ def modify_exists(fname, max=1000):
     newName = modifyFilename(fname, append='_{0:0{1:d}d}'.format(num, prec))
     # New filename shouldnt exist; if it does, raise error
     if os.path.exists(newName):
-        raise RuntimeError("New filename '{}' already exists.".format(newName))
+        # raise RuntimeError("New filename '{}' already exists.".format(newName))
+        warnings.warn("New filename '{}' already exists.".format(newName))
+        return modify_exists(newName)
 
     return newName
 
