@@ -29,6 +29,12 @@ Current
 -  `inout/`
     -   `log.py`
         -   Add method `after()` to logger objects which report a message and duration for execution.
+-   `plot/`
+    -   `plot_core.py`
+        -   `text()`
+            -   Add a `shift` argument which allows for adjusting the `(x,y)` position of the text more dynamically.
+        -   `_loc_str_to_pars()`
+            -   Check the location specifier for validity.
 
 
 [0.0.9] - 2017/03/07
