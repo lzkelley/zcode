@@ -14,8 +14,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from datetime import datetime
 import logging
+import shutil
 import inspect
 import numpy as np
+
+from . import inout_core
 
 __all__ = ['IndentFormatter', 'getLogger', 'defaultLogger']
 
@@ -130,13 +133,26 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
 
     # Add a `after` method to log how long something took
     # ---------------------------------------------------
-    def _after(self, msg, beg, beg_all=None, lvl=logging.INFO):
+    logger._after_lvl = logging.INFO
+    def _after(self, msg, beg, beg_all=None, lvl=None):
+        if lvl is None:
+            lvl = self._after_lvl
         _str = "{} after {}".format(msg, datetime.now()-beg)
         if beg_all is not None:
             _str += " ({})".format(datetime.now()-beg_all)
         self.log(lvl, _str)
     # Not entirely sure why this works, but it seems to
     logger.after = _after.__get__(logger)
+
+    # Add a `copy_file` method to copy logfile to the given destination
+    # -----------------------------------------------------------------
+    def _copy(self, dest, modify_exists=False):
+        if modify_exists:
+            dest = inout_core.modify_exists(dest)
+        inout_core.checkPath(dest)
+        shutil.copy(self.filename, dest)
+    # Not entirely sure why this works, but it seems to
+    logger.copy = _copy.__get__(logger)
 
     return logger
 

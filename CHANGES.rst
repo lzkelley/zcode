@@ -26,7 +26,9 @@ Future / To-Do
 
 Current
 -------
-
+-  `inout/`
+    -   `log.py`
+        -   Add method `after()` to logger objects which report a message and duration for execution.
 
 
 [0.0.9] - 2017/03/07
