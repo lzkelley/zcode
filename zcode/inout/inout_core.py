@@ -8,17 +8,17 @@ Classes
 Functions
 ---------
 -   bytesString              - Return a humanized string representation of a number of bytes.
--   getFileSize              - Return a human-readable size of a file or set of files.
+-   get_file_size            - Return a human-readable size of a file or set of files.
 -   countLines               - Count the number of lines in the given file.
 -   estimateLines            - Estimate the number of lines in the given file.
--   checkPath                - Create the given filepath if it doesn't already exist.
+-   check_path               - Create the given filepath if it doesn't already exist.
 -   dictToNPZ                - Save a dictionary to the given NPZ filename.
 -   npzToDict                - Convert an NPZ file to a dictionary with the same keys and values.
 -   getProgressBar           - Wrapper to create a progressbar object with default settings.
 -   combineFiles             - Concatenate the contents of input files into a single output file.
 -   checkURL                 - Check that the given url exists.
 -   promptYesNo              - Prompt the user (via CLI) for yes or no.
--   modifyFilename           - Modify the given filename.
+-   modify_filename          - Modify the given filename.
 -   mpiError                 - Raise an error through MPI and exit all processes.
 -   ascii_table              - Print a table with the given contents to output.
 -   modify_exists            - Modify the given filename if it already exists.
@@ -315,7 +315,7 @@ def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     If ``verbose`` is True, the saved file size is printed out.
     """
     # Make sure path to file exists
-    checkPath(savefile)
+    check_path(savefile)
     # Make sure there are no scalars in the input dictionary
     for key, item in dataDict.items():
         if np.isscalar(item):
@@ -404,7 +404,7 @@ def combineFiles(inFilenames, outFilename, verbose=False):
     """
 
     # Make sure outfile path exists
-    checkPath(outFilename)
+    check_path(outFilename)
     inSize = 0.0
     nums = len(inFilenames)
 
@@ -720,7 +720,7 @@ def modify_exists(fname, max=1000):
         path = './'
     # construct regex for modified files
     #     look specifically for `prec`-digit numbers at the end of the filename
-    regex = modifyFilename(filename, append='_([0-9]){{{:d}}}'.format(prec))
+    regex = modify_filename(filename, append='_([0-9]){{{:d}}}'.format(prec))
     matches = sorted([ff for ff in os.listdir(path) if re.search(regex, ff)])
     # If there are matches, find the highest file-number in the matches
     if len(matches):
@@ -742,7 +742,7 @@ def modify_exists(fname, max=1000):
 
     # Construct new filename
     # ----------------------
-    newName = modifyFilename(fname, append='_{0:0{1:d}d}'.format(num, prec))
+    newName = modify_filename(fname, append='_{0:0{1:d}d}'.format(num, prec))
     # New filename shouldnt exist; if it does, raise error
     if os.path.exists(newName):
         # raise RuntimeError("New filename '{}' already exists.".format(newName))

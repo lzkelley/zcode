@@ -1039,7 +1039,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
             if ii == 0:
                 usefname = str(fname)
             else:
-                usefname = zio.modifyFilename(fname, append='_%d' % (ii))
+                usefname = zio.modify_filename(fname, append='_%d' % (ii))
 
             ff.savefig(usefname, **kwargs)
             if close: plt.close(ff)

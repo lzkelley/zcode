@@ -149,7 +149,7 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
     def _copy(self, dest, modify_exists=False):
         if modify_exists:
             dest = inout_core.modify_exists(dest)
-        inout_core.checkPath(dest)
+        inout_core.check_path(dest)
         shutil.copy(self.filename, dest)
     # Not entirely sure why this works, but it seems to
     logger.copy = _copy.__get__(logger)
