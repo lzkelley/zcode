@@ -45,10 +45,11 @@ import collections
 from zcode import utils
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'get_file_size',
-           'countLines', 'estimateLines',
+           'countLines', 'estimateLines', 'modify_filename',
            'checkPath', 'dictToNPZ', 'npzToDict', 'combineFiles', 'checkURL',
-           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
-           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback']
+           'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists',
+           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
+           'modifyFilename']
 
 
 class _Keys_Meta(type):
@@ -490,7 +491,12 @@ def promptYesNo(msg='', default='n'):
     return retval
 
 
-def modifyFilename(fname, prepend='', append=''):
+def modifyFilename(*args, **kwargs):
+    utils.dep_warn("modifyFilename", newname="modify_filename")
+    return modify_filename(*args, **kwargs)
+
+
+def modify_filename(fname, prepend='', append=''):
     """Modify the given filename.
 
     Arguments
