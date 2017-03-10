@@ -44,12 +44,13 @@ import collections
 
 from zcode import utils
 
-__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'get_file_size',
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'get_file_size',
            'countLines', 'estimateLines', 'modify_filename',
-           'checkPath', 'dictToNPZ', 'npzToDict', 'combineFiles', 'checkURL',
+           'check_path', 'dictToNPZ', 'npzToDict', 'combineFiles', 'checkURL',
            'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
-           'modifyFilename']
+           # Deprecated!
+           'modifyFilename', 'checkPath']
 
 
 class _Keys_Meta(type):
@@ -195,11 +196,6 @@ def bytesString(bytes, precision=1):
     return strSize
 
 
-def getFileSize(*args, **kwargs):
-    utils.dep_warn("getFileSize", newname="get_file_size")
-    return get_file_size(*args, **kwargs)
-
-
 def get_file_size(fnames, precision=1):
     """Return a human-readable size of a file or set of files.
 
@@ -274,7 +270,12 @@ def estimateLines(files):
     return numLines
 
 
-def checkPath(tpath, create=True):
+def checkPath(*args, **kwargs):
+    utils.dep_warn("checkPath", newname="check_path")
+    return check_path(*args, **kwargs)
+
+
+def check_path(tpath, create=True):
     """Create the given filepath if it doesn't already exist.
 
     Arguments
