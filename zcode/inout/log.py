@@ -85,7 +85,7 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
     if (tofile is None) and (not tostr):
         raise ValueError("Must log to something!")
 
-    logger = logging.get_logger(name)
+    logger = logging.getLogger(name)
     # Make sure handlers don't get duplicated (ipython issue)
     while len(logger.handlers) > 0:
         logger.handlers.pop()
@@ -189,7 +189,8 @@ def default_logger(logger=None, verbose=False, debug=False):
 
     """
 
-    if isinstance(logger, logging.Logger): return logger
+    if isinstance(logger, logging.Logger):
+        return logger
 
     import numbers
 
