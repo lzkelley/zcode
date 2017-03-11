@@ -36,6 +36,9 @@ Current
         -   `modify_filename()` <== `modifyFilename` [DEPRECATION]
     -   `log.py`
         -   Add method `after()` to logger objects which report a message and duration for execution.
+        -   Changed parameters for logging methods to use underscores instead of camel-case.
+        -   `get_logger()` <== `getLogger` [DEPRECATION]
+        -   `default_logger()` <== `defaultLogger` [DEPRECATION]
 -   `plot/`
     -   `plot_core.py`
         -   `text()`

@@ -6,8 +6,8 @@ Classes
 
 Functions
 ---------
--   getLogger                - Create a logger object which logs to file and or stdout stream.
--   defaultLogger            - Create a ``logging.Logger`` object which logs to the out stream.
+-   get_logger                - Create a logger object which logs to file and or stdout stream.
+-   default_logger            - Create a ``logging.Logger`` object which logs to the out stream.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -20,15 +20,17 @@ import numpy as np
 
 from . import inout_core
 
-__all__ = ['IndentFormatter', 'getLogger', 'defaultLogger']
+__all__ = ['IndentFormatter', 'get_logger', 'default_logger',
+            # DEPRECATED:
+           'getLogger', 'defaultLogger']
 
 
 class IndentFormatter(logging.Formatter):
     """Logging formatter where the depth of the stack sets the message indentation level.
     """
 
-    def __init__(self, fmt=None, datefmt=None):
-        logging.Formatter.__init__(self, fmt, datefmt)
+    def __init__(self, fmt=None, format_date=None):
+        logging.Formatter.__init__(self, fmt, format_date)
         self.baseline = None
 
     def format(self, rec):
@@ -42,8 +44,13 @@ class IndentFormatter(logging.Formatter):
         return out
 
 
-def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
-              strLevel=logging.WARNING, fileLevel=logging.DEBUG,
+def getLogger(*args, **kwargs):
+    utils.dep_warn("getLogger", newname="get_logger")
+    return get_logger(*args, **kwargs)
+
+
+def get_logger(name, format_stream=None, format_file=None, format_date=None,
+              level_stream=logging.WARNING, level_file=logging.DEBUG,
               tofile=None, tostr=True):
     """Create a standard logger object which logs to file and or stdout stream.
 
@@ -53,15 +60,15 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
     ---------
     name : str,
         Handle for this logger, must be distinct for a distinct logger.
-    strFmt : str or `None`,
+    format_stream : str or `None`,
         Format of log messages to stream (stdout).  If `None`, default settings are used.
-    fileFmt : str or `None`,
+    format_file : str or `None`,
         Format of log messages to file.  If `None`, default settings are used.
-    dateFmt : str or `None`
+    format_date : str or `None`
         Format of time stamps to stream and/or file.  If `None`, default settings are used.
-    strLevel : int,
+    level_stream : int,
         Logging level for stream.
-    fileLevel : int,
+    level_file : int,
         Logging level for file.
     tofile : str or `None`,
         Filename to log to (turned off if `None`).
@@ -78,7 +85,7 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
     if (tofile is None) and (not tostr):
         raise ValueError("Must log to something!")
 
-    logger = logging.getLogger(name)
+    logger = logging.get_logger(name)
     # Make sure handlers don't get duplicated (ipython issue)
     while len(logger.handlers) > 0:
         logger.handlers.pop()
@@ -86,27 +93,27 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
     logger.propagate = 0
 
     # Determine and Set Logging Levels
-    if fileLevel is None:
-        fileLevel = logging.DEBUG
-    if strLevel is None:
-        strLevel = logging.WARNING
+    if level_file is None:
+        level_file = logging.DEBUG
+    if level_stream is None:
+        level_stream = logging.WARNING
     #     Logger object must be at minimum level (`np` int doesnt work, need regular int)
-    logger.setLevel(int(np.min([fileLevel, strLevel]).astype(int)))
+    logger.setLevel(int(np.min([level_file, level_stream]).astype(int)))
 
-    if dateFmt is None:
-        dateFmt = '%Y/%m/%d %H:%M:%S'
+    if format_date is None:
+        format_date = '%Y/%m/%d %H:%M:%S'
 
     # Log to file
     # -----------
     if tofile is not None:
-        if fileFmt is None:
-            fileFmt = "%(asctime)s %(levelname)8.8s [%(filename)20.20s:"
-            fileFmt += "%(funcName)-20.20s]%(indent)s%(message)s"
+        if format_file is None:
+            format_file = "%(asctime)s %(levelname)8.8s [%(filename)20.20s:"
+            format_file += "%(funcName)-20.20s]%(indent)s%(message)s"
 
-        fileFormatter = IndentFormatter(fileFmt, datefmt=dateFmt)
+        fileFormatter = IndentFormatter(format_file, format_date=format_date)
         fileHandler = logging.FileHandler(tofile, 'w')
         fileHandler.setFormatter(fileFormatter)
-        fileHandler.setLevel(fileLevel)
+        fileHandler.setLevel(level_file)
         logger.addHandler(fileHandler)
         #     Store output filename to `logger` object
         logger.filename = tofile
@@ -114,13 +121,13 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
     # Log To stdout
     # -------------
     if tostr:
-        if strFmt is None:
-            strFmt = "%(indent)s%(message)s"
+        if format_stream is None:
+            format_stream = "%(indent)s%(message)s"
 
-        strFormatter = IndentFormatter(strFmt, datefmt=dateFmt)
+        strFormatter = IndentFormatter(format_stream, format_date=format_date)
         strHandler = logging.StreamHandler()
         strHandler.setFormatter(strFormatter)
-        strHandler.setLevel(strLevel)
+        strHandler.setLevel(level_stream)
         logger.addHandler(strHandler)
 
     # Add a `raise` method to both log an error and raise one
@@ -157,7 +164,12 @@ def getLogger(name, strFmt=None, fileFmt=None, dateFmt=None,
     return logger
 
 
-def defaultLogger(logger=None, verbose=False, debug=False):
+def defaultLogger(*args, **kwargs):
+    utils.dep_warn("defaultLogger", newname="default_logger")
+    return default_logger(*args, **kwargs)
+
+
+def default_logger(logger=None, verbose=False, debug=False):
     """Create a basic ``logging.Logger`` object which logs to the out stream.
 
     Arguments
@@ -191,5 +203,5 @@ def defaultLogger(logger=None, verbose=False, debug=False):
         else:
             level = logging.WARNING
 
-    logger = getLogger(None, strLevel=level, tostr=True)
+    logger = get_logger(None, level_stream=level, tostr=True)
     return logger
