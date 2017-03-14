@@ -329,7 +329,7 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
     if percs_flag:
         tiles = percentiles(data, percs, weights=weights)
         out += "[" + ", ".join(form.format(tt) for tt in tiles) + "]"
-        out += ", for (" + ", ".join("{:.1f}%".format(100*pp) for pp in percs) + ")"
+        out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"
 
     return out
 
