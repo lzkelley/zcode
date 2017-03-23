@@ -439,7 +439,7 @@ def transform(ax, trans, fig=None):
 
 
 def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
-         fs=16, trans=None, pad=None, **kwargs):
+         fs=16, trans=None, pad=None, shift=None, **kwargs):
     """Add text to figure.
 
     Wrapper for the `matplotlib.figure.Figure.text` method.
@@ -449,6 +449,8 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     art : `matplotlib.figure.Figure` or `matplotlib.axes.Axes` object,
     pstr : str,
         String to be printed.
+    loc : str,
+        String with two letters specifying the horizontal and vertical positioning of the text.
     x : float,
         X-position at which to draw the string, relative to the transformation given by `trans`.
     y : float,
@@ -461,6 +463,10 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
         Fontsize.
     trans : `matplotlib.BboxTransformTo` object, or `None`,
         Transformation to use for text placement.
+    pad : scalar or `None`
+
+    shift : (2,) scalar or `None`
+        Adjust the (x,y) position of the text by this amount.
     kwargs : any,
         Additional named arguments passed to `matplotlib.figure.Figure.text`.
         For example, ``color='blue'``, or ``rotation=90``.
@@ -491,6 +497,10 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
         x = 0.5
     if y is None:
         y = 1 - pad
+
+    if shift is not None:
+        x += shift[0]
+        y += shift[1]
 
     halign, valign = _parse_align(halign, valign)
     txt = art.text(x, y, pstr, size=fs, transform=trans,
@@ -1029,7 +1039,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
             if ii == 0:
                 usefname = str(fname)
             else:
-                usefname = zio.modifyFilename(fname, append='_%d' % (ii))
+                usefname = zio.modify_filename(fname, append='_%d' % (ii))
 
             ff.savefig(usefname, **kwargs)
             if close: plt.close(ff)
@@ -1367,10 +1377,9 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
         A patch for each confidence inteval (for use on legend).
 
     """
-
-    # ll, = ax.plot(rads, med, '-', color=color, lw=lw)
-    # if dashes is not None:
-    #     ll.set_dashes(dashes)
+    conf = np.atleast_2d(conf)
+    if conf.shape[-1] != 2:
+        raise ValueError("Last dimension of `conf` must be 2!")
 
     # `conf` has shape ``(num-rads, num-conf-ints, 2)``
     if conf.ndim == 2:
@@ -1390,12 +1399,10 @@ def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, lineal
     _pp = None
     for jj in xrange(numConf):
         # Set fill-opacity
-        if np.size(fillalpha) == numConf: falph = fillalpha
-        else:                             falph = np.power(fillalpha, jj+1)
-
-        # Create a dummy-patch to return for a legend of confidence-intervals
-        # pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
-        # confPatches.append(pp[0])
+        if np.size(fillalpha) == numConf:
+            falph = fillalpha
+        else:
+            falph = np.power(fillalpha, jj+1)
 
         xx = np.array(rads)
         ylo = np.array(conf[:, jj, 0])
@@ -1751,6 +1758,14 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
     valign : str
 
     """
+    _valid_loc = [['t', 'u', 'b', 'l', 'c'], ['l', 'r', 'c']]
+    for ii, (ll, vv) in enumerate(zip(loc, _valid_loc)):
+        if ll not in vv:
+            err = "Unrecognized `loc`[{}] = '{}' (`loc` = '{}').".format(ii, ll, loc)
+            err += "\n\t`loc`[{}] must be one of '{}'".format(ii, vv)
+            raise ValueError(err)
+
+
     if loc[0] == 't' or loc[0] == 'u':
         if valign is None:
             valign = 'top'
@@ -1766,8 +1781,6 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
             valign = 'center'
         if y is None:
             y = 0.5
-    else:
-        raise ValueError("Unrecognized `loc`[0] = '{}' (`loc` = '{}'.".format(loc[0], loc))
 
     if loc[1] == 'l':
         if halign is None:
@@ -1784,8 +1797,6 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
             halign = 'center'
         if x is None:
             x = 0.5
-    else:
-        raise ValueError("Unrecognized `loc`[1] = '{}' (`log` = '{}'.".format(loc[1], loc))
 
     return x, y, halign, valign
 

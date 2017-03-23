@@ -90,7 +90,7 @@ class TestInoutCore(object):
         fname = self.test_file_0
         num_files = 4
         max_files = 20   # This must be between [11, 100]
-        from zcode.inout.inout_core import modify_exists, modifyFilename
+        from zcode.inout.inout_core import modify_exists, modify_filename
 
         # Create test directory if needed, store boolean whether to later remove it.
         if not os.path.exists(fdir):
@@ -104,8 +104,8 @@ class TestInoutCore(object):
 
         # Create files that should *not* interfere with 'modify_exists'
         #    'modify_exists' should only look for 2-digit appended numbers
-        fname_distract_1 = modifyFilename(fname, append='_6')
-        fname_distract_2 = modifyFilename(fname, append='_123')
+        fname_distract_1 = modify_filename(fname, append='_6')
+        fname_distract_2 = modify_filename(fname, append='_123')
         print("Interference filenames = '{}', '{}'".format(fname_distract_1, fname_distract_2))
         for ff in [fname_distract_1, fname_distract_2]:
             open(ff, 'a')
@@ -122,7 +122,7 @@ class TestInoutCore(object):
             if ii == 0:
                 intended_name = str(fname)
             else:
-                intended_name = modifyFilename(fname, append="_{:02d}".format(ii-1))
+                intended_name = modify_filename(fname, append="_{:02d}".format(ii-1))
 
             print("\tshould be = ", intended_name)
             assert_true(os.path.exists(intended_name))

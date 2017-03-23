@@ -22,18 +22,33 @@ Future / To-Do
             (instead of just the central 2D histogram).
     +   plot_core.py
         -   Finish 'set_ticks' method.
-        -   `text`
-            -   [ENH]: Add `pad` parameter.
-        -   `_loc_str_to_pars`
-            -   [BUG]: Was using 'lower' instead of 'bottom', triggering warning.
--   inout/
-    -   inout_core.py
-        -   `warn_with_traceback` [new-function]
-            -   Used to override builtin `warnings.showwarning` method, will include traceback inforamtion in warning report.
 
 
 Current
 -------
+-  `inout/`
+    -   `inout_core.py`
+        -   `check_path()` <== `checkPath` [DEPRECATION]
+        -   `getFileSize()` [DELETED]
+            -   Use `get_file_size()` instead.
+        -   `modify_exists()`
+            -   If, for some reason, the new filename already exists, raise a warning and then bootstrap to modify the filename again.  Previously the code would raise an error.
+        -   `modify_filename()` <== `modifyFilename` [DEPRECATION]
+    -   `log.py`
+        -   Add method `after()` to logger objects which report a message and duration for execution.
+        -   Changed parameters for logging methods to use underscores instead of camel-case.
+        -   `get_logger()` <== `getLogger` [DEPRECATION]
+        -   `default_logger()` <== `defaultLogger` [DEPRECATION]
+-   `plot/`
+    -   `plot_core.py`
+        -   `text()`
+            -   Add a `shift` argument which allows for adjusting the `(x,y)` position of the text more dynamically.
+        -   `_loc_str_to_pars()`
+            -   Check the location specifier for validity.
+
+
+[0.0.9] - 2017/03/07
+--------------------
 -   inout/
     +   inout_core.py
         -   `npzToDict`
@@ -42,6 +57,8 @@ Current
             -   New function to pretty-print a dictionary object into a string (uses `json`).
         -   `getFileSize` ==> `get_file_size` [deprecation]
             -   Also improve behavior to accept single or list of filenames.
+        -   `getProgressBar` [DELETED]
+            -   Should use `tqdm` functions instead.
         -  `par_dir` [new-function]
             -   !!NOTE: not sure if this is a good one... commented out for now!!
             -   Method which returns the parent directory of the given path.
@@ -49,17 +66,29 @@ Current
             -   Method which returns the top-most directory from the given path.
         -  `underline` [new-function]
             -   Append a newline to the given string with repeated characters (e.g. '-')
+        -   `warn_with_traceback` [new-function]
+            -   Used to override builtin `warnings.showwarning` method, will include traceback information in warning report.
+    -   `log.py`
+        -   `getLogger`
+            -   Attached a function to new logger instances which will both log an error and raise one.  Just call `log.raise_error(msg)` on the returned `log` instance.
+            -   Attached a function `log.after(msg, beg)` to report how long something took (automatically calculated).
 -   math/
     +   math_core.py
         -   `argnearest` [new-function]
             +   Find the arguments in one array closest to those in another.
         -   `limit` [new-function]
             +   Limit the given value(s) to the given extrema. 
+        -   `str_array` <== `strArray`
     +   statistic.py
         -   `confidence_intervals`
             +   BUG: fixed issue where multidimensional array input was leading to incorrectly shaped output arrays.
         -   `sigma`
             +   ENH: added new parameter 'boundaries' to determine whether a pair of boundaries are given for the confidence interval, or for normal behavior where the area is given.  Also added tests.
+        -   `percentiles` [new-function]
+            -   Function which calculates percentiles (like `np.percentile`) but with optional weighting of values.
+        -   `stats_str`
+            -   Changes to use local `percentiles` function instead of `np.percentile`.  Added `weights` argument, and converted from using input percentile arguments in [0, 100] range to fractions: [0.0, 1.0] range.
+            -   Set `ave=False`, and remove `label` parameter.  Should be added manually on str is used from the calling code.
     +   tests/
         -   test_math_core.py
             +   `test_argnearest` [new-function]
@@ -79,11 +108,16 @@ Current
             -   ENH: new function to truncate the given colormap.
         -   `label_line` [new-function]
             +   ENH: new function to add an annotation to a given line with the appropriate placement and rotation.
+        -   `plotConfFill`
+            -   ENH: convert passed confidence intervals to np.array as needed.
         -   `text`
+            +   ENH: Add `pad` parameter.
             +   ENH: now accepts a `loc` argument, a two-letter string which describes the location at which the text will be placed.
             +   ENH: `halign` and `valign` are now passed through the new `_parse_align()` method which will process/filter the alignment strings.  e.g. 'l' is now converted to 'left' as required for matplotlib.
         -   `setGrid`
             +   ENH: added new arguments for color and alpha.
+        -   `_loc_str_to_pars`
+            -   [BUG]: Was using 'lower' instead of 'bottom', triggering warning.
 -   `constants.py`
     -   Added `DAY` (in seconds) variable.
 -   `utils.py` [new-file]
@@ -412,7 +446,7 @@ Current
         -   Enhanced the `spline` function, and removed the secondary functions `logSpline` and
             `logSpline_resample`.  The former is included in the new functionality of `spline`,
             and the latter is too simple to warrant its own function.
-        -   `strArray [new-function]
+        -   `strArray` [new-function]
             +   Creates a string representation of a numerical array.
         -   `indsWIthin` [new-function]
             +   Finds the indices of an array within the bounds of the given extrema.

@@ -36,4 +36,11 @@ run individually using something like,
 
 #### Deprecations:
 When deprecating a function/object/method, use a warning like:
-``warnings.warn("Some warning...", DeprecationWarning, stacklevel=3)``
+    ``warnings.warn("Some warning...", DeprecationWarning, stacklevel=3)``
+
+This is wrapped in  `utils.dep_warn()`:
+    ```
+    def modifyFilename(*args, **kwargs):
+        utils.dep_warn("modifyFilename", newname="modify_filename")
+        return modify_filename(*args, **kwargs)
+    ```

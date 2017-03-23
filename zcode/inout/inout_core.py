@@ -8,17 +8,17 @@ Classes
 Functions
 ---------
 -   bytesString              - Return a humanized string representation of a number of bytes.
--   getFileSize              - Return a human-readable size of a file or set of files.
+-   get_file_size            - Return a human-readable size of a file or set of files.
 -   countLines               - Count the number of lines in the given file.
 -   estimateLines            - Estimate the number of lines in the given file.
--   checkPath                - Create the given filepath if it doesn't already exist.
+-   check_path               - Create the given filepath if it doesn't already exist.
 -   dictToNPZ                - Save a dictionary to the given NPZ filename.
 -   npzToDict                - Convert an NPZ file to a dictionary with the same keys and values.
 -   getProgressBar           - Wrapper to create a progressbar object with default settings.
 -   combineFiles             - Concatenate the contents of input files into a single output file.
 -   checkURL                 - Check that the given url exists.
 -   promptYesNo              - Prompt the user (via CLI) for yes or no.
--   modifyFilename           - Modify the given filename.
+-   modify_filename          - Modify the given filename.
 -   mpiError                 - Raise an error through MPI and exit all processes.
 -   ascii_table              - Print a table with the given contents to output.
 -   modify_exists            - Modify the given filename if it already exists.
@@ -44,11 +44,13 @@ import collections
 
 from zcode import utils
 
-__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize', 'get_file_size',
-           'countLines', 'estimateLines',
-           'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
-           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
-           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback']
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'get_file_size',
+           'countLines', 'estimateLines', 'modify_filename',
+           'check_path', 'dictToNPZ', 'npzToDict', 'combineFiles', 'checkURL',
+           'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists',
+           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
+           # Deprecated!
+           'modifyFilename', 'checkPath']
 
 
 class _Keys_Meta(type):
@@ -194,11 +196,6 @@ def bytesString(bytes, precision=1):
     return strSize
 
 
-def getFileSize(*args, **kwargs):
-    utils.dep_warn("getFileSize", newname="get_file_size")
-    return get_file_size(*args, **kwargs)
-
-
 def get_file_size(fnames, precision=1):
     """Return a human-readable size of a file or set of files.
 
@@ -273,7 +270,12 @@ def estimateLines(files):
     return numLines
 
 
-def checkPath(tpath, create=True):
+def checkPath(*args, **kwargs):
+    utils.dep_warn("checkPath", newname="check_path")
+    return check_path(*args, **kwargs)
+
+
+def check_path(tpath, create=True):
     """Create the given filepath if it doesn't already exist.
 
     Arguments
@@ -313,7 +315,7 @@ def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     If ``verbose`` is True, the saved file size is printed out.
     """
     # Make sure path to file exists
-    checkPath(savefile)
+    check_path(savefile)
     # Make sure there are no scalars in the input dictionary
     for key, item in dataDict.items():
         if np.isscalar(item):
@@ -388,31 +390,6 @@ def _convert_npz_to_dict(npz):
     return newDict
 
 
-def getProgressBar(maxval, width=100):
-    """Wrapper to create a progressbar object with default settings.
-
-    Use ``pbar.start()``, ``pbar.update(N)`` and ``pbar.finish()``
-    """
-
-    import progressbar
-
-    # Set Progress Bar Parameters
-    widgets = [
-        progressbar.Percentage(),
-        ' ', progressbar.Bar(),
-        ' ']
-
-    try:
-        widgets.append(progressbar.AdaptiveETA())
-    except:
-        widgets.append(progressbar.ETA())
-
-    # Start Progress Bar
-    pbar = progressbar.ProgressBar(widgets=widgets, maxval=maxval, term_width=width)
-
-    return pbar
-
-
 def combineFiles(inFilenames, outFilename, verbose=False):
     """Concatenate the contents of a set of input files into a single output file.
 
@@ -427,7 +404,7 @@ def combineFiles(inFilenames, outFilename, verbose=False):
     """
 
     # Make sure outfile path exists
-    checkPath(outFilename)
+    check_path(outFilename)
     inSize = 0.0
     nums = len(inFilenames)
 
@@ -515,7 +492,12 @@ def promptYesNo(msg='', default='n'):
     return retval
 
 
-def modifyFilename(fname, prepend='', append=''):
+def modifyFilename(*args, **kwargs):
+    utils.dep_warn("modifyFilename", newname="modify_filename")
+    return modify_filename(*args, **kwargs)
+
+
+def modify_filename(fname, prepend='', append=''):
     """Modify the given filename.
 
     Arguments
@@ -738,7 +720,7 @@ def modify_exists(fname, max=1000):
         path = './'
     # construct regex for modified files
     #     look specifically for `prec`-digit numbers at the end of the filename
-    regex = modifyFilename(filename, append='_([0-9]){{{:d}}}'.format(prec))
+    regex = modify_filename(filename, append='_([0-9]){{{:d}}}'.format(prec))
     matches = sorted([ff for ff in os.listdir(path) if re.search(regex, ff)])
     # If there are matches, find the highest file-number in the matches
     if len(matches):
@@ -760,10 +742,12 @@ def modify_exists(fname, max=1000):
 
     # Construct new filename
     # ----------------------
-    newName = modifyFilename(fname, append='_{0:0{1:d}d}'.format(num, prec))
+    newName = modify_filename(fname, append='_{0:0{1:d}d}'.format(num, prec))
     # New filename shouldnt exist; if it does, raise error
     if os.path.exists(newName):
-        raise RuntimeError("New filename '{}' already exists.".format(newName))
+        # raise RuntimeError("New filename '{}' already exists.".format(newName))
+        warnings.warn("New filename '{}' already exists.".format(newName))
+        return modify_exists(newName)
 
     return newName
 
@@ -774,7 +758,7 @@ def iterable_notstring(var):
     return not isinstance(var, six.string_types) and isinstance(var, collections.Iterable)
 
 
-def str_format_dict(jdict):
+def str_format_dict(jdict, **kwargs):
     """Pretty-format a dictionary into a nice looking string using the `json` package.
 
     Arguments
@@ -788,17 +772,11 @@ def str_format_dict(jdict):
         Nicely formatted string.
 
     """
+    kwargs.setdefault('sort_keys', True)
+    kwargs.setdefault('indent', 4)
     import json
-    jstr = json.dumps({'4': 5, '6': 7}, sort_keys=True, indent=4, separators=(',', ': '))
+    jstr = json.dumps(jdict, separators=(',', ': '), **kwargs)
     return jstr
-
-
-'''
-def par_dir(idir):
-    """Get parent (absolute) directory name from given file/directory.
-    """
-    return os.path.split(os.path.abspath(idir))[0]
-'''
 
 
 def top_dir(idir):

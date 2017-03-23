@@ -12,7 +12,7 @@ Functions
 -   really1d                 - Test whether an array_like is really 1D (e.g. not jagged array).
 -   spacing                  - Create an even spacing between extrema from given data.
 -   asBinEdges               - Create bin-edges if the given `bins` do not already give them.
--   strArray                 - Create a string representation of a numerical array.
+-   str_array                 - Create a string representation of a numerical array.
 -   sliceForAxis             - Array slicing object which slices only the target axis.
 -   midpoints                - Return the midpoints between values in the given array.
 -   vecmag                   - find the magnitude/distance of/between vectors.
@@ -39,7 +39,7 @@ __all__ = ['argextrema', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
            'indsWithin', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate',
-           'sliceForAxis', 'spacing', 'strArray', 'vecmag', 'within',
+           'sliceForAxis', 'spacing', 'str_array', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
            '_infer_scale']
 
@@ -795,7 +795,7 @@ def spacing(data, scale='log', num=100, filter=None, integers=False):
     return spaced
 
 
-def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
+def str_array(arr, first=4, last=4, delim=", ", format=":.4e"):
     """Create a string representation of a numerical array.
 
     Arguments
@@ -825,7 +825,7 @@ def strArray(arr, first=4, last=4, delim=", ", format=".4e"):
         last = 0
 
     # Create the style specification
-    form = "{:%s}" % (format)
+    form = "{{{}}}".format(format)
 
     arrStr = "["
     # Add the first `first` elements
@@ -1080,44 +1080,3 @@ def _flagsToFilter(positive, nonzero, filter=None, source=None):
 def _infer_scale(args):
     if np.all(args > 0.0): return 'log'
     return 'lin'
-
-
-'''
-def createSlice(index, max):
-    """
-    Create an array slicing object.
-
-    Arguments
-    ---------
-        index <obj> : int, list of int, or 'None'
-        max   <int> : length of array to be sliced.
-
-    Returns
-    -------
-        ids <int>([N]) : indices included in slice.
-        cut <obj>      : Slicing object, either `slice` or `np.array`.
-
-    """
-
-    import numbers
-    # Single Value
-    if(isinstance(index, numbers.Integral)):
-        cut = slice(index, index+1)
-        ids = np.arange(index, index+1)
-    # Range of values
-    elif(np.iterable(index)):
-        cut = index
-        ids = index
-    else:
-        if(index is not None):
-            self.log.error("Unrecognized `index` = '%s'!" % (str(index)))
-            self.log.warning("Returning all entries")
-
-        cut = slice(None)
-        ids = np.arange(max)
-
-
-    return ids, cut
-
-# } createSlice()
-'''
