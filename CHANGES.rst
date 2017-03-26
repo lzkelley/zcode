@@ -45,6 +45,10 @@ Current
             -   Add a `shift` argument which allows for adjusting the `(x,y)` position of the text more dynamically.
         -   `_loc_str_to_pars()`
             -   Check the location specifier for validity.
+-   `math/`
+    -   `statistic.py`
+        -   `stats_str`
+            -   Re-enabled the `label` argument for backwards compatibility.  If used, a warning is raised.  But it works.
 
 
 [0.0.9] - 2017/03/07

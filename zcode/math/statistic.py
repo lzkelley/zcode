@@ -281,7 +281,7 @@ def stats(vals, median=False):
 
 
 def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, weights=None,
-              format=''):
+              format='', label=None):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -330,6 +330,11 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
         tiles = percentiles(data, percs, weights=weights)
         out += "[" + ", ".join(form.format(tt) for tt in tiles) + "]"
         out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"
+
+    if label is not None:
+        warnings.warn("WARNING: `label` argument is deprecated in `math_core.stats_str`",
+                      stacklevel=3)
+        out = label + ': ' + out
 
     return out
 
