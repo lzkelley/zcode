@@ -1092,6 +1092,6 @@ def datetime_to_decimal_year(dt, format="%Y-%m-%d %H:%M:%S"):
     year = int(dt.strftime("%Y"))
     day = int(dt.strftime("%j"))
     max_day = int(datetime.datetime(year, 12, 31, 23, 59, 59).strftime("%j"))
-    print("year: {}, day: {}, max_day: {}".format(year, day, max_day))
+    # print("year: {}, day: {}, max_day: {}".format(year, day, max_day))
     dec_yr = 1.0*year + (day-1)/max_day
     return dec_yr
