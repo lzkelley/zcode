@@ -49,6 +49,9 @@ Current
     -   `statistic.py`
         -   `stats_str`
             -   Re-enabled the `label` argument for backwards compatibility.  If used, a warning is raised.  But it works.
+    -   `math_core.py`
+        -   `datetime_to_decimal_year()` [new-function]
+            -   New function to convert from a datetime object (or string datetime specification) to a decimal year.
 
 
 [0.0.9] - 2017/03/07
