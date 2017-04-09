@@ -68,7 +68,7 @@ __all__ = ['setAxis', 'twinAxis', 'setLim', 'set_ticks', 'zoom',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter',
            'plotHistBars', 'plotConfFill',
            'line_label', 'full_extent', 'position_to_extent',
-           'backdrop', '_histLine']
+           'backdrop', '_histLine', '_scale_to_log_flag']
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -1719,9 +1719,12 @@ def _make_segments(x, y):
 def _scale_to_log_flag(scale):
     # Check formatting of `scale` str
     scale = _clean_scale(scale)
-    if scale.startswith('log'): log = True
-    elif scale.startswith('lin'): log = False
-    else: raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
+    if scale.startswith('log'):
+        log = True
+    elif scale.startswith('lin'):
+        log = False
+    else:
+        raise ValueError("Unrecognized `scale` '{}'; must start with 'log' or 'lin'".format(scale))
     return log
 
 
@@ -1729,7 +1732,8 @@ def _clean_scale(scale):
     """Cleanup a 'scaling' string to be matplotlib compatible.
     """
     scale = scale.lower()
-    if scale.startswith('lin'): scale = 'linear'
+    if scale.startswith('lin'):
+        scale = 'linear'
     return scale
 
 
@@ -1764,7 +1768,6 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
             err = "Unrecognized `loc`[{}] = '{}' (`loc` = '{}').".format(ii, ll, loc)
             err += "\n\t`loc`[{}] must be one of '{}'".format(ii, vv)
             raise ValueError(err)
-
 
     if loc[0] == 't' or loc[0] == 'u':
         if valign is None:
