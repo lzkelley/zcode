@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import warnings
 import numpy as np
-import scipy as sp
 
 from . import math_core
 
@@ -228,6 +227,8 @@ def sigma(sig, side='in', boundaries=False):
         Percentiles corresponding to the input `sig`.
 
     """
+    import scipy as sp
+
     if side.startswith('in'):
         inside = True
     elif side.startswith('out'):

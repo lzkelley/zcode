@@ -37,7 +37,6 @@ from datetime import datetime
 import os
 import sys
 import re
-import logging
 import warnings
 import numpy as np
 import collections
@@ -444,6 +443,7 @@ def checkURL(url, codemax=200, timeout=3.0):
 
     """
     import requests
+    import logging
 
     retval = False
     try:

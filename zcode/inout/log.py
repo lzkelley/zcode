@@ -19,9 +19,10 @@ import inspect
 import numpy as np
 
 from . import inout_core
+from .. import utils
 
 __all__ = ['IndentFormatter', 'get_logger', 'default_logger',
-            # DEPRECATED:
+           # DEPRECATED:
            'getLogger', 'defaultLogger']
 
 
@@ -50,8 +51,8 @@ def getLogger(*args, **kwargs):
 
 
 def get_logger(name, format_stream=None, format_file=None, format_date=None,
-              level_stream=logging.WARNING, level_file=logging.DEBUG,
-              tofile=None, tostr=True):
+               level_stream=logging.WARNING, level_file=logging.DEBUG,
+               tofile=None, tostr=True):
     """Create a standard logger object which logs to file and or stdout stream.
 
     If logging to output stream (stdout) is enabled, an `IndentFormatter` object is used.
@@ -141,6 +142,7 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
     # Add a `after` method to log how long something took
     # ---------------------------------------------------
     logger._after_lvl = logging.INFO
+
     def _after(self, msg, beg, beg_all=None, lvl=None):
         if lvl is None:
             lvl = self._after_lvl
