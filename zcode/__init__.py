@@ -5,7 +5,7 @@
 # from . import plot
 # from . import math
 # from . import inout
-# from . import constants
+from . import constants
 
 __author__ = "Luke Zoltan Kelley"
 __version__ = "0.0.9"
