@@ -1084,14 +1084,15 @@ def _infer_scale(args):
 
 
 def datetime_to_decimal_year(dt, format="%Y-%m-%d %H:%M:%S"):
-    """
+    """Convert the given datetime into a decimal year (down to millisecond precision).
     """
     # Convert string to datetime if needed
     if not isinstance(dt, datetime.datetime):
         dt = datetime.datetime.strptime(dt, format)
-    year = int(dt.strftime("%Y"))
-    day = int(dt.strftime("%j"))
-    max_day = int(datetime.datetime(year, 12, 31, 23, 59, 59).strftime("%j"))
+    temp = dt.strftime("%Y|%j|%H|%M|%S.%f")
+    year, day, hr, mnt, sec = [float(tt) for tt in temp.split('|')]
+    hours = hr + mnt/60.0 + sec/3600.0
+    max_day = int(datetime.datetime(int(year), 12, 31, 23, 59, 59).strftime("%j"))
     # print("year: {}, day: {}, max_day: {}".format(year, day, max_day))
-    dec_yr = 1.0*year + (day-1)/max_day
+    dec_yr = 1.0*year + (day - 1.0 + (hours/24.0)) / max_day
     return dec_yr

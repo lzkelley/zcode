@@ -52,6 +52,7 @@ Current
     -   `math_core.py`
         -   `datetime_to_decimal_year()` [new-function]
             -   New function to convert from a datetime object (or string datetime specification) to a decimal year.
+            -   Added precision down to milliseconds.
 
 
 [0.0.9] - 2017/03/07
