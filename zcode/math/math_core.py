@@ -796,54 +796,65 @@ def spacing(data, scale='log', num=100, filter=None, integers=False):
     return spaced
 
 
-def str_array(arr, first=4, last=4, delim=", ", format=":.4e"):
+def str_array(arr, sides=(3, 3), delim=", ", format=":.2f"):
     """Create a string representation of a numerical array.
 
     Arguments
     ---------
     arr : array_like scalars,
         Array to be converted to string.
-    first : int or None,
-        Number of elements at the beginning of the array to print.
-        `None` means FULL array, while `0` means zero elements.
-    last : int,
-        Number of elements at the end of the array to print.
+    sides : (2,) int, int, or None
+        Specification for how many elements of the input array to print.
+        -   (2,) int: then the first and second value determine the number of elements at the
+                      beginning and end of the input array `arr` to print.
+        -   int: the number of elements at both the beginning and end to print.
+        -   None: print all elements of the array
     delim : str,
         Character to delimit elements of string array.
     format : str,
-        Specification of how each array element should be converted to a str.
+        Specification of how each array element should be converted to a str, e.g. (':.2f')
         This is a c-style specification used by ``str.format``.
 
     Returns
     -------
-    arrStr : str,
+    arr_str : str,
         Stringified version of input array.
 
     """
+    len_arr = len(arr)
+    if sides is None:
+        beg = None
+        end = len_arr
+    elif np.iterable(sides):
+        beg, end = sides
+    else:
+        beg = end = sides
 
-    if first is None or last is None:
-        first = None
-        last = 0
+    _beg = 0 if beg is None else beg
+    _end = 0 if end is None else end
+    if _beg + _end >= len_arr:
+        beg = None
+        end = len_arr
 
     # Create the style specification
     form = "{{{}}}".format(format)
 
-    arrStr = "["
+    arr_str = "["
     # Add the first `first` elements
-    if first or first is None:
-        arrStr += delim.join([form.format(vv) for vv in arr[:first]])
+    if beg is not None:
+        arr_str += delim.join([form.format(vv) for vv in arr[:beg]])
 
     # Include separator unless full array is being printed
-    if first is not None:
-        arrStr += "... "
+    if beg is not None and end < len_arr:
+        arr_str += "... "
 
     # Add the last `last` elements
-    if last:
-        arrStr += delim.join([form.format(vv) for vv in arr[-last-1:]])
+    if end is not None:
+        arr_str += delim.join([form.format(vv) for vv in arr[-end:]])
 
-    arrStr += "]"
+    arr_str += "]"
 
-    return arrStr
+    return arr_str
 
 
 def vecmag(r1, r2=None):

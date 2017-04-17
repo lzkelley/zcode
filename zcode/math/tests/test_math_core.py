@@ -382,6 +382,46 @@ class TestMathCore(object):
         assert_raises(ValueError, around, 1234.567, 1, 'log', 'm')
         return
 
+    def test_str_array(self):
+        from zcode.math.math_core import str_array
+        print("TestMathCore.test_str_array()")
+
+        arr = np.linspace(0, 10.0, 6)
+        sa = str_array(arr)
+        print("'({})' ==> '{}'".format(arr, sa))
+        assert_true(sa == '[0.00, 2.00, 4.00, 6.00, 8.00, 10.00]')
+
+        sa = str_array(arr, (2, 2))
+        print("'({}, (2, 2))' ==> '{}'".format(arr, sa))
+        assert_true(sa == '[0.00, 2.00... 8.00, 10.00]')
+
+        sa = str_array(arr, None)
+        print("'({}, None)' ==> '{}'".format(arr, sa))
+        assert_true(sa == '[0.00, 2.00, 4.00, 6.00, 8.00, 10.00]')
+
+        sa = str_array(arr, 1)
+        print("'({}, 1)' ==> '{}'".format(arr, sa))
+        assert_true(sa == '[0.00... 10.00]')
+
+        sa = str_array(arr, (1, 3))
+        print("'({}, (1, 3))' ==> '{}'".format(arr, sa))
+        assert_true(sa == '[0.00... 6.00, 8.00, 10.00]')
+
+        sa = str_array(arr, (12, 10))
+        print("'({}, (12, 10))' ==> '{}'".format(arr, sa))
+        assert_true(sa == '[0.00, 2.00, 4.00, 6.00, 8.00, 10.00]')
+
+        sa = str_array(arr, (2, 1), delim=' ')
+        print("'({}, (2, 1), delim=' ')' ==> '{}'".format(arr, sa))
+        assert_true(sa == '[0.00 2.00... 10.00]')
+
+        sa = str_array(arr, (2, 1), format=':.1e')
+        print("'({}, (2, 1), format=':.1e')' ==> '{}'".format(arr, sa))
+        assert_true(sa == '[0.0e+00, 2.0e+00... 1.0e+01]')
+
+        return
+
+
 # Run all methods as if with `nosetests ...`
 if __name__ == "__main__":
     run_module_suite()
