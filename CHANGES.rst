@@ -45,6 +45,9 @@ Current
             -   Add a `shift` argument which allows for adjusting the `(x,y)` position of the text more dynamically.
         -   `_loc_str_to_pars()`
             -   Check the location specifier for validity.
+        -   `set_grid()` <== `setGrid` [DEPRECATION]
+        -   `set_lim()` <== `setLim` [DEPRECATION]
+            
 -   `math/`
     -   `statistic.py`
         -   `stats_str`

@@ -4,7 +4,7 @@ Functions
 ---------
 -   setAxis              - Set many different axis properties at once.
 -   twinAxis             - Easily create and set a new twin axis (like `twinx()` or `twiny()`)
--   setLim               - Set limits on an axis
+-   set_lim              - Set limits on an axis
 -   set_ticks
 -   zoom                 - Zoom-in at a certain location on the given axes.
 -   stretchAxes          - Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
@@ -16,7 +16,7 @@ Functions
 -   colormap             - Create a colormap from scalars to colors.
 -   cut_colormap         - Select a truncated subset of the given colormap.
 -   color_set            - Retrieve a (small) set of color-strings with hand picked values.
--   setGrid              - Configure the axes' grid.
+-   set_grid             - Configure the axes' grid.
 -   skipTicks            - skip some tick marks
 -   saveFigure           - Save the given figure(s) to the given filename.
 -   strSciNot            - Convert a scalar into a string with scientific notation.
@@ -59,16 +59,20 @@ import seaborn.apionly as sns
 
 import zcode.math as zmath
 import zcode.inout as zio
+from zcode import utils
 
-__all__ = ['setAxis', 'twinAxis', 'setLim', 'set_ticks', 'zoom',
+__all__ = ['setAxis', 'twinAxis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend',
            'unifyAxesLimits', 'color_cycle', 'transform',
-           'colorCycle', 'colormap', 'color_set', 'setGrid',
+           'colorCycle', 'colormap', 'color_set', 'set_grid',
            'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter',
            'plotHistBars', 'plotConfFill',
            'line_label', 'full_extent', 'position_to_extent',
-           'backdrop', '_histLine', '_scale_to_log_flag']
+           'backdrop', '_histLine', '_scale_to_log_flag',
+           # Deprecated
+           'setGrid', 'setLim'
+           ]
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -128,7 +132,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     ax.tick_params(axis=axis, which='major', size=ts)
 
     # Set Grid Lines
-    setGrid(ax, grid, axis='both')
+    set_grid(ax, grid, axis='both')
 
     if axis == 'x':
         ax.xaxis.label.set_color(c)
@@ -220,20 +224,25 @@ def twinAxis(ax, axis='x', pos=1.0, **kwargs):
     return tw
 
 
-def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
+def setLim(*args, **kwargs):
+    utils.dep_warn("setLim", newname="set_lim")
+    return set_lim(*args, **kwargs)
+
+
+def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
     """Set the limits (range) of the given, target axis.
 
     When only ``lo`` or only ``hi`` is specified, the default behavior is to only set that axis
     limit and leave the other bound to its existing value.  When ``range`` is set to `True`, then
     the given axis boumds (``lo``/``hi``) are used as multipliers, i.e.
 
-        >>> Plotting.setLim(ax, lo=0.1, range=True, at='exactly')
+        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='exactly')
         will set the lower bound to be `0.1` times the existing upper bound
 
     The ``at`` keyword determines whether the given bounds are treated as limits to the bounds,
     or as fixed ('exact') values, i.e.
 
-        >>> Plotting.setLim(ax, lo=0.1, range=True, at='most')
+        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='most')
         will set the lower bound to at-'most' `0.1` times the existing upper bound.  If the lower
         bound is already 0.05 times the upper bound, it will not be changed.
 
@@ -917,8 +926,13 @@ def color_set(num, black=False, cset='xkcd'):
     return colors[:num]
 
 
-def setGrid(ax, val=True, axis='both', c=None, ls='-', clear=True,
-            below=True, major=True, minor=True, zorder=2, alpha=None):
+def setGrid(*args, **kwargs):
+    utils.dep_warn("setGrid", newname="set_grid")
+    return set_grid(*args, **kwargs)
+
+
+def set_grid(ax, val=True, axis='both', c=None, ls='-', clear=True,
+             below=True, major=True, minor=True, zorder=2, alpha=None):
     """Configure the axes' grid.
     """
     if clear:
@@ -1051,14 +1065,18 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     # No files saved or Some files were not saved
     if not len(saved_names) or len(saved_names) != len(fig):
         warn_str = "Error saving figures..."
-        if log is None: warnings.warn(warn_str)
-        else: log.warning(warn_str)
+        if log is None:
+            warnings.warn(warn_str)
+        else:
+            log.warning(warn_str)
 
     # Things look good.
     else:
         printStr = "Saved figure to '%s'" % (fname)
-        if log is not None: log.log(level, printStr)
-        elif verbose: print(printStr)
+        if log is not None:
+            log.log(level, printStr)
+        elif verbose:
+            print(printStr)
 
     return
 
