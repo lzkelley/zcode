@@ -33,6 +33,8 @@ run individually using something like,
     $ nosetests math/tests/test_math_core.py
     $ nosetests math/tests/test_math_core.py:TestMathCore.test_round
     $ python math/tests/test_math_core.py
+For verbose (complete) output, use the `--nocapture` flag.
+
 
 #### Deprecations:
 When deprecating a function/object/method, use a warning like:
