@@ -39,6 +39,7 @@ Current
         -   Changed parameters for logging methods to use underscores instead of camel-case.
         -   `get_logger()` <== `getLogger` [DEPRECATION]
         -   `default_logger()` <== `defaultLogger` [DEPRECATION]
+        -   Added docstrings to `after()`, `raise_error()`, and `copy()` added-on methods.
 -   `plot/`
     -   `plot_core.py`
         -   `text()`

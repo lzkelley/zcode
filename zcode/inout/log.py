@@ -133,17 +133,33 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
 
     # Add a `raise` method to both log an error and raise one
     # -------------------------------------------------------
-    def _raise(self, msg, error=RuntimeError):
+    def _raise_error(self, msg, error=RuntimeError):
+        """Log an error message and raise an error.
+        """
         self.error(msg)
         raise error(msg)
     # Not entirely sure why this works, but it seems to
-    logger.raise_error = _raise.__get__(logger)
+    logger.raise_error = _raise_error.__get__(logger)
 
     # Add a `after` method to log how long something took
     # ---------------------------------------------------
     logger._after_lvl = logging.INFO
 
     def _after(self, msg, beg, beg_all=None, lvl=None):
+        """Log a message and include a report of duration using `datetime`.
+
+        Arguments
+        ---------
+        msg : str
+            Message to log
+        beg : `datetime.Datetime`
+            Datetime of the start of operation (reported duration is `datetime.now() - beg`
+        beg_all : `datetime.Datetime`
+            Datetime of a different start point, duration is given in a parenthesis
+        lvl : int
+            Logging level, default is given by the `_after_lvl` attribute.
+
+        """
         if lvl is None:
             lvl = self._after_lvl
         _str = "{} after {}".format(msg, datetime.now()-beg)
@@ -152,10 +168,13 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         self.log(lvl, _str)
     # Not entirely sure why this works, but it seems to
     logger.after = _after.__get__(logger)
+    # logger.after.__doc__ = _after.__doc__
 
     # Add a `copy_file` method to copy logfile to the given destination
     # -----------------------------------------------------------------
     def _copy(self, dest, modify_exists=False):
+        """Copy the curent output logfile to a new destination.
+        """
         if modify_exists:
             dest = inout_core.modify_exists(dest)
         inout_core.check_path(dest)
