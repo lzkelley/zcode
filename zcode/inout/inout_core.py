@@ -226,17 +226,22 @@ def countLines(files, progress=False):
     """
 
     # If string, or otherwise not-iterable, convert to list
-    if(np.iterable(files) and not isinstance(files, str)): files = [files]
+    if np.iterable(files) and not isinstance(files, str):
+        files = [files]
 
-    if(progress): pbar = getProgressBar(len(files))
+    if progress:
+        warnings.warn("`progress` argument is deprecated!")
+        # pbar = getProgressBar(len(files))
 
     nums = 0
     # Iterate over each file, count lines
     for ii, fil in enumerate(files):
         nums += sum(1 for line in open(fil))
-        if(progress): pbar.update(ii)
+        # if(progress):
+        #     pbar.update(ii)
 
-    if(progress): pbar.finish()
+    # if(progress):
+    #     pbar.finish()
 
     return nums
 
@@ -327,8 +332,8 @@ def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     if not os.path.exists(savefile):
         raise RuntimeError("Could not save to file '%s'." % (savefile))
 
-    logStr = " - Saved dictionary to '%s'" % (savefile)
-    logStr += " - - Size '%s'" % (getFileSize(savefile))
+    logStr = " - Saved dictionary to '{}'".format(savefile)
+    logStr += " - - Size '{}'".format(get_file_size(savefile))
     try:
         log.debug(logStr)
     except Exception:
@@ -405,29 +410,34 @@ def combineFiles(inFilenames, outFilename, verbose=False):
     # Make sure outfile path exists
     check_path(outFilename)
     inSize = 0.0
-    nums = len(inFilenames)
+    # nums = len(inFilenames)
 
     # Open output file for writing
-    if verbose: pbar = getProgressBar(nums)
+    if verbose:
+        warnings.warn("`progress` is deprecated!")
+        # pbar = getProgressBar(nums)
     with open(outFilename, 'w') as outfil:
 
         # Iterate over input files
         for ii, inname in enumerate(inFilenames):
             inSize += os.path.getsize(inname)
-            if verbose: pbar.update(ii)
+            # if verbose:
+            #     pbar.update(ii)
 
             # Open input file for reading
             with open(inname, 'r') as infil:
                 # Iterate over input file lines
                 for line in infil: outfil.write(line)
 
-    if verbose: pbar.finish()
+    # if verbose:
+    #     pbar.finish()
 
     outSize = os.path.getsize(outFilename)
     inStr = bytesString(inSize)
     outStr = bytesString(outSize)
 
-    if verbose: print("Total input size = %s, output size = %s" % (inStr, outStr))
+    if verbose:
+        print("Total input size = %s, output size = %s" % (inStr, outStr))
     return
 
 
