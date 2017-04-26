@@ -216,7 +216,7 @@ class Timings(object):
         created with the given name.
         """
         # No timer with this name exists
-        if name not in self._names:
+        if name not in list(self._names):
             # Create a new one
             if create:
                 self._create_timer(name)
