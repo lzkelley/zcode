@@ -796,7 +796,7 @@ def spacing(data, scale='log', num=100, filter=None, integers=False):
     return spaced
 
 
-def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False):
+def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log=True):
     """Create a string representation of a numerical array.
 
     Arguments
@@ -816,6 +816,8 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False):
         This is a c-style specification used by ``str.format``.
     log : bool
         If this is True, first take the log10 of the input values before printing.
+    label_log : bool
+        If `log` is also true, append a string saying these are log values.
 
     Returns
     -------
@@ -858,6 +860,8 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False):
         arr_str += delim.join([form.format(vv) for vv in arr[-end:]])
 
     arr_str += "]"
+    if log and label_log:
+        arr_str += " (log values)"
 
     return arr_str
 
