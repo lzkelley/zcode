@@ -131,14 +131,13 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         strHandler.setLevel(level_stream)
         logger.addHandler(strHandler)
 
-    # Add a `raise` method to both log an error and raise one
-    # -------------------------------------------------------
+    # Add a `raise_error` method to both log an error and raise one
+    # -------------------------------------------------------------
     def _raise_error(self, msg, error=RuntimeError):
         """Log an error message and raise an error.
         """
         self.error(msg)
         raise error(msg)
-    # Not entirely sure why this works, but it seems to
     logger.raise_error = _raise_error.__get__(logger)
 
     # Add a `after` method to log how long something took
@@ -181,6 +180,29 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         shutil.copy(self.filename, dest)
     # Not entirely sure why this works, but it seems to
     logger.copy = _copy.__get__(logger)
+
+    # Add a `raise_error` method to both log an error and raise one
+    # -------------------------------------------------------------
+    logger._frac_lvl = logging.INFO
+
+    def _frac(self, num, den, prep=None, post=None, lvl=None):
+        """Log information about a fraction, "[{prep} ]{}/{} = {}[ {post}]".
+        """
+        _if = '5d'
+        _ff = '.4f'
+        if lvl is None:
+            lvl = self._frac_lvl
+        _str = ""
+        if prep is not None:
+            _str += "{} ".format(prep)
+        _str += "{0:{i}}/{1:{i}} = {2:{f}}".format(num, den, 1.0*num/den, i=_if, f=_ff)
+        if post is not None:
+            _str += " {}".format(post)
+        self.log(lvl, _str)
+    logger.frac = _frac.__get__(logger)
+
+    for lvl in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+        setattr(logger, lvl, getattr(logging, lvl))
 
     return logger
 
