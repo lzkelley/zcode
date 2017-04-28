@@ -796,7 +796,7 @@ def spacing(data, scale='log', num=100, filter=None, integers=False):
     return spaced
 
 
-def str_array(arr, sides=(3, 3), delim=", ", format=":.2f"):
+def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False):
     """Create a string representation of a numerical array.
 
     Arguments
@@ -814,6 +814,8 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f"):
     format : str,
         Specification of how each array element should be converted to a str, e.g. (':.2f')
         This is a c-style specification used by ``str.format``.
+    log : bool
+        If this is True, first take the log10 of the input values before printing.
 
     Returns
     -------
@@ -821,7 +823,10 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f"):
         Stringified version of input array.
 
     """
-    len_arr = len(arr)
+    arr = np.asarray(arr)
+    if log:
+        arr = np.log10(arr)
+    len_arr = arr.size
     if sides is None:
         beg = None
         end = len_arr

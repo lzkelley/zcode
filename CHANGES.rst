@@ -62,6 +62,7 @@ Current
             -   Changed the arguments to this function to use a single `sides` parameter which encodes information about both the beginning and end.
             -   Improved the function to properly handle the number of elements at the end, and what to do if the number of requested elements equals or exceeds the array length.
             -   Added tests to `tests.test_math_core.TestMathCore.test_str_array()`.
+            -   Added `log` argument, to convert input values to log10 first.
 
 
 [0.0.9] - 2017/03/07
