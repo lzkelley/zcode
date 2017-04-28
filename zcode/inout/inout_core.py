@@ -730,7 +730,7 @@ def modify_exists(fname, max=1000):
         path = './'
     # construct regex for modified files
     #     look specifically for `prec`-digit numbers at the end of the filename
-    regex = modify_filename(filename, append='_([0-9]){{{:d}}}'.format(prec))
+    regex = modify_filename(re.escape(filename), append='_([0-9]){{{:d}}}'.format(prec))
     matches = sorted([ff for ff in os.listdir(path) if re.search(regex, ff)])
     # If there are matches, find the highest file-number in the matches
     if len(matches):
@@ -753,7 +753,7 @@ def modify_exists(fname, max=1000):
     # Construct new filename
     # ----------------------
     newName = modify_filename(fname, append='_{0:0{1:d}d}'.format(num, prec))
-    # New filename shouldnt exist; if it does, raise error
+    # New filename shouldnt exist; if it does, raise warning
     if os.path.exists(newName):
         # raise RuntimeError("New filename '{}' already exists.".format(newName))
         warnings.warn("New filename '{}' already exists.".format(newName))

@@ -33,6 +33,7 @@ Current
             -   Use `get_file_size()` instead.
         -   `modify_exists()`
             -   If, for some reason, the new filename already exists, raise a warning and then bootstrap to modify the filename again.  Previously the code would raise an error.
+            -   BUG: fix issue where special characters (e.g. `+`) were interfering with regex match.
         -   `modify_filename()` <== `modifyFilename` [DEPRECATION]
     -   `log.py`
         -   Add method `after()` to logger objects which report a message and duration for execution.
