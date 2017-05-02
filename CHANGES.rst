@@ -42,6 +42,8 @@ Current
         -   `get_logger()` <== `getLogger` [DEPRECATION]
         -   `default_logger()` <== `defaultLogger` [DEPRECATION]
         -   Added docstrings to `after()`, `raise_error()`, and `copy()` added-on methods.
+        -   `IndentFormatter`
+            -   BUG: sometimes the initial depth of the stack is too high, resulting in a missing indent.  In `IndentFormatter.format()`, reset the depth as needed.
 -   `plot/`
     -   `plot_core.py`
         -   `text()`

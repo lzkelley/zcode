@@ -36,10 +36,11 @@ class IndentFormatter(logging.Formatter):
 
     def format(self, rec):
         stack = inspect.stack()
-        if self.baseline is None: self.baseline = len(stack)
-        indent = (len(stack)-self.baseline)
+        if (self.baseline is None) or (len(stack) < self.baseline):
+            self.baseline = len(stack)
+        indent = (len(stack) - self.baseline)
         addSpace = ((indent > 0) & (not rec.msg.startswith(" -")))
-        rec.indent = ' -'*indent + ' '*addSpace
+        rec.indent = (' -' * indent) + (' ' * addSpace)
         out = logging.Formatter.format(self, rec)
         del rec.indent
         return out
