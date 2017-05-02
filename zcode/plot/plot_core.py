@@ -20,6 +20,7 @@ Functions
 -   skipTicks            - skip some tick marks
 -   saveFigure           - Save the given figure(s) to the given filename.
 -   strSciNot            - Convert a scalar into a string with scientific notation.
+-   line_style_set       - Retrieve a set of line-style specifications.
 
 -   plotHistLine         - Plot a histogram line.
 -   plotSegmentedLine    - Draw a line segment by segment.
@@ -67,7 +68,7 @@ __all__ = ['setAxis', 'twinAxis', 'set_lim', 'set_ticks', 'zoom',
            'colorCycle', 'colormap', 'color_set', 'set_grid',
            'skipTicks', 'saveFigure', 'strSciNot',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter',
-           'plotHistBars', 'plotConfFill',
+           'plotHistBars', 'plotConfFill', 'line_style_set',
            'line_label', 'full_extent', 'position_to_extent',
            'backdrop', '_histLine', '_scale_to_log_flag',
            # Deprecated
@@ -86,6 +87,23 @@ _COLOR_SET_XKCD = ["blue", "red", "green", "purple", "cyan", "orange",
                    "teal", "light blue", "lavender", "rose", "turquoise", "azure",
                    "lime green", "greyish", "windows blue",
                    "faded green", "mustard", "brick red", "dusty purple"]
+
+_LINE_STYLE_SET = [
+    [],
+    [8, 4],
+    [1, 1],
+    [8, 1, 1, 1],
+    [8, 1, 1, 1, 1, 1],
+    [8, 1, 1, 1, 1, 1, 1, 1],
+    [8, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [4, 2],
+    [8, 2, 4, 2],
+    [8, 2, 4, 2, 1, 2],
+    [4, 1, 1, 1],
+    [4, 1, 1, 1, 1, 1],
+    [4, 1, 1, 1, 1, 1, 1, 1],
+    [4, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+]
 
 _LW_OUTLINE = 0.8
 _PAD = 0.01
@@ -924,6 +942,32 @@ def color_set(num, black=False, cset='xkcd'):
         return colors
 
     return colors[:num]
+
+
+def line_style_set(num):
+    """Retrieve a (small) set of line-style specifications with hand constructed patterns.
+
+    Used by the `matplotlib.lines.Line2D.set_dashes` method.
+    The first element is a solid line.
+
+    Arguments
+    ---------
+    num : int
+        Number of line-styles to retrieve.
+
+    Returns
+    -------
+    lines : (`num`) list of tuples,
+        Set of line-styles.  Each line style is a tuple of values specifying dash spacings.
+
+    """
+    lines = list(_LINE_STYLE_SET)
+    nline = len(lines)
+    # If more colors are requested than are available, fallback to `color_cycle`
+    if num > nline:
+        raise ValueError("Limited to {} line-styles.".format(nline))
+
+    return lines[:num]
 
 
 def setGrid(*args, **kwargs):
