@@ -1142,7 +1142,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
 
 def strSciNot(*args, **kwargs):
     utils.dep_warn("strSciNot", newname="scientific_notation")
-    return set_grid(*args, **kwargs)
+    return scientific_notation(*args, **kwargs)
 
 
 def scientific_notation(val, precman=0, precexp=0, dollar=True, one=True, zero=False):
