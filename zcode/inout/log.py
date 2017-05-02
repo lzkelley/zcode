@@ -168,7 +168,6 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         self.log(lvl, _str)
     # Not entirely sure why this works, but it seems to
     logger.after = _after.__get__(logger)
-    # logger.after.__doc__ = _after.__doc__
 
     # Add a `copy_file` method to copy logfile to the given destination
     # -----------------------------------------------------------------
