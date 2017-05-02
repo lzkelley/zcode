@@ -82,27 +82,39 @@ _COLOR_SET = ['blue', 'red', 'green', 'purple',
               'orange', 'cyan', 'brown', 'gold', 'pink',
               'forestgreen', 'grey', 'olive', 'coral', 'yellow']
 
-_COLOR_SET_XKCD = ["blue", "red", "green", "purple", "cyan", "orange",
+_COLOR_SET_XKCD = ["blue", "red", "green", "purple", "orange", "cyan",
                    "pink", "brown", "magenta", "amber", "slate blue",
                    "teal", "light blue", "lavender", "rose", "turquoise", "azure",
                    "lime green", "greyish", "windows blue",
                    "faded green", "mustard", "brick red", "dusty purple"]
 
+_LS_DASH_BIG = 7
+_LS_DASH_MED = 5
+_LS_DASH_SML = 3
+_LS_DOT = 1
 _LINE_STYLE_SET = [
     [],
-    [8, 4],
-    [1, 1],
-    [8, 1, 1, 1],
-    [8, 1, 1, 1, 1, 1],
-    [8, 1, 1, 1, 1, 1, 1, 1],
-    [8, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [4, 2],
-    [8, 2, 4, 2],
-    [8, 2, 4, 2, 1, 2],
-    [4, 1, 1, 1],
-    [4, 1, 1, 1, 1, 1],
-    [4, 1, 1, 1, 1, 1, 1, 1],
-    [4, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [_LS_DASH_BIG, 4],
+    [_LS_DOT, 1],
+
+    [_LS_DOT, 1, _LS_DASH_MED, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
+
+    [_LS_DASH_MED, 2],
+    [_LS_DASH_SML, 1, _LS_DASH_MED, 1],
+    [_LS_DOT, 1, _LS_DASH_SML, 1, _LS_DASH_MED, 1],
+
+    [_LS_DASH_SML, 1],
+    [_LS_DOT, 1, _LS_DASH_SML, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
+
+    [_LS_DOT, 4],
+    [_LS_DOT, 1, _LS_DOT, 4],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 4],
 ]
 
 _LW_OUTLINE = 0.8
@@ -952,8 +964,9 @@ def line_style_set(num):
 
     Arguments
     ---------
-    num : int
+    num : int or `None`
         Number of line-styles to retrieve.
+        If `None`, then all available are returned.
 
     Returns
     -------
@@ -961,13 +974,15 @@ def line_style_set(num):
         Set of line-styles.  Each line style is a tuple of values specifying dash spacings.
 
     """
-    lines = list(_LINE_STYLE_SET)
-    nline = len(lines)
+    _lines = list(_LINE_STYLE_SET)
+    nline = len(_lines)
     # If more colors are requested than are available, fallback to `color_cycle`
-    if num > nline:
+    if (num is not None) and (num > nline):
         raise ValueError("Limited to {} line-styles.".format(nline))
 
-    return lines[:num]
+    lines = [ll for ll in _lines[:num]]
+
+    return lines
 
 
 def setGrid(*args, **kwargs):
