@@ -53,6 +53,7 @@ Current
         -   `set_grid()` <== `setGrid` [DEPRECATION]
         -   `set_lim()` <== `setLim` [DEPRECATION]
         -   `scientific_notation()` <== `strSciNot()` [DEPRECATION]
+            -   Also change from `precman` and `precexp` to just `man` and `exp`.
         -   `line_style_set()` [new-function]
             -   Retrieve a list of line-style specifications to be used with `Line2D.set_dashes`.
             

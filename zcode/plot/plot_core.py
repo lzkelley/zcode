@@ -1145,16 +1145,17 @@ def strSciNot(*args, **kwargs):
     return scientific_notation(*args, **kwargs)
 
 
-def scientific_notation(val, precman=0, precexp=0, dollar=True, one=True, zero=False):
+def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
+                        precman=None, precexp=None):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
     ---------
     val : scalar
         Numerical value to convert.
-    precman : int or `None`
+    man : int or `None`
         Precision of the mantissa (decimal points); or `None` for omit mantissa.
-    precexp : int or `None`
+    exp : int or `None`
         Precision of the exponent (decimal points); or `None` for omit exponent.
     dollar : bool
         Include dollar-signs ('$') around returned expression.
@@ -1169,36 +1170,46 @@ def scientific_notation(val, precman=0, precexp=0, dollar=True, one=True, zero=F
         Scientific notation string using latex formatting.
 
     """
+    # Deprecation warnings for old parameters
+    if precman is not None:
+        utils.dep_warn("precman", "man", type='parameter')
+        man = precman
+    if precexp is not None:
+        utils.dep_warn("precexp", "exp", type='parameter')
+        exp = precexp
+
     if zero and val == 0.0:
         notStr = "$"*dollar + "0.0" + "$"*dollar
         return notStr
 
-    man, exp = zmath.frexp10(val)
-    use_man = (precman is not None and np.isfinite(exp))
-    if use_man: manStr = "{0:.{1:d}f}".format(man, precman)
-    else:       manStr = ""
+    val_man, val_exp = zmath.frexp10(val)
+    use_man = (man is not None and np.isfinite(val_exp))
+    if use_man:
+        str_man = "{0:.{1:d}f}".format(val_man, man)
+    else:
+        str_man = ""
     # If the mantissa is '1' (or '1.0' or '1.00' etc), dont write it
-    if not one and manStr == "{0:.{1:d}f}".format(1.0, precman):
-        manStr = ""
+    if not one and str_man == "{0:.{1:d}f}".format(1.0, man):
+        str_man = ""
 
-    if precexp is not None:
-        # Try to convert `exp` to integer, fails if 'inf' or 'nan'
+    if exp is not None:
+        # Try to convert `val_exp` to integer, fails if 'inf' or 'nan'
         try:
-            exp = np.int(exp)
-            expStr = "10^{{ {:d} }}".format(exp)
+            val_exp = np.int(val_exp)
+            str_exp = "10^{{ {:d} }}".format(val_exp)
         except:
-            expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
+            str_exp = "10^{{ {0:.{1:d}f} }}".format(val_exp, exp)
 
         # Add negative sign if needed
-        if not use_man and (man < 0.0 or val == -np.inf):
-            expStr = "-" + expStr
+        if not use_man and (val_man < 0.0 or val == -np.inf):
+            str_exp = "-" + str_exp
     else:
-        expStr = ""
+        str_exp = ""
 
-    notStr = "$"*dollar + manStr
-    if len(manStr) and len(expStr):
+    notStr = "$"*dollar + str_man
+    if len(str_man) and len(str_exp):
         notStr += " \\times"
-    notStr += expStr + "$"*dollar
+    notStr += str_exp + "$"*dollar
 
     return notStr
 
