@@ -52,6 +52,7 @@ Current
             -   Check the location specifier for validity.
         -   `set_grid()` <== `setGrid` [DEPRECATION]
         -   `set_lim()` <== `setLim` [DEPRECATION]
+        -   `scientific_notation()` <== `strSciNot()` [DEPRECATION]
         -   `line_style_set()` [new-function]
             -   Retrieve a list of line-style specifications to be used with `Line2D.set_dashes`.
             

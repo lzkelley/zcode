@@ -19,7 +19,7 @@ Functions
 -   set_grid             - Configure the axes' grid.
 -   skipTicks            - skip some tick marks
 -   saveFigure           - Save the given figure(s) to the given filename.
--   strSciNot            - Convert a scalar into a string with scientific notation.
+-   scientific_notation  - Convert a scalar into a string with scientific notation.
 -   line_style_set       - Retrieve a set of line-style specifications.
 
 -   plotHistLine         - Plot a histogram line.
@@ -66,13 +66,13 @@ __all__ = ['setAxis', 'twinAxis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend',
            'unifyAxesLimits', 'color_cycle', 'transform',
            'colorCycle', 'colormap', 'color_set', 'set_grid',
-           'skipTicks', 'saveFigure', 'strSciNot',
+           'skipTicks', 'saveFigure', 'scientific_notation',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter',
            'plotHistBars', 'plotConfFill', 'line_style_set',
            'line_label', 'full_extent', 'position_to_extent',
            'backdrop', '_histLine', '_scale_to_log_flag',
            # Deprecated
-           'setGrid', 'setLim'
+           'setGrid', 'setLim', 'strSciNot'
            ]
 
 COL_CORR = 'royalblue'
@@ -1140,7 +1140,12 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     return
 
 
-def strSciNot(val, precman=0, precexp=0, dollar=True, one=True, zero=False):
+def strSciNot(*args, **kwargs):
+    utils.dep_warn("strSciNot", newname="scientific_notation")
+    return set_grid(*args, **kwargs)
+
+
+def scientific_notation(val, precman=0, precexp=0, dollar=True, one=True, zero=False):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
