@@ -34,7 +34,6 @@ from six.moves import xrange
 import numpy as np
 import warnings
 import numbers
-import datetime
 
 __all__ = ['argextrema', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
@@ -42,7 +41,7 @@ __all__ = ['argextrema', 'around', 'asBinEdges', 'contiguousInds',
            'ordered_groups', 'really1d', 'renumerate',
            'sliceForAxis', 'spacing', 'str_array', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
-           '_infer_scale', 'datetime_to_decimal_year']
+           '_infer_scale']
 
 
 def argextrema(arr, type, filter=None):
@@ -1101,18 +1100,3 @@ def _flagsToFilter(positive, nonzero, filter=None, source=None):
 def _infer_scale(args):
     if np.all(args > 0.0): return 'log'
     return 'lin'
-
-
-def datetime_to_decimal_year(dt, format="%Y-%m-%d %H:%M:%S"):
-    """Convert the given datetime into a decimal year (down to millisecond precision).
-    """
-    # Convert string to datetime if needed
-    if not isinstance(dt, datetime.datetime):
-        dt = datetime.datetime.strptime(dt, format)
-    temp = dt.strftime("%Y|%j|%H|%M|%S.%f")
-    year, day, hr, mnt, sec = [float(tt) for tt in temp.split('|')]
-    hours = hr + mnt/60.0 + sec/3600.0
-    max_day = int(datetime.datetime(int(year), 12, 31, 23, 59, 59).strftime("%j"))
-    # print("year: {}, day: {}, max_day: {}".format(year, day, max_day))
-    dec_yr = 1.0*year + (day - 1.0 + (hours/24.0)) / max_day
-    return dec_yr
