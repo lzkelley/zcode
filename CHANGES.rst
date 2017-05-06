@@ -26,6 +26,11 @@ Future / To-Do
 
 Current
 -------
+
+
+
+[0.0.10] - 2017/05/06
+---------------------
 -  `inout/`
     -   `inout_core.py`
         -   `check_path()` <== `checkPath` [DEPRECATION]
@@ -82,6 +87,9 @@ Current
             -   Unit tests for the new `time.py` submodule.
             -   So far, only rests for the `time.to_datetime` method.
 
+-   `requirements.txt` [new-file]
+    -   Started to add requirements file, nearly empty at the moment.
+    
 
 [0.0.9] - 2017/03/07
 --------------------
