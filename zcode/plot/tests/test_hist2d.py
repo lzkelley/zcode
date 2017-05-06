@@ -15,7 +15,7 @@ import zcode.inout as zio
 
 
 def save_fig(fig, fname, count):
-    save_name = zio.modifyFilename(fname, append="_{}".format(count))
+    save_name = zio.modify_filename(fname, append="_{}".format(count))
     fig.savefig(fig, save_name)
     print("Saved {} to '{}'".format(count, save_name))
     return count+1

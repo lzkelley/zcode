@@ -371,7 +371,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         plt.setp(xpax.get_yticklabels(), fontsize=fs)
         xpax.xaxis.tick_top()
         # set bounds to bin edges
-        plot_core.setLim(xpax, 'x', data=xedges_2d)
+        plot_core.set_lim(xpax, 'x', data=xedges_2d)
         # Set axes limits to match those of colorbar
         if scale_to_cbar:
             # extrema_y = [zmath.floor_log(extrema[0]), zmath.ceil_log(extrema[1])]
@@ -388,7 +388,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         plt.setp(ypax.get_yticklabels(), fontsize=fs, rotation=90)
         ypax.yaxis.tick_right()
         # set bounds to bin edges
-        plot_core.setLim(ypax, 'y', data=yedges_2d)
+        plot_core.set_lim(ypax, 'y', data=yedges_2d)
         try:
             ypax.locator_params(axis='x', tight=True, nbins=4)
         except:
@@ -572,8 +572,8 @@ def plot2DHist(ax, xvals, yvals, hist,
             clabel.setdefault('inline', True)
             plt.clabel(cs, **clabel, zorder=50)
 
-    plot_core.setLim(ax, 'x', data=xvals)
-    plot_core.setLim(ax, 'y', data=yvals)
+    plot_core.set_lim(ax, 'x', data=xvals)
+    plot_core.set_lim(ax, 'y', data=yvals)
     return pcm, smap, cbar
 
 
@@ -630,7 +630,7 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
     prax = fig.add_axes([left, bottom, prim_wid, prim_hit])
     prax.set(xscale=scale[0], yscale=scale[1], xlabel=labels[0], ylabel=labels[1])
     prax.tick_params(axis='both', which='major', labelsize=fs)
-    plot_core.setGrid(prax, False)
+    plot_core.set_grid(prax, False)
 
     if len(labels) > 2: histLab = labels[2]
     else:               histLab = 'Counts'
@@ -643,7 +643,7 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
         xpax.xaxis.set_label_position('top')
         # xpax.xaxis.label_pad = 30
         xpax.tick_params(axis='both', which='major', labelsize=fs)
-        plot_core.setGrid(xpax, True, axis='y')
+        plot_core.set_grid(xpax, True, axis='y')
 
     # Add y-projection axes on bottom-right
     if yproj:
@@ -651,7 +651,7 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
         ypax.set(yscale=scale[1], xscale=histScale, xlabel=histLab, ylabel=labels[1])
         ypax.yaxis.set_label_position('right')
         ypax.tick_params(axis='both', which='major', labelsize=fs)
-        plot_core.setGrid(ypax, True, axis='x')
+        plot_core.set_grid(ypax, True, axis='x')
 
     # Add color-bar axes on the right
     if cbar:
@@ -677,7 +677,7 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
         # Move the x ticks/labels to the top
         ovax.xaxis.tick_top()
         ovax.xaxis.set_label_position("top")
-        plot_core.setGrid(ovax, True)  # , axis='x')
+        plot_core.set_grid(ovax, True)  # , axis='x')
 
     return fig, prax, xpax, ypax, cbax, ovax
 

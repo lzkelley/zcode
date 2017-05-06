@@ -1,7 +1,6 @@
 """Submodule for timing components of a code.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-# from six.moves import xrange
 
 from datetime import datetime
 import numpy as np
@@ -117,7 +116,8 @@ class Timings(object):
 
     def __init__(self, errors=False):
         # List of all individual timer names
-        self._names = np.array([])
+        # self._names = np.array([])
+        self._names = []
         # List of all individual timers
         self._timers = []
         # The number of timers being tracked
@@ -194,6 +194,7 @@ class Timings(object):
         # Construct 2D array of results suitable for `ascii_table`
         data = np.c_[str_fracs, str_tots, str_aves, str_stds]
         cols = ['Fraction', 'Total', 'Average', 'StdDev']
+        # rows = np.append(self._names, "Overall")
         rows = np.append(self._names, "Overall")
         # Print reuslts as table
         if out is None: prepend = ""
@@ -205,7 +206,8 @@ class Timings(object):
     def _create_timer(self, name):
         """Create a new timer with the given name.
         """
-        self._names = np.append(self._names, name)
+        # self._names = np.append(self._names, name)
+        self._names.append(name)
         self._timers.append(Timer(name))
         self._num += len(self._timers)
         return
@@ -224,11 +226,14 @@ class Timings(object):
             else:
                 return None
 
-        ind = np.where(self._names == name)[0]
-        # Should be a single matching name
-        if ind.size != 1:
-            raise RuntimeError("Name '{}' matched {} times.  Names = '{}'".format(
-                name, ind.size, self._names))
+        # print(np.shape(self._names), np.shape(name))
+        # ind = np.where(self._names == name)[0]
+        # print(np.shape(ind))
+        ind = self._names.index(name)
+        # # Should be a single matching name
+        # if ind.size != 1:
+        #     raise RuntimeError("Name '{}' matched {} times.  Names = '{}'".format(
+        #         name, ind.size, self._names))
         # Make sure internal name matches array name
         if self._timers[ind].name != name:
             raise RuntimeError("Names mismatch, name = '{}', timers[{}].name = '{}'".format(

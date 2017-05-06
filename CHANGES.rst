@@ -29,6 +29,68 @@ Current
 
 
 
+[0.0.10] - 2017/05/06
+---------------------
+-  `inout/`
+    -   `inout_core.py`
+        -   `check_path()` <== `checkPath` [DEPRECATION]
+        -   `getFileSize()` [DELETED]
+            -   Use `get_file_size()` instead.
+        -   `modify_exists()`
+            -   If, for some reason, the new filename already exists, raise a warning and then bootstrap to modify the filename again.  Previously the code would raise an error.
+            -   BUG: fix issue where special characters (e.g. `+`) were interfering with regex match.
+        -   `modify_filename()` <== `modifyFilename` [DEPRECATION]
+    -   `log.py`
+        -   Add method `after()` to logger objects which report a message and duration for execution.
+        -   Add method `frac()` to logger objects which report a fraction.
+        -   Changed parameters for logging methods to use underscores instead of camel-case.
+        -   `get_logger()` <== `getLogger` [DEPRECATION]
+        -   `default_logger()` <== `defaultLogger` [DEPRECATION]
+        -   Added docstrings to `after()`, `raise_error()`, and `copy()` added-on methods.
+        -   `IndentFormatter`
+            -   BUG: sometimes the initial depth of the stack is too high, resulting in a missing indent.  In `IndentFormatter.format()`, reset the depth as needed.
+-   `plot/`
+    -   `plot_core.py`
+        -   `text()`
+            -   Add a `shift` argument which allows for adjusting the `(x,y)` position of the text more dynamically.
+        -   `_loc_str_to_pars()`
+            -   Check the location specifier for validity.
+        -   `set_grid()` <== `setGrid` [DEPRECATION]
+        -   `set_lim()` <== `setLim` [DEPRECATION]
+        -   `scientific_notation()` <== `strSciNot()` [DEPRECATION]
+            -   Also change from `precman` and `precexp` to just `man` and `exp`.
+        -   `line_style_set()` [new-function]
+            -   Retrieve a list of line-style specifications to be used with `Line2D.set_dashes`.
+            
+-   `math/`
+    -   `statistic.py`
+        -   `stats_str`
+            -   Re-enabled the `label` argument for backwards compatibility.  If used, a warning is raised.  But it works.
+    -   `math_core.py`
+        -   `str_array()`
+            -   Changed the arguments to this function to use a single `sides` parameter which encodes information about both the beginning and end.
+            -   Improved the function to properly handle the number of elements at the end, and what to do if the number of requested elements equals or exceeds the array length.
+            -   Added tests to `tests.test_math_core.TestMathCore.test_str_array()`.
+            -   Added `log` argument, to convert input values to log10 first.
+    -   `time.py` [new-submodule]
+        -   New submodule for dealing with general time related functions.
+
+        -   `to_decimal_year()` [new-function]
+            -   New function to convert from a datetime object (or string datetime specification) to a decimal year.
+            -   Added precision down to milliseconds.
+        -   `to_datetime` [new-function]
+            -   Convert a general datetime specification into a `datetime.datetime` instance.
+        -   `to_str` [new-function]
+            -   Convert a datetime specification into an arbitrarily formatted string representation (by way of a `datetime` instance).
+    -   `tests/`
+        -   `test_time.py` [new-submodule]
+            -   Unit tests for the new `time.py` submodule.
+            -   So far, only rests for the `time.to_datetime` method.
+
+-   `requirements.txt` [new-file]
+    -   Started to add requirements file, nearly empty at the moment.
+    
+
 [0.0.9] - 2017/03/07
 --------------------
 -   inout/

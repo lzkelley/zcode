@@ -4,7 +4,7 @@ Functions
 ---------
 -   setAxis              - Set many different axis properties at once.
 -   twinAxis             - Easily create and set a new twin axis (like `twinx()` or `twiny()`)
--   setLim               - Set limits on an axis
+-   set_lim              - Set limits on an axis
 -   set_ticks
 -   zoom                 - Zoom-in at a certain location on the given axes.
 -   stretchAxes          - Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
@@ -16,10 +16,11 @@ Functions
 -   colormap             - Create a colormap from scalars to colors.
 -   cut_colormap         - Select a truncated subset of the given colormap.
 -   color_set            - Retrieve a (small) set of color-strings with hand picked values.
--   setGrid              - Configure the axes' grid.
+-   set_grid             - Configure the axes' grid.
 -   skipTicks            - skip some tick marks
 -   saveFigure           - Save the given figure(s) to the given filename.
--   strSciNot            - Convert a scalar into a string with scientific notation.
+-   scientific_notation  - Convert a scalar into a string with scientific notation.
+-   line_style_set       - Retrieve a set of line-style specifications.
 
 -   plotHistLine         - Plot a histogram line.
 -   plotSegmentedLine    - Draw a line segment by segment.
@@ -59,16 +60,20 @@ import seaborn.apionly as sns
 
 import zcode.math as zmath
 import zcode.inout as zio
+from zcode import utils
 
-__all__ = ['setAxis', 'twinAxis', 'setLim', 'set_ticks', 'zoom',
+__all__ = ['setAxis', 'twinAxis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend',
            'unifyAxesLimits', 'color_cycle', 'transform',
-           'colorCycle', 'colormap', 'color_set', 'setGrid',
-           'skipTicks', 'saveFigure', 'strSciNot',
+           'colorCycle', 'colormap', 'color_set', 'set_grid',
+           'skipTicks', 'saveFigure', 'scientific_notation',
            'plotHistLine', 'plotSegmentedLine', 'plotScatter',
-           'plotHistBars', 'plotConfFill',
+           'plotHistBars', 'plotConfFill', 'line_style_set',
            'line_label', 'full_extent', 'position_to_extent',
-           'backdrop', '_histLine']
+           'backdrop', '_histLine', '_scale_to_log_flag',
+           # Deprecated
+           'setGrid', 'setLim', 'strSciNot'
+           ]
 
 COL_CORR = 'royalblue'
 LW_CONF = 1.0
@@ -77,11 +82,40 @@ _COLOR_SET = ['blue', 'red', 'green', 'purple',
               'orange', 'cyan', 'brown', 'gold', 'pink',
               'forestgreen', 'grey', 'olive', 'coral', 'yellow']
 
-_COLOR_SET_XKCD = ["blue", "red", "green", "purple", "cyan", "orange",
+_COLOR_SET_XKCD = ["blue", "red", "green", "purple", "orange", "cyan",
                    "pink", "brown", "magenta", "amber", "slate blue",
                    "teal", "light blue", "lavender", "rose", "turquoise", "azure",
                    "lime green", "greyish", "windows blue",
                    "faded green", "mustard", "brick red", "dusty purple"]
+
+_LS_DASH_BIG = 7
+_LS_DASH_MED = 5
+_LS_DASH_SML = 3
+_LS_DOT = 1
+_LINE_STYLE_SET = [
+    [],
+    [_LS_DASH_BIG, 4],
+    [_LS_DOT, 1],
+
+    [_LS_DOT, 1, _LS_DASH_MED, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
+
+    [_LS_DASH_MED, 2],
+    [_LS_DASH_SML, 1, _LS_DASH_MED, 1],
+    [_LS_DOT, 1, _LS_DASH_SML, 1, _LS_DASH_MED, 1],
+
+    [_LS_DASH_SML, 1],
+    [_LS_DOT, 1, _LS_DASH_SML, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
+
+    [_LS_DOT, 4],
+    [_LS_DOT, 1, _LS_DOT, 4],
+    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 4],
+]
 
 _LW_OUTLINE = 0.8
 _PAD = 0.01
@@ -128,7 +162,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     ax.tick_params(axis=axis, which='major', size=ts)
 
     # Set Grid Lines
-    setGrid(ax, grid, axis='both')
+    set_grid(ax, grid, axis='both')
 
     if axis == 'x':
         ax.xaxis.label.set_color(c)
@@ -220,20 +254,25 @@ def twinAxis(ax, axis='x', pos=1.0, **kwargs):
     return tw
 
 
-def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
+def setLim(*args, **kwargs):
+    utils.dep_warn("setLim", newname="set_lim")
+    return set_lim(*args, **kwargs)
+
+
+def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
     """Set the limits (range) of the given, target axis.
 
     When only ``lo`` or only ``hi`` is specified, the default behavior is to only set that axis
     limit and leave the other bound to its existing value.  When ``range`` is set to `True`, then
     the given axis boumds (``lo``/``hi``) are used as multipliers, i.e.
 
-        >>> Plotting.setLim(ax, lo=0.1, range=True, at='exactly')
+        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='exactly')
         will set the lower bound to be `0.1` times the existing upper bound
 
     The ``at`` keyword determines whether the given bounds are treated as limits to the bounds,
     or as fixed ('exact') values, i.e.
 
-        >>> Plotting.setLim(ax, lo=0.1, range=True, at='most')
+        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='most')
         will set the lower bound to at-'most' `0.1` times the existing upper bound.  If the lower
         bound is already 0.05 times the upper bound, it will not be changed.
 
@@ -439,7 +478,7 @@ def transform(ax, trans, fig=None):
 
 
 def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
-         fs=16, trans=None, pad=None, **kwargs):
+         fs=16, trans=None, pad=None, shift=None, **kwargs):
     """Add text to figure.
 
     Wrapper for the `matplotlib.figure.Figure.text` method.
@@ -449,6 +488,8 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     art : `matplotlib.figure.Figure` or `matplotlib.axes.Axes` object,
     pstr : str,
         String to be printed.
+    loc : str,
+        String with two letters specifying the horizontal and vertical positioning of the text.
     x : float,
         X-position at which to draw the string, relative to the transformation given by `trans`.
     y : float,
@@ -461,6 +502,10 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
         Fontsize.
     trans : `matplotlib.BboxTransformTo` object, or `None`,
         Transformation to use for text placement.
+    pad : scalar or `None`
+
+    shift : (2,) scalar or `None`
+        Adjust the (x,y) position of the text by this amount.
     kwargs : any,
         Additional named arguments passed to `matplotlib.figure.Figure.text`.
         For example, ``color='blue'``, or ``rotation=90``.
@@ -491,6 +536,10 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
         x = 0.5
     if y is None:
         y = 1 - pad
+
+    if shift is not None:
+        x += shift[0]
+        y += shift[1]
 
     halign, valign = _parse_align(halign, valign)
     txt = art.text(x, y, pstr, size=fs, transform=trans,
@@ -907,8 +956,42 @@ def color_set(num, black=False, cset='xkcd'):
     return colors[:num]
 
 
-def setGrid(ax, val=True, axis='both', c=None, ls='-', clear=True,
-            below=True, major=True, minor=True, zorder=2, alpha=None):
+def line_style_set(num):
+    """Retrieve a (small) set of line-style specifications with hand constructed patterns.
+
+    Used by the `matplotlib.lines.Line2D.set_dashes` method.
+    The first element is a solid line.
+
+    Arguments
+    ---------
+    num : int or `None`
+        Number of line-styles to retrieve.
+        If `None`, then all available are returned.
+
+    Returns
+    -------
+    lines : (`num`) list of tuples,
+        Set of line-styles.  Each line style is a tuple of values specifying dash spacings.
+
+    """
+    _lines = list(_LINE_STYLE_SET)
+    nline = len(_lines)
+    # If more colors are requested than are available, fallback to `color_cycle`
+    if (num is not None) and (num > nline):
+        raise ValueError("Limited to {} line-styles.".format(nline))
+
+    lines = [ll for ll in _lines[:num]]
+
+    return lines
+
+
+def setGrid(*args, **kwargs):
+    utils.dep_warn("setGrid", newname="set_grid")
+    return set_grid(*args, **kwargs)
+
+
+def set_grid(ax, val=True, axis='both', c=None, ls='-', clear=True,
+             below=True, major=True, minor=True, zorder=2, alpha=None):
     """Configure the axes' grid.
     """
     if clear:
@@ -1029,7 +1112,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
             if ii == 0:
                 usefname = str(fname)
             else:
-                usefname = zio.modifyFilename(fname, append='_%d' % (ii))
+                usefname = zio.modify_filename(fname, append='_%d' % (ii))
 
             ff.savefig(usefname, **kwargs)
             if close: plt.close(ff)
@@ -1041,28 +1124,38 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     # No files saved or Some files were not saved
     if not len(saved_names) or len(saved_names) != len(fig):
         warn_str = "Error saving figures..."
-        if log is None: warnings.warn(warn_str)
-        else: log.warning(warn_str)
+        if log is None:
+            warnings.warn(warn_str)
+        else:
+            log.warning(warn_str)
 
     # Things look good.
     else:
         printStr = "Saved figure to '%s'" % (fname)
-        if log is not None: log.log(level, printStr)
-        elif verbose: print(printStr)
+        if log is not None:
+            log.log(level, printStr)
+        elif verbose:
+            print(printStr)
 
     return
 
 
-def strSciNot(val, precman=0, precexp=0, dollar=True, one=True, zero=False):
+def strSciNot(*args, **kwargs):
+    utils.dep_warn("strSciNot", newname="scientific_notation")
+    return scientific_notation(*args, **kwargs)
+
+
+def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
+                        precman=None, precexp=None):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
     ---------
     val : scalar
         Numerical value to convert.
-    precman : int or `None`
+    man : int or `None`
         Precision of the mantissa (decimal points); or `None` for omit mantissa.
-    precexp : int or `None`
+    exp : int or `None`
         Precision of the exponent (decimal points); or `None` for omit exponent.
     dollar : bool
         Include dollar-signs ('$') around returned expression.
@@ -1077,36 +1170,46 @@ def strSciNot(val, precman=0, precexp=0, dollar=True, one=True, zero=False):
         Scientific notation string using latex formatting.
 
     """
+    # Deprecation warnings for old parameters
+    if precman is not None:
+        utils.dep_warn("precman", "man", type='parameter')
+        man = precman
+    if precexp is not None:
+        utils.dep_warn("precexp", "exp", type='parameter')
+        exp = precexp
+
     if zero and val == 0.0:
         notStr = "$"*dollar + "0.0" + "$"*dollar
         return notStr
 
-    man, exp = zmath.frexp10(val)
-    use_man = (precman is not None and np.isfinite(exp))
-    if use_man: manStr = "{0:.{1:d}f}".format(man, precman)
-    else:       manStr = ""
+    val_man, val_exp = zmath.frexp10(val)
+    use_man = (man is not None and np.isfinite(val_exp))
+    if use_man:
+        str_man = "{0:.{1:d}f}".format(val_man, man)
+    else:
+        str_man = ""
     # If the mantissa is '1' (or '1.0' or '1.00' etc), dont write it
-    if not one and manStr == "{0:.{1:d}f}".format(1.0, precman):
-        manStr = ""
+    if not one and str_man == "{0:.{1:d}f}".format(1.0, man):
+        str_man = ""
 
-    if precexp is not None:
-        # Try to convert `exp` to integer, fails if 'inf' or 'nan'
+    if exp is not None:
+        # Try to convert `val_exp` to integer, fails if 'inf' or 'nan'
         try:
-            exp = np.int(exp)
-            expStr = "10^{{ {:d} }}".format(exp)
+            val_exp = np.int(val_exp)
+            str_exp = "10^{{ {:d} }}".format(val_exp)
         except:
-            expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
+            str_exp = "10^{{ {0:.{1:d}f} }}".format(val_exp, exp)
 
         # Add negative sign if needed
-        if not use_man and (man < 0.0 or val == -np.inf):
-            expStr = "-" + expStr
+        if not use_man and (val_man < 0.0 or val == -np.inf):
+            str_exp = "-" + str_exp
     else:
-        expStr = ""
+        str_exp = ""
 
-    notStr = "$"*dollar + manStr
-    if len(manStr) and len(expStr):
+    notStr = "$"*dollar + str_man
+    if len(str_man) and len(str_exp):
         notStr += " \\times"
-    notStr += expStr + "$"*dollar
+    notStr += str_exp + "$"*dollar
 
     return notStr
 
@@ -1135,14 +1238,19 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
 
     # Determine color if included in ``kwargs``
     col = 'black'
-    if kwargs.get('color') is not None: col = kwargs.get('color')
-    elif kwargs.get('c') is not None: col = kwargs.get('c')
+    if kwargs.get('color') is not None:
+        col = kwargs.get('color')
+    elif kwargs.get('c') is not None:
+        col = kwargs.get('c')
 
     # Extend bin edges if needed
     if len(edges) != len(hist)+1:
-        if extend == 'left': edges = np.concatenate([[zmath.extend(edges)[0]], edges])
-        elif extend == 'right': edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
-        else: raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend`` given")
+        if extend == 'left':
+            edges = np.concatenate([[zmath.extend(edges)[0]], edges])
+        elif extend == 'right':
+            edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
+        else:
+            raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend`` given")
 
     # Construct plot points to manually create a step-plot
     xval, yval = _histLine(edges, hist)
@@ -1178,8 +1286,10 @@ def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, exte
     # Add a fill region
     if fill is not None:
         ylim = ax.get_ylim()
-        if type(fill) == dict: filldict = fill
-        else:                  filldict = dict()
+        if type(fill) == dict:
+            filldict = fill
+        else:
+            filldict = dict()
         ax.fill_between(xval, yval, 0.1*ylim[0], **filldict)
         ax.set_ylim(ylim)
 
@@ -1702,9 +1812,12 @@ def _make_segments(x, y):
 def _scale_to_log_flag(scale):
     # Check formatting of `scale` str
     scale = _clean_scale(scale)
-    if scale.startswith('log'): log = True
-    elif scale.startswith('lin'): log = False
-    else: raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
+    if scale.startswith('log'):
+        log = True
+    elif scale.startswith('lin'):
+        log = False
+    else:
+        raise ValueError("Unrecognized `scale` '{}'; must start with 'log' or 'lin'".format(scale))
     return log
 
 
@@ -1712,7 +1825,8 @@ def _clean_scale(scale):
     """Cleanup a 'scaling' string to be matplotlib compatible.
     """
     scale = scale.lower()
-    if scale.startswith('lin'): scale = 'linear'
+    if scale.startswith('lin'):
+        scale = 'linear'
     return scale
 
 
@@ -1741,6 +1855,13 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
     valign : str
 
     """
+    _valid_loc = [['t', 'u', 'b', 'l', 'c'], ['l', 'r', 'c']]
+    for ii, (ll, vv) in enumerate(zip(loc, _valid_loc)):
+        if ll not in vv:
+            err = "Unrecognized `loc`[{}] = '{}' (`loc` = '{}').".format(ii, ll, loc)
+            err += "\n\t`loc`[{}] must be one of '{}'".format(ii, vv)
+            raise ValueError(err)
+
     if loc[0] == 't' or loc[0] == 'u':
         if valign is None:
             valign = 'top'
@@ -1756,8 +1877,6 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
             valign = 'center'
         if y is None:
             y = 0.5
-    else:
-        raise ValueError("Unrecognized `loc`[0] = '{}' (`loc` = '{}'.".format(loc[0], loc))
 
     if loc[1] == 'l':
         if halign is None:
@@ -1774,8 +1893,6 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
             halign = 'center'
         if x is None:
             x = 0.5
-    else:
-        raise ValueError("Unrecognized `loc`[1] = '{}' (`log` = '{}'.".format(loc[1], loc))
 
     return x, y, halign, valign
 

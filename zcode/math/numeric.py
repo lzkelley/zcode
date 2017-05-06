@@ -14,8 +14,6 @@ Functions
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-import scipy as sp
-import scipy.interpolate
 import warnings
 
 from . import math_core
@@ -51,6 +49,7 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=T
         Spline interplation function.
 
     """
+    import scipy.interpolate as sp_interp
 
     xp = np.array(xx)
     yp = np.array(yy)
@@ -80,14 +79,14 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=T
     # Monotonic Interpolation
     if mono:
         if order != 3: warnings.warn("monotonic `PchipInterpolator` is always cubic!")
-        terp = sp.interpolate.PchipInterpolator(xp, yp, extrapolate=extrap)
+        terp = sp_interp.interpolate.PchipInterpolator(xp, yp, extrapolate=extrap)
     # General Interpolation
     else:
         # Let function extrapolate outside range
         if extrap: ext = 0
         # Return zero outside of range
         else:      ext = 1
-        terp = sp.interpolate.InterpolatedUnivariateSpline(xp, yp, k=order, ext=ext)
+        terp = sp_interp.interpolate.InterpolatedUnivariateSpline(xp, yp, k=order, ext=ext)
 
     # Convert back to normal space, as needed
     if log: spline = lambda xx, terp=terp: np.power(10.0, terp(np.log10(xx)))

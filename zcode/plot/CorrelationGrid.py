@@ -136,7 +136,7 @@ def _config_axes(axes, lims, par_scales, hist_scales, names, fs):
 
             ax = axes[ii, jj]
             for xy in ['x', 'y']: ax.tick_params(axis=xy, which='both', labelsize=fs)
-            zplot.setGrid(ax, True)
+            zplot.set_grid(ax, True)
 
             # Setup Scales and Limits
             # -----------------------

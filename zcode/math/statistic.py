@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import warnings
 import numpy as np
-import scipy as sp
 
 from . import math_core
 
@@ -228,6 +227,8 @@ def sigma(sig, side='in', boundaries=False):
         Percentiles corresponding to the input `sig`.
 
     """
+    import scipy as sp
+
     if side.startswith('in'):
         inside = True
     elif side.startswith('out'):
@@ -281,7 +282,7 @@ def stats(vals, median=False):
 
 
 def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, weights=None,
-              format=''):
+              format='', label=None, log=False, label_log=True):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -296,6 +297,10 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
         Include standard-deviation in output.
     format : str
         Formatting for all numerical output, (e.g. `":.2f"`).
+    log : bool
+        Convert values to log10 before printing.
+    label_log : bool
+        If `log` is also true, append a string saying these are log values.
 
     Output
     ------
@@ -304,11 +309,16 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
 
     """
     data = np.asarray(data)
+    if log:
+        data = np.log10(data)
+
     percs = np.atleast_1d(percs)
     if np.any(percs > 1.0):
         warnings.warn("WARNING: zcode.math.statistic: input `percs` should be [0.0, 1.0], "
                       "dividing these by 100.0!")
         percs /= 100.0
+        # if np.any(percs > 1.0):
+        #     raise ValueError("")
 
     percs_flag = False
     if percs is not None and len(percs):
@@ -316,26 +326,39 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
 
     out = ""
     form = "{{{}}}".format(format)
+
+    # Add average
     if ave:
         out += "ave = " + form.format(np.average(data))
         if std or percs_flag:
             out += ", "
 
+    # Add standard-deviation
     if std:
         out += "std = " + form.format(np.std(data))
         if percs_flag:
             out += ", "
 
+    # Add percentiles
     if percs_flag:
         tiles = percentiles(data, percs, weights=weights)
-        out += "[" + ", ".join(form.format(tt) for tt in tiles) + "]"
-        out += ", for (" + ", ".join("{:.1f}%".format(100*pp) for pp in percs) + ")"
+        out += "(" + ", ".join(form.format(tt) for tt in tiles) + ")"
+        out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"
+
+    # Note if these are log-values
+    if log and label_log:
+        out += " (log values)"
+
+    if label is not None:
+        warnings.warn("WARNING: `label` argument is deprecated in `math_core.stats_str`",
+                      stacklevel=3)
+        out = label + ': ' + out
 
     return out
 
 
 def percentiles(values, percentiles, weights=None, values_sorted=False):
-    """Computer weighted percentiles.
+    """Compute weighted percentiles.
 
     Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
 
@@ -361,7 +384,8 @@ def percentiles(values, percentiles, weights=None, values_sorted=False):
     if weights is None:
         weights = np.ones_like(values)
     weights = np.array(weights)
-    assert np.all(percentiles >= 0) and np.all(percentiles <= 1), 'percentiles should be in [0, 1]'
+    assert np.all(percentiles >= 0.0) and np.all(percentiles <= 1.0), \
+        'percentiles should be in [0, 1]'
 
     if not values_sorted:
         sorter = np.argsort(values)
