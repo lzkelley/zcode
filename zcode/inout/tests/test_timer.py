@@ -7,12 +7,9 @@ Can be run with:
 from __future__ import absolute_import, division, print_function, unicode_literals
 from six.moves import xrange
 
-import os
-import warnings
-import shutil
 from numpy.testing import run_module_suite
 import numpy as np
-from nose.tools import assert_true, assert_false, assert_equal
+# from nose.tools import assert_true, assert_false, assert_equal
 
 
 class TestTimer(object):
@@ -46,7 +43,7 @@ class TestTimer(object):
             mm = 3
             while mm <= mroot:
                 if ss[ii]:
-                    jj = (mm * mm - 3)/2
+                    jj = np.int((mm * mm - 3)/2)
                     ss[jj] = 0
                     while jj < half:
                         ss[jj] = 0
@@ -71,7 +68,6 @@ class TestTimer(object):
 
         times.report()
 
-        # raise RuntimeError()
 
 # Run all methods as if with `nosetests ...`
 if __name__ == "__main__":
