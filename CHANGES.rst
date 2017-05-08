@@ -24,14 +24,22 @@ Future / To-Do
         -   Finish 'set_ticks' method.
 
 
+
 Current
 -------
+-   `plot/`
+    -   `plot_core.py`
+        -   `text()`
+            -   Upgrade the `pad` parameter to work for a single value or tuple, if the latter, the first applies to x and the second to y.
+            -   Change also applies to `_loc_str_to_pars()`.
+        -   `_loc_str_to_pars()`
+            -   See note in `text()`.
 
 
 
 [0.0.10] - 2017/05/06
 ---------------------
--  `inout/`
+-   `inout/`
     -   `inout_core.py`
         -   `check_path()` <== `checkPath` [DEPRECATION]
         -   `getFileSize()` [DELETED]

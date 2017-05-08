@@ -502,8 +502,9 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
         Fontsize.
     trans : `matplotlib.BboxTransformTo` object, or `None`,
         Transformation to use for text placement.
-    pad : scalar or `None`
-
+    pad : scalar, (2,) scalar, or `None`
+        Padding between edges of artist and the text object.
+        If two elements are given, they are interpretted as [xpad, ypad].
     shift : (2,) scalar or `None`
         Adjust the (x,y) position of the text by this amount.
     kwargs : any,
@@ -525,6 +526,9 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
 
     if pad is None:
         pad = _PAD
+    pad = np.atleast_1d(pad)
+    if pad.size == 1:
+        pad = np.concatenate([pad, pad])
 
     # If a location string is given, convert to parameters
     if loc is not None:
@@ -535,7 +539,7 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     if x is None:
         x = 0.5
     if y is None:
-        y = 1 - pad
+        y = 1 - pad[1]
 
     if shift is not None:
         x += shift[0]
@@ -1862,16 +1866,20 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
             err += "\n\t`loc`[{}] must be one of '{}'".format(ii, vv)
             raise ValueError(err)
 
+    pad = np.atleast_1d(pad)
+    if pad.size == 1:
+        pad = np.concatenate([pad, pad])
+
     if loc[0] == 't' or loc[0] == 'u':
         if valign is None:
             valign = 'top'
         if y is None:
-            y = 1 - pad
+            y = 1 - pad[1]
     elif loc[0] == 'b' or loc[0] == 'l':
         if valign is None:
             valign = 'bottom'
         if y is None:
-            y = pad
+            y = pad[1]
     elif loc[0] == 'c':
         if valign is None:
             valign = 'center'
@@ -1882,12 +1890,12 @@ def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
         if halign is None:
             halign = 'left'
         if x is None:
-            x = pad
+            x = pad[0]
     elif loc[1] == 'r':
         if halign is None:
             halign = 'right'
         if x is None:
-            x = 1 - pad
+            x = 1 - pad[0]
     elif loc[1] == 'c':
         if halign is None:
             halign = 'center'
