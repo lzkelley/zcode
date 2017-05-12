@@ -34,7 +34,9 @@ Current
             -   Change also applies to `_loc_str_to_pars()`.
         -   `_loc_str_to_pars()`
             -   See note in `text()`.
-
+-   `constants.py`
+    -   Added derived constant `EDDC`, for the Eddington (Luminosity) constant, in units of erg/s/g.  I.e. the Eddington luminosity for an object of mass `M` would be `EDDC*M`.
+    
 
 
 [0.0.10] - 2017/05/06

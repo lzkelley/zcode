@@ -48,6 +48,7 @@ KAPPA_ES = SIGMA_T/MPRT
 PIFT = 4.0*np.pi/3.0                             # (4.0/3.0)*Pi
 SCHW = 2*NWTG/(SPLC*SPLC)                        # Schwarzschild Constant (2*G/c^2)
 HTAU = 1.0/H0                                    # Hubble Time - 1/H0 [sec]
+EDDC = 4.0*np.pi*NWTG*SPLC*MPRT/SIGMA_T          # Eddington Luminosity factor [erg/s/g]
 
 MYR = 1.0e6*YR
 GYR = 1.0e9*YR
