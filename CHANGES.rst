@@ -27,6 +27,12 @@ Future / To-Do
 
 Current
 -------
+-   `math/`
+    -   `statistic.py`
+        -   `percentiles`
+            -   BUG: issue with data type incompatibilities between input data and the percentiles.
+        -   `confidence_bands`
+            -   BUG: x-scaling parameter was not being passed to `asBinEdges`
 -   `plot/`
     -   `plot_core.py`
         -   `text()`

@@ -88,7 +88,7 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
         yy = yy[inds]
 
     # Create bins
-    xbins = math_core.asBinEdges(xbins, xx)
+    xbins = math_core.asBinEdges(xbins, xx, scale=xscale)
     nbins = xbins.size - 1
     # Find the entries corresponding to each bin
     groups = math_core.groupDigitized(xx, xbins[1:], edges='right')
@@ -101,7 +101,7 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
     for ii, gg in enumerate(groups):
         count[ii] = np.size(gg)
         if count[ii] == 0: continue
-        mm, cc = confidenceIntervals(yy[gg], ci=confInt)
+        mm, cc = confidence_intervals(yy[gg], ci=confInt)
         med[ii] = mm
         conf[ii, ...] = cc[...]
 
@@ -380,7 +380,7 @@ def percentiles(values, percentiles, weights=None, values_sorted=False):
 
     """
     values = np.array(values)
-    percentiles = np.array(percentiles)
+    percentiles = np.array(percentiles, dtype=values.dtype)
     if weights is None:
         weights = np.ones_like(values)
     weights = np.array(weights)
