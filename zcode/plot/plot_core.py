@@ -1421,7 +1421,7 @@ def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwarg
     return bars
 
 
-def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, linealpha=0.8,
+def plotConfFill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0, linealpha=0.8,
                  filter=None, outline='0.5', edges=True, floor=None, ceil=None, dashes=None,
                  lw_edges=None,
                  **kwargs):
