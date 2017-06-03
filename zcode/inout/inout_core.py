@@ -531,8 +531,10 @@ def modify_filename(fname, prepend='', append=''):
     newName = prepend + oldName
     if len(append) > 0:
         oldSplit = newName.split('.')
-        if len(oldSplit) >= 2: oldSplit[-2] += append
-        else:                  oldSplit[-1] += append
+        if len(oldSplit) >= 2:
+            oldSplit[-2] += append
+        else:
+            oldSplit[-1] += append
         newName = '.'.join(oldSplit)
 
     newName = os.path.join(oldPath, newName)

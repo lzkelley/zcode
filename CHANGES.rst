@@ -16,6 +16,9 @@ Future / To-Do
         -   `around`
             +   Does this work correctly for negative decimal values??
             +   Implement 'dir' relative to zero --- i.e. round up/down the absolute values.
+    +   statistic.py
+        -   `confidence_intervals()`
+            -   BUG: Arguemnts `filter` and `axis` are currently incompatible.
 -   plot/
     +   Hist2D.py
         -   Add ability to plot central axes as scatter plot, with projected histograms
@@ -33,6 +36,8 @@ Current
             -   BUG: issue with data type incompatibilities between input data and the percentiles.
         -   `confidence_bands`
             -   BUG: x-scaling parameter was not being passed to `asBinEdges`
+        -   `confidence_intervals`
+            -   BUG: `filter` and `axis` arguments incompatbile with eachother.  For now, added an explicite error message not to use them together.  Added to to-do list (above).
 -   `plot/`
     -   `plot_core.py`
         -   `text()`

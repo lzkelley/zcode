@@ -157,6 +157,9 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
 
     # Filter input values
     if filter:
+        # Using the filter will flatten the array, so `axis` wont work...
+        if axis is not None:
+            raise ValueError("`filter` and `axis` arguments are currently incompatible!")
         vals = math_core.comparison_filter(vals, filter)
         if vals.size == 0:
             return np.nan, np.nan
@@ -171,7 +174,7 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
             for cdf in cdf_vals]
     conf = np.array(conf)
     # Reshape from `[M, 2, L]` to `[L, M, 2]`
-    if np.ndim(vals) > 1 and axis is not None:
+    if (np.ndim(vals) > 1) and (axis is not None):
         conf = np.moveaxis(conf, 2, 0)
 
     med = np.percentile(vals, 50.0, axis=axis)
@@ -325,6 +328,9 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
         percs_flag = True
 
     out = ""
+    # If a `format` is given, but missing the colon, add the colon
+    if len(format) and not format.startswith(':'):
+        format = ':' + format
     form = "{{{}}}".format(format)
 
     # Add average
