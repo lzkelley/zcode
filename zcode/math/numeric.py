@@ -219,17 +219,17 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
 
     Arguments
     ---------
-        arr   <flt>[N] : input array to be smoothed
-        size  <obj>    : size of smoothing window
-        width <obj>    : scalar specifying the region to be smoothed, if two values are given
-                         they are taken as left and right bounds
-        loc   <flt>    : int or float specifying to center position of smoothing,
-                         ``width`` is used relative to this position, if provided.
-        mode  <str>    : type of convolution, passed to ``numpy.convolve``
+    arr   <flt>[N] : input array to be smoothed
+    size  <obj>    : size of smoothing window
+    width <obj>    : scalar specifying the region to be smoothed, if two values are given
+                     they are taken as left and right bounds
+    loc   <flt>    : int or float specifying to center position of smoothing,
+                     ``width`` is used relative to this position, if provided.
+    mode  <str>    : type of convolution, passed to ``numpy.convolve``
 
     Returns
     -------
-        smArr <flt>[N] : smoothed array
+    smArr <flt>[N] : smoothed array
 
     """
 
@@ -258,7 +258,8 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
         lef = width[0]
         rit = width[1]
     elif np.size(width) == 1:
-        if loc is None: raise ValueError("For a singular ``width``, ``pos`` must be provided!")
+        if loc is None:
+            raise ValueError("For a singular ``width``, ``pos`` must be provided!")
         lef = width
         rit = width
     else:
