@@ -44,6 +44,8 @@ Current
             -   BUG: `filter` and `axis` arguments incompatbile with eachother.  For now, added an explicite error message not to use them together.  Added to to-do list (above).
 -   `plot/`
     -   `plot_core.py`
+        -   `line_style_set()`
+            -   Added 'solid' argument to determine if solid lines are included in the set.
         -   `text()`
             -   Upgrade the `pad` parameter to work for a single value or tuple, if the latter, the first applies to x and the second to y.
             -   Change also applies to `_loc_str_to_pars()`.

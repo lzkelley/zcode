@@ -183,12 +183,14 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
             ax.xaxis.set_ticks_position(side)
 
         if lim is not None:
-            if np.size(lim) > 2: lim = zmath.minmax(lim)
+            if np.size(lim) > 2:
+                lim = zmath.minmax(lim)
             ax.set_xlim(lim)
 
         if invert: ax.invert_xaxis()
         if not ticks:
-            for tlab in ax.xaxis.get_ticklabels(): tlab.set_visible(False)
+            for tlab in ax.xaxis.get_ticklabels():
+                tlab.set_visible(False)
 
     else:
         ax.yaxis.label.set_color(c)
@@ -209,12 +211,14 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
         ax.yaxis.set_label_position(side)
         ax.yaxis.set_ticks_position(side)
 
-        if lim is not None: ax.set_ylim(lim)
+        if lim is not None:
+            ax.set_ylim(lim)
 
         if invert:
             ax.invert_yaxis()
         if not ticks:
-            for tlab in ax.yaxis.get_ticklabels(): tlab.set_visible(False)
+            for tlab in ax.yaxis.get_ticklabels():
+                tlab.set_visible(False)
 
     # Set Spine colors
     ax.spines[side].set_color(c)
@@ -225,14 +229,17 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
         ax.patch.set_visible(False)
 
     # Set Axis Scaling
-    if scale is not None: _setAxis_scale(ax, axis, scale, thresh=thresh)
+    if scale is not None:
+        _setAxis_scale(ax, axis, scale, thresh=thresh)
 
     # Set Axis Label
     _setAxis_label(ax, axis, label, fs=fs, c=c)
 
     if stretch != 1.0:
-        if axis == 'x': ax = stretchAxes(ax, xs=stretch)
-        elif axis == 'y': ax = stretchAxes(ax, ys=stretch)
+        if axis == 'x':
+            ax = stretchAxes(ax, xs=stretch)
+        elif axis == 'y':
+            ax = stretchAxes(ax, ys=stretch)
 
     offt.set_color(c)
     return ax
@@ -678,6 +685,8 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
         ax = art
         if trans is None:
             trans = ax.transAxes
+    else:
+        warnings.warn("Unexpected `art` object '{}' (type: {})".format(art, type(art)))
 
     if 'handlelength' not in kwargs:
         kwargs['handlelength'] = _HANDLE_LENGTH
@@ -960,7 +969,7 @@ def color_set(num, black=False, cset='xkcd'):
     return colors[:num]
 
 
-def line_style_set(num):
+def line_style_set(num, solid=True):
     """Retrieve a (small) set of line-style specifications with hand constructed patterns.
 
     Used by the `matplotlib.lines.Line2D.set_dashes` method.
@@ -971,6 +980,8 @@ def line_style_set(num):
     num : int or `None`
         Number of line-styles to retrieve.
         If `None`, then all available are returned.
+    solid : bool
+        Include solid line-style.
 
     Returns
     -------
@@ -979,6 +990,9 @@ def line_style_set(num):
 
     """
     _lines = list(_LINE_STYLE_SET)
+    # Remove solid line specification if undesired
+    if not solid:
+        _lines = _lines[1:]
     nline = len(_lines)
     # If more colors are requested than are available, fallback to `color_cycle`
     if (num is not None) and (num > nline):
@@ -1780,9 +1794,12 @@ def _setAxis_scale(ax, axis, scale, thresh=None):
 
 
 def _setAxis_label(ax, axis, label, fs=12, c='black'):
-    if axis == 'x': ax.set_xlabel(label, size=fs, color=c)
-    elif axis == 'y': ax.set_ylabel(label, size=fs, color=c)
-    else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
+    if axis == 'x':
+        ax.set_xlabel(label, size=fs, color=c)
+    elif axis == 'y':
+        ax.set_ylabel(label, size=fs, color=c)
+    else:
+        raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
     return
 
 
