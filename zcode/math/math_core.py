@@ -35,7 +35,7 @@ import numpy as np
 import warnings
 import numbers
 
-__all__ = ['argextrema', 'around', 'asBinEdges', 'contiguousInds',
+__all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
            'indsWithin', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate',
@@ -438,7 +438,7 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
     return mids
 
 
-def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None, round_scale='log'):
+def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=None, round=None, round_scale='log'):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
@@ -455,8 +455,10 @@ def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None, ro
     filter : str or `None`,
         Key describing how to filter the input data, or `None` for no filter.
         See, ``comparison_filter``.
-    stretch : flt
-        Factor by which to stretch min and max by (``1.0 +- stretch``).
+    stretch : flt or `None`
+        Factor by which to stretch min and max by (``1.0 +- stretch``) in linear space.
+    log_stretch : flt or `None`
+        Factor by which to stretch min and max by (``1.0 +- stretch``) in log space.
     limit :
     round : int or 'None'
         The number of significant figures to which to round the min and max values.
@@ -479,20 +481,26 @@ def minmax(data, prev=None, stretch=0.0, filter=None, limit=None, round=None, ro
     if limit is not None:
         assert len(limit) == 2, "`limit` must have length 2."
 
-    useData = np.array(data)
+    _data = np.array(data)
     if filter:
-        useData = comparison_filter(useData, filter)
+        _data = comparison_filter(_data, filter)
 
     # If there are no elements (left), return `prev` (`None` if not provided)
-    if np.size(useData) == 0:
+    if np.size(_data) == 0:
         return prev
 
-    # Determine stretch factor
-    lef = (1.0-stretch)
-    rit = (1.0+stretch)
-
     # Find extrema
-    minmax = np.array([lef*np.min(useData), rit*np.max(useData)])
+    # minmax = np.array([lef*np.min(_data), rit*np.max(_data)])
+    minmax = np.array([np.min(_data), np.max(_data)])
+
+    # Add stretch (relative to center point)
+    if (stretch is not None) or (log_stretch is not None):
+        fact = stretch if (stretch is not None) else log_stretch
+        _minmax = np.log10(minmax) if (log_stretch is not None) else minmax
+        cent = np.average(_minmax)
+        _minmax[0] = cent - (1.0 + fact)*(cent - _minmax[0])
+        _minmax[1] = cent + (1.0 + fact)*(_minmax[1] - cent)
+        minmax = np.power(10.0, _minmax) if (log_stretch is not None) else _minmax
 
     # Compare to previous extrema, if given
     if prev is not None:
