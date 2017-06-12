@@ -42,8 +42,21 @@ Current
             -   BUG: x-scaling parameter was not being passed to `asBinEdges`
         -   `confidence_intervals`
             -   BUG: `filter` and `axis` arguments incompatbile with eachother.  For now, added an explicite error message not to use them together.  Added to to-do list (above).
+
 -   `plot/`
+    -   Deprecated lots of old camel-case function names.
+    -   `draw.py` [NEW-FILE]
+        -   New file for organizing methods for actually drawing stuff onto axes.
+        -   Moved these methods from `plot_core.py` to here:
+            -  "plot_hist_line", "plot_segmented_line", "plot_scatter", "plot_hist_bars", "plot_conf_fill"
+    -   `layout.py` [NEW-FILE]
+        -   New file for containing methods relating to layout, spacing, etc.
+        -   Moved these methods from `plot_core.py` to here:
+            -   "backdrop", "full_extent", "position_to_extent", "rect_for_inset", "transform"
+    -   `plot_const.py` [NEW-FILE]
+        -   New file for containing plotting constants previously in `plot_core.py`.
     -   `plot_core.py`
+        -   Moved lots of methods to new files: `draw.py`, `layout.py` and constants to `plot_const.py`.
         -   `line_style_set()`
             -   Added 'solid' argument to determine if solid lines are included in the set.
         -   `text()`
@@ -51,6 +64,7 @@ Current
             -   Change also applies to `_loc_str_to_pars()`.
         -   `_loc_str_to_pars()`
             -   See note in `text()`.
+
 -   `constants.py`
     -   Added derived constant `EDDC`, for the Eddington (Luminosity) constant, in units of erg/s/g.  I.e. the Eddington luminosity for an object of mass `M` would be `EDDC*M`.
     
