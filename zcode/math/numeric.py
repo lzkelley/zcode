@@ -78,19 +78,24 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=T
 
     # Monotonic Interpolation
     if mono:
-        if order != 3: warnings.warn("monotonic `PchipInterpolator` is always cubic!")
-        terp = sp_interp.interpolate.PchipInterpolator(xp, yp, extrapolate=extrap)
+        if order != 3:
+            warnings.warn("monotonic `PchipInterpolator` is always cubic!")
+        terp = sp_interp.PchipInterpolator(xp, yp, extrapolate=extrap)
     # General Interpolation
     else:
         # Let function extrapolate outside range
-        if extrap: ext = 0
+        if extrap:
+            ext = 0
         # Return zero outside of range
-        else:      ext = 1
-        terp = sp_interp.interpolate.InterpolatedUnivariateSpline(xp, yp, k=order, ext=ext)
+        else:
+            ext = 1
+        terp = sp_interp.InterpolatedUnivariateSpline(xp, yp, k=order, ext=ext)
 
     # Convert back to normal space, as needed
-    if log: spline = lambda xx, terp=terp: np.power(10.0, terp(np.log10(xx)))
-    else:   spline = terp
+    if log:
+        spline = lambda xx, terp=terp: np.power(10.0, terp(np.log10(xx)))
+    else:
+        spline = terp
 
     return spline
 

@@ -65,7 +65,7 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
             raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend`` given")
 
     # Construct plot points to manually create a step-plot
-    xval, yval = _histLine(edges, hist)
+    xval, yval = _hist_line(edges, hist)
 
     # Select nonzero values
     if nonzero:
