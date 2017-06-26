@@ -1,6 +1,7 @@
 """
 
 """
+# flake8: noqa  --- ignore imported but unused flake8 warnings
 
 # from . import plot
 # from . import math
