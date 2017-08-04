@@ -38,6 +38,7 @@ Current
     -   `statistic.py`
         -   `percentiles`
             -   BUG: issue with data type incompatibilities between input data and the percentiles.
+            -   BUG: fixed issue where peercentiles wouldn't work for int type data.
         -   `confidence_bands`
             -   BUG: x-scaling parameter was not being passed to `asBinEdges`
         -   `confidence_intervals`
