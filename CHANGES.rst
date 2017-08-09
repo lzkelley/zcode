@@ -59,6 +59,8 @@ Current
         -   New file for containing plotting constants previously in `plot_core.py`.
     -   `plot_core.py`
         -   Moved lots of methods to new files: `draw.py`, `layout.py` and constants to `plot_const.py`.
+        -   `label_line()`
+            -   Add rotation parameter and interpolation that can be log-spaced.
         -   `line_style_set()`
             -   Added 'solid' argument to determine if solid lines are included in the set.
         -   `text()`

@@ -239,7 +239,7 @@ def twin_axis(ax, axis='x', pos=1.0, **kwargs):
     else:
         raise RuntimeError("``axis`` must be either {`x` or `y`}!")
 
-    tw = setAxis(tw, axis=setax, pos=pos, **kwargs)
+    tw = set_axis(tw, axis=setax, pos=pos, **kwargs)
     return tw
 
 
@@ -507,14 +507,18 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     return txt
 
 
-def label_line(ax, line, label, color='0.5', fs=14, halign='left', scale='linear', clip_on=True,
-               halign_scale=1.0):
+def label_line(ax, line, label, x=None, y=None,
+               color='0.5', fs=14, halign='left', scale='linear', clip_on=True,
+               halign_scale=1.0, rotate=True, log=None):
     """Add an annotation to the given line with appropriate placement and rotation.
 
     Based on code from:
         [How to rotate matplotlib annotation to match a line?]
         (http://stackoverflow.com/a/18800233/230468)
         User: [Adam](http://stackoverflow.com/users/321772/adam)
+
+    NOTE: this doesnt work if the line's data have a non-data-unit transformation, for example
+          from a line created using `axvline` or `axhline`.
 
     Arguments
     ---------
@@ -545,43 +549,57 @@ def label_line(ax, line, label, color='0.5', fs=14, halign='left', scale='linear
     y1, y2 = zmath.limit([y1, y2], ylim)
     x1, x2 = np.interp([y1, y2], ydata, xdata)
 
-    log = _scale_to_log_flag(scale)
+    log_flag = _scale_to_log_flag(scale)
 
     if halign.startswith('l'):
-        xx = x1*halign_scale
+        if x is None:
+            x = x1*halign_scale
         halign = 'left'
     elif halign.startswith('r'):
-        xx = halign_scale*x2
+        if x is None:
+            x = halign_scale*x2
         halign = 'right'
     elif halign.startswith('c'):
-        xx = zmath.midpoints([x1, x2], log=log)*halign_scale
+        if x is None:
+            x = zmath.midpoints([x1, x2], log=log_flag)*halign_scale
         halign = 'center'
     else:
         raise ValueError("Unrecognized `halign` = '{}'.".format(halign))
 
-    yy = np.interp(xx, xdata, ydata)
+    if log is not None:
+        log.warning("x = {}, y = {}, xdata = {}, ydata = {}".format(x, y, xdata, ydata))
+
+    # y = np.interp(x, xdata, ydata) if y is None else y
+    y = zmath.interp(x, xdata, ydata, xlog=log_flag, ylog=log_flag) if y is None else y
+    print("y = ", y)
 
     # Add Annotation to Text
     xytext = (0, 0)
-    text = ax.annotate(label, xy=(xx, yy), xytext=xytext, textcoords='offset points',
+    text = ax.annotate(label, xy=(x, y), xytext=xytext, textcoords='offset points',
                        size=fs, color=color, zorder=1, clip_on=clip_on,
                        horizontalalignment=halign, verticalalignment='center_baseline')
-    sp1 = ax.transData.transform_point((x1, y1))
-    sp2 = ax.transData.transform_point((x2, y2))
 
-    rise = (sp2[1] - sp1[1])
-    run = (sp2[0] - sp1[0])
+    if log is not None:
+        log.warning("label xy = {}, xytext = {}".format((x, y), xytext))
 
-    slope_degrees = np.degrees(np.arctan2(rise, run))
-    text.set_rotation_mode('anchor')
-    text.set_rotation(slope_degrees)
+    if rotate:
+        sp1 = ax.transData.transform_point((x1, y1))
+        sp2 = ax.transData.transform_point((x2, y2))
+
+        rise = (sp2[1] - sp1[1])
+        run = (sp2[0] - sp1[0])
+
+        slope_degrees = np.degrees(np.arctan2(rise, run))
+        text.set_rotation_mode('anchor')
+        text.set_rotation(slope_degrees)
+
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
     return text
 
 
 def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs=12, trans=None,
-           fs_title=None, loc=None, mono=False, zorder=None, **kwargs):
+           fs_title=None, loc=None, mono=False, zorder=None, align_title=None, **kwargs):
     """Add a legend to the given figure.
 
     Wrapper for the `matplotlib.pyplot.Legend` method.
@@ -636,15 +654,14 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
     else:
         warnings.warn("Unexpected `art` object '{}' (type: {})".format(art, type(art)))
 
-    if 'handlelength' not in kwargs:
-        kwargs['handlelength'] = _HANDLE_LENGTH
-    if 'scatterpoints' not in kwargs:
-        kwargs['scatterpoints'] = _SCATTER_POINTS
+    kwargs.setdefault('handlelength', _HANDLE_LENGTH)
+    kwargs.setdefault('scatterpoints', _SCATTER_POINTS)
+    kwargs.setdefault('numpoints', _SCATTER_POINTS)
+
     # `alpha` should actually be `framealpha`
     if 'alpha' in kwargs:
         warnings.warn("For legends, use `framealpha` instead of `alpha`.")
         kwargs['framealpha'] = kwargs.pop('alpha')
-        # del kwargs['alpha']
 
     # Override alignment using `loc` argument
     if loc is not None:
@@ -669,6 +686,8 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
     if fs_title is not None:
         plt.setp(leg.get_title(), fontsize=fs_title)
+    if align_title is not None:
+        plt.setp(leg.get_title(), multialignment=align_title)
 
     if zorder is not None:
         leg.set_zorder(10)
@@ -1337,7 +1356,7 @@ def _get_cmap(cmap):
 #     ============================
 
 
-def colorCycle(args, **kwargs):
+def colorCycle(*args, **kwargs):
     utils.dep_warn("colorCycle", newname="color_cycle")
     return color_cycle(*args, **kwargs)
 
@@ -1357,11 +1376,11 @@ def strSciNot(*args, **kwargs):
     return scientific_notation(*args, **kwargs)
 
 
-def setAxis(args, **kwargs):
+def setAxis(*args, **kwargs):
     utils.dep_warn("setAxis", newname="set_axis")
     return set_axis(*args, **kwargs)
 
 
-def twinAxis(args, **kwargs):
+def twinAxis(*args, **kwargs):
     utils.dep_warn("twinAxis", newname="twin_axis")
     return twin_axis(*args, **kwargs)
