@@ -19,7 +19,7 @@ import six
 
 import numpy as np
 import scipy as sp
-import scipy.stats
+import scipy.stats   # noqa
 import matplotlib.pyplot as plt
 
 import zcode.math as zmath
@@ -565,11 +565,13 @@ def plot2DHist(ax, xvals, yvals, hist,
             levels = np.array(contours)
 
         ax.contour(xgrid, ygrid, hist.T, colors='0.50', norm=smap.norm,
-                        levels=levels, linewidths=5.0, antialiased=True, zorder=10, alpha=0.4)
+                   levels=levels, linewidths=5.0, antialiased=True, zorder=10, alpha=0.4)
         cs = ax.contour(xgrid, ygrid, hist.T, cmap=smap.cmap, norm=smap.norm,
-                   levels=levels, linewidths=2.5, antialiased=True, zorder=11, alpha=0.8)
+                        levels=levels, linewidths=2.5, antialiased=True, zorder=11, alpha=0.8)
         if levels is not None and clabel is not None:
             clabel.setdefault('inline', True)
+            if fs is not None:
+                clabel.setdefault('fontsize', fs)
             plt.clabel(cs, **clabel, zorder=50)
 
     plot_core.set_lim(ax, 'x', data=xvals)

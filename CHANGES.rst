@@ -51,6 +51,8 @@ Current
         -   New file for organizing methods for actually drawing stuff onto axes.
         -   Moved these methods from `plot_core.py` to here:
             -  "plot_hist_line", "plot_segmented_line", "plot_scatter", "plot_hist_bars", "plot_conf_fill"
+    -   `Hist2D.py`
+        -   BUG: 'fs' parameter was not being used properly in `plot2DHist()`.
     -   `layout.py` [NEW-FILE]
         -   New file for containing methods relating to layout, spacing, etc.
         -   Moved these methods from `plot_core.py` to here:
