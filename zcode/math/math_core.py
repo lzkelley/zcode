@@ -37,7 +37,7 @@ import numbers
 
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
-           'indsWithin', 'midpoints', 'minmax',  'mono', 'limit',
+           'indsWithin', 'interp', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate',
            'sliceForAxis', 'spacing', 'str_array', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
@@ -391,6 +391,32 @@ def indsWithin(vals, extr, edges=True):
         inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
 
     return inds
+
+
+def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, valid=True):
+    x1 = np.asarray(xnew)
+    x0 = np.asarray(xold)
+    y0 = np.asarray(yold)
+    if xlog:
+        x1 = np.log10(x1)
+        x0 = np.log10(x0)
+    if ylog:
+        y0 = np.log10(y0)
+
+    if valid:
+        inds = (~np.isnan(x0) & ~np.isinf(x0)) & (~np.isnan(y0) & ~np.isinf(y0))
+        inds = np.where(inds)
+    else:
+        inds = slice(None)
+
+    # try:
+    y1 = np.interp(x1, x0[inds], y0[inds], left=left, right=right)
+    # except:
+    #     raise
+
+    if ylog:
+        y1 = np.power(10.0, y1)
+    return y1
 
 
 def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):

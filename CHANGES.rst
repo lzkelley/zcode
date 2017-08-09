@@ -34,7 +34,8 @@ Current
     -   `math_core.py`
         -   `minmax()`
             -  Improved how 'stretch' is handled, and added separate 'log_stretch' parameter to stretch in log-space (as apposed to linear).
-        
+        -   `interp()` [NEW-FUNCTION]
+            - Interpolation function which can deal with log-log.
     -   `statistic.py`
         -   `percentiles`
             -   BUG: issue with data type incompatibilities between input data and the percentiles.
