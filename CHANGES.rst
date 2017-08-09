@@ -71,6 +71,11 @@ Current
         -   `_loc_str_to_pars()`
             -   See note in `text()`.
 
+-   `tools/` [NEW-SUBMODULE]
+    -   `singleton.py` [NEW-FILE]
+        -   `Singleton`
+            -   Singleton implementation using a decorator.
+
 -   `constants.py`
     -   Added derived constant `EDDC`, for the Eddington (Luminosity) constant, in units of erg/s/g.  I.e. the Eddington luminosity for an object of mass `M` would be `EDDC*M`.
     
