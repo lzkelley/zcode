@@ -390,7 +390,7 @@ def percentiles(values, percentiles, weights=None, values_sorted=False):
         Array of percentiles of the weighted input data.
 
     """
-    values = np.array(values)
+    values = np.array(values).flatten()
     percentiles = np.array(percentiles, dtype=values.dtype)
     if weights is None:
         weights = np.ones_like(values)

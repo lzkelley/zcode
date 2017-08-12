@@ -19,6 +19,8 @@ Future / To-Do
     +   statistic.py
         -   `confidence_intervals()`
             -   BUG: Arguemnts `filter` and `axis` are currently incompatible.
+        -   `percentiles()`
+            -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
 -   plot/
     +   Hist2D.py
         -   Add ability to plot central axes as scatter plot, with projected histograms
