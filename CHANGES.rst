@@ -8,6 +8,7 @@ Future / To-Do
     +   Update all situations to use 'filter' instead of 'positive'/'nonzero'
     +   More tests.  For plotting stuff, add tests just to make sure nothing breaks.
     +   Setup automatic testing (e.g. nightly?)
+
 -   math/
     +   math_core.py
         -   `spacing`
@@ -21,6 +22,7 @@ Future / To-Do
             -   BUG: Arguemnts `filter` and `axis` are currently incompatible.
         -   `percentiles()`
             -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
+
 -   plot/
     +   Hist2D.py
         -   Add ability to plot central axes as scatter plot, with projected histograms
@@ -28,6 +30,8 @@ Future / To-Do
     +   plot_core.py
         -   Finish 'set_ticks' method.
 
+-   `constants.py`
+    -   Added new physical constants.
 
 
 Current

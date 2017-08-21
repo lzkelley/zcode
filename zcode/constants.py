@@ -17,11 +17,16 @@ LSOL = ap.constants.L_sun.cgs.value
 RSOL = ap.constants.R_sun.cgs.value
 PC = ap.constants.pc.cgs.value
 AU = ap.constants.au.cgs.value
+
 YR = ap.units.year.to(ap.units.s)
 DAY = 86400.0                                   # Day in seconds
+EVOLT = 1.60218e-12                             # Electronvolt in ergs
 
 MELC = ap.constants.m_e.cgs.value
 MPRT = ap.constants.m_p.cgs.value
+KBOLTZ = ap.constants.k_B.cgs.value             # Boltzmann constant
+HPLANCK = ap.constants.h.cgs.value              # Planck constant
+SIGMA_SB = ap.constants.sigma_sb.cgs.value
 
 H0 = cosmo.H0.cgs.value                          # Hubble Constants at z=0.0
 HPAR = cosmo.H0.value/100.0
