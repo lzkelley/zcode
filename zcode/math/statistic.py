@@ -290,7 +290,7 @@ def stats(vals, median=False):
 
 
 def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, weights=None,
-              format='', label=None, log=False, label_log=True):
+              format=None, label=None, log=False, label_log=True):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -320,13 +320,14 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
     if log:
         data = np.log10(data)
 
+    if format is None:
+        format = ':.2e' if log else ':.2f'
+
     percs = np.atleast_1d(percs)
     if np.any(percs > 1.0):
         warnings.warn("WARNING: zcode.math.statistic: input `percs` should be [0.0, 1.0], "
                       "dividing these by 100.0!")
         percs /= 100.0
-        # if np.any(percs > 1.0):
-        #     raise ValueError("")
 
     percs_flag = False
     if (percs is not None) and len(percs):

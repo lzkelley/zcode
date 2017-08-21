@@ -52,6 +52,8 @@ Current
             -   BUG: x-scaling parameter was not being passed to `asBinEdges`
         -   `confidence_intervals`
             -   BUG: `filter` and `axis` arguments incompatbile with eachother.  For now, added an explicite error message not to use them together.  Added to to-do list (above).
+        -   `stats_str`
+            -   Choose a default formatting based on whether `log` is set to True or not.
 
 -   `plot/`
     -   Deprecated lots of old camel-case function names.
