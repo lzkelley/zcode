@@ -30,12 +30,14 @@ Future / To-Do
     +   plot_core.py
         -   Finish 'set_ticks' method.
 
--   `constants.py`
-    -   Added new physical constants.
-
 
 Current
 -------
+
+-   inout/
+    -   log.py
+        -   Add option `info_file` to create a second log-file at the `INFO` level.
+
 -   `math/`
     -   `math_core.py`
         -   `minmax()`
@@ -84,7 +86,8 @@ Current
 
 -   `constants.py`
     -   Added derived constant `EDDC`, for the Eddington (Luminosity) constant, in units of erg/s/g.  I.e. the Eddington luminosity for an object of mass `M` would be `EDDC*M`.
-    
+    -   Added new physical constants.
+
 
 
 [0.0.10] - 2017/05/06
