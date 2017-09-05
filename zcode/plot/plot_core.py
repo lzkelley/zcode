@@ -598,7 +598,8 @@ def label_line(ax, line, label, x=None, y=None,
     return text
 
 
-def legend(art, keys, names, x=None, y=None, halign='right', valign='center', fs=12, trans=None,
+def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
+           fs=12, trans=None,
            fs_title=None, loc=None, mono=False, zorder=None, align_title=None, **kwargs):
     """Add a legend to the given figure.
 
@@ -718,7 +719,8 @@ def unifyAxesLimits(axes, axis='y'):
     return np.array([lo, hi])
 
 
-def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral, left=0.1, right=0.9, light=True):
+def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral,
+                left=0.1, right=0.9, light=True):
     """Create a range of colors.
 
     Arguments

@@ -464,7 +464,8 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
     return mids
 
 
-def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=None, round=None, round_scale='log'):
+def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=None,
+           round=None, round_scale='log'):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
