@@ -48,6 +48,7 @@ Current
         -   Deprecating old `smooth` function, its not very good.
         -   `smooth_convolve` [NEW-FUNCTION]
             -   New method (from scipy cookbook) for smoothing a 1D array with convolution.
+        -   `sampleInverse` ==> `sample_inverse` [DEPRECATION]
     -   `statistic.py`
         -   `percentiles`
             -   BUG: issue with data type incompatibilities between input data and the percentiles.

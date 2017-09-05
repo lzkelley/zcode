@@ -17,8 +17,13 @@ import numpy as np
 import warnings
 
 from . import math_core
+from .. import utils
 
-__all__ = ['spline', 'cumtrapz_loglog', 'extend', 'sampleInverse', 'smooth']
+__all__ = [
+    'cumtrapz_loglog', 'extend', 'sampleInverse', 'smooth_convolve', 'spline',
+    # DEPRECATED
+    'smooth'
+]
 
 
 def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=True):
@@ -163,7 +168,12 @@ def extend(arr, num=1, log=True, append=False):
     return [left, rigt]
 
 
-def sampleInverse(xx, yy, num=100, log=True, sort=False):
+def sampleInverse(*args, **kwargs):
+    utils.dep_warn("sampleInverse", newname="sample_inverse")
+    return sample_inverse(*args, **kwargs)
+
+
+def sample_inverse(xx, yy, num=100, log=True, sort=False):
     """Find the x-sampling of a function to evenly divide its results in y-space.
 
     Input function *must* be strictly monotonic in ``yy``.
@@ -195,17 +205,19 @@ def sampleInverse(xx, yy, num=100, log=True, sort=False):
     yp = yp[inds]
 
     # Construct Interpolating Function, *must be monotonic*
-    interpBack = spline(yp, xp, log=False, mono=True)
+    interp_back = spline(yp, xp, log=False, mono=True)
 
     # Divide y-axis evenly, and find corresponding x-points
     #     Note: `log` spacing is enforced manually, use `lin` here!
     levels = math_core.spacing(yp, scale='lin', num=num)
-    samples = interpBack(levels)
+    samples = interp_back(levels)
 
     # Convert back to normal space, as needed
-    if log: samples = np.power(10.0, samples)
+    if log:
+        samples = np.power(10.0, samples)
 
-    if sort: samples = samples[np.argsort(samples)]
+    if sort:
+        samples = samples[np.argsort(samples)]
 
     return samples
 
