@@ -210,7 +210,13 @@ def sampleInverse(xx, yy, num=100, log=True, sort=False):
     return samples
 
 
-def smooth(arr, size, width=None, loc=None, mode='same'):
+def smooth(*args, **kwargs):
+    warnings.warn("The `zcode.math.numeric.smooth` function is being deprecated!",
+                  DeprecationWarning, stacklevel=3)
+    return _smooth(*args, **kwargs)
+
+
+def _smooth(arr, size, width=None, loc=None, mode='same'):
     """Use convolution to smooth the given array.
 
     The ``width``, ``loc`` and ``size`` arguments can be given as integers, in which case they are taken
@@ -280,3 +286,62 @@ def smooth(arr, size, width=None, loc=None, mode='same'):
     smArr[mask] = arr[mask]
 
     return smArr
+
+
+def smooth_convolve(vals, window_size=10, window='hanning'):
+    """smooth the data using a window with requested size.
+
+    NOTE: taken from http://scipy-cookbook.readthedocs.io/items/SignalSmooth.html
+
+    This method is based on the convolution of a scaled window with the signal.
+    The signal is prepared by introducing reflected copies of the signal
+    (with the window size) in both ends so that transient parts are minimized
+    in the begining and end part of the output signal.
+
+    input:
+        x: the input signal
+        window_len: the dimension of the smoothing window; should be an odd integer
+        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
+            flat window will produce a moving average smoothing.
+
+    output:
+        the smoothed signal
+
+    example:
+
+    t=linspace(-2,2,0.1)
+    x=sin(t)+randn(len(t))*0.1
+    y=smooth(x)
+
+    see also:
+
+    numpy.hanning, numpy.hamming, numpy.bartlett, numpy.blackman, numpy.convolve
+    scipy.signal.lfilter
+
+    TODO: the window parameter could be the window itself if an array instead of a string
+    NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+    """
+    _valid_windows = ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']
+
+    if vals.ndim != 1:
+        raise ValueError("smooth only accepts 1 dimension arrays.")
+
+    if vals.size < window_size:
+        raise ValueError("Input vector needs to be bigger than window size.")
+
+    if window_size < 3:
+        return vals
+
+    if window not in _valid_windows:
+        raise ValueError("Window is not one of {}".format(_valid_windows))
+
+    s = np.r_[vals[window_size-1:0:-1], vals, vals[-2:-window_size-1:-1]]
+    # moving average
+    if window == 'flat':
+        w = np.ones(window_size, 'd')
+    else:
+        # w = eval('numpy.' + window + '(window_len)')
+        w = getattr(np, window)(window_size)
+
+    y = np.convolve(w/w.sum(), s, mode='valid')
+    return y

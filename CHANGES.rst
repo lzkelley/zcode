@@ -44,6 +44,10 @@ Current
             -  Improved how 'stretch' is handled, and added separate 'log_stretch' parameter to stretch in log-space (as apposed to linear).
         -   `interp()` [NEW-FUNCTION]
             - Interpolation function which can deal with log-log.
+    -   `numeric.py`
+        -   Deprecating old `smooth` function, its not very good.
+        -   `smooth_convolve` [NEW-FUNCTION]
+            -   New method (from scipy cookbook) for smoothing a 1D array with convolution.
     -   `statistic.py`
         -   `percentiles`
             -   BUG: issue with data type incompatibilities between input data and the percentiles.
