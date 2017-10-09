@@ -53,7 +53,7 @@ def getLogger(*args, **kwargs):
 
 def get_logger(name, format_stream=None, format_file=None, format_date=None,
                level_stream=logging.WARNING, level_file=logging.DEBUG,
-               tofile=None, tostr=True):
+               tofile=None, tostr=True, info_file=True):
     """Create a standard logger object which logs to file and or stdout stream.
 
     If logging to output stream (stdout) is enabled, an `IndentFormatter` object is used.
@@ -105,6 +105,8 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
     if format_date is None:
         format_date = '%Y/%m/%d %H:%M:%S'
 
+    logger._filenames = []
+
     # Log to file
     # -----------
     if tofile is not None:
@@ -119,6 +121,17 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         logger.addHandler(fileHandler)
         #     Store output filename to `logger` object
         logger.filename = tofile
+        logger._filenames.append(tofile)
+
+        if info_file:
+            level_info = logging.INFO
+            tofile_info = inout_core.modify_filename(tofile, append='_info')
+            file_form = IndentFormatter(format_file, format_date=format_date)
+            file_hand = logging.FileHandler(tofile_info, 'w')
+            file_hand.setFormatter(file_form)
+            file_hand.setLevel(level_info)
+            logger.addHandler(file_hand)
+            logger._filenames.append(tofile_info)
 
     # Log To stdout
     # -------------
@@ -200,6 +213,15 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
             _str += " {}".format(post)
         self.log(lvl, _str)
     logger.frac = _frac.__get__(logger)
+
+    def _clear_files(self):
+        """Log information about a fraction, "[{prep} ]{}/{} = {}[ {post}]".
+        """
+        for fn in self._filenames:
+            with open(fn, 'w') as out:
+                pass
+
+    logger.clear_files = _clear_files.__get__(logger)
 
     for lvl in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
         setattr(logger, lvl, getattr(logging, lvl))

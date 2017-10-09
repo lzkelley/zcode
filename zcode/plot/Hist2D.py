@@ -19,7 +19,8 @@ import six
 
 import numpy as np
 import scipy as sp
-import scipy.stats
+import scipy.stats   # noqa
+import scipy.ndimage  # noqa
 import matplotlib.pyplot as plt
 
 import zcode.math as zmath
@@ -421,7 +422,8 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
 def plot2DHist(ax, xvals, yvals, hist,
                cax=None, cbax=None, cscale='log', cmap=None, smap=None, extrema=None,
-               contours=None, clabel={}, fs=None, rasterized=True, scale='log',
+               contours=None, clabel={}, ccolors=None, clw=2.5, fs=None, rasterized=True,
+               scale='log', csmooth=None, cbg=True,
                title=None, labels=None, overlay=None, overlay_fmt="", **kwargs):
     """Plot the given 2D histogram of data.
 
@@ -558,23 +560,37 @@ def plot2DHist(ax, xvals, yvals, hist,
 
     # Add contour lines
     # -----------------
+    cs = None
     if contours is not None:
         if isinstance(contours, bool) and contours:
             levels = None
         else:
             levels = np.array(contours)
 
-        ax.contour(xgrid, ygrid, hist.T, colors='0.50', norm=smap.norm,
-                        levels=levels, linewidths=5.0, antialiased=True, zorder=10, alpha=0.4)
-        cs = ax.contour(xgrid, ygrid, hist.T, cmap=smap.cmap, norm=smap.norm,
-                   levels=levels, linewidths=2.5, antialiased=True, zorder=11, alpha=0.8)
+        if csmooth is not None:
+            data = sp.ndimage.filters.gaussian_filter(hist.T, csmooth)
+        else:
+            data = hist.T
+
+        if cbg:
+            ax.contour(xgrid, ygrid, data, colors='0.50', norm=smap.norm,
+                       levels=levels, linewidths=2*clw, antialiased=True, zorder=10, alpha=0.4)
+
+        if ccolors is None:
+            _kw = {'cmap': smap.cmap, 'norm': smap.norm}
+        else:
+            _kw = {'colors': ccolors}
+        cs = ax.contour(xgrid, ygrid, data, **_kw,
+                        levels=levels, linewidths=clw, antialiased=True, zorder=11, alpha=0.8)
         if levels is not None and clabel is not None:
             clabel.setdefault('inline', True)
+            if fs is not None:
+                clabel.setdefault('fontsize', fs)
             plt.clabel(cs, **clabel, zorder=50)
 
     plot_core.set_lim(ax, 'x', data=xvals)
     plot_core.set_lim(ax, 'y', data=yvals)
-    return pcm, smap, cbar
+    return pcm, smap, cbar, cs
 
 
 def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, pad,

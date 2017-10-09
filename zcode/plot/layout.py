@@ -74,12 +74,18 @@ def position_to_extent(fig, ref, loc, item=None, pad=0.0, halign='left', valign=
         item = ref
 
     bbox = full_extent(ref, pad=pad, invert=fig.transFigure)
+    # try:
     ax_bbox = ref.get_position()
+    # except AttributeError:
+    #     ax_bbox = ref.get_bbox_to_anchor()
+    #     print("old_loc = ", ax_bbox)
 
     if halign.startswith('r'):
         dx = ax_bbox.x1 - bbox.x1
     elif halign.startswith('l'):
         dx = ax_bbox.x0 - bbox.x0
+    elif halign.startswith('c'):
+        dx = 0.5*(ax_bbox.x0 + ax_bbox.x1) - 0.5*(bbox.x0 + bbox.x1)
     else:
         raise ValueError("`halign` = '{}' must start with 'l' or 'r'.".format(halign))
 
@@ -87,6 +93,8 @@ def position_to_extent(fig, ref, loc, item=None, pad=0.0, halign='left', valign=
         dy = ax_bbox.y0 - bbox.y0
     elif valign.startswith('u'):
         dy = ax_bbox.y1 - bbox.y1
+    elif valign.startswith('c'):
+        dy = 0.5*(ax_bbox.y0 + ax_bbox.y1) - 0.5*(bbox.y0 + bbox.y1)
     else:
         raise ValueError("`valign` = '{}' must start with 'l' or 'u'.".format(valign))
 
@@ -97,28 +105,37 @@ def position_to_extent(fig, ref, loc, item=None, pad=0.0, halign='left', valign=
     else:
         raise ValueError("`loc` must be 2 or 4 long: [x, y, (width, height)]")
 
+    # try:
     item.set_position(new_loc)
+    # except AttributeError:
+    #     print("new_loc = ", new_loc)
+    #     item.set_bbox_to_anchor(new_loc)
+
     return
 
 
-def rect_for_inset(parent, loc='tl', width=None, height=None, width_frac=0.25, height_frac=0.25):
+def rect_for_inset(parent, loc='tl', width=None, height=None,
+                   width_frac=0.25, height_frac=0.25, pad=None):
     """Construct the rectangle to describe an inset axes relative to the parent object.
     """
     pos = parent.get_position()
     wid = pos.width * width_frac if (width is None) else width
     hit = pos.height * height_frac if (height is None) else height
 
+    if pad is None:
+        pad = _PAD
+
     if loc[0] == 'b':
-        yy = pos.y0 + _PAD
+        yy = pos.y0 + pad
     elif loc[0] == 't':
-        yy = pos.y1 - _PAD - hit
+        yy = pos.y1 - pad - hit
     else:
         raise ValueError("`loc[0]` must be ['b', 't']!")
 
     if loc[1] == 'l':
-        xx = pos.x0 + _PAD
+        xx = pos.x0 + pad
     elif loc[1] == 'r':
-        xx = pos.x1 - _PAD - wid
+        xx = pos.x1 - pad - wid
     else:
         raise ValueError("`loc[1]` must be ['l', 'r']!")
 

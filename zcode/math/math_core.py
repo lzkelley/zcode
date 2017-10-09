@@ -37,7 +37,7 @@ import numbers
 
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
-           'indsWithin', 'midpoints', 'minmax',  'mono', 'limit',
+           'indsWithin', 'interp', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate',
            'sliceForAxis', 'spacing', 'str_array', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
@@ -393,6 +393,32 @@ def indsWithin(vals, extr, edges=True):
     return inds
 
 
+def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, valid=True):
+    x1 = np.asarray(xnew)
+    x0 = np.asarray(xold)
+    y0 = np.asarray(yold)
+    if xlog:
+        x1 = np.log10(x1)
+        x0 = np.log10(x0)
+    if ylog:
+        y0 = np.log10(y0)
+
+    if valid:
+        inds = (~np.isnan(x0) & ~np.isinf(x0)) & (~np.isnan(y0) & ~np.isinf(y0))
+        inds = np.where(inds)
+    else:
+        inds = slice(None)
+
+    # try:
+    y1 = np.interp(x1, x0[inds], y0[inds], left=left, right=right)
+    # except:
+    #     raise
+
+    if ylog:
+        y1 = np.power(10.0, y1)
+    return y1
+
+
 def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
     """Return the midpoints between values in the given array.
 
@@ -438,7 +464,8 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
     return mids
 
 
-def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=None, round=None, round_scale='log'):
+def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=None,
+           round=None, round_scale='log'):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
@@ -481,17 +508,15 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     if limit is not None:
         assert len(limit) == 2, "`limit` must have length 2."
 
-    _data = np.array(data)
     if filter:
-        _data = comparison_filter(_data, filter)
+        data = comparison_filter(data, filter)
 
     # If there are no elements (left), return `prev` (`None` if not provided)
-    if np.size(_data) == 0:
+    if np.size(data) == 0:
         return prev
 
     # Find extrema
-    # minmax = np.array([lef*np.min(_data), rit*np.max(_data)])
-    minmax = np.array([np.min(_data), np.max(_data)])
+    minmax = np.array([np.min(data), np.max(data)])
 
     # Add stretch (relative to center point)
     if (stretch is not None) or (log_stretch is not None):
@@ -504,13 +529,17 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
 
     # Compare to previous extrema, if given
     if prev is not None:
-        if prev[0] is not None: minmax[0] = np.min([minmax[0], prev[0]])
-        if prev[1] is not None: minmax[1] = np.max([minmax[1], prev[1]])
+        if prev[0] is not None:
+            minmax[0] = np.min([minmax[0], prev[0]])
+        if prev[1] is not None:
+            minmax[1] = np.max([minmax[1], prev[1]])
 
     # Compare to limits, if given
     if limit is not None:
-        if limit[0] is not None: minmax[0] = np.max([minmax[0], limit[0]])
-        if limit[1] is not None: minmax[1] = np.min([minmax[1], limit[1]])
+        if limit[0] is not None:
+            minmax[0] = np.max([minmax[0], limit[0]])
+        if limit[1] is not None:
+            minmax[1] = np.min([minmax[1], limit[1]])
 
     # Round the min/max results to given number of sig-figs
     if round is not None:

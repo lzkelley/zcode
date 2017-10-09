@@ -119,7 +119,7 @@ def confidenceIntervals(*args, **kwargs):
     return confidence_intervals(*args, **kwargs)
 
 
-def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
+def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
     """Compute the values bounding the target confidence intervals for an array of data.
 
     Arguments
@@ -152,6 +152,8 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
             the final output shape will be: (4,5,M,2).
 
     """
+    if ci is None:
+        ci = [0.68, 0.95, 0.997]
     ci = np.atleast_1d(ci)
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
 
@@ -180,6 +182,9 @@ def confidence_intervals(vals, ci=[0.68, 0.95, 0.997], axis=-1, filter=None):
     med = np.percentile(vals, 50.0, axis=axis)
     if len(conf) == 1:
         conf = conf[0]
+
+    if return_ci:
+        return med, conf, ci
 
     return med, conf
 
@@ -285,7 +290,7 @@ def stats(vals, median=False):
 
 
 def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, weights=None,
-              format='', label=None, log=False, label_log=True):
+              format=None, label=None, log=False, label_log=True):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -311,20 +316,21 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
         Single-line string of the desired statistics.
 
     """
-    data = np.asarray(data)
+    data = np.array(data).astype(np.float)
     if log:
         data = np.log10(data)
+
+    if format is None:
+        format = ':.2e' if log else ':.2f'
 
     percs = np.atleast_1d(percs)
     if np.any(percs > 1.0):
         warnings.warn("WARNING: zcode.math.statistic: input `percs` should be [0.0, 1.0], "
                       "dividing these by 100.0!")
         percs /= 100.0
-        # if np.any(percs > 1.0):
-        #     raise ValueError("")
 
     percs_flag = False
-    if percs is not None and len(percs):
+    if (percs is not None) and len(percs):
         percs_flag = True
 
     out = ""
@@ -385,7 +391,7 @@ def percentiles(values, percentiles, weights=None, values_sorted=False):
         Array of percentiles of the weighted input data.
 
     """
-    values = np.array(values)
+    values = np.array(values).flatten()
     percentiles = np.array(percentiles, dtype=values.dtype)
     if weights is None:
         weights = np.ones_like(values)

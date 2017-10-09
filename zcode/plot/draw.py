@@ -122,8 +122,10 @@ def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], l
     # conver to normalization
     norm = plt.Normalize(norm[0], norm[1])
 
-    if zz is None: zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
-    else:             zz = np.asarray(zz)
+    if zz is None:
+        zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
+    else:
+        zz = np.asarray(zz)
 
     segments = _make_segments(xx, yy)
     lc = mpl.collections.LineCollection(segments, array=zz, cmap=cmap, norm=norm,
@@ -189,8 +191,10 @@ def plot_hist_bars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwa
     CONF_INTS = [0.95, 0.68]
     CONF_COLS = ['green', 'orange']
 
-    if scaley.startswith('log'): logy = True
-    else:                        logy = False
+    if scaley.startswith('log'):
+        logy = True
+    else:
+        logy = False
 
     if 'color' not in kwargs and 'c' not in kwargs:
         kwargs['color'] = COL_CORR
@@ -272,13 +276,13 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
     dashes :
     **kwargs : additional key-value pairs,
         Passed to `matplotlib.pyplot.fill_between` controlling `matplotlib.patches.Polygon`
-        properties.  These are included in the `linePatch` objects, but *not* the `confPatches`.
+        properties.  These are included in the `line_patch` objects, but *not* the `conf_patches`.
 
     Returns
     -------
-    linePatch : `matplotlib.patches.Patch`,
+    line_patch : `matplotlib.patches.Patch`,
         Composite patch of median line and shaded region patch (for use on legend).
-    confPatches : (M,) list of `matplotlib.patches.Patch`,
+    conf_patches : (M,) list of `matplotlib.patches.Patch`,
         A patch for each confidence inteval (for use on legend).
 
     """
@@ -298,13 +302,13 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
     if lw_edges is None:
         lw_edges = 0.5 * lw
 
-    numConf = np.shape(conf)[-2]
-    confPatches = []
+    num_conf = np.shape(conf)[-2]
+    conf_patches = []
     # Iterate over confidence intervals
     _pp = None
-    for jj in range(numConf):
+    for jj in range(num_conf):
         # Set fill-opacity
-        if np.size(fillalpha) == numConf:
+        if np.size(fillalpha) == num_conf:
             falph = fillalpha
         else:
             falph = np.power(fillalpha, jj+1)
@@ -323,7 +327,7 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
 
         # Fill between confidence intervals
         pp = ax.fill_between(xx, ylo, yhi, alpha=falph, facecolor=color, **kwargs)
-        confPatches.append(pp)
+        conf_patches.append(pp)
 
         # Plot edges of confidence intervals
         if edges:
@@ -335,7 +339,7 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
             # pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
             # Create overlay of lines and patches
             _pp = pp
-            # linePatch = (_pp, ll)
+            # line_patch = (_pp, ll)
 
     # Plot Median Line
     #    Plot black outline to improve contrast
@@ -348,9 +352,9 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
     if dashes is not None:
         ll.set_dashes(tuple(dashes))
 
-    linePatch = (_pp, ll)
+    line_patch = (_pp, ll)
 
-    return linePatch, confPatches
+    return line_patch, conf_patches
 
 
 def _hist_line(edges, hist):
@@ -397,8 +401,3 @@ def plotHistBars(*args, **kwargs):
 def plotConfFill(*args, **kwargs):
     utils.dep_warn("plotConfFill", newname="plot_conf_fill")
     return plot_conf_fill(*args, **kwargs)
-
-
-def _histLine(*args, **kwargs):
-    utils.dep_warn("_histLine", newname="_hist_line")
-    return _hist_line(*args, **kwargs)
