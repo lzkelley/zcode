@@ -39,6 +39,7 @@ Current
     -   inout/
         -   log.py
             -   Add option `info_file` to create a second log-file at the `INFO` level.
+            -   Added `log` method `clear_files()` to erase existing contents of log files.
 
     -   `math/`
         -   `math_core.py`
@@ -84,6 +85,7 @@ Current
             -   New file for containing plotting constants previously in `plot_core.py`.
         -   `plot_core.py`
             -   Moved lots of methods to new files: `draw.py`, `layout.py` and constants to `plot_const.py`.
+            -   Added `kwargs` parameter to `set_axis` and `twin_axis`, set some additional default values for aesthetics.
             -   `label_line()`
                 -   Add rotation parameter and interpolation that can be log-spaced.
             -   `line_style_set()`
@@ -102,6 +104,7 @@ Current
     -   `constants.py`
         -   Added derived constant `EDDC`, for the Eddington (Luminosity) constant, in units of erg/s/g.  I.e. the Eddington luminosity for an object of mass `M` would be `EDDC*M`.
         -   Added new physical constants.
+        -   Added `ARCSEC` arcsecond constant.
 
 
 
