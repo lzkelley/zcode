@@ -18,6 +18,8 @@ RSOL = ap.constants.R_sun.cgs.value
 PC = ap.constants.pc.cgs.value
 AU = ap.constants.au.cgs.value
 
+ARCSEC = ap.units.arcsec.cgs.scale              # arcsecond in radians
+
 YR = ap.units.year.to(ap.units.s)
 DAY = 86400.0                                   # Day in seconds
 EVOLT = 1.60218e-12                             # Electronvolt in ergs
