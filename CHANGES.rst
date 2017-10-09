@@ -3,98 +3,105 @@ CHANGES
 
 Future / To-Do
 --------------
--   General
-    +   Implement tests for all modules and functions.
-    +   Update all situations to use 'filter' instead of 'positive'/'nonzero'
-    +   More tests.  For plotting stuff, add tests just to make sure nothing breaks.
-    +   Setup automatic testing (e.g. nightly?)
+    -   General
+        +   Implement tests for all modules and functions.
+        +   Update all situations to use 'filter' instead of 'positive'/'nonzero'
+        +   More tests.  For plotting stuff, add tests just to make sure nothing breaks.
+        +   Setup automatic testing (e.g. nightly?)
 
--   math/
-    +   math_core.py
-        -   `spacing`
-            +   Add `endpoint` keyword argument to decide whether end-point(s) are included
-                in returned range.
-        -   `around`
-            +   Does this work correctly for negative decimal values??
-            +   Implement 'dir' relative to zero --- i.e. round up/down the absolute values.
-    +   statistic.py
-        -   `confidence_intervals()`
-            -   BUG: Arguemnts `filter` and `axis` are currently incompatible.
-        -   `percentiles()`
-            -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
+    -   math/
+        +   math_core.py
+            -   `spacing`
+                +   Add `endpoint` keyword argument to decide whether end-point(s) are included
+                    in returned range.
+            -   `around`
+                +   Does this work correctly for negative decimal values??
+                +   Implement 'dir' relative to zero --- i.e. round up/down the absolute values.
+        +   numeric.py
+            -   `monotonic_smooth`
+                +   BUG: fix shitty edge effects after many iterations.
+        +   statistic.py
+            -   `confidence_intervals()`
+                -   BUG: Arguemnts `filter` and `axis` are currently incompatible.
+            -   `percentiles()`
+                -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
 
--   plot/
-    +   Hist2D.py
-        -   Add ability to plot central axes as scatter plot, with projected histograms
-            (instead of just the central 2D histogram).
-    +   plot_core.py
-        -   Finish 'set_ticks' method.
+    -   plot/
+        +   Hist2D.py
+            -   Add ability to plot central axes as scatter plot, with projected histograms
+                (instead of just the central 2D histogram).
+        +   plot_core.py
+            -   Finish 'set_ticks' method.
 
 
 Current
 -------
+    -   inout/
+        -   log.py
+            -   Add option `info_file` to create a second log-file at the `INFO` level.
 
--   inout/
-    -   log.py
-        -   Add option `info_file` to create a second log-file at the `INFO` level.
+    -   `math/`
+        -   `math_core.py`
+            -   `minmax()`
+                -  Improved how 'stretch' is handled, and added separate 'log_stretch' parameter to stretch in log-space (as apposed to linear).
+            -   `interp()` [NEW-FUNCTION]
+                - Interpolation function which can deal with log-log.
+        -   `numeric.py`
+            -   Deprecating old `smooth` function, its not very good.
+            -   `even_selection` [NEW-FUNCTION]
+                -   Given an array_like of size `N`, select `M` evenly spaced elements (or as nearly as possible).
+            -   `monotonic_smooth` [NEW-FUNCTION]
+                -   Find locations of non-monotonicities and run the `smooth_convolve` method on them.  Do this iteratively.
+                -   NOTE: causes some suboptimal edge-effects.
+            -   `smooth_convolve` [NEW-FUNCTION]
+                -   New method (from scipy cookbook) for smoothing a 1D array with convolution.
+            -   `sample_inverse` <== `sampleInverse` [DEPRECATION]
+        -   `statistic.py`
+            -   `percentiles`
+                -   BUG: issue with data type incompatibilities between input data and the percentiles.
+                -   BUG: fixed issue where peercentiles wouldn't work for int type data.
+            -   `confidence_bands`
+                -   BUG: x-scaling parameter was not being passed to `asBinEdges`
+            -   `confidence_intervals`
+                -   BUG: `filter` and `axis` arguments incompatbile with eachother.  For now, added an explicite error message not to use them together.  Added to to-do list (above).
+            -   `stats_str`
+                -   Choose a default formatting based on whether `log` is set to True or not.
 
--   `math/`
-    -   `math_core.py`
-        -   `minmax()`
-            -  Improved how 'stretch' is handled, and added separate 'log_stretch' parameter to stretch in log-space (as apposed to linear).
-        -   `interp()` [NEW-FUNCTION]
-            - Interpolation function which can deal with log-log.
-    -   `numeric.py`
-        -   Deprecating old `smooth` function, its not very good.
-        -   `smooth_convolve` [NEW-FUNCTION]
-            -   New method (from scipy cookbook) for smoothing a 1D array with convolution.
-        -   `sampleInverse` ==> `sample_inverse` [DEPRECATION]
-    -   `statistic.py`
-        -   `percentiles`
-            -   BUG: issue with data type incompatibilities between input data and the percentiles.
-            -   BUG: fixed issue where peercentiles wouldn't work for int type data.
-        -   `confidence_bands`
-            -   BUG: x-scaling parameter was not being passed to `asBinEdges`
-        -   `confidence_intervals`
-            -   BUG: `filter` and `axis` arguments incompatbile with eachother.  For now, added an explicite error message not to use them together.  Added to to-do list (above).
-        -   `stats_str`
-            -   Choose a default formatting based on whether `log` is set to True or not.
+    -   `plot/`
+        -   Deprecated lots of old camel-case function names.
+        -   `draw.py` [NEW-FILE]
+            -   New file for organizing methods for actually drawing stuff onto axes.
+            -   Moved these methods from `plot_core.py` to here:
+                -  "plot_hist_line", "plot_segmented_line", "plot_scatter", "plot_hist_bars", "plot_conf_fill"
+        -   `Hist2D.py`
+            -   BUG: 'fs' parameter was not being used properly in `plot2DHist()`.
+            -   New options and settings for contours.
+        -   `layout.py` [NEW-FILE]
+            -   New file for containing methods relating to layout, spacing, etc.
+            -   Moved these methods from `plot_core.py` to here:
+                -   "backdrop", "full_extent", "position_to_extent", "rect_for_inset", "transform"
+        -   `plot_const.py` [NEW-FILE]
+            -   New file for containing plotting constants previously in `plot_core.py`.
+        -   `plot_core.py`
+            -   Moved lots of methods to new files: `draw.py`, `layout.py` and constants to `plot_const.py`.
+            -   `label_line()`
+                -   Add rotation parameter and interpolation that can be log-spaced.
+            -   `line_style_set()`
+                -   Added 'solid' argument to determine if solid lines are included in the set.
+            -   `text()`
+                -   Upgrade the `pad` parameter to work for a single value or tuple, if the latter, the first applies to x and the second to y.
+                -   Change also applies to `_loc_str_to_pars()`.
+            -   `_loc_str_to_pars()`
+                -   See note in `text()`.
 
--   `plot/`
-    -   Deprecated lots of old camel-case function names.
-    -   `draw.py` [NEW-FILE]
-        -   New file for organizing methods for actually drawing stuff onto axes.
-        -   Moved these methods from `plot_core.py` to here:
-            -  "plot_hist_line", "plot_segmented_line", "plot_scatter", "plot_hist_bars", "plot_conf_fill"
-    -   `Hist2D.py`
-        -   BUG: 'fs' parameter was not being used properly in `plot2DHist()`.
-        -   New options and settings for contours.
-    -   `layout.py` [NEW-FILE]
-        -   New file for containing methods relating to layout, spacing, etc.
-        -   Moved these methods from `plot_core.py` to here:
-            -   "backdrop", "full_extent", "position_to_extent", "rect_for_inset", "transform"
-    -   `plot_const.py` [NEW-FILE]
-        -   New file for containing plotting constants previously in `plot_core.py`.
-    -   `plot_core.py`
-        -   Moved lots of methods to new files: `draw.py`, `layout.py` and constants to `plot_const.py`.
-        -   `label_line()`
-            -   Add rotation parameter and interpolation that can be log-spaced.
-        -   `line_style_set()`
-            -   Added 'solid' argument to determine if solid lines are included in the set.
-        -   `text()`
-            -   Upgrade the `pad` parameter to work for a single value or tuple, if the latter, the first applies to x and the second to y.
-            -   Change also applies to `_loc_str_to_pars()`.
-        -   `_loc_str_to_pars()`
-            -   See note in `text()`.
+    -   `tools/` [NEW-SUBMODULE]
+        -   `singleton.py` [NEW-FILE]
+            -   `Singleton`
+                -   Singleton implementation using a decorator.
 
--   `tools/` [NEW-SUBMODULE]
-    -   `singleton.py` [NEW-FILE]
-        -   `Singleton`
-            -   Singleton implementation using a decorator.
-
--   `constants.py`
-    -   Added derived constant `EDDC`, for the Eddington (Luminosity) constant, in units of erg/s/g.  I.e. the Eddington luminosity for an object of mass `M` would be `EDDC*M`.
-    -   Added new physical constants.
+    -   `constants.py`
+        -   Added derived constant `EDDC`, for the Eddington (Luminosity) constant, in units of erg/s/g.  I.e. the Eddington luminosity for an object of mass `M` would be `EDDC*M`.
+        -   Added new physical constants.
 
 
 
