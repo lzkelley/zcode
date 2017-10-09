@@ -104,12 +104,14 @@ _LINE_STYLE_SET = [
 
 # Default length for lines in legend handles; in units of font-size
 _HANDLE_LENGTH = 2.5
+_HANDLE_PAD = 0.6
+_LEGEND_COLUMN_SPACING = 1.2
 _SCATTER_POINTS = 1
 
 
-def set_axis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None,
-             thresh=None, side=None, ts=8, grid=True, lim=None, invert=False, ticks=True,
-             stretch=1.0):
+def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=None,
+             thresh=None, side=None, grid=True, lim=None, invert=False, ticks=True, stretch=1.0,
+             **kwargs):
     """
     Configure a particular axis of the given axes object.
 
@@ -117,7 +119,7 @@ def set_axis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None,
     ---------
        ax     : <matplotlib.axes.Axes>, base axes object to modify
        axis   : <str>, which axis to target {``x`` or ``y``}
-       c      : <str>, color for the axis (see ``matplotlib.colors``)
+       color      : <str>, color for the axis (see ``matplotlib.colors``)
        fs     : <int>, font size for labels
        pos    : <float>, position of axis-label/lines relative to the axes object
        trans  : <str>, transformation type for the axes
@@ -138,16 +140,18 @@ def set_axis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None,
     assert trans in ['axes', 'figure'], "``trans`` must be `axes` or `figure`!"
     assert side in VALID_SIDES, "``side`` must be in '%s'" % (VALID_SIDES)
 
+    color = _color_from_kwargs(kwargs)
+
     # Set tick colors and font-sizes
-    ax.tick_params(axis=axis, which='both', colors=c, labelsize=fs)
+    ax.tick_params(axis=axis, which='both', labelsize=fs, colors=color)
     #    Set tick-size only for major ticks
-    ax.tick_params(axis=axis, which='major', size=ts)
+    ax.tick_params(axis=axis, which='major')
 
     # Set Grid Lines
     set_grid(ax, grid, axis='both')
 
     if axis == 'x':
-        ax.xaxis.label.set_color(c)
+        ax.xaxis.label.set_color(color)
         offt = ax.get_xaxis().get_offset_text()
 
         if side is None:
@@ -169,13 +173,14 @@ def set_axis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None,
                 lim = zmath.minmax(lim)
             ax.set_xlim(lim)
 
-        if invert: ax.invert_xaxis()
+        if invert:
+            ax.invert_xaxis()
         if not ticks:
             for tlab in ax.xaxis.get_ticklabels():
                 tlab.set_visible(False)
 
     else:
-        ax.yaxis.label.set_color(c)
+        ax.yaxis.label.set_color(color)
         offt = ax.get_yaxis().get_offset_text()
 
         if side is None:
@@ -203,7 +208,7 @@ def set_axis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None,
                 tlab.set_visible(False)
 
     # Set Spine colors
-    ax.spines[side].set_color(c)
+    ax.spines[side].set_color(color)
     if pos is not None:
         ax.set_frame_on(True)
         ax.spines[side].set_position((trans, pos))
@@ -215,15 +220,16 @@ def set_axis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None,
         _setAxis_scale(ax, axis, scale, thresh=thresh)
 
     # Set Axis Label
-    _setAxis_label(ax, axis, label, fs=fs, c=c)
+    if label is not None:
+        _setAxis_label(ax, axis, label, fs=fs, color=color)
 
-    if stretch != 1.0:
+    if not np.isclose(stretch, 1.0):
         if axis == 'x':
             ax = stretchAxes(ax, xs=stretch)
         elif axis == 'y':
             ax = stretchAxes(ax, ys=stretch)
 
-    offt.set_color(c)
+    offt.set_color(color)
     return ax
 
 
@@ -656,6 +662,8 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
         warnings.warn("Unexpected `art` object '{}' (type: {})".format(art, type(art)))
 
     kwargs.setdefault('handlelength', _HANDLE_LENGTH)
+    kwargs.setdefault('handletextpad', _HANDLE_PAD)
+    kwargs.setdefault('columnspacing', _LEGEND_COLUMN_SPACING)
     kwargs.setdefault('scatterpoints', _SCATTER_POINTS)
     kwargs.setdefault('numpoints', _SCATTER_POINTS)
 
@@ -673,8 +681,10 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     if valign == 'bottom':
         valign = 'lower'
 
-    if x is None: x = 0.99
-    if y is None: y = 0.5
+    if x is None:
+        x = 0.99
+    if y is None:
+        y = 0.5
 
     alignStr = valign
     if not (valign == 'center' and halign == 'center'):
@@ -965,34 +975,36 @@ def line_style_set(num, solid=True):
     return lines
 
 
-def set_grid(ax, val=True, axis='both', c=None, ls='-', clear=True,
-             below=True, major=True, minor=True, zorder=2, alpha=None):
+def set_grid(ax, val=True, axis='both', ls='-', clear=True,
+             below=True, major=True, minor=True, zorder=2, alpha=None, **kwargs):
     """Configure the axes' grid.
     """
+    color = _color_from_kwargs(kwargs)
+
     if clear:
         ax.grid(False, which='both', axis='both')
     ax.set_axisbelow(below)
     if val:
         if major:
-            if c is None:
-                _c = '0.60'
+            if color is None:
+                _col = '0.60'
             else:
-                _c = c
+                _col = color
             if alpha is None:
                 _alpha = 0.8
             else:
                 _alpha = alpha
-            ax.grid(True, which='major', axis=axis, c=_c, ls=ls, zorder=zorder, alpha=_alpha)
+            ax.grid(True, which='major', axis=axis, c=_col, ls=ls, zorder=zorder, alpha=_alpha)
         if minor:
-            if c is None:
-                _c = '0.85'
+            if color is None:
+                _col = '0.85'
             else:
-                _c = c
+                _col = color
             if alpha is None:
                 _alpha = 0.5
             else:
                 _alpha = alpha
-            ax.grid(True, which='minor', axis=axis, c=_c, ls=ls, zorder=zorder, alpha=_alpha)
+            ax.grid(True, which='minor', axis=axis, c=_col, ls=ls, zorder=zorder, alpha=_alpha)
     return
 
 
@@ -1302,11 +1314,13 @@ def _setAxis_scale(ax, axis, scale, thresh=None):
     return
 
 
-def _setAxis_label(ax, axis, label, fs=12, c='black'):
+def _setAxis_label(ax, axis, label, fs=None, **kwargs):
+    color = _color_from_kwargs(kwargs)
+
     if axis == 'x':
-        ax.set_xlabel(label, size=fs, color=c)
+        ax.set_xlabel(label, size=fs, color=color)
     elif axis == 'y':
-        ax.set_ylabel(label, size=fs, color=c)
+        ax.set_ylabel(label, size=fs, color=color)
     else:
         raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
     return
@@ -1351,6 +1365,24 @@ def _get_cmap(cmap):
         return cmap
     else:
         raise ValueError("`cmap` '{}' is not a valid colormap or colormap name".format(cmap))
+
+
+def _color_from_kwargs(kwargs):
+
+    msg = "Use `color` instead of `c` or `col` for color specification!"
+
+    if 'c' in kwargs:
+        col = kwargs['c']
+        warnings.warn(msg, DeprecationWarning, stacklevel=3)
+    elif 'col' in kwargs:
+        col = kwargs['col']
+        warnings.warn(msg, DeprecationWarning, stacklevel=3)
+    elif 'color' in kwargs:
+        col = kwargs['color']
+    else:
+        col = None
+
+    return col
 
 
 #     ============================
