@@ -42,7 +42,7 @@ import warnings
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-import seaborn.apionly as sns
+import seaborn as sns
 
 import zcode.math as zmath
 import zcode.inout as zio
