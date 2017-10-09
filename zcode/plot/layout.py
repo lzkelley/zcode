@@ -114,24 +114,28 @@ def position_to_extent(fig, ref, loc, item=None, pad=0.0, halign='left', valign=
     return
 
 
-def rect_for_inset(parent, loc='tl', width=None, height=None, width_frac=0.25, height_frac=0.25):
+def rect_for_inset(parent, loc='tl', width=None, height=None,
+                   width_frac=0.25, height_frac=0.25, pad=None):
     """Construct the rectangle to describe an inset axes relative to the parent object.
     """
     pos = parent.get_position()
     wid = pos.width * width_frac if (width is None) else width
     hit = pos.height * height_frac if (height is None) else height
 
+    if pad is None:
+        pad = _PAD
+
     if loc[0] == 'b':
-        yy = pos.y0 + _PAD
+        yy = pos.y0 + pad
     elif loc[0] == 't':
-        yy = pos.y1 - _PAD - hit
+        yy = pos.y1 - pad - hit
     else:
         raise ValueError("`loc[0]` must be ['b', 't']!")
 
     if loc[1] == 'l':
-        xx = pos.x0 + _PAD
+        xx = pos.x0 + pad
     elif loc[1] == 'r':
-        xx = pos.x1 - _PAD - wid
+        xx = pos.x1 - pad - wid
     else:
         raise ValueError("`loc[1]` must be ['l', 'r']!")
 
