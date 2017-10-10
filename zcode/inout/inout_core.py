@@ -523,22 +523,31 @@ def modify_filename(fname, prepend='', append=''):
 
     Returns
     -------
-    newName : str
+    new_name : str
         New filename, with modifications.
 
     """
-    oldPath, oldName = os.path.split(fname)
-    newName = prepend + oldName
-    if len(append) > 0:
-        oldSplit = newName.split('.')
-        if len(oldSplit) >= 2:
-            oldSplit[-2] += append
-        else:
-            oldSplit[-1] += append
-        newName = '.'.join(oldSplit)
+    is_dir = fname.endswith('/')
+    o_path, o_name = os.path.split(fname)
+    o_path, o_name = _path_fname_split(fname)
+    print(fname, _path_fname_split(fname))
 
-    newName = os.path.join(oldPath, newName)
-    return newName
+    new_name = prepend + o_name
+    print("new_name = ", new_name)
+    if len(append) > 0:
+        o_split = new_name.split('.')
+        if len(o_split) >= 2:
+            o_split[-2] += append
+        else:
+            o_split[-1] += append
+        new_name = '.'.join(o_split)
+
+    print("new_name = ", new_name)
+    new_name = os.path.join(o_path, new_name)
+    print("new_name = ", new_name)
+    if is_dir:
+        new_name = os.path.join(new_name, '')
+    return new_name
 
 
 def mpiError(comm, log=None, err="ERROR", exc_info=True):
@@ -699,7 +708,7 @@ def modify_exists(fname, max=1000):
 
     Returns
     -------
-    newName : {str, `None`}
+    new_name : {str, `None`}
         The input filename `fname` if it does not exist, or an appropriately modified version
         otherwise.  If the number for the new file exceeds the maximum `max`, then a warning is
         raise and `None` is returned.
@@ -727,9 +736,7 @@ def modify_exists(fname, max=1000):
     # Look for existing, modified filenames
     # -------------------------------------
     num = 0
-    path, filename = os.path.split(fname)
-    if len(path) == 0:
-        path = './'
+    path, filename = _path_fname_split(fname)
     # construct regex for modified files
     #     look specifically for `prec`-digit numbers at the end of the filename
     regex = modify_filename(re.escape(filename), append='_([0-9]){{{:d}}}'.format(prec))
@@ -754,14 +761,14 @@ def modify_exists(fname, max=1000):
 
     # Construct new filename
     # ----------------------
-    newName = modify_filename(fname, append='_{0:0{1:d}d}'.format(num, prec))
+    new_name = modify_filename(fname, append='_{0:0{1:d}d}'.format(num, prec))
     # New filename shouldnt exist; if it does, raise warning
-    if os.path.exists(newName):
-        # raise RuntimeError("New filename '{}' already exists.".format(newName))
-        warnings.warn("New filename '{}' already exists.".format(newName))
-        return modify_exists(newName)
+    if os.path.exists(new_name):
+        # raise RuntimeError("New filename '{}' already exists.".format(new_name))
+        warnings.warn("New filename '{}' already exists.".format(new_name))
+        return modify_exists(new_name)
 
-    return newName
+    return new_name
 
 
 def iterable_notstring(var):
@@ -836,3 +843,16 @@ def warn_with_traceback(message, category, filename, lineno, file=None, line=Non
     log = file if hasattr(file, 'write') else sys.stderr
     log.write(warnings.formatwarning(message, category, filename, lineno, line))
     return
+
+
+def _path_fname_split(fname):
+    path, filename = os.path.split(fname)
+    if len(path) == 0:
+        path = './'
+    if len(filename) == 0 and len(path) > 0:
+        filename = path
+        path = ''
+    if filename.startswith('./'):
+        path = filename[:2]
+        filename = filename[2:]
+    return path, filename

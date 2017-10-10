@@ -37,6 +37,8 @@ Future / To-Do
 Current
 -------
     -   inout/
+        -   `inout_core.py`
+            -   BUG: `modify_exists` and `modify_filename` would fail for directories (at least of certain name patterns.  Introduced new internal method `_path_fname_split` and some minor tweaks to deal with this.  Seems to be working.
         -   log.py
             -   Add option `info_file` to create a second log-file at the `INFO` level.
             -   Added `log` method `clear_files()` to erase existing contents of log files.
