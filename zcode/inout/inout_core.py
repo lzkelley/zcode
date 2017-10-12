@@ -530,21 +530,17 @@ def modify_filename(fname, prepend='', append=''):
     is_dir = fname.endswith('/')
     o_path, o_name = os.path.split(fname)
     o_path, o_name = _path_fname_split(fname)
-    print(fname, _path_fname_split(fname))
 
     new_name = prepend + o_name
-    print("new_name = ", new_name)
     if len(append) > 0:
         o_split = new_name.split('.')
-        if len(o_split) >= 2:
+        if (len(o_split) >= 2) and (1 < len(o_split[-1]) < 5):
             o_split[-2] += append
         else:
             o_split[-1] += append
         new_name = '.'.join(o_split)
 
-    print("new_name = ", new_name)
     new_name = os.path.join(o_path, new_name)
-    print("new_name = ", new_name)
     if is_dir:
         new_name = os.path.join(new_name, '')
     return new_name
@@ -846,13 +842,22 @@ def warn_with_traceback(message, category, filename, lineno, file=None, line=Non
 
 
 def _path_fname_split(fname):
+    """
+    """
     path, filename = os.path.split(fname)
-    if len(path) == 0:
-        path = './'
+    # Make sure `filename` stores directory names if needed
+    #    If a `fname` looks like "./dname/", then split yields ('./dname', '')
+    #    convert this to ('', './dname')
     if len(filename) == 0 and len(path) > 0:
         filename = path
         path = ''
+    # convert ('', './dname') --> ('./', 'dname')
     if filename.startswith('./'):
         path = filename[:2]
         filename = filename[2:]
+
+    # Either path should have a path stored, or it should be the local directory
+    if len(path) == 0:
+        path = './'
+
     return path, filename
