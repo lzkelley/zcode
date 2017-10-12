@@ -150,8 +150,10 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
     def _raise_error(self, msg, error=RuntimeError):
         """Log an error message and raise an error.
         """
-        self.error(msg)
+        # self.error(msg)
+        self.exception(msg, exc_info=True)
         raise error(msg)
+
     logger.raise_error = _raise_error.__get__(logger)
 
     # Add a `after` method to log how long something took
