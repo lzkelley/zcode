@@ -528,8 +528,10 @@ def modify_filename(fname, prepend='', append=''):
 
     """
     is_dir = fname.endswith('/')
-    o_path, o_name = os.path.split(fname)
-    o_path, o_name = _path_fname_split(fname)
+    if is_dir:
+        o_path, o_name = _path_fname_split(fname)
+    else:
+        o_path, o_name = os.path.split(fname)
 
     new_name = prepend + o_name
     if len(append) > 0:
@@ -722,9 +724,12 @@ def modify_exists(fname, max=1000):
         In this case, `None` is returned.
 
     """
+    print("\n")
     # If file doesnt already exist, do nothing - return filename
     if not os.path.exists(fname):
         return fname
+
+    is_dir = os.path.isdir(fname)
 
     # Determine number of digits for modified filenames to allow up to `max` files
     prec = np.int(np.ceil(np.log10(max)))
@@ -732,10 +737,22 @@ def modify_exists(fname, max=1000):
     # Look for existing, modified filenames
     # -------------------------------------
     num = 0
-    path, filename = _path_fname_split(fname)
+    # if is_dir:
+    #     path, filename = _path_fname_split(fname)
+    # else:
+    path, filename = os.path.split(fname)
+    if len(path) == 0:
+        path += './'
+
     # construct regex for modified files
     #     look specifically for `prec`-digit numbers at the end of the filename
+    # regex = modify_filename(re.escape(filename), append='_([0-9]){{{:d}}}'.format(prec))
+    if is_dir:
+        filename = os.path.join(filename, '')
     regex = modify_filename(re.escape(filename), append='_([0-9]){{{:d}}}'.format(prec))
+    regex = regex.replace('./', '')
+    if regex.endswith('/'):
+        regex = regex[:-1]
     matches = sorted([ff for ff in os.listdir(path) if re.search(regex, ff)])
     # If there are matches, find the highest file-number in the matches
     if len(matches):
@@ -757,7 +774,10 @@ def modify_exists(fname, max=1000):
 
     # Construct new filename
     # ----------------------
+    if is_dir:
+        filename = os.path.join(filename, '')
     new_name = modify_filename(fname, append='_{0:0{1:d}d}'.format(num, prec))
+
     # New filename shouldnt exist; if it does, raise warning
     if os.path.exists(new_name):
         # raise RuntimeError("New filename '{}' already exists.".format(new_name))
@@ -848,6 +868,7 @@ def _path_fname_split(fname):
     # Make sure `filename` stores directory names if needed
     #    If a `fname` looks like "./dname/", then split yields ('./dname', '')
     #    convert this to ('', './dname')
+    print("\t", path, filename)
     if len(filename) == 0 and len(path) > 0:
         filename = path
         path = ''
@@ -859,5 +880,5 @@ def _path_fname_split(fname):
     # Either path should have a path stored, or it should be the local directory
     if len(path) == 0:
         path = './'
-
+    print("\t", path, filename)
     return path, filename
