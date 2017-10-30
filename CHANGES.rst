@@ -80,6 +80,7 @@ Current
                 -  "plot_hist_line", "plot_segmented_line", "plot_scatter", "plot_hist_bars", "plot_conf_fill"
         -   `Hist2D.py`
             -   BUG: 'fs' parameter was not being used properly in `plot2DHist()`.
+            -   Improved usage of `fs` parameter to that None values do not alter defaults.
             -   New options and settings for contours.
         -   `layout.py` [NEW-FILE]
             -   New file for containing methods relating to layout, spacing, etc.

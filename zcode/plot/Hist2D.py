@@ -151,8 +151,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
         raise ValueError("`scale` must be one or two scaling specifications!")
 
     # Check the `labels`
-    if labels is None: labels = ['', '', '']
-    elif np.size(labels) == 2: labels = [labels[0], labels[1], '']
+    if labels is None:
+        labels = ['', '', '']
+    elif np.size(labels) == 2:
+        labels = [labels[0], labels[1], '']
 
     if np.size(labels) != 3:
         raise ValueError("`labels` = '{}' is invalid.".format(labels))
@@ -321,10 +323,10 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
 
                 overlay_values = overlay_values.astype(int)
 
-        pcm, smap, cbar = plot2DHist(prax, xedges_2d, yedges_2d, hist_2d, cscale=histScale,
-                                     cbax=cbax, labels=labels, cmap=cmap, smap=smap,
-                                     extrema=extrema, fs=fs, scale=scale,
-                                     overlay=overlay_values, overlay_fmt=overlay_fmt)
+        pcm, smap, cbar, cs = plot2DHist(prax, xedges_2d, yedges_2d, hist_2d, cscale=histScale,
+                                         cbax=cbax, labels=labels, cmap=cmap, smap=smap,
+                                         extrema=extrema, fs=fs, scale=scale,
+                                         overlay=overlay_values, overlay_fmt=overlay_fmt)
 
         # Colors
         # X-projection
@@ -522,8 +524,13 @@ def plot2DHist(ax, xvals, yvals, hist,
             cbar = plt.colorbar(smap, cax=cbax)
         else:
             cbar = plt.colorbar(smap, ax=cax)
-        cbar.set_label(cblab, fontsize=fs)
-        cbar.ax.tick_params(labelsize=fs)
+
+        if fs is not None:
+            cbar.ax.tick_params(labelsize=fs)
+            cbar.set_label(cblab, fontsize=fs)
+        else:
+            cbar.set_label(cblab)
+
         ticks = [smap.norm.vmin, smap.norm.vmax]
         ticks = zmath.spacing(ticks, cscale, integers=True)
         cbar.ax.yaxis.set_ticks(smap.norm(ticks), minor=True)
@@ -620,7 +627,8 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
     assert 0.0 <= wratio <= 1.0, "`wratio` must be between [0.0, 1.0]!"
 
     # Create figure if needed
-    if not fig: fig = plt.figure()
+    if not fig:
+        fig = plt.figure()
 
     xpax = ypax = cbax = ovax = None
 
