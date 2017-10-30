@@ -46,11 +46,6 @@ class IndentFormatter(logging.Formatter):
         return out
 
 
-def getLogger(*args, **kwargs):
-    utils.dep_warn("getLogger", newname="get_logger")
-    return get_logger(*args, **kwargs)
-
-
 def get_logger(name, format_stream=None, format_file=None, format_date=None,
                level_stream=logging.WARNING, level_file=logging.DEBUG,
                tofile=None, tostr=True, info_file=True):
@@ -273,3 +268,8 @@ def default_logger(logger=None, verbose=False, debug=False):
 
     logger = get_logger(None, level_stream=level, tostr=True)
     return logger
+
+
+def getLogger(*args, **kwargs):
+    utils.dep_warn("getLogger", newname="get_logger")
+    return get_logger(*args, **kwargs)
