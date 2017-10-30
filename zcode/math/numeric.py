@@ -356,7 +356,12 @@ def even_selection(size, select, sel_is_true=True):
     y = True if sel_is_true else False
     n = (not y)
 
-    if select > size/2:
+    if select > size:
+        raise ValueError("Cannot select {}/{} elements!".format(select, size))
+
+    if select == size:
+        cut = np.ones(size, dtype=bool) * y
+    elif select > size/2:
         cut = np.ones(size, dtype=bool) * y
         q, r = divmod(size, size-select)
         indices = [q*i + min(i, r) for i in range(size-select)]
