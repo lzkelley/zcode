@@ -577,7 +577,7 @@ def label_line(ax, line, label, x=None, y=None,
 
     # y = np.interp(x, xdata, ydata) if y is None else y
     y = zmath.interp(x, xdata, ydata, xlog=log_flag, ylog=log_flag) if y is None else y
-    print("y = ", y)
+    # print("y = ", y)
 
     # Add Annotation to Text
     xytext = (0, 0)
