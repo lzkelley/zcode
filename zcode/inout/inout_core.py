@@ -7,7 +7,7 @@ Classes
 
 Functions
 ---------
--   bytesString              - Return a humanized string representation of a number of bytes.
+-   bytes_string              - Return a humanized string representation of a number of bytes.
 -   get_file_size            - Return a human-readable size of a file or set of files.
 -   countLines               - Count the number of lines in the given file.
 -   estimateLines            - Estimate the number of lines in the given file.
@@ -43,13 +43,13 @@ import collections
 
 from zcode import utils
 
-__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'get_file_size',
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
            'countLines', 'estimateLines', 'modify_filename',
            'check_path', 'dictToNPZ', 'npzToDict', 'combineFiles', 'checkURL',
            'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
            # Deprecated!
-           'modifyFilename', 'checkPath']
+           'modifyFilename', 'checkPath', 'bytes_string']
 
 
 class _Keys_Meta(type):
@@ -158,7 +158,7 @@ class StreamCapture(list):
         if(self.err): sys.stderr = self._stderr
 
 
-def bytesString(bytes, precision=1):
+def bytes_string(bytes, precision=1):
     """Return a humanized string representation of a number of bytes.
 
     Arguments
@@ -182,17 +182,18 @@ def bytesString(bytes, precision=1):
         (1 << 40, 'TB'),
         (1 << 30, 'GB'),
         (1 << 20, 'MB'),
-        (1 << 10, 'kB'),
+        (1 << 10, 'KB'),
         (1, 'bytes')
     )
 
     for factor, suffix in abbrevs:
-        if bytes >= factor: break
+        if bytes >= factor:
+            break
 
-    # NOTE: for this to work right, must "from __future__ import division" else integer
-    strSize = '%.*f %s' % (precision, 1.0*bytes / factor, suffix)
-
-    return strSize
+    # size_str = '%.*f %s' % (precision, 1.0*bytes / factor, suffix)
+    size_str = '{size:.{prec:}f} {suff}'.format(
+        prec=precision, size=1.0*bytes / factor, suff=suffix)
+    return size_str
 
 
 def get_file_size(fnames, precision=1):
@@ -217,7 +218,7 @@ def get_file_size(fnames, precision=1):
     for fil in fnames:
         byteSize += os.path.getsize(fil)
 
-    byteStr = bytesString(byteSize, precision)
+    byteStr = bytes_string(byteSize, precision)
     return byteStr
 
 
@@ -433,8 +434,8 @@ def combineFiles(inFilenames, outFilename, verbose=False):
     #     pbar.finish()
 
     outSize = os.path.getsize(outFilename)
-    inStr = bytesString(inSize)
-    outStr = bytesString(outSize)
+    inStr = bytes_string(inSize)
+    outStr = bytes_string(outSize)
 
     if verbose:
         print("Total input size = %s, output size = %s" % (inStr, outStr))
@@ -882,3 +883,11 @@ def _path_fname_split(fname):
         path = './'
     print("\t", path, filename)
     return path, filename
+
+
+#     ====    DEPRECATIONS    ====
+
+
+def bytesString(*args, **kwargs):
+    utils.dep_warn("bytesString", newname="bytes_string")
+    return bytes_string(*args, **kwargs)
