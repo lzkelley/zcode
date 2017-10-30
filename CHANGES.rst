@@ -48,6 +48,7 @@ Current
         -   `math_core.py`
             -   `minmax()`
                 -  Improved how 'stretch' is handled, and added separate 'log_stretch' parameter to stretch in log-space (as apposed to linear).
+                -   Add parameter to convert types (can be issue when ints are passed in)
             -   `interp()` [NEW-FUNCTION]
                 - Interpolation function which can deal with log-log.
         -   `numeric.py`
