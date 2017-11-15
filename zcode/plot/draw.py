@@ -55,6 +55,8 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
     elif kwargs.get('c') is not None:
         col = kwargs.get('c')
 
+    yerr_fmt = '+'
+
     # Extend bin edges if needed
     if len(edges) != len(hist)+1:
         if extend == 'left':
@@ -90,10 +92,10 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
         xmid = zmath.midpoints(edges)
 
         if nonzero:
-            inds = np.where(hist != 0.0)
-            ax.errorbar(xmid[inds], hist[inds], yerr=yerr[inds], fmt=None, ecolor=col)
+            inds = (hist != 0.0)
+            ax.errorbar(xmid[inds], hist[inds], yerr=yerr[inds], fmt=yerr_fmt, ecolor=col)
         else:
-            ax.errorbar(xmid,       hist,       yerr=yerr,       fmt=None, ecolor=col)
+            ax.errorbar(xmid,       hist,       yerr=yerr,       fmt=yerr_fmt, ecolor=col)
 
     # Add a fill region
     if fill is not None:
