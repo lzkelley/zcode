@@ -43,6 +43,8 @@ Current
         -   log.py
             -   Add option `info_file` to create a second log-file at the `INFO` level.
             -   Added `log` method `clear_files()` to erase existing contents of log files.
+            -   `log_memory` [NEW-FUNCTION]
+                -   Log the current memory usage (taken from `mbh-mergers.constants` code).
 
     -   `math/`
         -   `math_core.py`

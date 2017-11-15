@@ -14,6 +14,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from datetime import datetime
 import logging
+import sys
+import os
 import shutil
 import inspect
 import numpy as np
@@ -215,7 +217,7 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         """Log information about a fraction, "[{prep} ]{}/{} = {}[ {post}]".
         """
         for fn in self._filenames:
-            with open(fn, 'w') as out:
+            with open(fn, 'w') as out:  # noqa
                 pass
 
     logger.clear_files = _clear_files.__get__(logger)
@@ -224,11 +226,6 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         setattr(logger, lvl, getattr(logging, lvl))
 
     return logger
-
-
-def defaultLogger(*args, **kwargs):
-    utils.dep_warn("defaultLogger", newname="default_logger")
-    return default_logger(*args, **kwargs)
 
 
 def default_logger(logger=None, verbose=False, debug=False):
@@ -268,6 +265,52 @@ def default_logger(logger=None, verbose=False, debug=False):
 
     logger = get_logger(None, level_stream=level, tostr=True)
     return logger
+
+
+def log_memory(log, pref=None, lvl=logging.DEBUG):
+    cyc_str = ""
+    KB = 1024.0
+
+    if pref is not None:
+        cyc_str += "{}: ".format(pref)
+
+    if sys.platform.startswith('linux'):
+        RUSAGE_UNIT = 1024.0
+    elif sys.platform.startswith('darwin'):
+        RUSAGE_UNIT = 1024.0*1024.0
+
+    try:
+        import resource
+        max_self = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        max_child = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+        _str = "RSS Max Self: {:.2f} [MB], Child: {:.2f} [MB]".format(
+            max_self/RUSAGE_UNIT, max_child/RUSAGE_UNIT)
+        log.log(lvl, cyc_str + _str)
+    except Exception as err:
+        log.debug("resource.getrusage failed.  '{}'".format(str(err)))
+
+    try:
+        import psutil
+        process = psutil.Process(os.getpid())
+        rss = process.memory_info().rss
+        cpu_perc = process.cpu_percent()
+        mem_perc = process.memory_percent()
+        num_thr = process.num_threads()
+        _str = "RSS: {:.2f} [MB], {:.2f}%; Threads: {:3d}, CPU: {:.2f}%".format(
+            rss/KB/KB, mem_perc, num_thr, cpu_perc)
+        log.log(lvl, cyc_str + _str)
+    except Exception as err:
+        log.debug("psutil.Process failed.  '{}'".format(str(err)))
+
+    return
+
+
+# ==== DEPRECATIONS ====
+
+
+def defaultLogger(*args, **kwargs):
+    utils.dep_warn("defaultLogger", newname="default_logger")
+    return default_logger(*args, **kwargs)
 
 
 def getLogger(*args, **kwargs):
