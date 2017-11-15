@@ -23,7 +23,7 @@ import numpy as np
 from . import inout_core
 from .. import utils
 
-__all__ = ['IndentFormatter', 'get_logger', 'default_logger',
+__all__ = ['IndentFormatter', 'get_logger', 'default_logger', 'log_memory',
            # DEPRECATED:
            'getLogger', 'defaultLogger']
 
@@ -268,6 +268,8 @@ def default_logger(logger=None, verbose=False, debug=False):
 
 
 def log_memory(log, pref=None, lvl=logging.DEBUG):
+    """Log the current memory usage.
+    """
     cyc_str = ""
     KB = 1024.0
 
