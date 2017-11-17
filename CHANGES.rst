@@ -80,6 +80,7 @@ Current
             -   New file for organizing methods for actually drawing stuff onto axes.
             -   Moved these methods from `plot_core.py` to here:
                 -  "plot_hist_line", "plot_segmented_line", "plot_scatter", "plot_hist_bars", "plot_conf_fill"
+            -   New method `plot_contiguous` to plot line-sections with contigous points.
         -   `Hist2D.py`
             -   BUG: 'fs' parameter was not being used properly in `plot2DHist()`.
             -   Improved usage of `fs` parameter to that None values do not alter defaults.

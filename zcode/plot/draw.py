@@ -20,7 +20,8 @@ from . plot_const import COL_CORR, LW_CONF, LW_OUTLINE
 from . plot_core import colormap
 
 __all__ = [
-    "plot_hist_line", "plot_segmented_line", "plot_scatter", "plot_hist_bars", "plot_conf_fill",
+    "plot_contiguous", "plot_hist_line", "plot_segmented_line", "plot_scatter",
+    "plot_hist_bars", "plot_conf_fill",
     # Deprecated
     "plotHistLine", "plotSegmentedLine", "plotScatter", "plotHistBars", "plotConfFill"
 ]
@@ -357,6 +358,65 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
     line_patch = (_pp, ll)
 
     return line_patch, conf_patches
+
+
+def plot_contiguous(ax, xx, yy, idx, **kwargs):
+    """Plot values which in contiguous sections.
+
+    Arguments
+    ---------
+    ax : `axes`
+    xx : (N,) scalar
+    yy : (N,) scalar
+    idx : (N,) bool
+        Boolean array which is `True` for desired elements.
+
+    Returns
+    -------
+    lines : (1,)
+
+    """
+    assert np.shape(xx) == np.shape(yy) == np.shape(idx), "Input arrays must be the same shape!"
+    assert np.ndim(xx) == 1, "Only 1D arrays supported!"
+
+    # Find breaks in selected elements
+    stops = np.where(~idx)[0]
+
+    # Construct list of beginning and ending points
+    # ---------------------------------------------
+    begs = []
+    ends = []
+    bb = 0
+    if len(stops) == 0:
+        ee = None
+    else:
+        ee = stops[0]
+
+    begs.append(bb)
+    ends.append(ee)
+
+    for ii in range(1, stops.size):
+        bb = ee + 1
+        ee = stops[ii]
+        if ee > bb + 1:
+            begs.append(bb)
+            ends.append(ee)
+
+    if stops.size > 0:
+        bb = stops[-1] + 1
+        if bb < xx.size - 1:
+            begs.append(bb)
+            ends.append(None)
+
+    # Plot each section
+    # -----------------
+    vals = []
+    for aa, bb in zip(begs, ends):
+        cut = slice(aa, bb)
+        vv = ax.plot(xx[cut], yy[cut], **kwargs)
+        vals.append(vv)
+
+    return vals
 
 
 def _hist_line(edges, hist):
