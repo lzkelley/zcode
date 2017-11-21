@@ -80,10 +80,11 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         Logger object to use for logging.
 
     """
-
+    print("log.py : 1")
     if (tofile is None) and (not tostr):
         raise ValueError("Must log to something!")
 
+    print("log.py : 2")
     logger = logging.getLogger(name)
     # Make sure handlers don't get duplicated (ipython issue)
     while len(logger.handlers) > 0:
@@ -103,6 +104,8 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         format_date = '%Y/%m/%d %H:%M:%S'
 
     logger._filenames = []
+
+    print("log.py : 3")
 
     # Log to file
     # -----------
