@@ -2,34 +2,35 @@
 
 Classes
 -------
--   Keys                     - Provide convenience for classes used as enumerated dictionary keys.
--   StreamCapture            - Class to capture/redirect output to stdout and stderr.
+    -   Keys                 - Provide convenience for classes used as enumerated dictionary keys.
+    -   StreamCapture        - Class to capture/redirect output to stdout and stderr.
 
 Functions
 ---------
--   bytes_string              - Return a humanized string representation of a number of bytes.
--   get_file_size            - Return a human-readable size of a file or set of files.
--   countLines               - Count the number of lines in the given file.
--   estimateLines            - Estimate the number of lines in the given file.
--   check_path               - Create the given filepath if it doesn't already exist.
--   dictToNPZ                - Save a dictionary to the given NPZ filename.
--   npzToDict                - Convert an NPZ file to a dictionary with the same keys and values.
--   getProgressBar           - Wrapper to create a progressbar object with default settings.
--   combineFiles             - Concatenate the contents of input files into a single output file.
--   checkURL                 - Check that the given url exists.
--   promptYesNo              - Prompt the user (via CLI) for yes or no.
--   modify_filename          - Modify the given filename.
--   mpiError                 - Raise an error through MPI and exit all processes.
--   ascii_table              - Print a table with the given contents to output.
--   modify_exists            - Modify the given filename if it already exists.
--   iterable_notstring       - Return True' if the argument is an iterable and not a string type.
--   str_format_dict          - Pretty-format a dict into a nice looking string.
--   par_dir                  - Get parent (absolute) directory name from given file/directory.
--   top_dir                  - Get the top level directory name from the given path.
--   underline                - Add a new line of characters appended to the given string.
--   warn_with_traceback      - Include traceback information in warnings.
+    -   bytes_string         - Return a humanized string representation of a number of bytes.
+    -   get_file_size        - Return a human-readable size of a file or set of files.
+    -   countLines           - Count the number of lines in the given file.
+    -   estimateLines        - Estimate the number of lines in the given file.
+    -   check_path           - Create the given filepath if it doesn't already exist.
+    -   dictToNPZ            - Save a dictionary to the given NPZ filename.
+    -   npzToDict            - Convert an NPZ file to a dictionary with the same keys and values.
+    -   getProgressBar       - Wrapper to create a progressbar object with default settings.
+    -   combineFiles         - Concatenate the contents of input files into a single output file.
+    -   checkURL             - Check that the given url exists.
+    -   promptYesNo          - Prompt the user (via CLI) for yes or no.
+    -   modify_filename      - Modify the given filename.
+    -   mpiError             - Raise an error through MPI and exit all processes.
+    -   ascii_table          - Print a table with the given contents to output.
+    -   modify_exists        - Modify the given filename if it already exists.
+    -   iterable_notstring   - Return True' if the argument is an iterable and not a string type.
+    -   str_format_dict      - Pretty-format a dict into a nice looking string.
+    -   par_dir              - Get parent (absolute) directory name from given file/directory.
+    -   top_dir              - Get the top level directory name from the given path.
+    -   underline            - Add a new line of characters appended to the given string.
+    -   warn_with_traceback  - Include traceback information in warnings.
 
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 import six
 from datetime import datetime
@@ -666,7 +667,6 @@ def modify_exists(fname, max=1000):
         In this case, `None` is returned.
 
     """
-    print("\n")
     # If file doesnt already exist, do nothing - return filename
     if not os.path.exists(fname):
         return fname
@@ -810,7 +810,7 @@ def _path_fname_split(fname):
     # Make sure `filename` stores directory names if needed
     #    If a `fname` looks like "./dname/", then split yields ('./dname', '')
     #    convert this to ('', './dname')
-    print("\t", path, filename)
+    # print("\t", path, filename)
     if len(filename) == 0 and len(path) > 0:
         filename = path
         path = ''
@@ -822,26 +822,5 @@ def _path_fname_split(fname):
     # Either path should have a path stored, or it should be the local directory
     if len(path) == 0:
         path = './'
-    print("\t", path, filename)
+    # print("\t", path, filename)
     return path, filename
-
-
-#     ====    DEPRECATIONS    ====
-
-'''
-def bytesString(*args, **kwargs):
-    utils.dep_warn("bytesString", newname="bytes_string")
-    return bytes_string(*args, **kwargs)
-
-
-
-def modifyFilename(*args, **kwargs):
-    utils.dep_warn("modifyFilename", newname="modify_filename")
-    return modify_filename(*args, **kwargs)
-
-
-
-def checkPath(*args, **kwargs):
-    utils.dep_warn("checkPath", newname="check_path")
-    return check_path(*args, **kwargs)
-'''

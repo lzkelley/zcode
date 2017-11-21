@@ -36,6 +36,9 @@ Future / To-Do
 
 Current
 -------
+    - inout/
+        - `inout_core.py`
+            -  BUG: some print statements were lying around causing issues with checking files.
 
 
 
