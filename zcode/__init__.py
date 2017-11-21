@@ -1,6 +1,7 @@
 """
 
 """
+# flake8: noqa  --- ignore imported but unused flake8 warnings
 
 # from . import plot
 # from . import math
@@ -8,7 +9,7 @@
 from . import constants
 
 __author__ = "Luke Zoltan Kelley"
-__version__ = "0.0.10"
+__version__ = "0.0.11"
 __email__ = "lkelley@cfa.harvard.edu"
 __status__ = "Development"
 

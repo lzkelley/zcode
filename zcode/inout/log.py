@@ -14,6 +14,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from datetime import datetime
 import logging
+import sys
+import os
 import shutil
 import inspect
 import numpy as np
@@ -21,7 +23,7 @@ import numpy as np
 from . import inout_core
 from .. import utils
 
-__all__ = ['IndentFormatter', 'get_logger', 'default_logger',
+__all__ = ['IndentFormatter', 'get_logger', 'default_logger', 'log_memory',
            # DEPRECATED:
            'getLogger', 'defaultLogger']
 
@@ -46,14 +48,9 @@ class IndentFormatter(logging.Formatter):
         return out
 
 
-def getLogger(*args, **kwargs):
-    utils.dep_warn("getLogger", newname="get_logger")
-    return get_logger(*args, **kwargs)
-
-
 def get_logger(name, format_stream=None, format_file=None, format_date=None,
                level_stream=logging.WARNING, level_file=logging.DEBUG,
-               tofile=None, tostr=True):
+               tofile=None, tostr=True, info_file=True):
     """Create a standard logger object which logs to file and or stdout stream.
 
     If logging to output stream (stdout) is enabled, an `IndentFormatter` object is used.
@@ -105,6 +102,8 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
     if format_date is None:
         format_date = '%Y/%m/%d %H:%M:%S'
 
+    logger._filenames = []
+
     # Log to file
     # -----------
     if tofile is not None:
@@ -119,6 +118,17 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         logger.addHandler(fileHandler)
         #     Store output filename to `logger` object
         logger.filename = tofile
+        logger._filenames.append(tofile)
+
+        if info_file:
+            level_info = logging.INFO
+            tofile_info = inout_core.modify_filename(tofile, append='_info')
+            file_form = IndentFormatter(format_file, format_date=format_date)
+            file_hand = logging.FileHandler(tofile_info, 'w')
+            file_hand.setFormatter(file_form)
+            file_hand.setLevel(level_info)
+            logger.addHandler(file_hand)
+            logger._filenames.append(tofile_info)
 
     # Log To stdout
     # -------------
@@ -137,8 +147,10 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
     def _raise_error(self, msg, error=RuntimeError):
         """Log an error message and raise an error.
         """
-        self.error(msg)
+        # self.error(msg)
+        self.exception(msg, exc_info=True)
         raise error(msg)
+
     logger.raise_error = _raise_error.__get__(logger)
 
     # Add a `after` method to log how long something took
@@ -201,15 +213,19 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         self.log(lvl, _str)
     logger.frac = _frac.__get__(logger)
 
+    def _clear_files(self):
+        """Log information about a fraction, "[{prep} ]{}/{} = {}[ {post}]".
+        """
+        for fn in self._filenames:
+            with open(fn, 'w') as out:  # noqa
+                pass
+
+    logger.clear_files = _clear_files.__get__(logger)
+
     for lvl in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
         setattr(logger, lvl, getattr(logging, lvl))
 
     return logger
-
-
-def defaultLogger(*args, **kwargs):
-    utils.dep_warn("defaultLogger", newname="default_logger")
-    return default_logger(*args, **kwargs)
 
 
 def default_logger(logger=None, verbose=False, debug=False):
@@ -249,3 +265,56 @@ def default_logger(logger=None, verbose=False, debug=False):
 
     logger = get_logger(None, level_stream=level, tostr=True)
     return logger
+
+
+def log_memory(log, pref=None, lvl=logging.DEBUG):
+    """Log the current memory usage.
+    """
+    cyc_str = ""
+    KB = 1024.0
+
+    if pref is not None:
+        cyc_str += "{}: ".format(pref)
+
+    if sys.platform.startswith('linux'):
+        RUSAGE_UNIT = 1024.0
+    elif sys.platform.startswith('darwin'):
+        RUSAGE_UNIT = 1024.0*1024.0
+
+    try:
+        import resource
+        max_self = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        max_child = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+        _str = "RSS Max Self: {:.2f} [MB], Child: {:.2f} [MB]".format(
+            max_self/RUSAGE_UNIT, max_child/RUSAGE_UNIT)
+        log.log(lvl, cyc_str + _str)
+    except Exception as err:
+        log.debug("resource.getrusage failed.  '{}'".format(str(err)))
+
+    try:
+        import psutil
+        process = psutil.Process(os.getpid())
+        rss = process.memory_info().rss
+        cpu_perc = process.cpu_percent()
+        mem_perc = process.memory_percent()
+        num_thr = process.num_threads()
+        _str = "RSS: {:.2f} [MB], {:.2f}%; Threads: {:3d}, CPU: {:.2f}%".format(
+            rss/KB/KB, mem_perc, num_thr, cpu_perc)
+        log.log(lvl, cyc_str + _str)
+    except Exception as err:
+        log.debug("psutil.Process failed.  '{}'".format(str(err)))
+
+    return
+
+
+# ==== DEPRECATIONS ====
+
+
+def defaultLogger(*args, **kwargs):
+    utils.dep_warn("defaultLogger", newname="default_logger")
+    return default_logger(*args, **kwargs)
+
+
+def getLogger(*args, **kwargs):
+    utils.dep_warn("getLogger", newname="get_logger")
+    return get_logger(*args, **kwargs)

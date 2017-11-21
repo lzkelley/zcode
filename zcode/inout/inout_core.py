@@ -7,7 +7,7 @@ Classes
 
 Functions
 ---------
--   bytesString              - Return a humanized string representation of a number of bytes.
+-   bytes_string              - Return a humanized string representation of a number of bytes.
 -   get_file_size            - Return a human-readable size of a file or set of files.
 -   countLines               - Count the number of lines in the given file.
 -   estimateLines            - Estimate the number of lines in the given file.
@@ -43,13 +43,13 @@ import collections
 
 from zcode import utils
 
-__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'get_file_size',
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
            'countLines', 'estimateLines', 'modify_filename',
            'check_path', 'dictToNPZ', 'npzToDict', 'combineFiles', 'checkURL',
            'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
            # Deprecated!
-           'modifyFilename', 'checkPath']
+           'modifyFilename', 'checkPath', 'bytes_string']
 
 
 class _Keys_Meta(type):
@@ -158,7 +158,7 @@ class StreamCapture(list):
         if(self.err): sys.stderr = self._stderr
 
 
-def bytesString(bytes, precision=1):
+def bytes_string(bytes, precision=1):
     """Return a humanized string representation of a number of bytes.
 
     Arguments
@@ -182,17 +182,18 @@ def bytesString(bytes, precision=1):
         (1 << 40, 'TB'),
         (1 << 30, 'GB'),
         (1 << 20, 'MB'),
-        (1 << 10, 'kB'),
+        (1 << 10, 'KB'),
         (1, 'bytes')
     )
 
     for factor, suffix in abbrevs:
-        if bytes >= factor: break
+        if bytes >= factor:
+            break
 
-    # NOTE: for this to work right, must "from __future__ import division" else integer
-    strSize = '%.*f %s' % (precision, 1.0*bytes / factor, suffix)
-
-    return strSize
+    # size_str = '%.*f %s' % (precision, 1.0*bytes / factor, suffix)
+    size_str = '{size:.{prec:}f} {suff}'.format(
+        prec=precision, size=1.0*bytes / factor, suff=suffix)
+    return size_str
 
 
 def get_file_size(fnames, precision=1):
@@ -217,7 +218,7 @@ def get_file_size(fnames, precision=1):
     for fil in fnames:
         byteSize += os.path.getsize(fil)
 
-    byteStr = bytesString(byteSize, precision)
+    byteStr = bytes_string(byteSize, precision)
     return byteStr
 
 
@@ -433,8 +434,8 @@ def combineFiles(inFilenames, outFilename, verbose=False):
     #     pbar.finish()
 
     outSize = os.path.getsize(outFilename)
-    inStr = bytesString(inSize)
-    outStr = bytesString(outSize)
+    inStr = bytes_string(inSize)
+    outStr = bytes_string(outSize)
 
     if verbose:
         print("Total input size = %s, output size = %s" % (inStr, outStr))
@@ -523,20 +524,29 @@ def modify_filename(fname, prepend='', append=''):
 
     Returns
     -------
-    newName : str
+    new_name : str
         New filename, with modifications.
 
     """
-    oldPath, oldName = os.path.split(fname)
-    newName = prepend + oldName
-    if len(append) > 0:
-        oldSplit = newName.split('.')
-        if len(oldSplit) >= 2: oldSplit[-2] += append
-        else:                  oldSplit[-1] += append
-        newName = '.'.join(oldSplit)
+    is_dir = fname.endswith('/')
+    if is_dir:
+        o_path, o_name = _path_fname_split(fname)
+    else:
+        o_path, o_name = os.path.split(fname)
 
-    newName = os.path.join(oldPath, newName)
-    return newName
+    new_name = prepend + o_name
+    if len(append) > 0:
+        o_split = new_name.split('.')
+        if (len(o_split) >= 2) and (1 < len(o_split[-1]) < 5):
+            o_split[-2] += append
+        else:
+            o_split[-1] += append
+        new_name = '.'.join(o_split)
+
+    new_name = os.path.join(o_path, new_name)
+    if is_dir:
+        new_name = os.path.join(new_name, '')
+    return new_name
 
 
 def mpiError(comm, log=None, err="ERROR", exc_info=True):
@@ -697,7 +707,7 @@ def modify_exists(fname, max=1000):
 
     Returns
     -------
-    newName : {str, `None`}
+    new_name : {str, `None`}
         The input filename `fname` if it does not exist, or an appropriately modified version
         otherwise.  If the number for the new file exceeds the maximum `max`, then a warning is
         raise and `None` is returned.
@@ -715,9 +725,12 @@ def modify_exists(fname, max=1000):
         In this case, `None` is returned.
 
     """
+    print("\n")
     # If file doesnt already exist, do nothing - return filename
     if not os.path.exists(fname):
         return fname
+
+    is_dir = os.path.isdir(fname)
 
     # Determine number of digits for modified filenames to allow up to `max` files
     prec = np.int(np.ceil(np.log10(max)))
@@ -725,12 +738,22 @@ def modify_exists(fname, max=1000):
     # Look for existing, modified filenames
     # -------------------------------------
     num = 0
+    # if is_dir:
+    #     path, filename = _path_fname_split(fname)
+    # else:
     path, filename = os.path.split(fname)
     if len(path) == 0:
-        path = './'
+        path += './'
+
     # construct regex for modified files
     #     look specifically for `prec`-digit numbers at the end of the filename
+    # regex = modify_filename(re.escape(filename), append='_([0-9]){{{:d}}}'.format(prec))
+    if is_dir:
+        filename = os.path.join(filename, '')
     regex = modify_filename(re.escape(filename), append='_([0-9]){{{:d}}}'.format(prec))
+    regex = regex.replace('./', '')
+    if regex.endswith('/'):
+        regex = regex[:-1]
     matches = sorted([ff for ff in os.listdir(path) if re.search(regex, ff)])
     # If there are matches, find the highest file-number in the matches
     if len(matches):
@@ -752,14 +775,17 @@ def modify_exists(fname, max=1000):
 
     # Construct new filename
     # ----------------------
-    newName = modify_filename(fname, append='_{0:0{1:d}d}'.format(num, prec))
-    # New filename shouldnt exist; if it does, raise warning
-    if os.path.exists(newName):
-        # raise RuntimeError("New filename '{}' already exists.".format(newName))
-        warnings.warn("New filename '{}' already exists.".format(newName))
-        return modify_exists(newName)
+    if is_dir:
+        filename = os.path.join(filename, '')
+    new_name = modify_filename(fname, append='_{0:0{1:d}d}'.format(num, prec))
 
-    return newName
+    # New filename shouldnt exist; if it does, raise warning
+    if os.path.exists(new_name):
+        # raise RuntimeError("New filename '{}' already exists.".format(new_name))
+        warnings.warn("New filename '{}' already exists.".format(new_name))
+        return modify_exists(new_name)
+
+    return new_name
 
 
 def iterable_notstring(var):
@@ -834,3 +860,34 @@ def warn_with_traceback(message, category, filename, lineno, file=None, line=Non
     log = file if hasattr(file, 'write') else sys.stderr
     log.write(warnings.formatwarning(message, category, filename, lineno, line))
     return
+
+
+def _path_fname_split(fname):
+    """
+    """
+    path, filename = os.path.split(fname)
+    # Make sure `filename` stores directory names if needed
+    #    If a `fname` looks like "./dname/", then split yields ('./dname', '')
+    #    convert this to ('', './dname')
+    print("\t", path, filename)
+    if len(filename) == 0 and len(path) > 0:
+        filename = path
+        path = ''
+    # convert ('', './dname') --> ('./', 'dname')
+    if filename.startswith('./'):
+        path = filename[:2]
+        filename = filename[2:]
+
+    # Either path should have a path stored, or it should be the local directory
+    if len(path) == 0:
+        path = './'
+    print("\t", path, filename)
+    return path, filename
+
+
+#     ====    DEPRECATIONS    ====
+
+
+def bytesString(*args, **kwargs):
+    utils.dep_warn("bytesString", newname="bytes_string")
+    return bytes_string(*args, **kwargs)
