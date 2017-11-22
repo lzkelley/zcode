@@ -750,7 +750,7 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
-def spacing(data, scale='log', num=100, filter=None, integers=False):
+def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
     """Create an evenly spaced array between extrema from the given data.
 
     Arguments
@@ -770,6 +770,8 @@ def spacing(data, scale='log', num=100, filter=None, integers=False):
         NOTE: when `integers` is 'True', the extrema are the nearest integral values *outside* the
               the range specified with `data`.  e.g. if `data` is [7.96, 28.12], the above example
               arrays are the ones that would be returned.
+    **kwargs : dict arguments
+        Additional arguments are passed to `minmax`, e.g. `log_stretch=0.1`.
 
     Returns
     -------
@@ -795,7 +797,7 @@ def spacing(data, scale='log', num=100, filter=None, integers=False):
     # If only 'integers' (whole numbers) are desired, round extrema to *outside*
     if integers:
         round = 0
-    span = minmax(data, filter=filter, round=round, round_scale=scale)
+    span = minmax(data, filter=filter, round=round, round_scale=scale, **kwargs)
     # If only 'integers', use 'arange'
     if integers:
         # Log-spacing : create each decade manually
@@ -1055,9 +1057,9 @@ def comparison_filter(data, filter, inds=False, value=0.0, finite=True):
 
     # Include is-finite check
     if finite:
-        sel = np.where(filter(data) & np.isfinite(data))
+        sel = filter(data) & np.isfinite(data)
     else:
-        sel = np.where(filter(data))
+        sel = filter(data)
 
     if inds:
         return sel

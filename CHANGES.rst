@@ -36,9 +36,13 @@ Future / To-Do
 
 Current
 -------
-    - inout/
-        - `inout_core.py`
-            -  BUG: some print statements were lying around causing issues with checking files.
+    -   inout/
+        -   `inout_core.py`
+            -   BUG: some print statements were lying around causing issues with checking files.
+    -   math/
+        +   math_core.py
+            -   `spacing`
+                -   Added `kwargs` arguments which are passed on to `minmax` function.  Allows for (e.g.) `log_stretch` to be used to expand the spacing.
 
 
 
