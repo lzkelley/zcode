@@ -80,7 +80,7 @@ def argextrema(arr, type, filter=None):
     return ind
 
 
-def argnearest(options, targets):
+def argnearest(options, targets, assume_sorted=False):
     """Find the indices of elements in the `options` array closest to those in the `targets` array.
 
     Arguments
@@ -89,6 +89,9 @@ def argnearest(options, targets):
         Find indices for elements in this array.
     targets : (M,) array of scalar
         Look for elements in the `options` array closest to these `targets` values.
+    assume_sorted : bool,
+        Assume the input array of `options` is sorted.
+        (Note: `targets` can be unsorted regardless)
 
     Returns
     -------
@@ -98,11 +101,21 @@ def argnearest(options, targets):
     """
     options = np.atleast_1d(options)
     targets = np.atleast_1d(targets)
+    # Sort the input array if needed
+    if not assume_sorted:
+        srt = np.argsort(options)
+        options = options[srt]
+
     idx = np.searchsorted(options, targets, side="left").clip(max=options.size-1)
     dist_lo = np.fabs(targets - options[idx-1])
     dist_hi = np.fabs(targets - options[idx])
     mask = (idx > 0) & ((idx == options.size) | (dist_lo < dist_hi))
     idx = idx - mask
+
+    # Reorder the indices if the input was unsorted
+    if not assume_sorted:
+        idx = [srt[ii] for ii in idx]
+
     return idx
 
 

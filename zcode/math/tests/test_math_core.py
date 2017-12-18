@@ -26,17 +26,61 @@ class TestMathCore(object):
         cls.r1 = np.random.random(cls.SIZE)
         cls.r2 = np.random.uniform(-1.0, 1.0, size=cls.SIZE)
 
-    def test_argnearest(self):
+    def test_argnearest_ordered(self):
         from zcode.math.math_core import argnearest
         xx = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
         yy = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
         correct = [0, 0, 1, 2, 4, 5, 7, 9, 10, 10]
-        retval = argnearest(xx, yy)
+        retval = argnearest(xx, yy, assume_sorted=True)
         assert_true(np.all(correct == retval))
         print("Options = {}".format(xx))
         print("Targets = {}".format(yy))
         print("retval  = {}".format(retval))
         print("correct = {}".format(correct))
+        return
+
+    def test_argnearest_unordered_x(self):
+        from zcode.math.math_core import argnearest
+        xx = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
+        yy = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
+        correct = np.array([2, 2, 8, 7, 0, 6, 9, 3, 4, 4])
+
+        # ix = np.random.permutation(xx.size)
+        ix = np.array([4,  3,  0,  9, 10,  8,  5,  2,  1,  7,  6])
+        xx = xx[ix]
+
+        retval = argnearest(xx, yy, assume_sorted=False)
+        print("Options = {}".format(xx))
+        print("Targets = {}".format(yy))
+        print("retval  = {}".format(retval))
+        print("nearest = {}".format(xx[retval]))
+        print("Targets = {}".format(yy))
+        print("retval  = {}".format(retval))
+        print("correct = {}".format(correct))
+        assert_true(np.all(correct == retval))
+        return
+
+    def test_argnearest_unordered_xy(self):
+        from zcode.math.math_core import argnearest
+        xx = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
+        yy = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
+        correct = np.array([0, 7, 6, 3, 4, 9, 2, 4, 2, 8])
+
+        # ix = np.random.permutation(xx.size)
+        ix = np.array([4,  3,  0,  9, 10,  8,  5,  2,  1,  7,  6])
+        xx = xx[ix]
+        iy = np.array([4, 3, 5, 7, 9, 6, 0, 8, 1, 2])
+        yy = yy[iy]
+
+        retval = argnearest(xx, yy, assume_sorted=False)
+        print("Options = {}".format(xx))
+        print("Targets = {}".format(yy))
+        print("retval  = {}".format(retval))
+        print("nearest = {}".format(xx[retval]))
+        print("Targets = {}".format(yy))
+        print("retval  = {}".format(retval))
+        print("correct = {}".format(correct))
+        assert_true(np.all(correct == retval))
         return
 
     def test_spacing(self):

@@ -41,6 +41,8 @@ Current
             -   BUG: some print statements were lying around causing issues with checking files.
     -   math/
         +   math_core.py
+            -   `argnearest`
+                -   Add `assume_sorted` option so that method can handle either sorted or unsorted.
             -   `spacing`
                 -   Added `kwargs` arguments which are passed on to `minmax` function.  Allows for (e.g.) `log_stretch` to be used to expand the spacing.
 
