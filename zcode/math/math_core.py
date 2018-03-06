@@ -100,6 +100,7 @@ def argnearest(options, targets, assume_sorted=False):
 
     """
     options = np.atleast_1d(options)
+    scalar = np.isscalar(targets)
     targets = np.atleast_1d(targets)
     # Sort the input array if needed
     if not assume_sorted:
@@ -115,6 +116,9 @@ def argnearest(options, targets, assume_sorted=False):
     # Reorder the indices if the input was unsorted
     if not assume_sorted:
         idx = [srt[ii] for ii in idx]
+
+    if scalar:
+        idx = idx[0]
 
     return idx
 

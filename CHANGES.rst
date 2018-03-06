@@ -43,6 +43,7 @@ Current
         +   math_core.py
             -   `argnearest`
                 -   Add `assume_sorted` option so that method can handle either sorted or unsorted.
+                -   Check if input is scalar, if so return scalar output (instead of list).
             -   `spacing`
                 -   Added `kwargs` arguments which are passed on to `minmax` function.  Allows for (e.g.) `log_stretch` to be used to expand the spacing.
 
