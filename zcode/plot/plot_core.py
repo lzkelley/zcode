@@ -851,12 +851,18 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, ri
         filter = 'g'
     else:
         filter = None
-
+        
     # Determine minimum and maximum
     if np.size(args) > 1:
-        min, max = zmath.minmax(args, filter=filter)
-    else:
+        rv = zmath.minmax(args, filter=filter)
+        if rv is None:
+            min, max = 0.0, 0.0
+        else:
+            min, max = rv
+    elif np.size(args) == 1:
         min, max = 0, np.int(args)-1
+    else:
+        min, max = 0.0, 0.0
 
     # Create normalization
     if log:

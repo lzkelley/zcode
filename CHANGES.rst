@@ -46,7 +46,10 @@ Current
                 -   Check if input is scalar, if so return scalar output (instead of list).
             -   `spacing`
                 -   Added `kwargs` arguments which are passed on to `minmax` function.  Allows for (e.g.) `log_stretch` to be used to expand the spacing.
-
+    -   plot/
+        +   plot_core.py
+            -   `colormap`
+                -   If there are no valid elements for a given colormap, set the extrema to [0.0, 0.0] instead of an error being raised.
 
 
 [0.0.11] - 2017/11/21
