@@ -5,6 +5,8 @@ Functions
 -   confidence_bands         - Bin by `xx` to calculate confidence intervals in `yy`.
 -   confidence_intervals     - Compute the values bounding desired confidence intervals.
 -   cumstats                 - Calculate a cumulative average and standard deviation.
+-   log_normal_base_10       -
+-   percentiles              -
 -   stats                    - Get basic statistics for the given array.
 -   stats_str                - Return a string with the statistics of the given array.
 -   sigma                    - Convert from standard deviation to percentiles.
@@ -18,7 +20,7 @@ import numpy as np
 from . import math_core
 
 __all__ = ['confidenceBands', 'confidence_bands', 'confidenceIntervals', 'confidence_intervals',
-           'cumstats', 'sigma', 'stats', 'stats_str', 'percentiles']
+           'cumstats', 'log_normal_base_10', 'percentiles', 'sigma', 'stats', 'stats_str']
 
 
 def confidenceBands(*args, **kwargs):
@@ -408,3 +410,26 @@ def percentiles(values, percentiles, weights=None, values_sorted=False):
     weighted_quantiles /= np.sum(weights)
     percs = np.interp(percentiles, weighted_quantiles, values)
     return percs
+
+
+def log_normal_base_10(mu, sigma, size=None):
+    """Draw from a lognormal distribution with values in base-10 (instead of e).
+
+    Arguments
+    ---------
+    mu : (N,) scalar
+        Mean of the distribution in linear space (e.g. 1.0e8 instead of 8.0).
+    sigma : (N,) scalar
+        Variance of the distribution *in dex* (e.g. 1.0 means factor of 10.0 variance)
+    size : (M,) int
+        Desired size of sample.
+
+    Returns
+    -------
+    dist : (M,...) scalar
+        Resulting distribution of values (in linear space).
+
+    """
+    _sigma = np.log(10**sigma)
+    dist = np.random.lognormal(np.log(mu), _sigma, size)
+    return dist

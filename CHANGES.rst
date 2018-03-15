@@ -46,6 +46,10 @@ Current
                 -   Check if input is scalar, if so return scalar output (instead of list).
             -   `spacing`
                 -   Added `kwargs` arguments which are passed on to `minmax` function.  Allows for (e.g.) `log_stretch` to be used to expand the spacing.
+        +   statistic.py
+            -   `log_normal_base_10` [NEW-FUNCTION]
+                -   Method to draw from a log-normal distribution with given base-ten variance.
+                
     -   plot/
         +   plot_core.py
             -   `colormap`
