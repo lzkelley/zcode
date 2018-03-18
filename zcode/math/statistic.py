@@ -412,7 +412,7 @@ def percentiles(values, percentiles, weights=None, values_sorted=False):
     return percs
 
 
-def log_normal_base_10(mu, sigma, size=None):
+def log_normal_base_10(mu, sigma, size=None, shift=0.0):
     """Draw from a lognormal distribution with values in base-10 (instead of e).
 
     Arguments
@@ -431,5 +431,5 @@ def log_normal_base_10(mu, sigma, size=None):
 
     """
     _sigma = np.log(10**sigma)
-    dist = np.random.lognormal(np.log(mu), _sigma, size)
+    dist = np.random.lognormal(np.log(mu) + shift*np.log(10.0), _sigma, size)
     return dist
