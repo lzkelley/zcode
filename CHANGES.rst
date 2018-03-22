@@ -36,6 +36,17 @@ Future / To-Do
 
 Current
 -------
+    -   astro/  [NEW-SUBMODULE]
+        -   New submodule for astrophysics specific functions and relations.
+        -   `astro_core.py` [NEW-FILE]
+            -   `chirp_mass`  [NEW-FUNCTION]
+            -   `dynamical_time`  [NEW-FUNCTION]
+            -   `eddington_accretion`  [NEW-FUNCTION]
+            -   `eddington_luminosity`  [NEW-FUNCTION]
+            -   `kepler_freq_from_sep`  [NEW-FUNCTION]
+            -   `kepler_sep_from_freq`  [NEW-FUNCTION]
+            -   `schwarzschild_radius`  [NEW-FUNCTION]
+
     -   inout/
         -   `inout_core.py`
             -   BUG: some print statements were lying around causing issues with checking files.
