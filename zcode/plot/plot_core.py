@@ -729,7 +729,7 @@ def unifyAxesLimits(axes, axis='y'):
     return np.array([lo, hi])
 
 
-def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral,
+def color_cycle(num, ax=None, color=None, cmap=plt.cm.Spectral,
                 left=0.1, right=0.9, light=True):
     """Create a range of colors.
 
@@ -851,7 +851,7 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, ri
         filter = 'g'
     else:
         filter = None
-        
+
     # Determine minimum and maximum
     if np.size(args) > 1:
         rv = zmath.minmax(args, filter=filter)
@@ -861,6 +861,8 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, ri
             min, max = rv
     elif np.size(args) == 1:
         min, max = 0, np.int(args)-1
+    elif np.size(args) == 2:
+        min, max = args
     else:
         min, max = 0.0, 0.0
 
