@@ -46,6 +46,12 @@ Current
             -   `kepler_freq_from_sep`  [NEW-FUNCTION]
             -   `kepler_sep_from_freq`  [NEW-FUNCTION]
             -   `schwarzschild_radius`  [NEW-FUNCTION]
+        -  `scalings.py` [NEW-FILE]
+            -   New submodule for common astrophysical scaling relations.
+            -   `mbh_sigma()`
+                -   From a stellar-bulge velocity dispersion, get the MBH mass
+            -   `mbh_sigma_inv()`
+                -   From an MBH mass, get the stellar-bulge velocity dispersion
 
     -   inout/
         -   `inout_core.py`
