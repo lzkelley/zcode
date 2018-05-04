@@ -74,6 +74,8 @@ Current
                 -   If there are no valid elements for a given colormap, set the extrema to [0.0, 0.0] instead of an error being raised.
             -   `color_cycle()`
                 -   [BUG] In recent matplotlib upgrade `mpl.cm.spectral` changed to `mpl.cm.Spectral`.
+            -   `scientific_notation()`
+                -   [BUG] Values could be rounded up to a higher exponent (i.e. 9.9e-5 ==> 10e-5 instead of 1e-4).
 
 
 [0.0.11] - 2017/11/21

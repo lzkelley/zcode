@@ -693,7 +693,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     prop_dict = {'size': fs}
     if mono:
         prop_dict['family'] = 'monospace'
-    leg = ax.legend(keys, names, prop=prop_dict,
+    leg = ax.legend(keys, names, prop=prop_dict, fancybox=True,
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
     if fs_title is not None:
         plt.setp(leg.get_title(), fontsize=fs_title)
@@ -1174,6 +1174,14 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
 
     val_man, val_exp = zmath.frexp10(val)
     use_man = (man is not None and np.isfinite(val_exp))
+
+    val_man = np.around(val_man, man)
+    if val_man >= 10.0:
+        val_man /= 10.0
+        val_exp += 1
+
+    # Construct Mantissa String
+    # --------------------------------
     if use_man:
         str_man = "{0:.{1:d}f}".format(val_man, man)
     else:
@@ -1182,6 +1190,8 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
     if not one and str_man == "{0:.{1:d}f}".format(1.0, man):
         str_man = ""
 
+    # Construct Exponent String
+    # --------------------------------
     if exp is not None:
         # Try to convert `val_exp` to integer, fails if 'inf' or 'nan'
         try:
@@ -1196,6 +1206,8 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
     else:
         str_exp = ""
 
+    # Put them together
+    # --------------------------------
     notStr = "$"*dollar + str_man
     if len(str_man) and len(str_exp):
         notStr += " \\times"
