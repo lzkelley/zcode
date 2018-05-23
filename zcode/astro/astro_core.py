@@ -14,7 +14,8 @@ import numpy as np
 from zcode.constants import NWTG, SPLC, MPRT, SIGMA_T
 
 __all__ = ['dynamical_time', 'chirp_mass', 'eddington_accretion', 'eddington_luminosity',
-           'kepler_freq_from_sep', 'kepler_sep_from_freq', 'schwarzschild_radius']
+           'kepler_freq_from_sep', 'kepler_sep_from_freq', 'rad_isco', 'schwarzschild_radius',
+           'sep_to_merge_in_time', 'time_to_merge_at_sep']
 
 _SCHW_CONST = 2*NWTG/np.square(SPLC)
 _EDD_CONST = 4.0*np.pi*SPLC*NWTG*MPRT/SIGMA_T
@@ -70,3 +71,30 @@ def kepler_sep_from_freq(mass, freq):
 def schwarzschild_radius(mass):
     rs = _SCHW_CONST * mass
     return rs
+
+
+def rad_isco(m1, m2, factor=3.0):
+    """Inner-most Stable Circular Orbit, radius at which binaries 'merge'.
+    """
+    return factor * schwarzschild_radius(m1+m2)
+
+
+def sep_to_merge_in_time(m1, m2, time):
+    """The initial separation required to merge within the given time.
+
+    See: [Peters 1964].
+    """
+    GW_CONST = 64*np.power(NWTG, 3.0)/(5.0*np.power(SPLC, 5.0))
+    a1 = rad_isco(m1, m2)
+    return np.power(GW_CONST*m1*m2*(m1+m2)*time - np.power(a1, 4.0), 1./4.)
+
+
+def time_to_merge_at_sep(m1, m2, sep):
+    """The time required to merge starting from the given initial separation.
+
+    See: [Peters 1964].
+    """
+    GW_CONST = 64*np.power(NWTG, 3.0)/(5.0*np.power(SPLC, 5.0))
+    a1 = rad_isco(m1, m2)
+    delta_sep = np.power(sep, 4.0) - np.power(a1, 4.0)
+    return delta_sep/(GW_CONST*m1*m2*(m1+m2))

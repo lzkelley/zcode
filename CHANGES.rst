@@ -45,7 +45,13 @@ Current
             -   `eddington_luminosity`  [NEW-FUNCTION]
             -   `kepler_freq_from_sep`  [NEW-FUNCTION]
             -   `kepler_sep_from_freq`  [NEW-FUNCTION]
+            -   `rad_isco()`  [NEW-FUNCTION]
+                -   Calculate the inner-most stable circular-orbit.
             -   `schwarzschild_radius`  [NEW-FUNCTION]
+            -   `sep_to_merge_in_time()`  [NEW-FUNCTION]
+                -   Limiting binary separation to merge by GW in a given time.
+            -   `time_to_merge_at_sep()`  [NEW-FUNCTION]
+                -   Time it will take for a binary to merger form GW from the given separation.
         -   `scalings.py` [NEW-FILE]
             -   New submodule for common astrophysical scaling relations.
             -   `mbh_sigma()`
