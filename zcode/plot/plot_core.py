@@ -674,7 +674,10 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
 
     # Override alignment using `loc` argument
     if loc is not None:
-        x, y, halign, valign = _loc_str_to_pars(loc)
+        _x, _y, halign, valign = _loc_str_to_pars(loc)
+    else:
+        _x = 0.99
+        _y = 0.5
 
     if valign == 'top':
         valign = 'upper'
@@ -682,9 +685,9 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
         valign = 'lower'
 
     if x is None:
-        x = 0.99
+        x = _x
     if y is None:
-        y = 0.5
+        y = _y
 
     alignStr = valign
     if not (valign == 'center' and halign == 'center'):
