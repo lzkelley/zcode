@@ -20,11 +20,18 @@ from . plot_const import COL_CORR, LW_CONF, LW_OUTLINE
 from . plot_core import colormap
 
 __all__ = [
-    "plot_contiguous", "plot_hist_line", "plot_segmented_line", "plot_scatter",
+    "conf_fill",
+    "plot_bg", "plot_contiguous", "plot_hist_line", "plot_segmented_line", "plot_scatter",
     "plot_hist_bars", "plot_conf_fill",
     # Deprecated
     "plotHistLine", "plotSegmentedLine", "plotScatter", "plotHistBars", "plotConfFill"
 ]
+
+
+def conf_fill(ax, xx, yy, ci=None, axis=-1, filter=None, **kwargs):
+    med, conf = zmath.confidence_intervals(yy, ci=ci, axis=axis, filter=filter, return_ci=False)
+    rv = plot_conf_fill(ax, xx, med, conf, **kwargs)
+    return rv
 
 
 def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None,
@@ -435,6 +442,24 @@ def _make_segments(x, y):
     points = np.array([x, y]).T.reshape(-1, 1, 2)
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
     return segments
+
+
+def plot_bg(ax, xx, yy, thicker=2.0, fainter=0.65, color_bg='0.7', **kwargs):
+    """Plot a line with an added background line.
+    """
+    lw_fg = kwargs.setdefault('lw', 1.0)
+    alpha_fg = kwargs.setdefault('alpha', 0.8)
+    lw_bg = lw_fg * thicker
+    alpha_bg = alpha_fg * fainter
+
+    bg_kw = {kk: vv for kk, vv in kwargs.items()}
+    bg_kw['lw'] = lw_bg
+    bg_kw['color'] = color_bg
+    bg_kw['alpha'] = alpha_bg
+
+    lb, = ax.plot(xx, yy, **bg_kw)
+    lf, = ax.plot(xx, yy, **kwargs)
+    return lb, lf
 
 
 # === Deprecations ===
