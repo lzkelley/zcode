@@ -140,7 +140,12 @@ def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=No
     assert trans in ['axes', 'figure'], "``trans`` must be `axes` or `figure`!"
     assert side in VALID_SIDES, "``side`` must be in '%s'" % (VALID_SIDES)
 
-    color = _color_from_kwargs(kwargs)
+    color = _color_from_kwargs(kwargs, pop=True)
+    if color is None:
+        color = 'k'
+
+    if len(kwargs) > 0:
+        raise ValueError("Additional arguments are not supported!")
 
     # Set tick colors and font-sizes
     ax.tick_params(axis=axis, which='both', labelsize=fs, colors=color)
@@ -1329,11 +1334,21 @@ def line_label(ax, pos, label, dir='v', loc='top', xx=None, yy=None, ha=None, va
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
-    if scale.startswith('lin'): scale = 'linear'
-    if scale == 'symlog': thresh = 1.0
-    if axis == 'x': ax.set_xscale(scale, linthreshx=thresh)
-    elif axis == 'y': ax.set_yscale(scale, linthreshy=thresh)
-    else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
+    kw = {}
+    if scale.startswith('lin'):
+        scale = 'linear'
+    elif scale == 'symlog':
+        if thresh is None:
+            thresh = 1.0
+        kw['linthresh' + axis] = thresh
+
+    if axis == 'x':
+        ax.set_xscale(scale, **kw)
+    elif axis == 'y':
+        ax.set_yscale(scale, **kw)
+    else:
+        raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
+
     return
 
 
@@ -1390,18 +1405,27 @@ def _get_cmap(cmap):
         raise ValueError("`cmap` '{}' is not a valid colormap or colormap name".format(cmap))
 
 
-def _color_from_kwargs(kwargs):
+def _color_from_kwargs(kwargs, pop=False):
 
     msg = "Use `color` instead of `c` or `col` for color specification!"
 
     if 'c' in kwargs:
-        col = kwargs['c']
+        if pop:
+            col = kwargs.pop('c')
+        else:
+            col = kwargs['c']
         warnings.warn(msg, DeprecationWarning, stacklevel=3)
     elif 'col' in kwargs:
-        col = kwargs['col']
+        if pop:
+            col = kwargs.pop('col')
+        else:
+            col = kwargs['col']
         warnings.warn(msg, DeprecationWarning, stacklevel=3)
     elif 'color' in kwargs:
-        col = kwargs['color']
+        if pop:
+            col = kwargs.pop('color')
+        else:
+            col = kwargs['color']
     else:
         col = None
 

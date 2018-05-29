@@ -96,6 +96,14 @@ Current
                 -   [BUG] `loc` argument no longer overrides `x` and `y`.
             -   `scientific_notation()`
                 -   [BUG] Values could be rounded up to a higher exponent (i.e. 9.9e-5 ==> 10e-5 instead of 1e-4).
+            -   `set_axis()`
+                -   [BUG] Raise error if additions `kwargs` are passed (they arent used)
+                -   [BUG] Error when `color` was `None`, set to black as default
+
+            -   `_color_from_kwargs()`
+                -   Add option to pop (remove) color argument from dictionary.
+            -   `_setAxis_scale()`
+                -   [BUG] Update `linthreshx` and `linthreshy` arguments seem to be deprecated, at least when not using 'symlog' specifically.
 
 
 [0.0.11] - 2017/11/21
