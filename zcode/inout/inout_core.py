@@ -22,6 +22,7 @@ Functions
     -   mpiError             - Raise an error through MPI and exit all processes.
     -   ascii_table          - Print a table with the given contents to output.
     -   modify_exists        - Modify the given filename if it already exists.
+    -   python_environment   - Tries to determine the current python environment.
     -   iterable_notstring   - Return True' if the argument is an iterable and not a string type.
     -   str_format_dict      - Pretty-format a dict into a nice looking string.
     -   par_dir              - Get parent (absolute) directory name from given file/directory.
@@ -727,6 +728,21 @@ def modify_exists(fname, max=1000):
         return modify_exists(new_name)
 
     return new_name
+
+
+def python_environment():
+    """Tries to determine the current python environment, one of: 'jupyter', 'ipython', 'terminal'.
+    """
+    try:
+        # NOTE: `get_ipython` should not be explicitly imported from anything
+        ipy_str = str(type(get_ipython())).lower()  # noqa
+        # print("ipy_str = '{}'".format(ipy_str))
+        if 'zmqshell' in ipy_str:
+            return 'jupyter'
+        if 'terminal' in ipy_str:
+            return 'ipython'
+    except:
+        return 'terminal'
 
 
 def iterable_notstring(var):
