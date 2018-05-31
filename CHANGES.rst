@@ -69,8 +69,11 @@ Current
     -   inout/
         -   `inout_core.py`
             -   BUG: some print statements were lying around causing issues with checking files.
+            -   `environment_is_jupyter()` [NEW-FUNCTION]
+                -   Return 'True' if the current environment is a jupyter notebook.
             -   `python_environment()` [NEW-FUNCTION]
                 -   Determine the current python environment (e.g. 'jupyter') and return string.
+                
     -   math/
         +   math_core.py
             -   `argnearest`
