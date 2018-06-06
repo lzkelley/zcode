@@ -92,6 +92,9 @@ Current
                 -   Method combining `math.confidence_intervals` and `draw.plot_conf_fill`.
             -   `plot_bg()`  [NEW-FUNCTION]
                 -   Method to plot a line and a broader background-line behind it.
+        -   `Hist2D.py`
+            -   `plot2DHist()`
+                -   Fixed documentation to reflect all return parameters.
         +   plot_core.py
             -   `colormap`
                 -   If there are no valid elements for a given colormap, set the extrema to [0.0, 0.0] instead of an error being raised.
