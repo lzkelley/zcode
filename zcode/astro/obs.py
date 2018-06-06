@@ -6,6 +6,14 @@ import numpy as np
 from zcode.constants import PC
 
 # http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/magsystems.pdf
+# These wavelengths are in [cm]
+BAND_EFF_LOC = {
+    "U": {"l": 366e-7},
+    "B": {"l": 438e-7},
+    "V": {"l": 545e-7},
+    "R": {"l": 641e-7},
+    "I": {"l": 798e-7}
+}
 BAND_REF_FLUX = {
     "U": {"f": 1.790, "l": 417.5},
     "B": {"f": 4.063, "l": 632.0},
