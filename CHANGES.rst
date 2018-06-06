@@ -85,6 +85,8 @@ Current
             -   `log_normal_base_10` [NEW-FUNCTION]
                 -   Method to draw from a log-normal distribution with given base-ten variance.
                 -   Added 'shift' parameter to shift the center of the distribution some amount (in dex).
+            -   `sigma()`
+                -   BUG: `scipy.stats` wasnt being imported
                 
     -   plot/
         -   `draw.py`

@@ -238,6 +238,7 @@ def sigma(sig, side='in', boundaries=False):
 
     """
     import scipy as sp
+    import scipy.stats
 
     if side.startswith('in'):
         inside = True
