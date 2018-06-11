@@ -14,6 +14,7 @@ import numpy as np
 from zcode.constants import NWTG, SPLC, MPRT, SIGMA_T
 
 __all__ = ['dynamical_time', 'chirp_mass', 'eddington_accretion', 'eddington_luminosity',
+           'gw_hardening_rate_dadt', 'gw_strain_source_circ',
            'kepler_freq_from_sep', 'kepler_sep_from_freq', 'rad_isco', 'schwarzschild_radius',
            'sep_to_merge_in_time', 'time_to_merge_at_sep']
 
@@ -22,6 +23,7 @@ _EDD_CONST = 4.0*np.pi*SPLC*NWTG*MPRT/SIGMA_T
 
 # e.g. Sesana+2011 Eq.5
 _GW_SRC_CONST = 8 * np.power(NWTG, 5/3) * np.power(2*np.pi, 2/3) / np.sqrt(10) / np.power(SPLC, 4)
+_GW_HARD_CONST = - 64 * np.power(NWTG, 3) / 5 / np.power(SPLC, 5)
 
 
 def chirp_mass(m1, m2):
@@ -59,6 +61,19 @@ def eddington_accretion(mass, eps=0.1):
 def eddington_luminosity(mass, eps=0.1):
     ledd = _EDD_CONST * mass / eps
     return ledd
+
+
+def gw_hardening_rate_dadt(m1, m2, sma, ecc=None):
+    """GW Hardening rate (da/dt).
+
+    See Peters 1964, Eq. 5.6
+    """
+    cc = _GW_HARD_CONST
+    dadt = cc * m1 * m2 * (m1 + m2) / np.power(sma, 3)
+    if ecc is not None:
+        fe = _gw_hardening_ecc_func(ecc)
+        dadt *= fe
+    return dadt
 
 
 def gw_strain_source_circ(mchirp, dist_lum, freq_orb_rest):
@@ -109,3 +124,15 @@ def time_to_merge_at_sep(m1, m2, sep):
     a1 = rad_isco(m1, m2)
     delta_sep = np.power(sep, 4.0) - np.power(a1, 4.0)
     return delta_sep/(GW_CONST*m1*m2*(m1+m2))
+
+
+def _gw_hardening_ecc_func(ecc):
+    """GW Hardening rate eccentricitiy dependence F(e).
+
+    See Peters 1964, Eq. 5.6
+    """
+    e2 = ecc*ecc
+    num = 1 + (73/24)*e2 + (37/96)*e2*e2
+    den = np.power(1 - e2, 7/2)
+    fe = num / den
+    return fe

@@ -9,6 +9,9 @@ Future / To-Do
         +   More tests.  For plotting stuff, add tests just to make sure nothing breaks.
         +   Setup automatic testing (e.g. nightly?)
 
+    -   astro/
+        +   Separate GW stuff into its own submodule
+
     -   math/
         +   math_core.py
             -   `spacing`
@@ -43,6 +46,8 @@ Current
             -   `dynamical_time`  [NEW-FUNCTION]
             -   `eddington_accretion`  [NEW-FUNCTION]
             -   `eddington_luminosity`  [NEW-FUNCTION]
+            -   `gw_hardening_rate_dadt` [NEW-FUNCTION]
+                -   GW hardening rate (da/dt) function.
             -   `gw_strain_source_circ` [NEW-FUNCTION]
                 -   GW Strain from a single source in a circular orbit.
             -   `kepler_freq_from_sep`  [NEW-FUNCTION]
