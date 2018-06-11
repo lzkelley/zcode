@@ -94,6 +94,8 @@ Current
                 -   Added 'shift' parameter to shift the center of the distribution some amount (in dex).
             -   `sigma()`
                 -   BUG: `scipy.stats` wasnt being imported
+            -   `stats_str()`
+                -   Improve default formatting choice based on extrema of input values.
                 
     -   plot/
         -   `draw.py`

@@ -324,7 +324,17 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
         data = np.log10(data)
 
     if format is None:
-        format = ':.2e' if log else ':.2f'
+        # format = ':.2e' if log else ':.2f'
+        if log:
+            format = ':.2e'
+        else:
+            format = ':.2f'
+            try:
+                log_extr = np.log10(math_core.minmax(data, filter='>'))
+                if np.any(log_extr >= 4) or np.any(log_extr < -2):
+                    format = ':.2e'
+            except AttributeError:
+                pass
 
     percs = np.atleast_1d(percs)
     if np.any(percs > 1.0):
