@@ -20,6 +20,9 @@ __all__ = ['dynamical_time', 'chirp_mass', 'eddington_accretion', 'eddington_lum
 _SCHW_CONST = 2*NWTG/np.square(SPLC)
 _EDD_CONST = 4.0*np.pi*SPLC*NWTG*MPRT/SIGMA_T
 
+# e.g. Sesana+2011 Eq.5
+_GW_SRC_CONST = 8 * np.power(NWTG, 5/3) * np.power(2*np.pi, 2/3) / np.sqrt(10) / np.power(SPLC, 4)
+
 
 def chirp_mass(m1, m2):
     return np.power(m1*m2, 3/5)/np.power(m1+m2, 1/5)
@@ -56,6 +59,14 @@ def eddington_accretion(mass, eps=0.1):
 def eddington_luminosity(mass, eps=0.1):
     ledd = _EDD_CONST * mass / eps
     return ledd
+
+
+def gw_strain_source_circ(mchirp, dist_lum, freq_orb_rest):
+    """GW Strain from a single source in a circular orbit.
+    """
+    cc = _GW_SRC_CONST
+    hs = cc * mchirp * np.power(mchirp*freq_orb_rest, 2/3) / dist_lum
+    return hs
 
 
 def kepler_freq_from_sep(mass, sep):

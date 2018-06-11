@@ -43,6 +43,8 @@ Current
             -   `dynamical_time`  [NEW-FUNCTION]
             -   `eddington_accretion`  [NEW-FUNCTION]
             -   `eddington_luminosity`  [NEW-FUNCTION]
+            -   `gw_strain_source_circ` [NEW-FUNCTION]
+                -   GW Strain from a single source in a circular orbit.
             -   `kepler_freq_from_sep`  [NEW-FUNCTION]
             -   `kepler_sep_from_freq`  [NEW-FUNCTION]
             -   `rad_isco()`  [NEW-FUNCTION]
