@@ -15,6 +15,7 @@ from zcode.constants import NWTG, SPLC, MPRT, SIGMA_T
 
 __all__ = ['dynamical_time', 'chirp_mass', 'eddington_accretion', 'eddington_luminosity',
            'gw_hardening_rate_dadt', 'gw_strain_source_circ',
+           'm1m2_from_mtmr',
            'kepler_freq_from_sep', 'kepler_sep_from_freq', 'rad_isco', 'schwarzschild_radius',
            'sep_to_merge_in_time', 'time_to_merge_at_sep']
 
@@ -92,6 +93,14 @@ def kepler_freq_from_sep(mass, sep):
 def kepler_sep_from_freq(mass, freq):
     sep = np.power(NWTG*mass/np.square(2.0*np.pi*freq), 1.0/3.0)
     return sep
+
+
+def m1m2_from_mtmr(mt, mr):
+    """Convert from total-mass and mass-ratio to individual masses.
+    """
+    m1 = mt/(1.0 + mr)
+    m2 = mt - m1
+    return m1, m2
 
 
 def schwarzschild_radius(mass):

@@ -54,6 +54,8 @@ Current
                 -   GW Strain from a single source in a circular orbit.
             -   `kepler_freq_from_sep`  [NEW-FUNCTION]
             -   `kepler_sep_from_freq`  [NEW-FUNCTION]
+            -   `m1m2_from_mtmr()`  [NEW-FUNCTION]
+                -   Convert from total-mass and mass-ratio to primary and secondary binary masses.
             -   `rad_isco()`  [NEW-FUNCTION]
                 -   Calculate the inner-most stable circular-orbit.
             -   `schwarzschild_radius`  [NEW-FUNCTION]
