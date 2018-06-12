@@ -14,12 +14,14 @@ Future / To-Do
 
     -   math/
         +   math_core.py
-            -   `spacing`
-                +   Add `endpoint` keyword argument to decide whether end-point(s) are included
-                    in returned range.
             -   `around`
                 +   Does this work correctly for negative decimal values??
                 +   Implement 'dir' relative to zero --- i.e. round up/down the absolute values.
+            -   `spacing`
+                +   Add `endpoint` keyword argument to decide whether end-point(s) are included
+                    in returned range.
+            -   `interp_func()`
+                -   Finish developing function.
         +   numeric.py
             -   `monotonic_smooth`
                 +   BUG: fix shitty edge effects after many iterations.
@@ -86,6 +88,8 @@ Current
             -   `argnearest`
                 -   Add `assume_sorted` option so that method can handle either sorted or unsorted.
                 -   Check if input is scalar, if so return scalar output (instead of list).
+            -   `interp_func()` [NEW-FUNCTION]
+                -   Started version of interp that will return an interpolating method.  Needs lots of work.
             -   `spacing`
                 -   Added `kwargs` arguments which are passed on to `minmax` function.  Allows for (e.g.) `log_stretch` to be used to expand the spacing.
         +   statistic.py

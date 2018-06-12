@@ -21,6 +21,7 @@ Functions
 -   groupDigitized           - Get a list of array indices corresponding to each bin.
 -   mono                     - Check for monotonicity in the given array.
 -   limit                    -
+-   interp_func
 
 -   _comparisonFunction      -
 -   _comparisonFilter        -
@@ -32,12 +33,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from six.moves import xrange
 
 import numpy as np
+import scipy as sp
+import scipy.interpolate  # noqa
 import warnings
 import numbers
 
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
-           'indsWithin', 'interp', 'midpoints', 'minmax',  'mono', 'limit',
+           'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate',
            'sliceForAxis', 'spacing', 'str_array', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
@@ -434,6 +437,17 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
     if ylog:
         y1 = np.power(10.0, y1)
     return y1
+
+
+def interp_func(xold, yold, kind='linear', xlog=True, ylog=True, **kwargs):
+    if (not xlog) or (not ylog):
+        raise ValueError("Not yet implemented!")
+
+    logx = np.log10(xold)
+    logy = np.log10(yold)
+    lin_interp = sp.interpolate.interp1d(logx, logy, kind=kind, **kwargs)
+    log_interp = lambda zz: np.power(10.0, lin_interp(np.log10(zz)))  # noqa
+    return log_interp
 
 
 def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
