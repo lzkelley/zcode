@@ -124,7 +124,9 @@ Current
             -   `set_axis()`
                 -   [BUG] Raise error if additions `kwargs` are passed (they arent used)
                 -   [BUG] Error when `color` was `None`, set to black as default
-
+            -   `text()
+                -   [BUG] Transform argument was getting lost in kwargs.
+            
             -   `_color_from_kwargs()`
                 -   Add option to pop (remove) color argument from dictionary.
             -   `_setAxis_scale()`

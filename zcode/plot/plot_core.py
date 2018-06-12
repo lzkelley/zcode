@@ -485,6 +485,9 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     """
     # if trans is None: trans = fig.transFigure
     if trans is None:
+        trans = kwargs.pop('transform', None)
+
+    if trans is None:
         if isinstance(art, mpl.figure.Figure):
             trans = art.transFigure
         elif isinstance(art, mpl.axes.Axes):
