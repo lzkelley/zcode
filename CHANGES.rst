@@ -20,6 +20,8 @@ Future / To-Do
             -   `spacing`
                 +   Add `endpoint` keyword argument to decide whether end-point(s) are included
                     in returned range.
+            -   `str_array_2d()`
+                -   Finish this method and then incorporate into `str_array()`
             -   `interp_func()`
                 -   Finish developing function.
         +   numeric.py
@@ -94,6 +96,8 @@ Current
                 -   Started version of interp that will return an interpolating method.  Needs lots of work.
             -   `spacing`
                 -   Added `kwargs` arguments which are passed on to `minmax` function.  Allows for (e.g.) `log_stretch` to be used to expand the spacing.
+            -   `str_array_2d` [NEW-FUNCTION]
+                -   Support printing 2D arrays... not finished but basic functionality working.
         +   statistic.py
             -   `log_normal_base_10` [NEW-FUNCTION]
                 -   Method to draw from a log-normal distribution with given base-ten variance.
