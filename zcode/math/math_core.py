@@ -21,6 +21,7 @@ Functions
 -   groupDigitized           - Get a list of array indices corresponding to each bin.
 -   mono                     - Check for monotonicity in the given array.
 -   limit                    -
+-   interp_func
 
 -   _comparisonFunction      -
 -   _comparisonFilter        -
@@ -32,14 +33,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from six.moves import xrange
 
 import numpy as np
+import scipy as sp
+import scipy.interpolate  # noqa
 import warnings
 import numbers
 
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
-           'indsWithin', 'interp', 'midpoints', 'minmax',  'mono', 'limit',
+           'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate',
-           'sliceForAxis', 'spacing', 'str_array', 'vecmag', 'within',
+           'sliceForAxis', 'spacing', 'str_array', 'str_array_2d', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
            '_infer_scale']
 
@@ -80,7 +83,7 @@ def argextrema(arr, type, filter=None):
     return ind
 
 
-def argnearest(options, targets):
+def argnearest(options, targets, assume_sorted=False):
     """Find the indices of elements in the `options` array closest to those in the `targets` array.
 
     Arguments
@@ -89,6 +92,9 @@ def argnearest(options, targets):
         Find indices for elements in this array.
     targets : (M,) array of scalar
         Look for elements in the `options` array closest to these `targets` values.
+    assume_sorted : bool,
+        Assume the input array of `options` is sorted.
+        (Note: `targets` can be unsorted regardless)
 
     Returns
     -------
@@ -97,12 +103,26 @@ def argnearest(options, targets):
 
     """
     options = np.atleast_1d(options)
+    scalar = np.isscalar(targets)
     targets = np.atleast_1d(targets)
+    # Sort the input array if needed
+    if not assume_sorted:
+        srt = np.argsort(options)
+        options = options[srt]
+
     idx = np.searchsorted(options, targets, side="left").clip(max=options.size-1)
     dist_lo = np.fabs(targets - options[idx-1])
     dist_hi = np.fabs(targets - options[idx])
     mask = (idx > 0) & ((idx == options.size) | (dist_lo < dist_hi))
     idx = idx - mask
+
+    # Reorder the indices if the input was unsorted
+    if not assume_sorted:
+        idx = [srt[ii] for ii in idx]
+
+    if scalar:
+        idx = idx[0]
+
     return idx
 
 
@@ -417,6 +437,17 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
     if ylog:
         y1 = np.power(10.0, y1)
     return y1
+
+
+def interp_func(xold, yold, kind='linear', xlog=True, ylog=True, **kwargs):
+    if (not xlog) or (not ylog):
+        raise ValueError("Not yet implemented!")
+
+    logx = np.log10(xold)
+    logy = np.log10(yold)
+    lin_interp = sp.interpolate.interp1d(logx, logy, kind=kind, **kwargs)
+    log_interp = lambda zz: np.power(10.0, lin_interp(np.log10(zz)))  # noqa
+    return log_interp
 
 
 def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
@@ -750,7 +781,7 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
-def spacing(data, scale='log', num=100, filter=None, integers=False):
+def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
     """Create an evenly spaced array between extrema from the given data.
 
     Arguments
@@ -770,6 +801,8 @@ def spacing(data, scale='log', num=100, filter=None, integers=False):
         NOTE: when `integers` is 'True', the extrema are the nearest integral values *outside* the
               the range specified with `data`.  e.g. if `data` is [7.96, 28.12], the above example
               arrays are the ones that would be returned.
+    **kwargs : dict arguments
+        Additional arguments are passed to `minmax`, e.g. `log_stretch=0.1`.
 
     Returns
     -------
@@ -795,7 +828,7 @@ def spacing(data, scale='log', num=100, filter=None, integers=False):
     # If only 'integers' (whole numbers) are desired, round extrema to *outside*
     if integers:
         round = 0
-    span = minmax(data, filter=filter, round=round, round_scale=scale)
+    span = minmax(data, filter=filter, round=round, round_scale=scale, **kwargs)
     # If only 'integers', use 'arange'
     if integers:
         # Log-spacing : create each decade manually
@@ -866,25 +899,67 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
     arr = np.asarray(arr)
     if log:
         arr = np.log10(arr)
+
     len_arr = arr.size
-    if sides is None:
-        beg = None
-        end = len_arr
-    elif np.iterable(sides):
-        beg, end = sides
-    else:
-        beg = end = sides
-
-    _beg = 0 if beg is None else beg
-    _end = 0 if end is None else end
-    if _beg + _end >= len_arr:
-        beg = None
-        end = len_arr
-
+    beg, end = _str_array_get_beg_end(sides, len_arr)
+        
     # Create the style specification
     form = "{{{}}}".format(format)
 
+    arr_str = _str_array_1d(arr, beg, end, form, delim)
+    if log and label_log:
+        arr_str += " (log values)"
+
+    return arr_str
+
+
+def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
+    arr = np.asarray(arr)
+    assert np.ndim(arr) == 2, "Only supported for dim 2 arrays!"
+
+    _def_format_small = ":7.2f"
+    _def_format_large = ":7.2e"
+    if (format is None):
+        vmin, vmax = minmax(np.fabs(arr), filter='>')
+        if (vmax >= 1e4) or (vmin < 1e-3):
+            format = _def_format_large
+        else:
+            format = _def_format_small
+        
+    if log:
+        arr = np.log10(arr)
+
+    nrow, ncol = arr.shape
+    rbeg, rend = _str_array_get_beg_end(sides, nrow)
+    cbeg, cend = _str_array_get_beg_end(sides, ncol)
+    
+    # Create the style specification
+    form = "{{{}}}".format(format)
+
+    arr_str = []
+    if rbeg is not None:
+        for ii in range(rbeg):
+            _str = _str_array_1d(arr[ii, :], cbeg, cend, form, delim)
+            arr_str.append(_str)
+
+    if (rbeg is not None) and (rend < nrow):
+        arr_str.append("... ")
+
+    for ii in range(rend):
+        _str = _str_array_1d(arr[nrow-rend+ii, :], cbeg, cend, form, delim)
+        arr_str.append(_str)
+        
+    arr_str = "\n".join(arr_str)
+    if log and label_log:
+        arr_str += " (log values)"
+
+    return arr_str
+
+
+def _str_array_1d(arr, beg, end, form, delim):
     arr_str = "["
+    len_arr = arr.size
+    
     # Add the first `first` elements
     if beg is not None:
         arr_str += delim.join([form.format(vv) for vv in arr[:beg]])
@@ -898,10 +973,25 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
         arr_str += delim.join([form.format(vv) for vv in arr[-end:]])
 
     arr_str += "]"
-    if log and label_log:
-        arr_str += " (log values)"
-
     return arr_str
+
+
+def _str_array_get_beg_end(sides, size):
+    if sides is None:
+        beg = None
+        end = size
+    elif np.iterable(sides):
+        beg, end = sides
+    else:
+        beg = end = sides
+
+    _beg = 0 if beg is None else beg
+    _end = 0 if end is None else end
+    if _beg + _end >= size:
+        beg = None
+        end = size
+
+    return beg, end
 
 
 def vecmag(r1, r2=None):
@@ -1055,9 +1145,9 @@ def comparison_filter(data, filter, inds=False, value=0.0, finite=True):
 
     # Include is-finite check
     if finite:
-        sel = np.where(filter(data) & np.isfinite(data))
+        sel = filter(data) & np.isfinite(data)
     else:
-        sel = np.where(filter(data))
+        sel = filter(data)
 
     if inds:
         return sel

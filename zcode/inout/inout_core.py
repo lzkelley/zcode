@@ -2,34 +2,37 @@
 
 Classes
 -------
--   Keys                     - Provide convenience for classes used as enumerated dictionary keys.
--   StreamCapture            - Class to capture/redirect output to stdout and stderr.
+    -   Keys                 - Provide convenience for classes used as enumerated dictionary keys.
+    -   StreamCapture        - Class to capture/redirect output to stdout and stderr.
 
 Functions
 ---------
--   bytes_string              - Return a humanized string representation of a number of bytes.
--   get_file_size            - Return a human-readable size of a file or set of files.
--   countLines               - Count the number of lines in the given file.
--   estimateLines            - Estimate the number of lines in the given file.
--   check_path               - Create the given filepath if it doesn't already exist.
--   dictToNPZ                - Save a dictionary to the given NPZ filename.
--   npzToDict                - Convert an NPZ file to a dictionary with the same keys and values.
--   getProgressBar           - Wrapper to create a progressbar object with default settings.
--   combineFiles             - Concatenate the contents of input files into a single output file.
--   checkURL                 - Check that the given url exists.
--   promptYesNo              - Prompt the user (via CLI) for yes or no.
--   modify_filename          - Modify the given filename.
--   mpiError                 - Raise an error through MPI and exit all processes.
--   ascii_table              - Print a table with the given contents to output.
--   modify_exists            - Modify the given filename if it already exists.
--   iterable_notstring       - Return True' if the argument is an iterable and not a string type.
--   str_format_dict          - Pretty-format a dict into a nice looking string.
--   par_dir                  - Get parent (absolute) directory name from given file/directory.
--   top_dir                  - Get the top level directory name from the given path.
--   underline                - Add a new line of characters appended to the given string.
--   warn_with_traceback      - Include traceback information in warnings.
+    -   bytes_string         - Return a humanized string representation of a number of bytes.
+    -   get_file_size        - Return a human-readable size of a file or set of files.
+    -   countLines           - Count the number of lines in the given file.
+    -   environment_is_jupyter - Determine if current environment is a jupyter notebook.
+    -   estimateLines        - Estimate the number of lines in the given file.
+    -   check_path           - Create the given filepath if it doesn't already exist.
+    -   dictToNPZ            - Save a dictionary to the given NPZ filename.
+    -   npzToDict            - Convert an NPZ file to a dictionary with the same keys and values.
+    -   getProgressBar       - Wrapper to create a progressbar object with default settings.
+    -   combineFiles         - Concatenate the contents of input files into a single output file.
+    -   checkURL             - Check that the given url exists.
+    -   promptYesNo          - Prompt the user (via CLI) for yes or no.
+    -   modify_filename      - Modify the given filename.
+    -   mpiError             - Raise an error through MPI and exit all processes.
+    -   ascii_table          - Print a table with the given contents to output.
+    -   modify_exists        - Modify the given filename if it already exists.
+    -   python_environment   - Tries to determine the current python environment.
+    -   iterable_notstring   - Return True' if the argument is an iterable and not a string type.
+    -   str_format_dict      - Pretty-format a dict into a nice looking string.
+    -   par_dir              - Get parent (absolute) directory name from given file/directory.
+    -   top_dir              - Get the top level directory name from the given path.
+    -   underline            - Add a new line of characters appended to the given string.
+    -   warn_with_traceback  - Include traceback information in warnings.
 
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 import six
 from datetime import datetime
@@ -41,15 +44,13 @@ import warnings
 import numpy as np
 import collections
 
-from zcode import utils
+# from zcode import utils
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
-           'countLines', 'estimateLines', 'modify_filename',
-           'check_path', 'dictToNPZ', 'npzToDict', 'combineFiles', 'checkURL',
-           'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists',
-           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
-           # Deprecated!
-           'modifyFilename', 'checkPath', 'bytes_string']
+           'countLines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
+           'check_path', 'dictToNPZ', 'npzToDict', 'checkURL',
+           'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists', 'python_environment',
+           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback']
 
 
 class _Keys_Meta(type):
@@ -247,6 +248,12 @@ def countLines(files, progress=False):
     return nums
 
 
+def environment_is_jupyter():
+    """Tries to determine whether the current python environment is a jupyter notebook.
+    """
+    return python_environment().lower().startswith('jupyter')
+
+
 def estimateLines(files):
     """Estimate the number of lines in the given file.
     """
@@ -273,11 +280,6 @@ def estimateLines(files):
     numLines = totalSize // lineSize
 
     return numLines
-
-
-def checkPath(*args, **kwargs):
-    utils.dep_warn("checkPath", newname="check_path")
-    return check_path(*args, **kwargs)
 
 
 def check_path(tpath, create=True):
@@ -395,53 +397,6 @@ def _convert_npz_to_dict(npz):
     return newDict
 
 
-def combineFiles(inFilenames, outFilename, verbose=False):
-    """Concatenate the contents of a set of input files into a single output file.
-
-    Arguments
-    ---------
-    inFilenames : iterable<str>, list of input file names
-    outFilename : <str>, output file name
-    verbose : <bool> (optional=_VERBOSE), print verbose output
-
-    Returns
-
-    """
-
-    # Make sure outfile path exists
-    check_path(outFilename)
-    inSize = 0.0
-    # nums = len(inFilenames)
-
-    # Open output file for writing
-    if verbose:
-        warnings.warn("`progress` is deprecated!")
-        # pbar = getProgressBar(nums)
-    with open(outFilename, 'w') as outfil:
-
-        # Iterate over input files
-        for ii, inname in enumerate(inFilenames):
-            inSize += os.path.getsize(inname)
-            # if verbose:
-            #     pbar.update(ii)
-
-            # Open input file for reading
-            with open(inname, 'r') as infil:
-                # Iterate over input file lines
-                for line in infil: outfil.write(line)
-
-    # if verbose:
-    #     pbar.finish()
-
-    outSize = os.path.getsize(outFilename)
-    inStr = bytes_string(inSize)
-    outStr = bytes_string(outSize)
-
-    if verbose:
-        print("Total input size = %s, output size = %s" % (inStr, outStr))
-    return
-
-
 def checkURL(url, codemax=200, timeout=3.0):
     """Check that the given url exists.
 
@@ -501,11 +456,6 @@ def promptYesNo(msg='', default='n'):
         else: retval = True
 
     return retval
-
-
-def modifyFilename(*args, **kwargs):
-    utils.dep_warn("modifyFilename", newname="modify_filename")
-    return modify_filename(*args, **kwargs)
 
 
 def modify_filename(fname, prepend='', append=''):
@@ -725,7 +675,6 @@ def modify_exists(fname, max=1000):
         In this case, `None` is returned.
 
     """
-    print("\n")
     # If file doesnt already exist, do nothing - return filename
     if not os.path.exists(fname):
         return fname
@@ -786,6 +735,21 @@ def modify_exists(fname, max=1000):
         return modify_exists(new_name)
 
     return new_name
+
+
+def python_environment():
+    """Tries to determine the current python environment, one of: 'jupyter', 'ipython', 'terminal'.
+    """
+    try:
+        # NOTE: `get_ipython` should not be explicitly imported from anything
+        ipy_str = str(type(get_ipython())).lower()  # noqa
+        # print("ipy_str = '{}'".format(ipy_str))
+        if 'zmqshell' in ipy_str:
+            return 'jupyter'
+        if 'terminal' in ipy_str:
+            return 'ipython'
+    except:
+        return 'terminal'
 
 
 def iterable_notstring(var):
@@ -869,7 +833,7 @@ def _path_fname_split(fname):
     # Make sure `filename` stores directory names if needed
     #    If a `fname` looks like "./dname/", then split yields ('./dname', '')
     #    convert this to ('', './dname')
-    print("\t", path, filename)
+    # print("\t", path, filename)
     if len(filename) == 0 and len(path) > 0:
         filename = path
         path = ''
@@ -881,13 +845,5 @@ def _path_fname_split(fname):
     # Either path should have a path stored, or it should be the local directory
     if len(path) == 0:
         path = './'
-    print("\t", path, filename)
+    # print("\t", path, filename)
     return path, filename
-
-
-#     ====    DEPRECATIONS    ====
-
-
-def bytesString(*args, **kwargs):
-    utils.dep_warn("bytesString", newname="bytes_string")
-    return bytes_string(*args, **kwargs)

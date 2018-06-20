@@ -80,7 +80,6 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         Logger object to use for logging.
 
     """
-
     if (tofile is None) and (not tostr):
         raise ValueError("Must log to something!")
 
