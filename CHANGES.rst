@@ -43,6 +43,10 @@ Future / To-Do
 
 Current
 -------
+
+
+[0.0.12] - 2018/06/20
+---------------------
     -   astro/  [NEW-SUBMODULE]
         -   New submodule for astrophysics specific functions and relations.
         -   `astro_core.py` [NEW-FILE]

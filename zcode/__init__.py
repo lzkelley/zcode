@@ -9,7 +9,7 @@
 from . import constants
 
 __author__ = "Luke Zoltan Kelley"
-__version__ = "0.0.11"
+__version__ = "0.0.12"
 __email__ = "lkelley@cfa.harvard.edu"
 __status__ = "Development"
 
