@@ -43,6 +43,10 @@ Future / To-Do
 
 Current
 -------
+    -   plot/
+        -   `plot_core.py`
+            -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
+
 
 
 [0.0.12] - 2018/06/20

@@ -78,28 +78,28 @@ _LS_DASH_MED = 5
 _LS_DASH_SML = 3
 _LS_DOT = 1
 _LINE_STYLE_SET = [
-    [],
-    [_LS_DASH_BIG, 4],
-    [_LS_DOT, 1],
+    None,
+    (0, [_LS_DASH_BIG, 4]),
+    (0, [_LS_DOT, 1]),
 
-    [_LS_DOT, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
+    (0, [_LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
 
-    [_LS_DASH_MED, 2],
-    [_LS_DASH_SML, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DASH_SML, 1, _LS_DASH_MED, 1],
+    (0, [_LS_DASH_MED, 2]),
+    (0, [_LS_DASH_SML, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DASH_SML, 1, _LS_DASH_MED, 1]),
 
-    [_LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
+    (0, [_LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
 
-    [_LS_DOT, 4],
-    [_LS_DOT, 1, _LS_DOT, 4],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 4],
+    (0, [_LS_DOT, 4]),
+    (0, [_LS_DOT, 1, _LS_DOT, 4]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 4]),
 ]
 
 # Default length for lines in legend handles; in units of font-size
