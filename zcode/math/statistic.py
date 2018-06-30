@@ -84,8 +84,8 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
 
     # Filter based on whether `yy` values match `filter` comparison to 0.0
     if filter is not None:
-        compFunc = math_core._comparisonFunction(filter)
-        inds = np.where(compFunc(yy, 0.0))[0]
+        compFunc = math_core._comparison_function(filter)
+        inds = compFunc(yy, 0.0)
         xx = xx[inds]
         yy = yy[inds]
 

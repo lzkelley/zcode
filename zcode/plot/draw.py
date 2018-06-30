@@ -307,7 +307,7 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
         raise ValueError("`conf` must be 2 or 3 dimensions!")
 
     if filter is not None:
-        filter = zmath._comparisonFunction(filter)
+        filter = zmath._comparison_function(filter)
 
     if lw_edges is None:
         lw_edges = 0.5 * lw
@@ -331,9 +331,9 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
         if ceil is not None:
             yhi = np.minimum(yhi, ceil)
 
-        if filter:
-            ylo = np.ma.masked_where(~filter(ylo, 0.0), ylo)
-            yhi = np.ma.masked_where(~filter(yhi, 0.0), yhi)
+        if filter is not None:
+            ylo = np.ma.masked_where(~filter(ylo), ylo)
+            yhi = np.ma.masked_where(~filter(yhi), yhi)
 
         # Fill between confidence intervals
         pp = ax.fill_between(xx, ylo, yhi, alpha=falph, facecolor=color, **kwargs)

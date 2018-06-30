@@ -44,6 +44,8 @@ Future / To-Do
 Current
 -------
     -   `plot/`
+        -   `draw.py`
+            -   [BUG]: bad function call using filter.
         -   `plot_core.py`
             -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
     -   `math/`
