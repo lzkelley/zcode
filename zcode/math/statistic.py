@@ -160,7 +160,7 @@ def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
 
     # Filter input values
-    if filter:
+    if filter is not None:
         # Using the filter will flatten the array, so `axis` wont work...
         if (axis is not None) and np.ndim(vals) > 1:
             err = "`filter` ({}) and `axis` ({}) arguments are currently incompatible!".format(filter, axis)
