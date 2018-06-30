@@ -162,8 +162,10 @@ def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
     # Filter input values
     if filter:
         # Using the filter will flatten the array, so `axis` wont work...
-        if axis is not None:
-            raise ValueError("`filter` and `axis` arguments are currently incompatible!")
+        if (axis is not None) and np.ndim(vals) > 1:
+            err = "`filter` ({}) and `axis` ({}) arguments are currently incompatible!".format(filter, axis)
+            err += "  (Shape: {})".format(np.shape(vals))
+            raise ValueError(err)
         vals = math_core.comparison_filter(vals, filter)
         if vals.size == 0:
             return np.nan, np.nan

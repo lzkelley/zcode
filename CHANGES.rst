@@ -43,10 +43,13 @@ Future / To-Do
 
 Current
 -------
-    -   plot/
+    -   `plot/`
         -   `plot_core.py`
             -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
-
+    -   `math/`
+        -   `statistic.py`
+            -   `confidence_intervals()`
+                -   [BUG]: default `axis` argument is '-1' not None, so error was being raised when a `filter` was passed.  Only raise error if more than one dimension in values.
 
 
 [0.0.12] - 2018/06/20
