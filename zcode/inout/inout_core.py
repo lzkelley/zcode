@@ -10,6 +10,7 @@ Functions
     -   bytes_string         - Return a humanized string representation of a number of bytes.
     -   get_file_size        - Return a human-readable size of a file or set of files.
     -   countLines           - Count the number of lines in the given file.
+    -   environment_is_jupyter - Determine if current environment is a jupyter notebook.
     -   estimateLines        - Estimate the number of lines in the given file.
     -   check_path           - Create the given filepath if it doesn't already exist.
     -   dictToNPZ            - Save a dictionary to the given NPZ filename.
@@ -22,6 +23,7 @@ Functions
     -   mpiError             - Raise an error through MPI and exit all processes.
     -   ascii_table          - Print a table with the given contents to output.
     -   modify_exists        - Modify the given filename if it already exists.
+    -   python_environment   - Tries to determine the current python environment.
     -   iterable_notstring   - Return True' if the argument is an iterable and not a string type.
     -   str_format_dict      - Pretty-format a dict into a nice looking string.
     -   par_dir              - Get parent (absolute) directory name from given file/directory.
@@ -45,9 +47,9 @@ import collections
 # from zcode import utils
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
-           'countLines', 'estimateLines', 'modify_filename',
+           'countLines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
            'check_path', 'dictToNPZ', 'npzToDict', 'checkURL',
-           'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists',
+           'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists', 'python_environment',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback']
 
 
@@ -244,6 +246,12 @@ def countLines(files, progress=False):
     #     pbar.finish()
 
     return nums
+
+
+def environment_is_jupyter():
+    """Tries to determine whether the current python environment is a jupyter notebook.
+    """
+    return python_environment().lower().startswith('jupyter')
 
 
 def estimateLines(files):
@@ -727,6 +735,21 @@ def modify_exists(fname, max=1000):
         return modify_exists(new_name)
 
     return new_name
+
+
+def python_environment():
+    """Tries to determine the current python environment, one of: 'jupyter', 'ipython', 'terminal'.
+    """
+    try:
+        # NOTE: `get_ipython` should not be explicitly imported from anything
+        ipy_str = str(type(get_ipython())).lower()  # noqa
+        # print("ipy_str = '{}'".format(ipy_str))
+        if 'zmqshell' in ipy_str:
+            return 'jupyter'
+        if 'terminal' in ipy_str:
+            return 'ipython'
+    except:
+        return 'terminal'
 
 
 def iterable_notstring(var):

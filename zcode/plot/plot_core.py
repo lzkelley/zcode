@@ -78,28 +78,28 @@ _LS_DASH_MED = 5
 _LS_DASH_SML = 3
 _LS_DOT = 1
 _LINE_STYLE_SET = [
-    [],
-    [_LS_DASH_BIG, 4],
-    [_LS_DOT, 1],
+    None,
+    (0, [_LS_DASH_BIG, 4]),
+    (0, [_LS_DOT, 1]),
 
-    [_LS_DOT, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
+    (0, [_LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
 
-    [_LS_DASH_MED, 2],
-    [_LS_DASH_SML, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DASH_SML, 1, _LS_DASH_MED, 1],
+    (0, [_LS_DASH_MED, 2]),
+    (0, [_LS_DASH_SML, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DASH_SML, 1, _LS_DASH_MED, 1]),
 
-    [_LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
+    (0, [_LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
 
-    [_LS_DOT, 4],
-    [_LS_DOT, 1, _LS_DOT, 4],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 4],
+    (0, [_LS_DOT, 4]),
+    (0, [_LS_DOT, 1, _LS_DOT, 4]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 4]),
 ]
 
 # Default length for lines in legend handles; in units of font-size
@@ -140,7 +140,12 @@ def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=No
     assert trans in ['axes', 'figure'], "``trans`` must be `axes` or `figure`!"
     assert side in VALID_SIDES, "``side`` must be in '%s'" % (VALID_SIDES)
 
-    color = _color_from_kwargs(kwargs)
+    color = _color_from_kwargs(kwargs, pop=True)
+    if color is None:
+        color = 'k'
+
+    if len(kwargs) > 0:
+        raise ValueError("Additional arguments are not supported!")
 
     # Set tick colors and font-sizes
     ax.tick_params(axis=axis, which='both', labelsize=fs, colors=color)
@@ -480,6 +485,9 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     """
     # if trans is None: trans = fig.transFigure
     if trans is None:
+        trans = kwargs.pop('transform', None)
+
+    if trans is None:
         if isinstance(art, mpl.figure.Figure):
             trans = art.transFigure
         elif isinstance(art, mpl.axes.Axes):
@@ -674,7 +682,10 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
 
     # Override alignment using `loc` argument
     if loc is not None:
-        x, y, halign, valign = _loc_str_to_pars(loc)
+        _x, _y, halign, valign = _loc_str_to_pars(loc)
+    else:
+        _x = 0.99
+        _y = 0.5
 
     if valign == 'top':
         valign = 'upper'
@@ -682,9 +693,9 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
         valign = 'lower'
 
     if x is None:
-        x = 0.99
+        x = _x
     if y is None:
-        y = 0.5
+        y = _y
 
     alignStr = valign
     if not (valign == 'center' and halign == 'center'):
@@ -693,7 +704,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     prop_dict = {'size': fs}
     if mono:
         prop_dict['family'] = 'monospace'
-    leg = ax.legend(keys, names, prop=prop_dict,
+    leg = ax.legend(keys, names, prop=prop_dict, fancybox=True,
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
     if fs_title is not None:
         plt.setp(leg.get_title(), fontsize=fs_title)
@@ -729,7 +740,7 @@ def unifyAxesLimits(axes, axis='y'):
     return np.array([lo, hi])
 
 
-def color_cycle(num, ax=None, color=None, cmap=plt.cm.spectral,
+def color_cycle(num, ax=None, color=None, cmap=plt.cm.Spectral,
                 left=0.1, right=0.9, light=True):
     """Create a range of colors.
 
@@ -854,9 +865,17 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, ri
 
     # Determine minimum and maximum
     if np.size(args) > 1:
-        min, max = zmath.minmax(args, filter=filter)
-    else:
+        rv = zmath.minmax(args, filter=filter)
+        if rv is None:
+            min, max = 0.0, 0.0
+        else:
+            min, max = rv
+    elif np.size(args) == 1:
         min, max = 0, np.int(args)-1
+    elif np.size(args) == 2:
+        min, max = args
+    else:
+        min, max = 0.0, 0.0
 
     # Create normalization
     if log:
@@ -1166,6 +1185,14 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
 
     val_man, val_exp = zmath.frexp10(val)
     use_man = (man is not None and np.isfinite(val_exp))
+
+    val_man = np.around(val_man, man)
+    if val_man >= 10.0:
+        val_man /= 10.0
+        val_exp += 1
+
+    # Construct Mantissa String
+    # --------------------------------
     if use_man:
         str_man = "{0:.{1:d}f}".format(val_man, man)
     else:
@@ -1174,6 +1201,8 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
     if not one and str_man == "{0:.{1:d}f}".format(1.0, man):
         str_man = ""
 
+    # Construct Exponent String
+    # --------------------------------
     if exp is not None:
         # Try to convert `val_exp` to integer, fails if 'inf' or 'nan'
         try:
@@ -1188,6 +1217,8 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
     else:
         str_exp = ""
 
+    # Put them together
+    # --------------------------------
     notStr = "$"*dollar + str_man
     if len(str_man) and len(str_exp):
         notStr += " \\times"
@@ -1306,11 +1337,21 @@ def line_label(ax, pos, label, dir='v', loc='top', xx=None, yy=None, ha=None, va
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
-    if scale.startswith('lin'): scale = 'linear'
-    if scale == 'symlog': thresh = 1.0
-    if axis == 'x': ax.set_xscale(scale, linthreshx=thresh)
-    elif axis == 'y': ax.set_yscale(scale, linthreshy=thresh)
-    else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
+    kw = {}
+    if scale.startswith('lin'):
+        scale = 'linear'
+    elif scale == 'symlog':
+        if thresh is None:
+            thresh = 1.0
+        kw['linthresh' + axis] = thresh
+
+    if axis == 'x':
+        ax.set_xscale(scale, **kw)
+    elif axis == 'y':
+        ax.set_yscale(scale, **kw)
+    else:
+        raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
+
     return
 
 
@@ -1367,18 +1408,27 @@ def _get_cmap(cmap):
         raise ValueError("`cmap` '{}' is not a valid colormap or colormap name".format(cmap))
 
 
-def _color_from_kwargs(kwargs):
+def _color_from_kwargs(kwargs, pop=False):
 
     msg = "Use `color` instead of `c` or `col` for color specification!"
 
     if 'c' in kwargs:
-        col = kwargs['c']
+        if pop:
+            col = kwargs.pop('c')
+        else:
+            col = kwargs['c']
         warnings.warn(msg, DeprecationWarning, stacklevel=3)
     elif 'col' in kwargs:
-        col = kwargs['col']
+        if pop:
+            col = kwargs.pop('col')
+        else:
+            col = kwargs['col']
         warnings.warn(msg, DeprecationWarning, stacklevel=3)
     elif 'color' in kwargs:
-        col = kwargs['color']
+        if pop:
+            col = kwargs.pop('color')
+        else:
+            col = kwargs['color']
     else:
         col = None
 

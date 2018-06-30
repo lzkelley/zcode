@@ -9,14 +9,21 @@ Future / To-Do
         +   More tests.  For plotting stuff, add tests just to make sure nothing breaks.
         +   Setup automatic testing (e.g. nightly?)
 
+    -   astro/
+        +   Separate GW stuff into its own submodule
+
     -   math/
         +   math_core.py
-            -   `spacing`
-                +   Add `endpoint` keyword argument to decide whether end-point(s) are included
-                    in returned range.
             -   `around`
                 +   Does this work correctly for negative decimal values??
                 +   Implement 'dir' relative to zero --- i.e. round up/down the absolute values.
+            -   `spacing`
+                +   Add `endpoint` keyword argument to decide whether end-point(s) are included
+                    in returned range.
+            -   `str_array_2d()`
+                -   Finish this method and then incorporate into `str_array()`
+            -   `interp_func()`
+                -   Finish developing function.
         +   numeric.py
             -   `monotonic_smooth`
                 +   BUG: fix shitty edge effects after many iterations.
@@ -36,16 +43,106 @@ Future / To-Do
 
 Current
 -------
+    -   plot/
+        -   `plot_core.py`
+            -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
+
+
+
+[0.0.12] - 2018/06/20
+---------------------
+    -   astro/  [NEW-SUBMODULE]
+        -   New submodule for astrophysics specific functions and relations.
+        -   `astro_core.py` [NEW-FILE]
+            -   `chirp_mass`  [NEW-FUNCTION]
+            -   `dynamical_time`  [NEW-FUNCTION]
+            -   `eddington_accretion`  [NEW-FUNCTION]
+            -   `eddington_luminosity`  [NEW-FUNCTION]
+            -   `gw_hardening_rate_dadt` [NEW-FUNCTION]
+                -   GW hardening rate (da/dt) function.
+            -   `gw_strain_source_circ` [NEW-FUNCTION]
+                -   GW Strain from a single source in a circular orbit.
+            -   `kepler_freq_from_sep`  [NEW-FUNCTION]
+            -   `kepler_sep_from_freq`  [NEW-FUNCTION]
+            -   `m1m2_from_mtmr()`  [NEW-FUNCTION]
+                -   Convert from total-mass and mass-ratio to primary and secondary binary masses.
+            -   `rad_isco()`  [NEW-FUNCTION]
+                -   Calculate the inner-most stable circular-orbit.
+            -   `schwarzschild_radius`  [NEW-FUNCTION]
+            -   `sep_to_merge_in_time()`  [NEW-FUNCTION]
+                -   Limiting binary separation to merge by GW in a given time.
+            -   `time_to_merge_at_sep()`  [NEW-FUNCTION]
+                -   Time it will take for a binary to merger form GW from the given separation.
+        -   `scalings.py` [NEW-FILE]
+            -   New submodule for common astrophysical scaling relations.
+            -   `mbh_sigma()`
+                -   From a stellar-bulge velocity dispersion, get the MBH mass
+            -   `mbh_sigma_inv()`
+                -   From an MBH mass, get the stellar-bulge velocity dispersion
+        -   `obs.py` [NEW-FILE]
+            -   New submodule for observational calculations (especially magnititudes).
+            -   `ABmag_to_flux()`  [NEW-FUNCTION]
+            -   `mag_to_flux()`  [NEW-FUNCTION]
+            -   `flux_to_mag()`  [NEW-FUNCTION]
+            -   `abs_mag_to_lum()`  [NEW-FUNCTION]
+            -   `lum_to_abs_mag()`  [NEW-FUNCTION]
+
     -   inout/
         -   `inout_core.py`
             -   BUG: some print statements were lying around causing issues with checking files.
+            -   `environment_is_jupyter()` [NEW-FUNCTION]
+                -   Return 'True' if the current environment is a jupyter notebook.
+            -   `python_environment()` [NEW-FUNCTION]
+                -   Determine the current python environment (e.g. 'jupyter') and return string.
+                
     -   math/
         +   math_core.py
             -   `argnearest`
                 -   Add `assume_sorted` option so that method can handle either sorted or unsorted.
+                -   Check if input is scalar, if so return scalar output (instead of list).
+            -   `interp_func()` [NEW-FUNCTION]
+                -   Started version of interp that will return an interpolating method.  Needs lots of work.
             -   `spacing`
                 -   Added `kwargs` arguments which are passed on to `minmax` function.  Allows for (e.g.) `log_stretch` to be used to expand the spacing.
-
+            -   `str_array_2d` [NEW-FUNCTION]
+                -   Support printing 2D arrays... not finished but basic functionality working.
+        +   statistic.py
+            -   `log_normal_base_10` [NEW-FUNCTION]
+                -   Method to draw from a log-normal distribution with given base-ten variance.
+                -   Added 'shift' parameter to shift the center of the distribution some amount (in dex).
+            -   `sigma()`
+                -   BUG: `scipy.stats` wasnt being imported
+            -   `stats_str()`
+                -   Improve default formatting choice based on extrema of input values.
+                
+    -   plot/
+        -   `draw.py`
+            -   `conf_fill()` [NEW-FUNCTION]
+                -   Method combining `math.confidence_intervals` and `draw.plot_conf_fill`.
+            -   `plot_bg()`  [NEW-FUNCTION]
+                -   Method to plot a line and a broader background-line behind it.
+        -   `Hist2D.py`
+            -   `plot2DHist()`
+                -   Fixed documentation to reflect all return parameters.
+        +   plot_core.py
+            -   `colormap`
+                -   If there are no valid elements for a given colormap, set the extrema to [0.0, 0.0] instead of an error being raised.
+            -   `color_cycle()`
+                -   [BUG] In recent matplotlib upgrade `mpl.cm.spectral` changed to `mpl.cm.Spectral`.
+            -   `legend()`
+                -   [BUG] `loc` argument no longer overrides `x` and `y`.
+            -   `scientific_notation()`
+                -   [BUG] Values could be rounded up to a higher exponent (i.e. 9.9e-5 ==> 10e-5 instead of 1e-4).
+            -   `set_axis()`
+                -   [BUG] Raise error if additions `kwargs` are passed (they arent used)
+                -   [BUG] Error when `color` was `None`, set to black as default
+            -   `text()
+                -   [BUG] Transform argument was getting lost in kwargs.
+            
+            -   `_color_from_kwargs()`
+                -   Add option to pop (remove) color argument from dictionary.
+            -   `_setAxis_scale()`
+                -   [BUG] Update `linthreshx` and `linthreshy` arguments seem to be deprecated, at least when not using 'symlog' specifically.
 
 
 [0.0.11] - 2017/11/21

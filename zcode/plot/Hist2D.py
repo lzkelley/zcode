@@ -483,6 +483,8 @@ def plot2DHist(ax, xvals, yvals, hist,
         The resulting plotted object, returned by ``ax.pcolormesh``.
     smap : `matplotlib.cm.ScalarMappable` object
         Colormap and color-scaling information.  See: ``zcode.plot.plot_core.colormap``.
+    cbar : colorbar or `None`
+    cs : contours or `None`
 
     """
     cblab = 'Counts'

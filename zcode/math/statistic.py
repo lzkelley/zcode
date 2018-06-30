@@ -5,6 +5,8 @@ Functions
 -   confidence_bands         - Bin by `xx` to calculate confidence intervals in `yy`.
 -   confidence_intervals     - Compute the values bounding desired confidence intervals.
 -   cumstats                 - Calculate a cumulative average and standard deviation.
+-   log_normal_base_10       -
+-   percentiles              -
 -   stats                    - Get basic statistics for the given array.
 -   stats_str                - Return a string with the statistics of the given array.
 -   sigma                    - Convert from standard deviation to percentiles.
@@ -18,7 +20,7 @@ import numpy as np
 from . import math_core
 
 __all__ = ['confidenceBands', 'confidence_bands', 'confidenceIntervals', 'confidence_intervals',
-           'cumstats', 'sigma', 'stats', 'stats_str', 'percentiles']
+           'cumstats', 'log_normal_base_10', 'percentiles', 'sigma', 'stats', 'stats_str']
 
 
 def confidenceBands(*args, **kwargs):
@@ -236,6 +238,7 @@ def sigma(sig, side='in', boundaries=False):
 
     """
     import scipy as sp
+    import scipy.stats
 
     if side.startswith('in'):
         inside = True
@@ -321,7 +324,17 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
         data = np.log10(data)
 
     if format is None:
-        format = ':.2e' if log else ':.2f'
+        # format = ':.2e' if log else ':.2f'
+        if log:
+            format = ':.2e'
+        else:
+            format = ':.2f'
+            try:
+                log_extr = np.log10(math_core.minmax(data, filter='>'))
+                if np.any(log_extr >= 4) or np.any(log_extr < -2):
+                    format = ':.2e'
+            except AttributeError:
+                pass
 
     percs = np.atleast_1d(percs)
     if np.any(percs > 1.0):
@@ -408,3 +421,26 @@ def percentiles(values, percentiles, weights=None, values_sorted=False):
     weighted_quantiles /= np.sum(weights)
     percs = np.interp(percentiles, weighted_quantiles, values)
     return percs
+
+
+def log_normal_base_10(mu, sigma, size=None, shift=0.0):
+    """Draw from a lognormal distribution with values in base-10 (instead of e).
+
+    Arguments
+    ---------
+    mu : (N,) scalar
+        Mean of the distribution in linear space (e.g. 1.0e8 instead of 8.0).
+    sigma : (N,) scalar
+        Variance of the distribution *in dex* (e.g. 1.0 means factor of 10.0 variance)
+    size : (M,) int
+        Desired size of sample.
+
+    Returns
+    -------
+    dist : (M,...) scalar
+        Resulting distribution of values (in linear space).
+
+    """
+    _sigma = np.log(10**sigma)
+    dist = np.random.lognormal(np.log(mu) + shift*np.log(10.0), _sigma, size)
+    return dist

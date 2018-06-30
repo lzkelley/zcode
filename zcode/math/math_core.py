@@ -21,6 +21,7 @@ Functions
 -   groupDigitized           - Get a list of array indices corresponding to each bin.
 -   mono                     - Check for monotonicity in the given array.
 -   limit                    -
+-   interp_func
 
 -   _comparisonFunction      -
 -   _comparisonFilter        -
@@ -32,14 +33,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from six.moves import xrange
 
 import numpy as np
+import scipy as sp
+import scipy.interpolate  # noqa
 import warnings
 import numbers
 
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
-           'indsWithin', 'interp', 'midpoints', 'minmax',  'mono', 'limit',
+           'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate',
-           'sliceForAxis', 'spacing', 'str_array', 'vecmag', 'within',
+           'sliceForAxis', 'spacing', 'str_array', 'str_array_2d', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
            '_infer_scale']
 
@@ -100,6 +103,7 @@ def argnearest(options, targets, assume_sorted=False):
 
     """
     options = np.atleast_1d(options)
+    scalar = np.isscalar(targets)
     targets = np.atleast_1d(targets)
     # Sort the input array if needed
     if not assume_sorted:
@@ -115,6 +119,9 @@ def argnearest(options, targets, assume_sorted=False):
     # Reorder the indices if the input was unsorted
     if not assume_sorted:
         idx = [srt[ii] for ii in idx]
+
+    if scalar:
+        idx = idx[0]
 
     return idx
 
@@ -430,6 +437,17 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
     if ylog:
         y1 = np.power(10.0, y1)
     return y1
+
+
+def interp_func(xold, yold, kind='linear', xlog=True, ylog=True, **kwargs):
+    if (not xlog) or (not ylog):
+        raise ValueError("Not yet implemented!")
+
+    logx = np.log10(xold)
+    logy = np.log10(yold)
+    lin_interp = sp.interpolate.interp1d(logx, logy, kind=kind, **kwargs)
+    log_interp = lambda zz: np.power(10.0, lin_interp(np.log10(zz)))  # noqa
+    return log_interp
 
 
 def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
@@ -881,25 +899,67 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
     arr = np.asarray(arr)
     if log:
         arr = np.log10(arr)
+
     len_arr = arr.size
-    if sides is None:
-        beg = None
-        end = len_arr
-    elif np.iterable(sides):
-        beg, end = sides
-    else:
-        beg = end = sides
-
-    _beg = 0 if beg is None else beg
-    _end = 0 if end is None else end
-    if _beg + _end >= len_arr:
-        beg = None
-        end = len_arr
-
+    beg, end = _str_array_get_beg_end(sides, len_arr)
+        
     # Create the style specification
     form = "{{{}}}".format(format)
 
+    arr_str = _str_array_1d(arr, beg, end, form, delim)
+    if log and label_log:
+        arr_str += " (log values)"
+
+    return arr_str
+
+
+def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
+    arr = np.asarray(arr)
+    assert np.ndim(arr) == 2, "Only supported for dim 2 arrays!"
+
+    _def_format_small = ":7.2f"
+    _def_format_large = ":7.2e"
+    if (format is None):
+        vmin, vmax = minmax(np.fabs(arr), filter='>')
+        if (vmax >= 1e4) or (vmin < 1e-3):
+            format = _def_format_large
+        else:
+            format = _def_format_small
+        
+    if log:
+        arr = np.log10(arr)
+
+    nrow, ncol = arr.shape
+    rbeg, rend = _str_array_get_beg_end(sides, nrow)
+    cbeg, cend = _str_array_get_beg_end(sides, ncol)
+    
+    # Create the style specification
+    form = "{{{}}}".format(format)
+
+    arr_str = []
+    if rbeg is not None:
+        for ii in range(rbeg):
+            _str = _str_array_1d(arr[ii, :], cbeg, cend, form, delim)
+            arr_str.append(_str)
+
+    if (rbeg is not None) and (rend < nrow):
+        arr_str.append("... ")
+
+    for ii in range(rend):
+        _str = _str_array_1d(arr[nrow-rend+ii, :], cbeg, cend, form, delim)
+        arr_str.append(_str)
+        
+    arr_str = "\n".join(arr_str)
+    if log and label_log:
+        arr_str += " (log values)"
+
+    return arr_str
+
+
+def _str_array_1d(arr, beg, end, form, delim):
     arr_str = "["
+    len_arr = arr.size
+    
     # Add the first `first` elements
     if beg is not None:
         arr_str += delim.join([form.format(vv) for vv in arr[:beg]])
@@ -913,10 +973,25 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
         arr_str += delim.join([form.format(vv) for vv in arr[-end:]])
 
     arr_str += "]"
-    if log and label_log:
-        arr_str += " (log values)"
-
     return arr_str
+
+
+def _str_array_get_beg_end(sides, size):
+    if sides is None:
+        beg = None
+        end = size
+    elif np.iterable(sides):
+        beg, end = sides
+    else:
+        beg = end = sides
+
+    _beg = 0 if beg is None else beg
+    _end = 0 if end is None else end
+    if _beg + _end >= size:
+        beg = None
+        end = size
+
+    return beg, end
 
 
 def vecmag(r1, r2=None):
