@@ -45,7 +45,9 @@ Current
 -------
     -   `plot/`
         -   `draw.py`
-            -   [BUG]: bad function call using filter.
+            -   `plot_conf_fill()`
+                -   [BUG]: bad function call using filter.
+                -   [BUG]: `filter`/`floor`/`ceil` parameters were not correctly selecting elements.  Improved using masked arrays.
         -   `plot_core.py`
             -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
     -   `math/`

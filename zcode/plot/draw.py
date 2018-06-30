@@ -326,17 +326,24 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
         xx = np.array(rads)
         ylo = np.array(conf[:, jj, 0])
         yhi = np.array(conf[:, jj, 1])
-        if floor is not None:
-            ylo = np.maximum(ylo, floor)
-        if ceil is not None:
-            yhi = np.minimum(yhi, ceil)
+
+        idx_lo = (ylo >= floor) if (floor is not None) else np.ones_like(ylo, dtype=bool)
+        idx_lo = idx_lo & (ylo <= ceil) if (ceil is not None) else idx_lo
+        idx_hi = (yhi <= ceil) if (ceil is not None) else np.ones_like(yhi, dtype=bool)
+        idx_hi = idx_hi & (yhi >= floor) if (floor is not None) else idx_hi
 
         if filter is not None:
-            ylo = np.ma.masked_where(~filter(ylo), ylo)
-            yhi = np.ma.masked_where(~filter(yhi), yhi)
+            idx_lo = idx_lo & filter(ylo)
+            idx_hi = idx_hi & filter(yhi)
+
+        idx_fill = idx_lo | idx_hi
+        ylo_fill = np.ma.masked_where(~idx_fill, ylo)
+        yhi_fill = np.ma.masked_where(~idx_fill, yhi)
+        ylo = np.ma.masked_where(~idx_lo, ylo)
+        yhi = np.ma.masked_where(~idx_hi, yhi)
 
         # Fill between confidence intervals
-        pp = ax.fill_between(xx, ylo, yhi, alpha=falph, facecolor=color, **kwargs)
+        pp = ax.fill_between(xx, ylo_fill, yhi_fill, alpha=falph, facecolor=color, **kwargs)
         conf_patches.append(pp)
 
         # Plot edges of confidence intervals
@@ -352,13 +359,16 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
             # line_patch = (_pp, ll)
 
     # Plot Median Line
+    idx_mm = (med >= floor) if (floor is not None) else np.ones_like(med, dtype=bool)
+    idx_mm = idx_mm & (med <= ceil) if (ceil is not None) else idx_mm
+
     #    Plot black outline to improve contrast
     if outline is not None:
-        oo, = ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=LW_OUTLINE)
+        oo, = ax.plot(rads[idx_mm], med[idx_mm], '-', color=outline, lw=2*lw, alpha=LW_OUTLINE)
         if dashes is not None:
             oo.set_dashes(tuple(dashes))
 
-    ll, = ax.plot(rads, med, '-', color=color, lw=lw, alpha=linealpha)
+    ll, = ax.plot(rads[idx_mm], med[idx_mm], '-', color=color, lw=lw, alpha=linealpha)
     if dashes is not None:
         ll.set_dashes(tuple(dashes))
 
