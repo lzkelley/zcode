@@ -1,1 +1,9 @@
 dateutil
+numpy
+astropy
+scipy
+six
+future
+nose
+matplotlib
+seaborn
