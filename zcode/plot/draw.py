@@ -359,20 +359,24 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
             # line_patch = (_pp, ll)
 
     # Plot Median Line
-    idx_mm = (med >= floor) if (floor is not None) else np.ones_like(med, dtype=bool)
-    idx_mm = idx_mm & (med <= ceil) if (ceil is not None) else idx_mm
+    if med is not None:
+        idx_mm = (med >= floor) if (floor is not None) else np.ones_like(med, dtype=bool)
+        idx_mm = idx_mm & (med <= ceil) if (ceil is not None) else idx_mm
 
-    #    Plot black outline to improve contrast
-    if outline is not None:
-        oo, = ax.plot(rads[idx_mm], med[idx_mm], '-', color=outline, lw=2*lw, alpha=LW_OUTLINE)
+        #    Plot black outline to improve contrast
+        if outline is not None:
+            oo, = ax.plot(rads[idx_mm], med[idx_mm], '-',
+                          color=outline, lw=2*lw, alpha=linealpha*LW_OUTLINE)
+            if dashes is not None:
+                oo.set_dashes(tuple(dashes))
+
+        ll, = ax.plot(rads[idx_mm], med[idx_mm], '-', color=color, lw=lw, alpha=linealpha)
         if dashes is not None:
-            oo.set_dashes(tuple(dashes))
+            ll.set_dashes(tuple(dashes))
 
-    ll, = ax.plot(rads[idx_mm], med[idx_mm], '-', color=color, lw=lw, alpha=linealpha)
-    if dashes is not None:
-        ll.set_dashes(tuple(dashes))
-
-    line_patch = (_pp, ll)
+        line_patch = (_pp, ll)
+    else:
+        line_patch = (_pp,)
 
     return line_patch, conf_patches
 
