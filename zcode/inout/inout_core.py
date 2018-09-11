@@ -44,13 +44,17 @@ import warnings
 import numpy as np
 import collections
 
-# from zcode import utils
+from zcode import utils
+
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
            'countLines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
            'check_path', 'dictToNPZ', 'npzToDict', 'checkURL',
+           'combine_files',
            'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists', 'python_environment',
-           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback']
+           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
+           # === DEPRECATED ===
+           'combineFiles']
 
 
 class _Keys_Meta(type):
@@ -847,3 +851,55 @@ def _path_fname_split(fname):
         path = './'
     # print("\t", path, filename)
     return path, filename
+
+
+def combine_files(inFilenames, outFilename, verbose=False):
+    """Concatenate the contents of a set of input files into a single output file.
+
+    Arguments
+    ---------
+    inFilenames : iterable<str>, list of input file names
+    outFilename : <str>, output file name
+    verbose : <bool> (optional=_VERBOSE), print verbose output
+
+    Returns
+
+    """
+
+    # Make sure outfile path exists
+    check_path(outFilename)
+    inSize = 0.0
+    # nums = len(inFilenames)
+
+    # Open output file for writing
+    if verbose:
+        warnings.warn("`progress` is deprecated!")
+        # pbar = getProgressBar(nums)
+    with open(outFilename, 'w') as outfil:
+
+        # Iterate over input files
+        for ii, inname in enumerate(inFilenames):
+            inSize += os.path.getsize(inname)
+            # if verbose:
+            #     pbar.update(ii)
+
+            # Open input file for reading
+            with open(inname, 'r') as infil:
+                # Iterate over input file lines
+                for line in infil: outfil.write(line)
+
+    # if verbose:
+    #     pbar.finish()
+
+    outSize = os.path.getsize(outFilename)
+    inStr = bytes_string(inSize)
+    outStr = bytes_string(outSize)
+
+    if verbose:
+        print("Total input size = %s, output size = %s" % (inStr, outStr))
+    return
+
+
+def combineFiles(*args, **kwargs):
+    utils.dep_warn("combineFiles", newname="combine_files")
+    return combine_files(*args, **kwargs)
