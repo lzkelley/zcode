@@ -2,7 +2,7 @@
 """
 
 LW_CONF = 1.0
-LW_OUTLINE = 0.8
+LW_OUTLINE = 0.6
 
 COL_CORR = 'royalblue'
 
