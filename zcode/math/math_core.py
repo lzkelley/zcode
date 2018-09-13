@@ -44,7 +44,7 @@ __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'ordered_groups', 'really1d', 'renumerate',
            'sliceForAxis', 'spacing', 'str_array', 'str_array_2d', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
-           '_infer_scale']
+           '_infer_scale', '_fracToInt']
 
 
 def argextrema(arr, type, filter=None):
@@ -902,7 +902,7 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
 
     len_arr = arr.size
     beg, end = _str_array_get_beg_end(sides, len_arr)
-        
+
     # Create the style specification
     form = "{{{}}}".format(format)
 
@@ -925,14 +925,14 @@ def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_lo
             format = _def_format_large
         else:
             format = _def_format_small
-        
+
     if log:
         arr = np.log10(arr)
 
     nrow, ncol = arr.shape
     rbeg, rend = _str_array_get_beg_end(sides, nrow)
     cbeg, cend = _str_array_get_beg_end(sides, ncol)
-    
+
     # Create the style specification
     form = "{{{}}}".format(format)
 
@@ -948,7 +948,7 @@ def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_lo
     for ii in range(rend):
         _str = _str_array_1d(arr[nrow-rend+ii, :], cbeg, cend, form, delim)
         arr_str.append(_str)
-        
+
     arr_str = "\n".join(arr_str)
     if log and label_log:
         arr_str += " (log values)"
@@ -959,7 +959,7 @@ def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_lo
 def _str_array_1d(arr, beg, end, form, delim):
     arr_str = "["
     len_arr = arr.size
-    
+
     # Add the first `first` elements
     if beg is not None:
         arr_str += delim.join([form.format(vv) for vv in arr[:beg]])
@@ -1173,17 +1173,18 @@ def _fracToInt(frac, size, within=None, round='floor'):
 
     """
     # If ``frac`` is already an integer, do nothing, return it
-    if(isinstance(frac, numbers.Integral)): return frac
+    if isinstance(frac, numbers.Integral):
+        return frac
 
-    if(round == 'floor'):
+    if (round == 'floor'):
         roundFunc = np.floor
-    elif(round == 'ceil'):
+    elif (round == 'ceil'):
         roundFunc = np.ceil
     else:
         raise ValueError("Unrecognized ``round``!")
 
     # Convert fractional input into an integer
-    if(within is not None):
+    if (within is not None):
         assert frac >= 0.0 and frac <= within, "``frac`` must be between [0.0,%s]!" % (str(within))
 
     loc = np.int(roundFunc(frac*size))
