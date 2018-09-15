@@ -475,12 +475,14 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
 
     """
 
-    if(np.shape(arr)[axis] < 2):
+    if (np.shape(arr)[axis] < 2):
         raise RuntimeError("Input ``arr`` does not have a valid shape!")
 
     # Convert to log-space
-    if(log): user = np.log10(arr)
-    else:    user = np.array(arr)
+    if log:
+        user = np.log10(arr)
+    else:
+        user = np.array(arr)
 
     diff = np.diff(user, axis=axis)
 
@@ -489,8 +491,10 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
     start = user[cut]
     mids = start + frac*diff
 
-    if(log): mids = np.power(10.0, mids)
-    if(squeeze): mids = mids.squeeze()
+    if log:
+        mids = np.power(10.0, mids)
+    if squeeze:
+        mids = mids.squeeze()
 
     return mids
 
@@ -763,19 +767,22 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
 
     """
 
-    if(start is stop is step is None):
+    if (start is stop is step is None):
         raise RuntimeError("``start``,``stop``, or ``step`` required!")
 
     ndim = np.ndim(arr)
-    if(ndim == 0): ndim = arr
+    if (ndim == 0):
+        ndim = arr
 
-    if(ndim > 1):
+    if (ndim > 1):
         #     Create an object to slice all elements of all dims
         cut = [slice(None)]*ndim
         #     Exclude the last element of the last dimension
         cut[axis] = slice(start, stop, step)
+        cut = tuple(cut)
     else:
-        if(axis != 0 and axis != -1): raise RuntimeError("cannot slice nonexistent axis!")
+        if (axis != 0) and (axis != -1):
+            raise RuntimeError("cannot slice nonexistent axis!")
         cut = slice(start, stop, step)
 
     return cut
@@ -965,7 +972,7 @@ def _str_array_1d(arr, beg, end, form, delim):
         arr_str += delim.join([form.format(vv) for vv in arr[:beg]])
 
     # Include separator unless full array is being printed
-    if beg is not None and end < len_arr:
+    if (beg is not None) or (end < len_arr):
         arr_str += "... "
 
     # Add the last `last` elements
