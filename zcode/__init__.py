@@ -3,9 +3,15 @@
 """
 # flake8: noqa  --- ignore imported but unused flake8 warnings
 
+import os
+
 from . import constants
 
-with open('VERSION') as inn:
+_cwd = os.path.realpath(os.path.dirname(__file__))
+
+fname_version = os.path.join(_cwd, 'VERSION')
+# print(fname_version, os.path.exists(fname_version), os.path.realpath(fname_version))
+with open(fname_version) as inn:
     version = inn.read().strip()
 
 __author__ = "Luke Zoltan Kelley"
