@@ -215,15 +215,25 @@ def plot_hist_bars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwa
     if 'zorder' not in kwargs:
         kwargs['zorder'] = 100
 
+    orientation = kwargs.setdefault('orientation', 'vertical')
+    if orientation.startswith('h'):
+        line_func = ax.axhline
+        span_func = ax.axhspan
+    elif orientation.startswith('v'):
+        line_func = ax.axvline
+        span_func = ax.axvspan
+    else:
+        raise ValueError("Unrecognized `orientation` = '{}'!".format(orientation))
+
     # Add Confidence intervals
     if conf:
-        med, cints = zmath.confidenceIntervals(xx, ci=CONF_INTS)
-        ax.axvline(med, color='red', ls='--', lw=LW_CONF, zorder=101)
+        med, cints = zmath.confidence_intervals(xx, ci=CONF_INTS)
+        line_func(med, color='red', ls='--', lw=LW_CONF, zorder=101)
         # Add average
         ave = np.average(xx)
-        ax.axvline(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
+        line_func(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
         for ii, (vals, col) in enumerate(zip(cints, CONF_COLS)):
-            ax.axvspan(*vals, color=col, alpha=CONF_ALPHA)
+            span_func(*vals, color=col, alpha=CONF_ALPHA)
 
     # Create a given number of log-spaced bins
     #     If not log-spaced, then `ax.hist` will do the same
