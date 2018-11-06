@@ -148,9 +148,12 @@ def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=No
         raise ValueError("Additional arguments are not supported!")
 
     # Set tick colors and font-sizes
-    ax.tick_params(axis=axis, which='both', labelsize=fs, colors=color)
+    kw = {}
+    if fs is not None:
+        kw['labelsize'] = fs
+    ax.tick_params(axis=axis, which='both', colors=color, **kw)
     #    Set tick-size only for major ticks
-    ax.tick_params(axis=axis, which='major')
+    # ax.tick_params(axis=axis, which='major')
 
     # Set Grid Lines
     set_grid(ax, grid, axis='both')
@@ -226,7 +229,10 @@ def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=No
 
     # Set Axis Label
     if label is not None:
-        _setAxis_label(ax, axis, label, fs=fs, color=color)
+        kw = {}
+        if fs is not None:
+            kw['fs'] = fs
+        _setAxis_label(ax, axis, label, color=color, **kw)
 
     if not np.isclose(stretch, 1.0):
         if axis == 'x':

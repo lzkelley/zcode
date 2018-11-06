@@ -50,6 +50,8 @@ Current
                 -   [BUG]: `filter`/`floor`/`ceil` parameters were not correctly selecting elements.  Improved using masked arrays.
         -   `plot_core.py`
             -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
+            -   `set_axis()`
+                -   Catch 'fs' keyword-argument and replace with 'labelsize'
     -   `math/`
         -   `statistic.py`
             -   `confidence_intervals()`
