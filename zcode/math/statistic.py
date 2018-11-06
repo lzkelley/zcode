@@ -159,14 +159,24 @@ def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
     ci = np.atleast_1d(ci)
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
 
+    PERC_FUNC = np.percentile
+
     # Filter input values
     if filter is not None:
         # Using the filter will flatten the array, so `axis` wont work...
+        kw = {}
         if (axis is not None) and np.ndim(vals) > 1:
-            err = "`filter` ({}) and `axis` ({}) arguments are currently incompatible!".format(filter, axis)
-            err += "  (Shape: {})".format(np.shape(vals))
-            raise ValueError(err)
-        vals = math_core.comparison_filter(vals, filter)
+            # err = "`filter` ({}) and `axis` ({}) arguments may be incompatible!".format(
+            #     filter, axis)
+            # err += "  (Shape: {})".format(np.shape(vals))
+            # raise ValueError(err)
+            # warnings.warn(err)
+            kw['axis'] = axis
+
+        vals = math_core.comparison_filter(vals, filter, **kw)
+        vals = np.ma.filled(vals, np.nan)
+        PERC_FUNC = np.nanpercentile
+
         if vals.size == 0:
             return np.nan, np.nan
 
@@ -175,15 +185,15 @@ def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
     # This produces an ndarray with shape `[M, 2(, L)]`
     #    If ``axis is None`` or `np.ndim(vals) == 1` then the shape will be simply `[M, 2]`
     #    Otherwise, `L` will be the shape of `vals` without axis `axis`.
-    conf = [[np.percentile(vals, 100.0*cdf[0], axis=axis),
-             np.percentile(vals, 100.0*cdf[1], axis=axis)]
+    conf = [[PERC_FUNC(vals, 100.0*cdf[0], axis=axis),
+             PERC_FUNC(vals, 100.0*cdf[1], axis=axis)]
             for cdf in cdf_vals]
     conf = np.array(conf)
     # Reshape from `[M, 2, L]` to `[L, M, 2]`
     if (np.ndim(vals) > 1) and (axis is not None):
         conf = np.moveaxis(conf, 2, 0)
 
-    med = np.percentile(vals, 50.0, axis=axis)
+    med = PERC_FUNC(vals, 50.0, axis=axis)
     if len(conf) == 1:
         conf = conf[0]
 

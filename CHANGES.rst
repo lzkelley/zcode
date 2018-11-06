@@ -53,9 +53,13 @@ Current
             -   `set_axis()`
                 -   Catch 'fs' keyword-argument and replace with 'labelsize'
     -   `math/`
+        -   `math_core.py`
+            -   `comparison_filter()`
+                -   Use numpy masked arrays, instead of flattening multi-dimensional arrays.
+            
         -   `statistic.py`
             -   `confidence_intervals()`
-                -   [BUG]: default `axis` argument is '-1' not None, so error was being raised when a `filter` was passed.  Only raise error if more than one dimension in values.
+                -   Implement a kludge to allow percentile calculation with masked arrays.
 
 
 [0.0.12] - 2018/06/20

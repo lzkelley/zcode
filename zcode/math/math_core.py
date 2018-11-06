@@ -1088,7 +1088,7 @@ def _comparisonFunction(comp):
     return func
 
 
-def _comparison_function(comp, value=0.0):
+def _comparison_function(comp, value=0.0, **kwargs):
     """Retrieve the comparison function matching the input expression.
 
     Arguments
@@ -1121,7 +1121,7 @@ def _comparison_function(comp, value=0.0):
         raise ValueError("Unrecognized comparison '{}'.".format(comp))
 
     def comp_func(xx):
-        return func(xx, value)
+        return func(xx, value, **kwargs)
 
     return comp_func
 
@@ -1142,13 +1142,13 @@ def _comparisonFilter(data, filter):
     return data[sel]
 
 
-def comparison_filter(data, filter, inds=False, value=0.0, finite=True):
+def comparison_filter(data, filter, inds=False, value=0.0, finite=True, **kwargs):
     """
     """
     if filter is None:
         return data
     if not callable(filter):
-        filter = _comparison_function(filter, value=value)
+        filter = _comparison_function(filter, value=value, **kwargs)
 
     # Include is-finite check
     if finite:
@@ -1159,7 +1159,8 @@ def comparison_filter(data, filter, inds=False, value=0.0, finite=True):
     if inds:
         return sel
     else:
-        return np.asarray(data)[sel]
+        # return np.asarray(data)[sel]
+        return np.ma.masked_where(~sel, data)
 
 
 def _fracToInt(frac, size, within=None, round='floor'):
