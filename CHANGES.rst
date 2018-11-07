@@ -47,6 +47,7 @@ Current
         -   `draw.py`
             -   `draw_hist_bars()`
                 -   Update to allow for horizontal or vertical plotting.
+                -   [BUG]: Single confidence-interval cause error with shape of returned values.
             -   `plot_conf_fill()`
                 -   [BUG]: bad function call using filter.
                 -   [BUG]: `filter`/`floor`/`ceil` parameters were not correctly selecting elements.  Improved using masked arrays.

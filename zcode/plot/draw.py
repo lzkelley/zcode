@@ -198,8 +198,10 @@ def plot_hist_bars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwa
     HIST_ALPHA = 0.75
     CONF_ALPHA = 0.5
 
-    CONF_INTS = [0.95, 0.68]
-    CONF_COLS = ['green', 'orange']
+    # CONF_INTS = [0.95, 0.68]
+    # CONF_COLS = ['green', 'orange']
+    CONF_INTS = [0.5]
+    CONF_COLS = ['0.5']
 
     if scaley.startswith('log'):
         logy = True
@@ -228,6 +230,7 @@ def plot_hist_bars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwa
     # Add Confidence intervals
     if conf:
         med, cints = zmath.confidence_intervals(xx, ci=CONF_INTS)
+        cints = np.atleast_2d(cints)
         line_func(med, color='red', ls='--', lw=LW_CONF, zorder=101)
         # Add average
         ave = np.average(xx)
