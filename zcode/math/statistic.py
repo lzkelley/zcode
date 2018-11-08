@@ -337,6 +337,7 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
 
     if format is None:
         # format = ':.2e' if log else ':.2f'
+        '''
         if log:
             format = ':.2e'
         else:
@@ -347,6 +348,8 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
                     format = ':.2e'
             except AttributeError:
                 pass
+        '''
+        format = math_core._guess_str_format_from_range(data)
 
     percs = np.atleast_1d(percs)
     if np.any(percs > 1.0):
