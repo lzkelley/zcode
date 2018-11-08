@@ -64,7 +64,6 @@ Current
             -   `_guess_str_format_from_range()` [NEW-FUNCTION]
                 -   Based on the dynamical (logarithmic) range of an array, guess the appropriate string formatting (i.e. 'f' vs 'e')
             
-            
         -   `statistic.py`
             -   `confidence_intervals()`
                 -   Implement a kludge to allow percentile calculation with masked arrays.
