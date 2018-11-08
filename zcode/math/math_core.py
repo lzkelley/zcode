@@ -874,7 +874,8 @@ def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
     return spaced
 
 
-def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log=True):
+# def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log=True):
+def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
     """Create a string representation of a numerical array.
 
     Arguments
@@ -910,6 +911,9 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
     len_arr = arr.size
     beg, end = _str_array_get_beg_end(sides, len_arr)
 
+    if format is None:
+        format = _guess_str_format_from_range(arr)
+
     # Create the style specification
     form = "{{{}}}".format(format)
 
@@ -918,6 +922,25 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
         arr_str += " (log values)"
 
     return arr_str
+
+
+def _guess_str_format_from_range(arr, prec=2, log_limit=2):
+    """
+    """
+    extr = np.log10(np.fabs(minmax(arr)))
+    if any(extr < -log_limit) or any(extr > log_limit):
+        use_log = True
+    else:
+        use_log = False
+
+    if use_log:
+        form = ":.{precision:d}e"
+    else:
+        form = ":.{precision:d}f"
+
+    form = form.format(precision=prec)
+
+    return form
 
 
 def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
