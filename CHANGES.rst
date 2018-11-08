@@ -59,6 +59,10 @@ Current
         -   `math_core.py`
             -   `comparison_filter()`
                 -   Use numpy masked arrays, instead of flattening multi-dimensional arrays.
+            -   `str_array()`
+                -   Guess default format based on array values (use `_guess_str_format_from_range`)
+            -   `_guess_str_format_from_range()` [NEW-FUNCTION]
+                -   Based on the dynamical (logarithmic) range of an array, guess the appropriate string formatting (i.e. 'f' vs 'e')
             
         -   `statistic.py`
             -   `confidence_intervals()`
