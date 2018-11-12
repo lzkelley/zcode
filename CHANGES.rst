@@ -43,6 +43,13 @@ Future / To-Do
 
 Current
 -------
+    -   `astro/`
+        -   `astro_core.py`
+            -   `distance()` [NEW-FUNCTION]
+                -   Calculate the cartesian distance between vectors
+            -   `mtmr_from_m1m2()` [NEW-FUNCTION]
+                -   Convert from primary and secondary masses to total-mass and mass-ratio
+
     -   `plot/`
         -   `draw.py`
             -   `draw_hist_bars()`

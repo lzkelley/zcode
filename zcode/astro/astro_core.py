@@ -5,17 +5,15 @@ Functions
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-# from six.moves import xrange
 
 import numpy as np
-# import warnings
-# import numbers
 
 from zcode.constants import NWTG, SPLC, MPRT, SIGMA_T
 
-__all__ = ['dynamical_time', 'chirp_mass', 'eddington_accretion', 'eddington_luminosity',
+__all__ = ['chirp_mass', 'distance', 'dynamical_time',
+           'eddington_accretion', 'eddington_luminosity',
            'gw_hardening_rate_dadt', 'gw_strain_source_circ',
-           'm1m2_from_mtmr',
+           'm1m2_from_mtmr', 'mtmr_from_m1m2',
            'kepler_freq_from_sep', 'kepler_sep_from_freq', 'rad_isco', 'schwarzschild_radius',
            'sep_to_merge_in_time', 'time_to_merge_at_sep']
 
@@ -29,6 +27,16 @@ _GW_HARD_CONST = - 64 * np.power(NWTG, 3) / 5 / np.power(SPLC, 5)
 
 def chirp_mass(m1, m2):
     return np.power(m1*m2, 3/5)/np.power(m1+m2, 1/5)
+
+
+def distance(x1, x0=None):
+    if x0 is None:
+        xx = x1
+    else:
+        xx = x1 - x0
+
+    dist = np.sqrt(np.sum(np.square(xx), axis=-1))
+    return dist
 
 
 def dynamical_time(mass, rad):
@@ -101,6 +109,18 @@ def m1m2_from_mtmr(mt, mr):
     m1 = mt/(1.0 + mr)
     m2 = mt - m1
     return m1, m2
+
+
+def mtmr_from_m1m2(m1, m2=None):
+    if m2 is not None:
+        masses = np.stack([m1, m2], axis=-1)
+    else:
+        assert np.shape(m1)[-1] == 2, "If only `m1` is given, last dimension must be 2!"
+        masses = np.asarray(m1)
+
+    mtot = masses.sum(axis=-1)
+    mrat = masses.min(axis=-1) / masses.max(axis=-1)
+    return mtot, mrat
 
 
 def schwarzschild_radius(mass):
