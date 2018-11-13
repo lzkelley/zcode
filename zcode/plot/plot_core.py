@@ -52,14 +52,13 @@ from . layout import _loc_str_to_pars, _parse_align
 from . plot_const import _PAD
 
 __all__ = ['set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
-           'stretchAxes', 'text', 'label_line', 'legend',
+           'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
            'unifyAxesLimits', 'color_cycle',
-           'colorCycle', 'colormap', 'color_set', 'set_grid',
+           'colormap', 'color_set', 'set_grid',
            'skipTicks', 'saveFigure', 'scientific_notation',
            'line_style_set', 'line_label',
            '_scale_to_log_flag',
            # Deprecated
-           'setGrid', 'setLim', 'strSciNot', 'setAxis', 'twinAxis'
            ]
 
 VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
@@ -355,8 +354,10 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
     # Actually set the axes limits
     set_lim(lims)
     if invert:
-        if axis == 'x': ax.invert_xaxis()
-        else:            ax.invert_yaxis()
+        if axis == 'x':
+            ax.invert_xaxis()
+        else:
+            ax.invert_yaxis()
 
     return
 
@@ -800,6 +801,14 @@ def color_cycle(num, ax=None, color=None, cmap=plt.cm.Spectral,
     if ax is not None:
         ax.set_color_cycle(cols[::-1])
     return cols
+
+
+def invert_color(col):
+    rgba = mpl.colors.to_rgba(col)
+    alpha = rgba[-1]
+    col = 1.0 - np.array(rgba[:-1])
+    col = tuple(col.tolist() + [alpha])
+    return col
 
 
 def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, right=None):
@@ -1439,38 +1448,3 @@ def _color_from_kwargs(kwargs, pop=False):
         col = None
 
     return col
-
-
-#     ============================
-#     ====    DEPRECATIONS    ====
-#     ============================
-
-
-def colorCycle(*args, **kwargs):
-    utils.dep_warn("colorCycle", newname="color_cycle")
-    return color_cycle(*args, **kwargs)
-
-
-def setGrid(*args, **kwargs):
-    utils.dep_warn("setGrid", newname="set_grid")
-    return set_grid(*args, **kwargs)
-
-
-def setLim(*args, **kwargs):
-    utils.dep_warn("setLim", newname="set_lim")
-    return set_lim(*args, **kwargs)
-
-
-def strSciNot(*args, **kwargs):
-    utils.dep_warn("strSciNot", newname="scientific_notation")
-    return scientific_notation(*args, **kwargs)
-
-
-def setAxis(*args, **kwargs):
-    utils.dep_warn("setAxis", newname="set_axis")
-    return set_axis(*args, **kwargs)
-
-
-def twinAxis(*args, **kwargs):
-    utils.dep_warn("twinAxis", newname="twin_axis")
-    return twin_axis(*args, **kwargs)
