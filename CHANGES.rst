@@ -47,6 +47,8 @@ Current
         -   `astro_core.py`
             -   `distance()` [NEW-FUNCTION]
                 -   Calculate the cartesian distance between vectors
+            -   `kepler_vel_from_freq()` [NEW-FUNCTION]
+                -   Calculate keplerian velocity from frequency
             -   `mtmr_from_m1m2()` [NEW-FUNCTION]
                 -   Convert from primary and secondary masses to total-mass and mass-ratio
 

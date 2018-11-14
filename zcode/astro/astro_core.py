@@ -103,6 +103,11 @@ def kepler_sep_from_freq(mass, freq):
     return sep
 
 
+def kepler_vel_from_freq(mass, freq):
+    vel = np.power(NWTG*mass*(2.0*np.pi*freq), 1.0/3.0)
+    return vel
+
+
 def m1m2_from_mtmr(mt, mr):
     """Convert from total-mass and mass-ratio to individual masses.
     """
