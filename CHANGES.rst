@@ -60,8 +60,12 @@ Current
             -   `plot_conf_fill()`
                 -   [BUG]: bad function call using filter.
                 -   [BUG]: `filter`/`floor`/`ceil` parameters were not correctly selecting elements.  Improved using masked arrays.
+            -   `plot_segmented_line()`
+                -   Utilize `colormap()` method
         -   `plot_core.py`
             -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
+            -   `colormap()`
+                -   First argument `args` is now optional, defaults to [0.0, 1.0]
             -   `invert_color()` [NEW-FUNCTION]
                 -   Invert the given named or RGB(A) color.
             -   `set_axis()`

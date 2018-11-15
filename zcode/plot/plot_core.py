@@ -811,7 +811,8 @@ def invert_color(col):
     return col
 
 
-def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, right=None):
+def colormap(args=[0.0, 1.0], cmap=None, scale=None,
+             under='0.8', over='0.8', left=None, right=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments

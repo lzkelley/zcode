@@ -118,7 +118,10 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
     return line
 
 
-def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], lw=3.0, alpha=1.0):
+# def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0],
+#                         lw=3.0, alpha=1.0):
+def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='jet'),
+                        lw=3.0, alpha=1.0):
     """Draw a line segment by segment.
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
 
@@ -127,18 +130,22 @@ def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], l
     Optionally specify a colormap, a norm function and a line width
     """
 
-    # Get the minimum and maximum of ``norm``
-    norm = zmath.minmax(norm)
-    # conver to normalization
-    norm = plt.Normalize(norm[0], norm[1])
-
     if zz is None:
-        zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
+        zz = np.linspace(0.0, 1.0, num=len(xx))
     else:
         zz = np.asarray(zz)
 
+    # # Get the minimum and maximum of ``norm``
+    # norm = zmath.minmax(zz)
+    # # conver to normalization
+    # norm = plt.Normalize(norm[0], norm[1])
+
+    if isinstance(smap, dict):
+        smap = colormap(args=zz, **smap)
+
+    colors = smap.to_rgba(zz)
     segments = _make_segments(xx, yy)
-    lc = mpl.collections.LineCollection(segments, array=zz, cmap=cmap, norm=norm,
+    lc = mpl.collections.LineCollection(segments, colors=colors, cmap=smap.cmap, norm=smap.norm,
                                         linewidth=lw, alpha=alpha)
 
     ax.add_collection(lc)
