@@ -62,6 +62,9 @@ Current
                 -   [BUG]: `filter`/`floor`/`ceil` parameters were not correctly selecting elements.  Improved using masked arrays.
             -   `plot_segmented_line()`
                 -   Utilize `colormap()` method
+        -   `layout.py`
+            -   `extent()` [NEW-FUNCTION]
+                -   Function for calculating the extent of an object.  Currently only axes work.
         -   `plot_core.py`
             -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
             -   `colormap()`
