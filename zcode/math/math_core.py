@@ -30,13 +30,13 @@ Functions
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from six.moves import xrange
+import warnings
+import numbers
+import six
 
 import numpy as np
 import scipy as sp
 import scipy.interpolate  # noqa
-import warnings
-import numbers
 
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
@@ -44,7 +44,7 @@ __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'ordered_groups', 'really1d', 'renumerate',
            'sliceForAxis', 'spacing', 'str_array', 'str_array_2d', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
-           '_infer_scale']
+           '_infer_scale', '_fracToInt']
 
 
 def argextrema(arr, type, filter=None):
@@ -268,13 +268,13 @@ def asBinEdges(bins, data, scale='lin'):
     smin = np.atleast_1d(np.array(data.min(axis=0), float))
     smax = np.atleast_1d(np.array(data.max(axis=0), float))
     # Make sure the bins have a finite width.
-    for i in xrange(len(smin)):
+    for i in range(len(smin)):
         if smin[i] == smax[i]:
             smin[i] = smin[i] - 0.5
             smax[i] = smax[i] + 0.5
 
     # Create arrays describing edges of bins
-    for ii in xrange(ndim):
+    for ii in range(ndim):
         if np.isscalar(bins[ii]):
             edges[ii] = spacing([smin[ii], smax[ii]], scale[ii], num=bins[ii] + 1)
         else:
@@ -394,7 +394,7 @@ def groupDigitized(arr, bins, edges='right'):
 
     groups = []
     # Group indices by bin number
-    for ii in xrange(len(bins)):
+    for ii in range(len(bins)):
         groups.append(np.where(pos == ii)[0])
 
     return groups
@@ -475,12 +475,14 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
 
     """
 
-    if(np.shape(arr)[axis] < 2):
+    if (np.shape(arr)[axis] < 2):
         raise RuntimeError("Input ``arr`` does not have a valid shape!")
 
     # Convert to log-space
-    if(log): user = np.log10(arr)
-    else:    user = np.array(arr)
+    if log:
+        user = np.log10(arr)
+    else:
+        user = np.array(arr)
 
     diff = np.diff(user, axis=axis)
 
@@ -489,8 +491,10 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
     start = user[cut]
     mids = start + frac*diff
 
-    if(log): mids = np.power(10.0, mids)
-    if(squeeze): mids = mids.squeeze()
+    if log:
+        mids = np.power(10.0, mids)
+    if squeeze:
+        mids = mids.squeeze()
 
     return mids
 
@@ -763,19 +767,22 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
 
     """
 
-    if(start is stop is step is None):
+    if (start is stop is step is None):
         raise RuntimeError("``start``,``stop``, or ``step`` required!")
 
     ndim = np.ndim(arr)
-    if(ndim == 0): ndim = arr
+    if (ndim == 0):
+        ndim = arr
 
-    if(ndim > 1):
+    if (ndim > 1):
         #     Create an object to slice all elements of all dims
         cut = [slice(None)]*ndim
         #     Exclude the last element of the last dimension
         cut[axis] = slice(start, stop, step)
+        cut = tuple(cut)
     else:
-        if(axis != 0 and axis != -1): raise RuntimeError("cannot slice nonexistent axis!")
+        if (axis != 0) and (axis != -1):
+            raise RuntimeError("cannot slice nonexistent axis!")
         cut = slice(start, stop, step)
 
     return cut
@@ -867,7 +874,7 @@ def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
     return spaced
 
 
-def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log=True):
+def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
     """Create a string representation of a numerical array.
 
     Arguments
@@ -902,7 +909,10 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
 
     len_arr = arr.size
     beg, end = _str_array_get_beg_end(sides, len_arr)
-        
+
+    if format is None:
+        format = _guess_str_format_from_range(arr)
+
     # Create the style specification
     form = "{{{}}}".format(format)
 
@@ -911,6 +921,30 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
         arr_str += " (log values)"
 
     return arr_str
+
+
+def _guess_str_format_from_range(arr, prec=2, log_limit=2):
+    """
+    """
+    try:
+        extr = np.log10(np.fabs(minmax(arr)))
+    # string values will raise a `TypeError` exception
+    except TypeError:
+        return ":s"
+
+    if any(extr < -log_limit) or any(extr > log_limit):
+        use_log = True
+    else:
+        use_log = False
+
+    if use_log:
+        form = ":.{precision:d}e"
+    else:
+        form = ":.{precision:d}f"
+
+    form = form.format(precision=prec)
+
+    return form
 
 
 def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
@@ -925,14 +959,14 @@ def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_lo
             format = _def_format_large
         else:
             format = _def_format_small
-        
+
     if log:
         arr = np.log10(arr)
 
     nrow, ncol = arr.shape
     rbeg, rend = _str_array_get_beg_end(sides, nrow)
     cbeg, cend = _str_array_get_beg_end(sides, ncol)
-    
+
     # Create the style specification
     form = "{{{}}}".format(format)
 
@@ -948,7 +982,7 @@ def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_lo
     for ii in range(rend):
         _str = _str_array_1d(arr[nrow-rend+ii, :], cbeg, cend, form, delim)
         arr_str.append(_str)
-        
+
     arr_str = "\n".join(arr_str)
     if log and label_log:
         arr_str += " (log values)"
@@ -959,13 +993,13 @@ def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_lo
 def _str_array_1d(arr, beg, end, form, delim):
     arr_str = "["
     len_arr = arr.size
-    
+
     # Add the first `first` elements
     if beg is not None:
         arr_str += delim.join([form.format(vv) for vv in arr[:beg]])
 
     # Include separator unless full array is being printed
-    if beg is not None and end < len_arr:
+    if (beg is not None) or (end < len_arr):
         arr_str += "... "
 
     # Add the last `last` elements
@@ -1081,7 +1115,7 @@ def _comparisonFunction(comp):
     return func
 
 
-def _comparison_function(comp, value=0.0):
+def _comparison_function(comp, value=0.0, **kwargs):
     """Retrieve the comparison function matching the input expression.
 
     Arguments
@@ -1114,7 +1148,7 @@ def _comparison_function(comp, value=0.0):
         raise ValueError("Unrecognized comparison '{}'.".format(comp))
 
     def comp_func(xx):
-        return func(xx, value)
+        return func(xx, value, **kwargs)
 
     return comp_func
 
@@ -1135,13 +1169,13 @@ def _comparisonFilter(data, filter):
     return data[sel]
 
 
-def comparison_filter(data, filter, inds=False, value=0.0, finite=True):
+def comparison_filter(data, filter, inds=False, value=0.0, finite=True, **kwargs):
     """
     """
     if filter is None:
         return data
     if not callable(filter):
-        filter = _comparison_function(filter, value=value)
+        filter = _comparison_function(filter, value=value, **kwargs)
 
     # Include is-finite check
     if finite:
@@ -1152,7 +1186,8 @@ def comparison_filter(data, filter, inds=False, value=0.0, finite=True):
     if inds:
         return sel
     else:
-        return np.asarray(data)[sel]
+        # return np.asarray(data)[sel]
+        return np.ma.masked_where(~sel, data)
 
 
 def _fracToInt(frac, size, within=None, round='floor'):
@@ -1173,17 +1208,18 @@ def _fracToInt(frac, size, within=None, round='floor'):
 
     """
     # If ``frac`` is already an integer, do nothing, return it
-    if(isinstance(frac, numbers.Integral)): return frac
+    if isinstance(frac, numbers.Integral):
+        return frac
 
-    if(round == 'floor'):
+    if (round == 'floor'):
         roundFunc = np.floor
-    elif(round == 'ceil'):
+    elif (round == 'ceil'):
         roundFunc = np.ceil
     else:
         raise ValueError("Unrecognized ``round``!")
 
     # Convert fractional input into an integer
-    if(within is not None):
+    if (within is not None):
         assert frac >= 0.0 and frac <= within, "``frac`` must be between [0.0,%s]!" % (str(within))
 
     loc = np.int(roundFunc(frac*size))

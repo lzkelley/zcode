@@ -118,7 +118,10 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
     return line
 
 
-def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], lw=3.0, alpha=1.0):
+# def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0],
+#                         lw=3.0, alpha=1.0):
+def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='jet'),
+                        lw=3.0, alpha=1.0):
     """Draw a line segment by segment.
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
 
@@ -127,18 +130,22 @@ def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], l
     Optionally specify a colormap, a norm function and a line width
     """
 
-    # Get the minimum and maximum of ``norm``
-    norm = zmath.minmax(norm)
-    # conver to normalization
-    norm = plt.Normalize(norm[0], norm[1])
-
     if zz is None:
-        zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
+        zz = np.linspace(0.0, 1.0, num=len(xx))
     else:
         zz = np.asarray(zz)
 
+    # # Get the minimum and maximum of ``norm``
+    # norm = zmath.minmax(zz)
+    # # conver to normalization
+    # norm = plt.Normalize(norm[0], norm[1])
+
+    if isinstance(smap, dict):
+        smap = colormap(args=zz, **smap)
+
+    colors = smap.to_rgba(zz)
     segments = _make_segments(xx, yy)
-    lc = mpl.collections.LineCollection(segments, array=zz, cmap=cmap, norm=norm,
+    lc = mpl.collections.LineCollection(segments, colors=colors, cmap=smap.cmap, norm=smap.norm,
                                         linewidth=lw, alpha=alpha)
 
     ax.add_collection(lc)
@@ -198,8 +205,10 @@ def plot_hist_bars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwa
     HIST_ALPHA = 0.75
     CONF_ALPHA = 0.5
 
-    CONF_INTS = [0.95, 0.68]
-    CONF_COLS = ['green', 'orange']
+    # CONF_INTS = [0.95, 0.68]
+    # CONF_COLS = ['green', 'orange']
+    CONF_INTS = [0.5]
+    CONF_COLS = ['0.5']
 
     if scaley.startswith('log'):
         logy = True
@@ -215,15 +224,26 @@ def plot_hist_bars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwa
     if 'zorder' not in kwargs:
         kwargs['zorder'] = 100
 
+    orientation = kwargs.setdefault('orientation', 'vertical')
+    if orientation.startswith('h'):
+        line_func = ax.axhline
+        span_func = ax.axhspan
+    elif orientation.startswith('v'):
+        line_func = ax.axvline
+        span_func = ax.axvspan
+    else:
+        raise ValueError("Unrecognized `orientation` = '{}'!".format(orientation))
+
     # Add Confidence intervals
     if conf:
-        med, cints = zmath.confidenceIntervals(xx, ci=CONF_INTS)
-        ax.axvline(med, color='red', ls='--', lw=LW_CONF, zorder=101)
+        med, cints = zmath.confidence_intervals(xx, ci=CONF_INTS)
+        cints = np.atleast_2d(cints)
+        line_func(med, color='red', ls='--', lw=LW_CONF, zorder=101)
         # Add average
         ave = np.average(xx)
-        ax.axvline(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
+        line_func(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
         for ii, (vals, col) in enumerate(zip(cints, CONF_COLS)):
-            ax.axvspan(*vals, color=col, alpha=CONF_ALPHA)
+            span_func(*vals, color=col, alpha=CONF_ALPHA)
 
     # Create a given number of log-spaced bins
     #     If not log-spaced, then `ax.hist` will do the same
@@ -307,7 +327,7 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
         raise ValueError("`conf` must be 2 or 3 dimensions!")
 
     if filter is not None:
-        filter = zmath._comparisonFunction(filter)
+        filter = zmath._comparison_function(filter)
 
     if lw_edges is None:
         lw_edges = 0.5 * lw
@@ -326,17 +346,24 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
         xx = np.array(rads)
         ylo = np.array(conf[:, jj, 0])
         yhi = np.array(conf[:, jj, 1])
-        if floor is not None:
-            ylo = np.maximum(ylo, floor)
-        if ceil is not None:
-            yhi = np.minimum(yhi, ceil)
 
-        if filter:
-            ylo = np.ma.masked_where(~filter(ylo, 0.0), ylo)
-            yhi = np.ma.masked_where(~filter(yhi, 0.0), yhi)
+        idx_lo = (ylo >= floor) if (floor is not None) else np.ones_like(ylo, dtype=bool)
+        idx_lo = idx_lo & (ylo <= ceil) if (ceil is not None) else idx_lo
+        idx_hi = (yhi <= ceil) if (ceil is not None) else np.ones_like(yhi, dtype=bool)
+        idx_hi = idx_hi & (yhi >= floor) if (floor is not None) else idx_hi
+
+        if filter is not None:
+            idx_lo = idx_lo & filter(ylo)
+            idx_hi = idx_hi & filter(yhi)
+
+        idx_fill = idx_lo | idx_hi
+        ylo_fill = np.ma.masked_where(~idx_fill, ylo)
+        yhi_fill = np.ma.masked_where(~idx_fill, yhi)
+        ylo = np.ma.masked_where(~idx_lo, ylo)
+        yhi = np.ma.masked_where(~idx_hi, yhi)
 
         # Fill between confidence intervals
-        pp = ax.fill_between(xx, ylo, yhi, alpha=falph, facecolor=color, **kwargs)
+        pp = ax.fill_between(xx, ylo_fill, yhi_fill, alpha=falph, facecolor=color, **kwargs)
         conf_patches.append(pp)
 
         # Plot edges of confidence intervals
@@ -352,17 +379,24 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
             # line_patch = (_pp, ll)
 
     # Plot Median Line
-    #    Plot black outline to improve contrast
-    if outline is not None:
-        oo, = ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=LW_OUTLINE)
+    if med is not None:
+        idx_mm = (med >= floor) if (floor is not None) else np.ones_like(med, dtype=bool)
+        idx_mm = idx_mm & (med <= ceil) if (ceil is not None) else idx_mm
+
+        #    Plot black outline to improve contrast
+        if outline is not None:
+            oo, = ax.plot(rads[idx_mm], med[idx_mm], '-',
+                          color=outline, lw=2*lw, alpha=linealpha*LW_OUTLINE)
+            if dashes is not None:
+                oo.set_dashes(tuple(dashes))
+
+        ll, = ax.plot(rads[idx_mm], med[idx_mm], '-', color=color, lw=lw, alpha=linealpha)
         if dashes is not None:
-            oo.set_dashes(tuple(dashes))
+            ll.set_dashes(tuple(dashes))
 
-    ll, = ax.plot(rads, med, '-', color=color, lw=lw, alpha=linealpha)
-    if dashes is not None:
-        ll.set_dashes(tuple(dashes))
-
-    line_patch = (_pp, ll)
+        line_patch = (_pp, ll)
+    else:
+        line_patch = (_pp,)
 
     return line_patch, conf_patches
 

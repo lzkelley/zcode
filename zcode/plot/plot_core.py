@@ -52,14 +52,13 @@ from . layout import _loc_str_to_pars, _parse_align
 from . plot_const import _PAD
 
 __all__ = ['set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
-           'stretchAxes', 'text', 'label_line', 'legend',
+           'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
            'unifyAxesLimits', 'color_cycle',
-           'colorCycle', 'colormap', 'color_set', 'set_grid',
+           'colormap', 'color_set', 'set_grid',
            'skipTicks', 'saveFigure', 'scientific_notation',
            'line_style_set', 'line_label',
            '_scale_to_log_flag',
            # Deprecated
-           'setGrid', 'setLim', 'strSciNot', 'setAxis', 'twinAxis'
            ]
 
 VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
@@ -78,28 +77,28 @@ _LS_DASH_MED = 5
 _LS_DASH_SML = 3
 _LS_DOT = 1
 _LINE_STYLE_SET = [
-    [],
-    [_LS_DASH_BIG, 4],
-    [_LS_DOT, 1],
+    None,
+    (0, [_LS_DASH_BIG, 4]),
+    (0, [_LS_DOT, 1]),
 
-    [_LS_DOT, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1],
+    (0, [_LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
 
-    [_LS_DASH_MED, 2],
-    [_LS_DASH_SML, 1, _LS_DASH_MED, 1],
-    [_LS_DOT, 1, _LS_DASH_SML, 1, _LS_DASH_MED, 1],
+    (0, [_LS_DASH_MED, 2]),
+    (0, [_LS_DASH_SML, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DASH_SML, 1, _LS_DASH_MED, 1]),
 
-    [_LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1],
+    (0, [_LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
 
-    [_LS_DOT, 4],
-    [_LS_DOT, 1, _LS_DOT, 4],
-    [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 4],
+    (0, [_LS_DOT, 4]),
+    (0, [_LS_DOT, 1, _LS_DOT, 4]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 4]),
 ]
 
 # Default length for lines in legend handles; in units of font-size
@@ -148,9 +147,12 @@ def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=No
         raise ValueError("Additional arguments are not supported!")
 
     # Set tick colors and font-sizes
-    ax.tick_params(axis=axis, which='both', labelsize=fs, colors=color)
+    kw = {}
+    if fs is not None:
+        kw['labelsize'] = fs
+    ax.tick_params(axis=axis, which='both', colors=color, **kw)
     #    Set tick-size only for major ticks
-    ax.tick_params(axis=axis, which='major')
+    # ax.tick_params(axis=axis, which='major')
 
     # Set Grid Lines
     set_grid(ax, grid, axis='both')
@@ -226,7 +228,10 @@ def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=No
 
     # Set Axis Label
     if label is not None:
-        _setAxis_label(ax, axis, label, fs=fs, color=color)
+        kw = {}
+        if fs is not None:
+            kw['fs'] = fs
+        _setAxis_label(ax, axis, label, color=color, **kw)
 
     if not np.isclose(stretch, 1.0):
         if axis == 'x':
@@ -349,8 +354,10 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
     # Actually set the axes limits
     set_lim(lims)
     if invert:
-        if axis == 'x': ax.invert_xaxis()
-        else:            ax.invert_yaxis()
+        if axis == 'x':
+            ax.invert_xaxis()
+        else:
+            ax.invert_yaxis()
 
     return
 
@@ -796,7 +803,16 @@ def color_cycle(num, ax=None, color=None, cmap=plt.cm.Spectral,
     return cols
 
 
-def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, right=None):
+def invert_color(col):
+    rgba = mpl.colors.to_rgba(col)
+    alpha = rgba[-1]
+    col = 1.0 - np.array(rgba[:-1])
+    col = tuple(col.tolist() + [alpha])
+    return col
+
+
+def colormap(args=[0.0, 1.0], cmap=None, scale=None,
+             under='0.8', over='0.8', left=None, right=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
@@ -1433,38 +1449,3 @@ def _color_from_kwargs(kwargs, pop=False):
         col = None
 
     return col
-
-
-#     ============================
-#     ====    DEPRECATIONS    ====
-#     ============================
-
-
-def colorCycle(*args, **kwargs):
-    utils.dep_warn("colorCycle", newname="color_cycle")
-    return color_cycle(*args, **kwargs)
-
-
-def setGrid(*args, **kwargs):
-    utils.dep_warn("setGrid", newname="set_grid")
-    return set_grid(*args, **kwargs)
-
-
-def setLim(*args, **kwargs):
-    utils.dep_warn("setLim", newname="set_lim")
-    return set_lim(*args, **kwargs)
-
-
-def strSciNot(*args, **kwargs):
-    utils.dep_warn("strSciNot", newname="scientific_notation")
-    return scientific_notation(*args, **kwargs)
-
-
-def setAxis(*args, **kwargs):
-    utils.dep_warn("setAxis", newname="set_axis")
-    return set_axis(*args, **kwargs)
-
-
-def twinAxis(*args, **kwargs):
-    utils.dep_warn("twinAxis", newname="twin_axis")
-    return twin_axis(*args, **kwargs)

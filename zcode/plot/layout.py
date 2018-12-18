@@ -9,7 +9,8 @@ import six
 from . plot_const import _PAD
 
 
-__all__ = ["backdrop", "full_extent", "position_to_extent", "rect_for_inset", "transform"]
+__all__ = ["backdrop", "extent", "full_extent", "position_to_extent", "rect_for_inset",
+           "transform"]
 
 
 def backdrop(fig, obj, pad=0.0, union=False, group=False, draw=True, **kwargs):
@@ -34,6 +35,20 @@ def backdrop(fig, obj, pad=0.0, union=False, group=False, draw=True, **kwargs):
 
     if len(pats) == 1: return pats[0]
     return pats
+
+
+def extent(ax, pad=0.0, invert=None, fig=None):
+    """Get the full extent of an axes, including axes labels, tick labels, and titles.
+
+    From: 'stackoverflow.com/questions/14712665/'
+    """
+    # Draw text objects so extents are defined
+    ax.figure.canvas.draw()
+    bbox = ax.get_window_extent().expanded(1.0 + pad, 1.0 + pad)
+    if invert:
+        bbox = bbox.transformed(invert.inverted())
+
+    return bbox
 
 
 def full_extent(ax, pad=0.0, invert=None):
