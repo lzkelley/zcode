@@ -681,6 +681,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     kwargs.setdefault('columnspacing', _LEGEND_COLUMN_SPACING)
     kwargs.setdefault('scatterpoints', _SCATTER_POINTS)
     kwargs.setdefault('numpoints', _SCATTER_POINTS)
+    kwargs.setdefault('fancybox', True)
 
     # `alpha` should actually be `framealpha`
     if 'alpha' in kwargs:
@@ -711,7 +712,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     prop_dict = {'size': fs}
     if mono:
         prop_dict['family'] = 'monospace'
-    leg = ax.legend(keys, names, prop=prop_dict, fancybox=True,
+    leg = ax.legend(keys, names, prop=prop_dict,  # fancybox=True,
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
     if fs_title is not None:
         plt.setp(leg.get_title(), fontsize=fs_title)
