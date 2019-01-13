@@ -376,8 +376,7 @@ def npzToDict(npz):
         newDict = _convert_npz_to_dict(_npz)
 
     except Exception:
-        # warnings.warn("Normal load of `{}` failed ... trying different encoding".format(
-        #     npz))
+        # warnings.warn("Normal load of `{}` failed ... trying different encoding".format(npz))
         if isinstance(npz, six.string_types):
             # Use `fix_imports` to try to resolve python2 to python3 issues.
             _npz = np.load(npz, fix_imports=True, encoding="bytes")
