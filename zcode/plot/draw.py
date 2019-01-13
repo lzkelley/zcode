@@ -118,7 +118,10 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
     return line
 
 
-def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], lw=3.0, alpha=1.0):
+# def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0],
+#                         lw=3.0, alpha=1.0):
+def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='jet'),
+                        lw=3.0, alpha=1.0):
     """Draw a line segment by segment.
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
 
@@ -127,18 +130,22 @@ def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], l
     Optionally specify a colormap, a norm function and a line width
     """
 
-    # Get the minimum and maximum of ``norm``
-    norm = zmath.minmax(norm)
-    # conver to normalization
-    norm = plt.Normalize(norm[0], norm[1])
-
     if zz is None:
-        zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
+        zz = np.linspace(0.0, 1.0, num=len(xx))
     else:
         zz = np.asarray(zz)
 
+    # # Get the minimum and maximum of ``norm``
+    # norm = zmath.minmax(zz)
+    # # conver to normalization
+    # norm = plt.Normalize(norm[0], norm[1])
+
+    if isinstance(smap, dict):
+        smap = colormap(args=zz, **smap)
+
+    colors = smap.to_rgba(zz)
     segments = _make_segments(xx, yy)
-    lc = mpl.collections.LineCollection(segments, array=zz, cmap=cmap, norm=norm,
+    lc = mpl.collections.LineCollection(segments, colors=colors, cmap=smap.cmap, norm=smap.norm,
                                         linewidth=lw, alpha=alpha)
 
     ax.add_collection(lc)
@@ -198,8 +205,10 @@ def plot_hist_bars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwa
     HIST_ALPHA = 0.75
     CONF_ALPHA = 0.5
 
-    CONF_INTS = [0.95, 0.68]
-    CONF_COLS = ['green', 'orange']
+    # CONF_INTS = [0.95, 0.68]
+    # CONF_COLS = ['green', 'orange']
+    CONF_INTS = [0.5]
+    CONF_COLS = ['0.5']
 
     if scaley.startswith('log'):
         logy = True
@@ -215,15 +224,26 @@ def plot_hist_bars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwa
     if 'zorder' not in kwargs:
         kwargs['zorder'] = 100
 
+    orientation = kwargs.setdefault('orientation', 'vertical')
+    if orientation.startswith('h'):
+        line_func = ax.axhline
+        span_func = ax.axhspan
+    elif orientation.startswith('v'):
+        line_func = ax.axvline
+        span_func = ax.axvspan
+    else:
+        raise ValueError("Unrecognized `orientation` = '{}'!".format(orientation))
+
     # Add Confidence intervals
     if conf:
-        med, cints = zmath.confidenceIntervals(xx, ci=CONF_INTS)
-        ax.axvline(med, color='red', ls='--', lw=LW_CONF, zorder=101)
+        med, cints = zmath.confidence_intervals(xx, ci=CONF_INTS)
+        cints = np.atleast_2d(cints)
+        line_func(med, color='red', ls='--', lw=LW_CONF, zorder=101)
         # Add average
         ave = np.average(xx)
-        ax.axvline(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
+        line_func(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
         for ii, (vals, col) in enumerate(zip(cints, CONF_COLS)):
-            ax.axvspan(*vals, color=col, alpha=CONF_ALPHA)
+            span_func(*vals, color=col, alpha=CONF_ALPHA)
 
     # Create a given number of log-spaced bins
     #     If not log-spaced, then `ax.hist` will do the same

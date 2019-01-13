@@ -30,13 +30,13 @@ Functions
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from six.moves import xrange
+import warnings
+import numbers
+import six
 
 import numpy as np
 import scipy as sp
 import scipy.interpolate  # noqa
-import warnings
-import numbers
 
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
@@ -268,13 +268,13 @@ def asBinEdges(bins, data, scale='lin'):
     smin = np.atleast_1d(np.array(data.min(axis=0), float))
     smax = np.atleast_1d(np.array(data.max(axis=0), float))
     # Make sure the bins have a finite width.
-    for i in xrange(len(smin)):
+    for i in range(len(smin)):
         if smin[i] == smax[i]:
             smin[i] = smin[i] - 0.5
             smax[i] = smax[i] + 0.5
 
     # Create arrays describing edges of bins
-    for ii in xrange(ndim):
+    for ii in range(ndim):
         if np.isscalar(bins[ii]):
             edges[ii] = spacing([smin[ii], smax[ii]], scale[ii], num=bins[ii] + 1)
         else:
@@ -394,7 +394,7 @@ def groupDigitized(arr, bins, edges='right'):
 
     groups = []
     # Group indices by bin number
-    for ii in xrange(len(bins)):
+    for ii in range(len(bins)):
         groups.append(np.where(pos == ii)[0])
 
     return groups
@@ -874,7 +874,7 @@ def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
     return spaced
 
 
-def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log=True):
+def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
     """Create a string representation of a numerical array.
 
     Arguments
@@ -910,6 +910,9 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
     len_arr = arr.size
     beg, end = _str_array_get_beg_end(sides, len_arr)
 
+    if format is None:
+        format = _guess_str_format_from_range(arr)
+
     # Create the style specification
     form = "{{{}}}".format(format)
 
@@ -918,6 +921,30 @@ def str_array(arr, sides=(3, 3), delim=", ", format=":.2f", log=False, label_log
         arr_str += " (log values)"
 
     return arr_str
+
+
+def _guess_str_format_from_range(arr, prec=2, log_limit=2):
+    """
+    """
+    try:
+        extr = np.log10(np.fabs(minmax(arr)))
+    # string values will raise a `TypeError` exception
+    except TypeError:
+        return ":s"
+
+    if any(extr < -log_limit) or any(extr > log_limit):
+        use_log = True
+    else:
+        use_log = False
+
+    if use_log:
+        form = ":.{precision:d}e"
+    else:
+        form = ":.{precision:d}f"
+
+    form = form.format(precision=prec)
+
+    return form
 
 
 def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
@@ -1088,7 +1115,7 @@ def _comparisonFunction(comp):
     return func
 
 
-def _comparison_function(comp, value=0.0):
+def _comparison_function(comp, value=0.0, **kwargs):
     """Retrieve the comparison function matching the input expression.
 
     Arguments
@@ -1121,7 +1148,7 @@ def _comparison_function(comp, value=0.0):
         raise ValueError("Unrecognized comparison '{}'.".format(comp))
 
     def comp_func(xx):
-        return func(xx, value)
+        return func(xx, value, **kwargs)
 
     return comp_func
 
@@ -1142,13 +1169,13 @@ def _comparisonFilter(data, filter):
     return data[sel]
 
 
-def comparison_filter(data, filter, inds=False, value=0.0, finite=True):
+def comparison_filter(data, filter, inds=False, value=0.0, finite=True, **kwargs):
     """
     """
     if filter is None:
         return data
     if not callable(filter):
-        filter = _comparison_function(filter, value=value)
+        filter = _comparison_function(filter, value=value, **kwargs)
 
     # Include is-finite check
     if finite:
@@ -1159,7 +1186,8 @@ def comparison_filter(data, filter, inds=False, value=0.0, finite=True):
     if inds:
         return sel
     else:
-        return np.asarray(data)[sel]
+        # return np.asarray(data)[sel]
+        return np.ma.masked_where(~sel, data)
 
 
 def _fracToInt(frac, size, within=None, round='floor'):

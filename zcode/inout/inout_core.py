@@ -213,18 +213,18 @@ def get_file_size(fnames, precision=1):
 
     Returns
     -------
-    byteStr : str
+    byte_str : str
         Human-readable size of file(s)
 
     """
     fnames = np.atleast_1d(fnames)
 
-    byteSize = 0.0
+    byte_size = 0.0
     for fil in fnames:
-        byteSize += os.path.getsize(fil)
+        byte_size += os.path.getsize(fil)
 
-    byteStr = bytes_string(byteSize, precision)
-    return byteStr
+    byte_str = bytes_string(byte_size, precision)
+    return byte_str
 
 
 def countLines(files, progress=False):

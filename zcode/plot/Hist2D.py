@@ -426,7 +426,8 @@ def plot2DHist(ax, xvals, yvals, hist,
                cax=None, cbax=None, cscale='log', cmap=None, smap=None, extrema=None,
                contours=None, clabel={}, ccolors=None, clw=2.5, fs=None, rasterized=True,
                scale='log', csmooth=None, cbg=True,
-               title=None, labels=None, overlay=None, overlay_fmt="", **kwargs):
+               title=None, labels=None, overlay=None, overlay_fmt="",
+               cbar_kwargs={}, **kwargs):
     """Plot the given 2D histogram of data.
 
     Use with (e.g.) ``numpy.histogram2d``,
@@ -523,9 +524,9 @@ def plot2DHist(ax, xvals, yvals, hist,
     cbar = None
     if cbax is not None or cax is not None:
         if cbax is not None:
-            cbar = plt.colorbar(smap, cax=cbax)
+            cbar = plt.colorbar(smap, cax=cbax, **cbar_kwargs)
         else:
-            cbar = plt.colorbar(smap, ax=cax)
+            cbar = plt.colorbar(smap, ax=cax, **cbar_kwargs)
 
         if fs is not None:
             cbar.ax.tick_params(labelsize=fs)

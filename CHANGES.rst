@@ -43,17 +43,48 @@ Future / To-Do
 
 Current
 -------
+    -   `astro/`
+        -   `astro_core.py`
+            -   `distance()` [NEW-FUNCTION]
+                -   Calculate the cartesian distance between vectors
+            -   `kepler_vel_from_freq()` [NEW-FUNCTION]
+                -   Calculate keplerian velocity from frequency
+            -   `mtmr_from_m1m2()` [NEW-FUNCTION]
+                -   Convert from primary and secondary masses to total-mass and mass-ratio
+
     -   `plot/`
         -   `draw.py`
+            -   `draw_hist_bars()`
+                -   Update to allow for horizontal or vertical plotting.
+                -   [BUG]: Single confidence-interval cause error with shape of returned values.
             -   `plot_conf_fill()`
                 -   [BUG]: bad function call using filter.
                 -   [BUG]: `filter`/`floor`/`ceil` parameters were not correctly selecting elements.  Improved using masked arrays.
+            -   `plot_segmented_line()`
+                -   Utilize `colormap()` method
+        -   `layout.py`
+            -   `extent()` [NEW-FUNCTION]
+                -   Function for calculating the extent of an object.  Currently only axes work.
         -   `plot_core.py`
             -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
+            -   `colormap()`
+                -   First argument `args` is now optional, defaults to [0.0, 1.0]
+            -   `invert_color()` [NEW-FUNCTION]
+                -   Invert the given named or RGB(A) color.
+            -   `set_axis()`
+                -   Catch 'fs' keyword-argument and replace with 'labelsize'
     -   `math/`
+        -   `math_core.py`
+            -   `comparison_filter()`
+                -   Use numpy masked arrays, instead of flattening multi-dimensional arrays.
+            -   `str_array()`
+                -   Guess default format based on array values (use `_guess_str_format_from_range`)
+            -   `_guess_str_format_from_range()` [NEW-FUNCTION]
+                -   Based on the dynamical (logarithmic) range of an array, guess the appropriate string formatting (i.e. 'f' vs 'e')
+            
         -   `statistic.py`
             -   `confidence_intervals()`
-                -   [BUG]: default `axis` argument is '-1' not None, so error was being raised when a `filter` was passed.  Only raise error if more than one dimension in values.
+                -   Implement a kludge to allow percentile calculation with masked arrays.
 
 
 [0.0.12] - 2018/06/20
