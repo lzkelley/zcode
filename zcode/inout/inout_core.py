@@ -50,7 +50,7 @@ from zcode import utils
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
            'countLines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
            'check_path', 'dictToNPZ', 'npzToDict', 'checkURL',
-           'combine_files',
+           'combine_files', 'frac_str',
            'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists', 'python_environment',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
            # === DEPRECATED ===
@@ -902,3 +902,29 @@ def combine_files(inFilenames, outFilename, verbose=False):
 def combineFiles(*args, **kwargs):
     utils.dep_warn("combineFiles", newname="combine_files")
     return combine_files(*args, **kwargs)
+
+
+def frac_str(num, den, frac_fmt=None, dec_fmt=None):
+    """Create a string of the form '{}/{} = {}' for reporting fractional values.
+    """
+    dec_frac = num / den
+
+    if frac_fmt is None:
+        frac_exp = np.fabs(np.log10([num, den]))
+
+        if np.any(frac_exp >= 4):
+            frac_fmt = ".1e"
+        else:
+            frac_fmt = "d"
+
+    if dec_fmt is None:
+        dec_exp = np.fabs(np.log10(dec_frac))
+        if dec_exp > 3:
+            dec_fmt = ".3e"
+        else:
+            dec_fmt = ".4f"
+
+    fstr = "{num:{ff}}/{den:{ff}} = {frac:{df}}".format(
+        num=num, den=den, frac=dec_frac, ff=frac_fmt, df=dec_fmt)
+
+    return fstr

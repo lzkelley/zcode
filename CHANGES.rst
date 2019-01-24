@@ -52,6 +52,11 @@ Current
             -   `mtmr_from_m1m2()` [NEW-FUNCTION]
                 -   Convert from primary and secondary masses to total-mass and mass-ratio
 
+    -   `inout/`
+        -   `inout_core.py`
+            -   `frac_str`  [NEW-FUNCTION]
+                -   New function to nicely format a string of the form '{}/{} = {}' given a numerator and denominator.  Chooses appropriate formatting given the values.
+
     -   `plot/`
         -   `draw.py`
             -   `draw_hist_bars()`
