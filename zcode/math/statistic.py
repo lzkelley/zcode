@@ -305,7 +305,7 @@ def stats(vals, median=False):
 
 
 def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, weights=None,
-              format=None, label=None, log=False, label_log=True):
+              format=None, label=None, log=False, label_log=True, filter=None):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -332,23 +332,13 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
 
     """
     data = np.array(data).astype(np.float)
+    if filter is not None:
+        data = math_core.comparison_filter(data, filter)
+
     if log:
         data = np.log10(data)
 
     if format is None:
-        # format = ':.2e' if log else ':.2f'
-        '''
-        if log:
-            format = ':.2e'
-        else:
-            format = ':.2f'
-            try:
-                log_extr = np.log10(math_core.minmax(data, filter='>'))
-                if np.any(log_extr >= 4) or np.any(log_extr < -2):
-                    format = ':.2e'
-            except AttributeError:
-                pass
-        '''
         format = math_core._guess_str_format_from_range(data)
 
     percs = np.atleast_1d(percs)
