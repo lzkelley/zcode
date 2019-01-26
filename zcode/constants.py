@@ -26,6 +26,7 @@ EVOLT = 1.60218e-12                             # Electronvolt in ergs
 
 MELC = ap.constants.m_e.cgs.value
 MPRT = ap.constants.m_p.cgs.value
+QELC = ap.constants.e.gauss.value               # Fundamental unit of charge (electron charge)
 KBOLTZ = ap.constants.k_B.cgs.value             # Boltzmann constant
 HPLANCK = ap.constants.h.cgs.value              # Planck constant
 SIGMA_SB = ap.constants.sigma_sb.cgs.value

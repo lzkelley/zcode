@@ -91,6 +91,11 @@ Current
             -   `confidence_intervals()`
                 -   Implement a kludge to allow percentile calculation with masked arrays.
 
+    -   `constants.py`
+        -   Added electron-charge `QELC`
+                    
+
+
 
 [0.0.12] - 2018/06/20
 ---------------------
