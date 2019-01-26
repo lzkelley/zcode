@@ -95,6 +95,7 @@ Current
 
     -   `constants.py`
         -   Added electron-charge `QELC`
+        -   Added Jansky unit `JY`
                     
 
 

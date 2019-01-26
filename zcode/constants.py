@@ -23,6 +23,7 @@ ARCSEC = ap.units.arcsec.cgs.scale              # arcsecond in radians
 YR = ap.units.year.to(ap.units.s)
 DAY = 86400.0                                   # Day in seconds
 EVOLT = 1.60218e-12                             # Electronvolt in ergs
+JY = 1e-23                                      # Jansky in [erg/s/cm^2/Hz]
 
 MELC = ap.constants.m_e.cgs.value
 MPRT = ap.constants.m_p.cgs.value
