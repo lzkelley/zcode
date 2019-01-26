@@ -904,9 +904,14 @@ def combineFiles(*args, **kwargs):
     return combine_files(*args, **kwargs)
 
 
-def frac_str(num, den, frac_fmt=None, dec_fmt=None):
+def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
     """Create a string of the form '{}/{} = {}' for reporting fractional values.
     """
+    if den is None:
+        assert num.dtype == bool, "If no `den` is given, array must be boolean!"
+        den = num.size
+        num = np.count_nonzero(num)
+
     dec_frac = num / den
 
     if frac_fmt is None:
