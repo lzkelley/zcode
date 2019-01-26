@@ -78,6 +78,8 @@ Current
                 -   Invert the given named or RGB(A) color.
             -   `set_axis()`
                 -   Catch 'fs' keyword-argument and replace with 'labelsize'
+            -   `text()`
+                -   Do not set default fontsize `fs`
     -   `math/`
         -   `math_core.py`
             -   `comparison_filter()`

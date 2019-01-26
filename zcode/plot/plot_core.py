@@ -451,7 +451,7 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
 
 
 def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
-         fs=16, trans=None, pad=None, shift=None, **kwargs):
+         fs=None, trans=None, pad=None, shift=None, **kwargs):
     """Add text to figure.
 
     Wrapper for the `matplotlib.figure.Figure.text` method.
@@ -494,6 +494,11 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     if trans is None:
         trans = kwargs.pop('transform', None)
 
+    if fs is not None:
+        if 'size' in kwargs:
+            raise KeyError("Cannot provide both `fs` and `size`!")
+        kwargs['size'] = fs
+
     if trans is None:
         if isinstance(art, mpl.figure.Figure):
             trans = art.transFigure
@@ -522,7 +527,7 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
         y += shift[1]
 
     halign, valign = _parse_align(halign, valign)
-    txt = art.text(x, y, pstr, size=fs, transform=trans,
+    txt = art.text(x, y, pstr, transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
