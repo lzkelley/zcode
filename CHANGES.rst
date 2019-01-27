@@ -86,6 +86,8 @@ Current
                 -   Use numpy masked arrays, instead of flattening multi-dimensional arrays.
             -   `str_array()`
                 -   Guess default format based on array values (use `_guess_str_format_from_range`)
+			-   `zenum()`  [NEW-FUNCTION]
+				-   Method to perform `enumerate(zip(*args))`
             -   `_guess_str_format_from_range()` [NEW-FUNCTION]
                 -   Based on the dynamical (logarithmic) range of an array, guess the appropriate string formatting (i.e. 'f' vs 'e')
             

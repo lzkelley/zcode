@@ -41,7 +41,7 @@ import scipy.interpolate  # noqa
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
-           'ordered_groups', 'really1d', 'renumerate',
+           'ordered_groups', 'really1d', 'renumerate', 'zenum',
            'sliceForAxis', 'spacing', 'str_array', 'str_array_2d', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
            '_infer_scale', '_fracToInt']
@@ -744,6 +744,11 @@ def renumerate(arr):
     Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
     """
     return zip(reversed(range(len(arr))), reversed(arr))
+
+
+def zenum(*arr):
+    zipped = zip(*arr)
+    return enumerate(zipped)
 
 
 def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
