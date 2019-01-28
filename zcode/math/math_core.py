@@ -1174,7 +1174,7 @@ def _comparisonFilter(data, filter):
     return data[sel]
 
 
-def comparison_filter(data, filter, inds=False, value=0.0, finite=True, **kwargs):
+def comparison_filter(data, filter, inds=False, value=0.0, finite=True, mask=False, **kwargs):
     """
     """
     if filter is None:
@@ -1191,8 +1191,10 @@ def comparison_filter(data, filter, inds=False, value=0.0, finite=True, **kwargs
     if inds:
         return sel
     else:
-        # return np.asarray(data)[sel]
-        return np.ma.masked_where(~sel, data)
+        if mask:
+            return np.ma.masked_where(~sel, data)
+        else:
+            return np.asarray(data)[sel]
 
 
 def _fracToInt(frac, size, within=None, round='floor'):
