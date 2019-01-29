@@ -84,6 +84,8 @@ Current
         -   `math_core.py`
             -   `comparison_filter()`
                 -   Use numpy masked arrays, instead of flattening multi-dimensional arrays.
+            -   `rotation_matrix_between_vectors()`  [NEW-FUNCTION]
+                -   Function that uses Rodriguez' formula to create a rotation matrix that will rotate one vector to another.
             -   `str_array()`
                 -   Guess default format based on array values (use `_guess_str_format_from_range`)
 			-   `zenum()`  [NEW-FUNCTION]

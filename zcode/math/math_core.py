@@ -746,6 +746,14 @@ def renumerate(arr):
     return zip(reversed(range(len(arr))), reversed(arr))
 
 
+def rotation_matrix_between_vectors(aa, bb):
+    """Construct a rotation matrix that rotates vector `aa` to vector `bb`.
+    """
+    ab = np.matrix(aa + bb)
+    rot = 2*((ab*ab.T) / (ab.T*ab)) - np.eye(3)
+    return rot
+
+
 def zenum(*arr):
     zipped = zip(*arr)
     return enumerate(zipped)
