@@ -41,7 +41,7 @@ import scipy.interpolate  # noqa
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
-           'ordered_groups', 'really1d', 'renumerate', 'zenum',
+           'ordered_groups', 'really1d', 'renumerate', 'rotation_matrix_between_vectors', 'zenum',
            'sliceForAxis', 'spacing', 'str_array', 'str_array_2d', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
            '_infer_scale', '_fracToInt']
