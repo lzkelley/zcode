@@ -16,6 +16,7 @@ To-do
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import six
+import warnings
 
 import numpy as np
 import scipy as sp
@@ -495,6 +496,7 @@ def plot2DHist(ax, xvals, yvals, hist,
         filter = 'g'
     else:
         filter = None
+
     extrema = _set_extrema(extrema, hist, filter=filter)
 
     # Make sure the given `scale` is valid
@@ -709,7 +711,7 @@ def _constructFigure(fig, xproj, yproj, overall, overall_wide, hratio, wratio, p
     return fig, prax, xpax, ypax, cbax, ovax
 
 
-def _set_extrema(extrema, vals, filter=None, lo=None, hi=None):
+def _set_extrema(extrema, *vals, filter=None, lo=None, hi=None):
     _extr = None
     for vv in vals:
         use_vv = np.array(vv)
@@ -719,11 +721,15 @@ def _set_extrema(extrema, vals, filter=None, lo=None, hi=None):
             use_vv = use_vv[use_vv < hi]
         _extr = zmath.minmax(use_vv, filter=filter, prev=_extr, stretch=0.05)
 
-    if extrema is None: new_extr = _extr
-    else:               new_extr = np.asarray(extrema)
-    if new_extr[0] is None: new_extr[0] = _extr[0]
-    if new_extr[1] is None: new_extr[1] = _extr[1]
-    new_extr = new_extr.astype(np.float64)
+    new_extr = _extr if extrema is None else np.asarray(extrema)
+    try:
+        new_extr[0] = _extr[0] if new_extr[0] is None else new_extr[0]
+        new_extr[1] = _extr[1] if new_extr[1] is None else new_extr[1]
+        new_extr = new_extr.astype(np.float64)
+    except TypeError as err:
+        warnings.warn(str(err))
+        new_extr = np.array([-1, 1], dtype=np.float64)
+
     return new_extr
 
 
