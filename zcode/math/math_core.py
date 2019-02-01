@@ -517,10 +517,12 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     filter : str or `None`,
         Key describing how to filter the input data, or `None` for no filter.
         See, ``comparison_filter``.
-    stretch : flt or `None`
+    stretch : float, `None`, or (2,) or float
         Factor by which to stretch min and max by (``1.0 +- stretch``) in linear space.
-    log_stretch : flt or `None`
+        If two values are given, they are applied to low (-) and high (+) side respectively.
+    log_stretch : float, `None`, or (2,) or float
         Factor by which to stretch min and max by (``1.0 +- stretch``) in log space.
+        If two values are given, they are applied to low (-) and high (+) side respectively.
     limit :
     round : int or 'None'
         The number of significant figures to which to round the min and max values.
@@ -557,11 +559,27 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
 
     # Add stretch (relative to center point)
     if (stretch is not None) or (log_stretch is not None):
+        if (stretch is not None) and (log_stretch is not None):
+            raise ValueError("Only `stretch` OR `log_stretch` can be applied!")
+
+        # Choose the given value
         fact = stretch if (stretch is not None) else log_stretch
+
+        # If a single stretch value is given, duplicate it for both lo and hi sides
+        if (fact is not None) and np.isscalar(fact):
+            fact = [fact, fact]
+            
+        # Make sure size is right
+        if (fact is not None) and np.size(fact) != 2:
+            raise ValueError("`log_stretch` and `stretch` must be None, scalar or (2,)!")
+
+        # Use log-values as needed (stretching in log-space)
         _minmax = np.log10(minmax) if (log_stretch is not None) else minmax
+        # Find the center, and stretch relative to that
         cent = np.average(_minmax)
-        _minmax[0] = cent - (1.0 + fact)*(cent - _minmax[0])
-        _minmax[1] = cent + (1.0 + fact)*(_minmax[1] - cent)
+        _minmax[0] = cent - (1.0 + fact[0])*(cent - _minmax[0])
+        _minmax[1] = cent + (1.0 + fact[1])*(_minmax[1] - cent)
+        # Convert back to normal-space as needed
         minmax = np.power(10.0, _minmax) if (log_stretch is not None) else _minmax
 
     # Compare to previous extrema, if given

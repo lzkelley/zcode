@@ -84,6 +84,8 @@ Current
         -   `math_core.py`
             -   `comparison_filter()`
                 -   Use numpy masked arrays, instead of flattening multi-dimensional arrays.
+			-   `minmax()`
+				-   Allow (2,) values to be given for `stretch` and `log_stretch` to apply to left and right sides respectively.
             -   `rotation_matrix_between_vectors()`  [NEW-FUNCTION]
                 -   Function that uses Rodriguez' formula to create a rotation matrix that will rotate one vector to another.
             -   `str_array()`
