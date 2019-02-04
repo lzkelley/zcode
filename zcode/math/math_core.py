@@ -450,7 +450,7 @@ def interp_func(xold, yold, kind='linear', xlog=True, ylog=True, **kwargs):
     return log_interp
 
 
-def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
+def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
     """Return the midpoints between values in the given array.
 
     If the given array is N-dimensional, midpoints are calculated from the last dimension.
@@ -478,8 +478,18 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
     if (np.shape(arr)[axis] < 2):
         raise RuntimeError("Input ``arr`` does not have a valid shape!")
 
+    if log is not None:
+        if scale is not None:
+            raise ValueError("Provide either `scale` or `log`, not both!")
+        log_flag = log
+    elif scale is not None:
+        log_flag = scale.lower().startswith('log')
+    # Default to log scaling
+    else:
+        log_flag = True
+
     # Convert to log-space
-    if log:
+    if log_flag:
         user = np.log10(arr)
     else:
         user = np.array(arr)
@@ -491,7 +501,7 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
     start = user[cut]
     mids = start + frac*diff
 
-    if log:
+    if log_flag:
         mids = np.power(10.0, mids)
     if squeeze:
         mids = mids.squeeze()
