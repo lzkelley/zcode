@@ -331,15 +331,13 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
         Single-line string of the desired statistics.
 
     """
-    data = np.array(data).astype(np.float)
+    # data = np.array(data).astype(np.float)
+    data = np.array(data)
     if filter is not None:
         data = math_core.comparison_filter(data, filter)
 
     if log:
         data = np.log10(data)
-
-    if format is None:
-        format = math_core._guess_str_format_from_range(data)
 
     percs = np.atleast_1d(percs)
     if np.any(percs > 1.0):
@@ -352,6 +350,11 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
         percs_flag = True
 
     out = ""
+
+    if format is None:
+        allow_int = False if (ave or std) else True
+        format = math_core._guess_str_format_from_range(data, allow_int=allow_int)
+
     # If a `format` is given, but missing the colon, add the colon
     if len(format) and not format.startswith(':'):
         format = ':' + format
@@ -371,7 +374,7 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
 
     # Add percentiles
     if percs_flag:
-        tiles = percentiles(data, percs, weights=weights)
+        tiles = percentiles(data, percs, weights=weights).astype(data.dtype)
         out += "(" + ", ".join(form.format(tt) for tt in tiles) + ")"
         out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"
 
