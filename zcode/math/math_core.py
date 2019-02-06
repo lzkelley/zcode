@@ -32,7 +32,7 @@ Functions
 from __future__ import absolute_import, division, print_function, unicode_literals
 import warnings
 import numbers
-import six
+# import six
 
 import numpy as np
 import scipy as sp
@@ -963,7 +963,7 @@ def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=T
     return arr_str
 
 
-def _guess_str_format_from_range(arr, prec=2, log_limit=2):
+def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
     """
     """
     try:
@@ -980,7 +980,10 @@ def _guess_str_format_from_range(arr, prec=2, log_limit=2):
     if use_log:
         form = ":.{precision:d}e"
     else:
-        form = ":.{precision:d}f"
+        if np.issubdtype(int, np.integer) and allow_int:
+            form = ":d"
+        else:
+            form = ":.{precision:d}f"
 
     form = form.format(precision=prec)
 
