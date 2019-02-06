@@ -74,12 +74,15 @@ Current
             -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
             -   `colormap()`
                 -   First argument `args` is now optional, defaults to [0.0, 1.0]
+            -   `figax()`  [NEW-FUNCTION]
+                -   New method for conveniently creating and adjusting plots using `plt.subplots()`
             -   `invert_color()` [NEW-FUNCTION]
                 -   Invert the given named or RGB(A) color.
             -   `set_axis()`
                 -   Catch 'fs' keyword-argument and replace with 'labelsize'
             -   `text()`
                 -   Do not set default fontsize `fs`
+
     -   `math/`
         -   `math_core.py`
             -   `comparison_filter()`

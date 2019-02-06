@@ -51,7 +51,7 @@ from zcode import utils
 from . layout import _loc_str_to_pars, _parse_align
 from . plot_const import _PAD
 
-__all__ = ['set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
+__all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
            'unifyAxesLimits', 'color_cycle',
            'colormap', 'color_set', 'set_grid',
@@ -106,6 +106,36 @@ _HANDLE_LENGTH = 2.5
 _HANDLE_PAD = 0.6
 _LEGEND_COLUMN_SPACING = 1.2
 _SCATTER_POINTS = 1
+
+
+def figax(figsize=[8, 6], xscale='log', yscale='log', ncols=1, nrows=1,
+          sharex=False, sharey=False, squeeze=True,
+          left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
+          grid=None):
+
+    fig, axes = plt.subplots(figsize=figsize, squeeze=False, ncols=ncols, nrows=nrows,
+                             sharex=sharex, sharey=sharey)
+
+    plt.subplots_adjust(
+        left=left, bottom=bottom, right=right, top=top, hspace=hspace, wspace=wspace)
+
+    xscale = np.broadcast_arrays(axes, xscale)[-1]
+    yscale = np.broadcast_arrays(axes, yscale)[-1]
+
+    for idx, ax in np.ndenumerate(axes):
+        ax.set(xscale=xscale[idx], yscale=yscale[idx])
+        if grid is not None:
+            if grid is True:
+                set_grid(ax)
+            else:
+                set_grid(ax, **grid)
+
+    if squeeze:
+        axes = np.squeeze(axes)
+        if np.ndim(axes) == 0:
+            axes = axes[()]
+
+    return fig, axes
 
 
 def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=None,
