@@ -100,6 +100,12 @@ Current
             -   `_guess_str_format_from_range()` [NEW-FUNCTION]
                 -   Based on the dynamical (logarithmic) range of an array, guess the appropriate string formatting (i.e. 'f' vs 'e')
             
+        -   `numeric.py`
+            -   `kde()`  [NEW-FUNCTION]
+                -   Construct a custom KDE object, optionally in log-space.
+            -   `kde_hist()`  [NEW-FUNCTION]
+                -   Construct a KDE "histogram" resampling from the KDE distribution.
+            
         -   `statistic.py`
             -   `confidence_intervals()`
                 -   Implement a kludge to allow percentile calculation with masked arrays.
