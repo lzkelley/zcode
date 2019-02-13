@@ -108,8 +108,9 @@ _LEGEND_COLUMN_SPACING = 1.2
 _SCATTER_POINTS = 1
 
 
-def figax(figsize=[8, 6], xscale='log', yscale='log', ncols=1, nrows=1,
-          sharex=False, sharey=False, squeeze=True,
+def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True,
+          xscale='log', xlabel='', xlim=None,
+          yscale='log', ylabel='', ylim=None,
           left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
           grid=None):
 
@@ -119,11 +120,17 @@ def figax(figsize=[8, 6], xscale='log', yscale='log', ncols=1, nrows=1,
     plt.subplots_adjust(
         left=left, bottom=bottom, right=right, top=top, hspace=hspace, wspace=wspace)
 
-    xscale = np.broadcast_arrays(axes, xscale)[-1]
-    yscale = np.broadcast_arrays(axes, yscale)[-1]
+    _, xscale, xlabel, xlim = np.broadcast_arrays(axes, xscale, xlabel, xlim)
+    _, yscale, ylabel, ylim = np.broadcast_arrays(axes, yscale, ylabel, ylim)
 
     for idx, ax in np.ndenumerate(axes):
-        ax.set(xscale=xscale[idx], yscale=yscale[idx])
+        ax.set(xscale=xscale[idx], xlabel=xlabel[idx],
+               yscale=yscale[idx], ylabel=ylabel[idx])
+        if xlim[idx] is not None:
+            ax.set_xlim(xlim[idx])
+        if ylim[idx] is not None:
+            ax.set_ylim(ylim[idx])
+
         if grid is not None:
             if grid is True:
                 set_grid(ax)
@@ -655,7 +662,7 @@ def label_line(ax, line, label, x=None, y=None,
 
 
 def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
-           fs=12, trans=None,
+           fs=None, trans=None,
            fs_title=None, loc=None, mono=False, zorder=None, align_title=None, **kwargs):
     """Add a legend to the given figure.
 
@@ -744,7 +751,9 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     if not (valign == 'center' and halign == 'center'):
         alignStr += " " + halign
 
-    prop_dict = {'size': fs}
+    prop_dict = {}
+    if fs is not None:
+        prop_dict['size'] = fs
     if mono:
         prop_dict['family'] = 'monospace'
     leg = ax.legend(keys, names, prop=prop_dict,  # fancybox=True,
