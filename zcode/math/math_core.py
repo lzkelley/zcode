@@ -601,9 +601,9 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     # Compare to limits, if given
     if limit is not None:
         if limit[0] is not None:
-            minmax[0] = np.max([minmax[0], limit[0]])
+            minmax[0] = np.max([minmax[0], limit[0]]) if not np.isnan(minmax[0]) else limit[0]
         if limit[1] is not None:
-            minmax[1] = np.min([minmax[1], limit[1]])
+            minmax[1] = np.min([minmax[1], limit[1]]) if not np.isnan(minmax[1]) else limit[1]
 
     # Round the min/max results to given number of sig-figs
     if round is not None:
@@ -980,7 +980,7 @@ def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
     if use_log:
         form = ":.{precision:d}e"
     else:
-        if np.issubdtype(int, np.integer) and allow_int:
+        if np.issubdtype(arr.dtype, np.integer) and allow_int:
             form = ":d"
         else:
             form = ":.{precision:d}f"
