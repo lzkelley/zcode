@@ -54,6 +54,7 @@ Current
 
     -   `inout/`
         -   `inout_core.py`
+            -   `count_lines` <== `countLines`  [DEPRECATION]
             -   `frac_str`  [NEW-FUNCTION]
                 -   New function to nicely format a string of the form '{}/{} = {}' given a numerator and denominator.  Chooses appropriate formatting given the values.
 

@@ -227,7 +227,7 @@ def get_file_size(fnames, precision=1):
     return byte_str
 
 
-def countLines(files, progress=False):
+def count_lines(files):
     """Count the number of lines in the given file.
     """
 
@@ -235,21 +235,17 @@ def countLines(files, progress=False):
     if np.iterable(files) and not isinstance(files, str):
         files = [files]
 
-    if progress:
-        warnings.warn("`progress` argument is deprecated!")
-        # pbar = getProgressBar(len(files))
-
     nums = 0
     # Iterate over each file, count lines
     for ii, fil in enumerate(files):
         nums += sum(1 for line in open(fil))
-        # if(progress):
-        #     pbar.update(ii)
-
-    # if(progress):
-    #     pbar.finish()
 
     return nums
+
+
+def countLines(*args, **kwargs):
+    utils.dep_warn("countLines", newname="count_lines")
+    return count_lines(*args, **kwargs)
 
 
 def environment_is_jupyter():
