@@ -48,13 +48,13 @@ from zcode import utils
 
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
-           'countLines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
+           'count_lines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
            'check_path', 'dictToNPZ', 'npzToDict', 'checkURL',
            'combine_files', 'frac_str',
            'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists', 'python_environment',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
            # === DEPRECATED ===
-           'combineFiles']
+           'countLines', 'combineFiles']
 
 
 class _Keys_Meta(type):
