@@ -232,8 +232,7 @@ def count_lines(files):
     """
 
     # If string, or otherwise not-iterable, convert to list
-    if np.iterable(files) and not isinstance(files, str):
-        files = [files]
+    files = np.atleast_1d(files)
 
     nums = 0
     # Iterate over each file, count lines
