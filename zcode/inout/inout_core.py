@@ -907,7 +907,10 @@ def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
         den = num.size
         num = np.count_nonzero(num)
 
-    dec_frac = num / den
+    try:
+        dec_frac = num / den
+    except ZeroDivisionError:
+        dec_frac = np.nan
 
     if frac_fmt is None:
         frac_exp = np.fabs(np.log10([num, den]))
