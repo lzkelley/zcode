@@ -314,7 +314,7 @@ def check_path(tpath, create=True):
     return path
 
 
-def dictToNPZ(dataDict, savefile, verbose=False, log=None):
+def dictToNPZ(dataDict, savefile, verbose=False, log=None, warn=False):
     """Save a dictionary to the given NPZ filename.
 
     If the path to the given filename doesn't already exist, it is created.
@@ -325,8 +325,9 @@ def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     # Make sure there are no scalars in the input dictionary
     for key, item in dataDict.items():
         if np.isscalar(item):
-            warnStr = "Value '%s' for key '%s' is a scalar." % (str(item), str(key))
-            warnings.warn(warnStr)
+            if warn:
+                warnStr = "Value '%s' for key '%s' is a scalar." % (str(item), str(key))
+                warnings.warn(warnStr)
             dataDict[key] = np.array(item)
 
     # Save and confirm
