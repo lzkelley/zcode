@@ -143,9 +143,13 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
         raise ValueError("Unrecognized `side` argument '{}'!".format(side))
 
     # Reorder the indices if the input was unsorted
+    #    NOTE: this is not re/un-sorting, this is changing the resulting numbers to reflect the
+    #          input order of `edges`
     if not assume_sorted:
-        idx = [srt[ii] for ii in idx]
-
+        # Leave out-of-bounds results (for 'left' and 'right') as the same value
+        idx = [srt[ii] if (ii >= 0) and (ii < edges.size) else ii
+               for ii in idx]
+        
     if scalar:
         idx = idx[0]
 
