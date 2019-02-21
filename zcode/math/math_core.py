@@ -50,6 +50,8 @@ __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
 def argextrema(arr, type, filter=None):
     """Find the index of the desired type of extrema in the input array.
     """
+    warnings.warn("This function sucks!  Dont use it!")
+
     # Valid filters, NOTE: do *not* include 'e' (equals), doesn't make sense here.
     good_filter = [None, 'g', 'ge', 'l', 'le']
     if(filter not in good_filter):
@@ -83,38 +85,62 @@ def argextrema(arr, type, filter=None):
     return ind
 
 
-def argnearest(options, targets, assume_sorted=False):
-    """Find the indices of elements in the `options` array closest to those in the `targets` array.
+def argnearest(edges, vals, assume_sorted=False, side=None):
+    """Find the indices of elements in the `edges` array closest to those in the `vals` array.
 
     Arguments
     ---------
-    options : (N,) array of scalar
+    edges : (N,) array of scalar
         Find indices for elements in this array.
-    targets : (M,) array of scalar
-        Look for elements in the `options` array closest to these `targets` values.
+    vals : (M,) array of scalar
+        Look for elements in the `edges` array closest to these `vals` values.
     assume_sorted : bool,
-        Assume the input array of `options` is sorted.
-        (Note: `targets` can be unsorted regardless)
+        Assume the input array of `edges` is sorted.
+        (Note: `vals` can be unsorted regardless)
+    side : str or `None`
 
     Returns
     -------
     idx : (M,) array of int
-        Indices of `options` nearest `targets`.  May include duplicates.
+        Indices of `edges` nearest `vals`.  May include duplicates.
 
     """
-    options = np.atleast_1d(options)
-    scalar = np.isscalar(targets)
-    targets = np.atleast_1d(targets)
+    edges = np.atleast_1d(edges)
+    scalar = np.isscalar(vals)
+    vals = np.atleast_1d(vals)
+
     # Sort the input array if needed
     if not assume_sorted:
-        srt = np.argsort(options)
-        options = options[srt]
+        srt = np.argsort(edges)
+        edges = edges[srt]
 
-    idx = np.searchsorted(options, targets, side="left").clip(max=options.size-1)
-    dist_lo = np.fabs(targets - options[idx-1])
-    dist_hi = np.fabs(targets - options[idx])
-    mask = (idx > 0) & ((idx == options.size) | (dist_lo < dist_hi))
-    idx = idx - mask
+    # Find the nearest bin on either side
+    if side is None:
+        # This is the index of the edge to the *right* of (i.e. above) each value
+        idx = np.searchsorted(edges, vals, side="left").clip(max=edges.size-1)
+        # Find the distances to each nearest bin edge
+        dist_lo = np.fabs(vals - edges[idx-1])
+        dist_hi = np.fabs(vals - edges[idx])
+        # If left ('lo') is nearer, mask=1, and we shift from the right edge to the left edge
+        mask = (idx > 0) & ((idx == edges.size) | (dist_lo < dist_hi))
+        idx = idx - mask
+    # If we want the 'r'ight nearest edge
+    elif side.startswith('r'):
+        # This is the index of the edge to the *right* of (i.e. above) each value
+        #    WARNING: if a value is exactly on an edge, the *next* edge will be selected
+        idx = np.searchsorted(edges, vals, side="right")
+        # mask = (vals == edges[-1])
+        # idx = idx + mask
+    elif side.startswith('l'):
+        # This is the index of the edge to the *right* of (i.e. above) each value
+        #    WARNING: if a value is exactly on an edge, the *prev* edge will be selected
+        idx = np.searchsorted(edges, vals, side="left") - 1
+        # If a value matches the right-most edge, it should also be shifted to the prev edge,
+        #    which requires an extra shift
+        # mask = (vals == edges[-1])
+        # idx = idx - mask
+    else:
+        raise ValueError("Unrecognized `side` argument '{}'!".format(side))
 
     # Reorder the indices if the input was unsorted
     if not assume_sorted:
@@ -966,16 +992,20 @@ def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=T
 def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
     """
     """
-    try:
-        extr = np.log10(np.fabs(minmax(arr)))
-    # string values will raise a `TypeError` exception
-    except TypeError:
-        return ":s"
 
-    if any(extr < -log_limit) or any(extr > log_limit):
-        use_log = True
-    else:
+    if not np.all(arr > 0.0):
         use_log = False
+    else:
+        try:
+            extr = np.log10(np.fabs(minmax(arr)))
+        # string values will raise a `TypeError` exception
+        except TypeError:
+            return ":s"
+
+        if any(extr < -log_limit) or any(extr > log_limit):
+            use_log = True
+        else:
+            use_log = False
 
     if use_log:
         form = ":.{precision:d}e"

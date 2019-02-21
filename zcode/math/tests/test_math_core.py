@@ -28,33 +28,63 @@ class TestMathCore(object):
 
     def test_argnearest_ordered(self):
         from zcode.math.math_core import argnearest
-        xx = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
-        yy = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
+        edges = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
+        vals = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
         correct = [0, 0, 1, 2, 4, 5, 7, 9, 10, 10]
-        retval = argnearest(xx, yy, assume_sorted=True)
+        retval = argnearest(edges, vals, assume_sorted=True)
         assert_true(np.all(correct == retval))
-        print("Options = {}".format(xx))
-        print("Targets = {}".format(yy))
+        print("Edges = {}".format(edges))
+        print("Vals = {}".format(vals))
         print("retval  = {}".format(retval))
         print("correct = {}".format(correct))
         return
 
+    def test_argnearest_ordered_left_right(self):
+        from zcode.math.math_core import argnearest
+        #                 0    1    2    3    4    5    6    7    8    9    10
+        edges = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
+        vals    = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
+        correct = np.array([-1, -1 , 1, 2  , 3, 4, 7, 8, 9  , 10])
+        print("LEFT")
+        retval = argnearest(edges, vals, assume_sorted=True, side='left')
+        print("Edges = {}".format(edges))
+        print("Vals = {}".format(vals))
+        print("retval  = {}".format(retval))
+        print("correct = {}".format(correct))
+        print(correct == retval)
+        print(np.all(correct == retval))
+        assert_true(np.all(correct == retval))
+
+        correct += 1
+        for ee in edges:
+            correct[vals == ee] += 1
+
+        print("RIGHT")
+        retval = argnearest(edges, vals, assume_sorted=True, side='right')
+        print("Edges = {}".format(edges))
+        print("Vals = {}".format(vals))
+        print("retval  = {}".format(retval))
+        print("correct = {}".format(correct))
+        assert_true(np.all(correct == retval))
+
+        return
+
     def test_argnearest_unordered_x(self):
         from zcode.math.math_core import argnearest
-        xx = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
-        yy = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
+        edges = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
+        vals = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
         correct = np.array([2, 2, 8, 7, 0, 6, 9, 3, 4, 4])
 
-        # ix = np.random.permutation(xx.size)
+        # ix = np.random.permutation(edges.size)
         ix = np.array([4,  3,  0,  9, 10,  8,  5,  2,  1,  7,  6])
-        xx = xx[ix]
+        edges = edges[ix]
 
-        retval = argnearest(xx, yy, assume_sorted=False)
-        print("Options = {}".format(xx))
-        print("Targets = {}".format(yy))
+        retval = argnearest(edges, vals, assume_sorted=False)
+        print("Edges = {}".format(edges))
+        print("Vals = {}".format(vals))
         print("retval  = {}".format(retval))
-        print("nearest = {}".format(xx[retval]))
-        print("Targets = {}".format(yy))
+        print("nearest = {}".format(edges[retval]))
+        print("Vals = {}".format(vals))
         print("retval  = {}".format(retval))
         print("correct = {}".format(correct))
         assert_true(np.all(correct == retval))
@@ -62,22 +92,22 @@ class TestMathCore(object):
 
     def test_argnearest_unordered_xy(self):
         from zcode.math.math_core import argnearest
-        xx = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
-        yy = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
+        edges = np.array([0.2, 0.8, 1.3, 1.5, 2.0, 3.1, 3.8, 3.9, 4.5, 5.1, 5.5])
+        vals = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
         correct = np.array([0, 7, 6, 3, 4, 9, 2, 4, 2, 8])
 
-        # ix = np.random.permutation(xx.size)
+        # ix = np.random.permutation(edges.size)
         ix = np.array([4,  3,  0,  9, 10,  8,  5,  2,  1,  7,  6])
-        xx = xx[ix]
+        edges = edges[ix]
         iy = np.array([4, 3, 5, 7, 9, 6, 0, 8, 1, 2])
-        yy = yy[iy]
+        vals = vals[iy]
 
-        retval = argnearest(xx, yy, assume_sorted=False)
-        print("Options = {}".format(xx))
-        print("Targets = {}".format(yy))
+        retval = argnearest(edges, vals, assume_sorted=False)
+        print("Edges = {}".format(edges))
+        print("Vals = {}".format(vals))
         print("retval  = {}".format(retval))
-        print("nearest = {}".format(xx[retval]))
-        print("Targets = {}".format(yy))
+        print("nearest = {}".format(edges[retval]))
+        print("Vals = {}".format(vals))
         print("retval  = {}".format(retval))
         print("correct = {}".format(correct))
         assert_true(np.all(correct == retval))
@@ -356,21 +386,25 @@ class TestMathCore(object):
         arr = [0.5, -1.0, 1.5, -0.5, 0.0]
         res = [0.5, 1.5]
         inds = [0, 2]
+
+        arr = np.array(arr)
         for cc in comp:
             vals = comparison_filter(arr, cc, value=0.0)
             assert_true(np.all(np.equal(vals, res)))
-            vals = comparison_filter(arr, cc, inds=True, value=0.0)
-            assert_true(np.all(np.equal(vals[0], inds)))
+            val_inds = comparison_filter(arr, cc, inds=True, value=0.0)
+            assert_true(np.all(np.equal(arr[val_inds], arr[inds])))
 
         comp = ['le', '<=']
         arr = [0.5, -1.0, 1.5, -0.5, 0.0]
         res = [-1.0, -0.5, 0.0]
         inds = [1, 3, 4]
+
+        arr = np.array(arr)
         for cc in comp:
             vals = comparison_filter(arr, cc, value=0.0)
             assert_true(np.all(np.equal(vals, res)))
             vals = comparison_filter(arr, cc, inds=True, value=0.0)
-            assert_true(np.all(np.equal(vals[0], inds)))
+            assert_true(np.all(np.equal(arr[vals], arr[inds])))
 
         return
 

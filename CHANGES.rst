@@ -87,6 +87,8 @@ Current
 
     -   `math/`
         -   `math_core.py`
+			-   `argnearest()`
+				-   Add `side` argument to select if a particular side should be chosen, otherwise find the nearest on either side (default and previous behavior).  Tests Added.
             -   `comparison_filter()`
                 -   Use numpy masked arrays, instead of flattening multi-dimensional arrays.
             -   `midpoints()`
