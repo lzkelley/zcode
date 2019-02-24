@@ -80,6 +80,8 @@ Current
                 -   New method for conveniently creating and adjusting plots using `plt.subplots()`
             -   `invert_color()` [NEW-FUNCTION]
                 -   Invert the given named or RGB(A) color.
+            -   `legend()`
+                -   New argument 'prev' for previous artists (i.e. legends) to be readded to axis after creating new legend.
             -   `set_axis()`
                 -   Catch 'fs' keyword-argument and replace with 'labelsize'
             -   `text()`

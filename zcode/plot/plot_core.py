@@ -662,7 +662,7 @@ def label_line(ax, line, label, x=None, y=None,
 
 
 def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
-           fs=None, trans=None,
+           fs=None, trans=None, prev=None,
            fs_title=None, loc=None, mono=False, zorder=None, align_title=None, **kwargs):
     """Add a legend to the given figure.
 
@@ -766,6 +766,11 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     if zorder is not None:
         leg.set_zorder(10)
 
+    if prev is not None:
+        prev = np.atleast_1d(prev)
+        for pp in prev:
+            ax.add_artist(pp)
+        
     return leg
 
 
