@@ -39,7 +39,7 @@ import scipy as sp
 import scipy.interpolate  # noqa
 
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
-           'frexp10', 'groupDigitized',
+           'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate', 'rotation_matrix_between_vectors', 'zenum',
            'sliceForAxis', 'spacing', 'str_array', 'str_array_2d', 'vecmag', 'within',
@@ -345,6 +345,20 @@ def contiguousInds(args):
     inds = np.arange(*idx[maxPos])
 
     return inds
+
+
+def slice_with_inds_for_axis(arr, inds, axis):
+    """Use an N-1 dimensional array with indices along a particular axis of an N dimensional array
+
+    See: https://stackoverflow.com/a/46103129/230468
+    """
+    new_shape = list(arr.shape)
+    del new_shape[axis]
+
+    grid = np.ogrid[tuple(map(slice, new_shape))]
+    grid.insert(axis, inds)
+
+    return arr[tuple(grid)]
 
 
 def frexp10(vals):

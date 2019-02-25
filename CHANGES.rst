@@ -99,6 +99,8 @@ Current
 				-   Allow (2,) values to be given for `stretch` and `log_stretch` to apply to left and right sides respectively.
             -   `rotation_matrix_between_vectors()`  [NEW-FUNCTION]
                 -   Function that uses Rodriguez' formula to create a rotation matrix that will rotate one vector to another.
+            -   `slice_with_inds_for_axis()`  [NEW-FUNCTION]
+                -   Slice an N-dimensional array using an N-1 dimensional array, with indices for the remaining axis.
             -   `str_array()`
                 -   Guess default format based on array values (use `_guess_str_format_from_range`)
 			-   `zenum()`  [NEW-FUNCTION]
