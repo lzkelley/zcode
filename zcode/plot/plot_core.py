@@ -120,6 +120,10 @@ def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=
     plt.subplots_adjust(
         left=left, bottom=bottom, right=right, top=top, hspace=hspace, wspace=wspace)
 
+    if nrows > 1 or ncols > 1:
+        if ylim is not None and np.shape(ylim) == (2,):
+            ylim = np.array(ylim)[:, np.newaxis]
+
     _, xscale, xlabel, xlim = np.broadcast_arrays(axes, xscale, xlabel, xlim)
     _, yscale, ylabel, ylim = np.broadcast_arrays(axes, yscale, ylabel, ylim)
 
