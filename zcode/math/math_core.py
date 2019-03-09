@@ -149,7 +149,7 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
         # Leave out-of-bounds results (for 'left' and 'right') as the same value
         idx = [srt[ii] if (ii >= 0) and (ii < edges.size) else ii
                for ii in idx]
-        
+
     if scalar:
         idx = idx[0]
 
@@ -352,6 +352,9 @@ def slice_with_inds_for_axis(arr, inds, axis):
 
     See: https://stackoverflow.com/a/46103129/230468
     """
+    if axis < 0:
+        axis += np.ndim(arr)
+
     new_shape = list(arr.shape)
     del new_shape[axis]
 
@@ -872,7 +875,7 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
-def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
+def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **kwargs):
     """Create an evenly spaced array between extrema from the given data.
 
     Arguments
@@ -903,6 +906,8 @@ def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
         argument above.
 
     """
+    DEF_NUM_LIN = 20
+
     if scale.startswith('log'):
         log_flag = True
     elif scale.startswith('lin'):
@@ -920,8 +925,19 @@ def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
     if integers:
         round = 0
     span = minmax(data, filter=filter, round=round, round_scale=scale, **kwargs)
+
+    if num is None:
+        if log_flag and (not integers):
+            num_dex = np.fabs(np.diff(np.log10(span)))
+            num = np.int(np.ceil(num_dex * dex)) + 1
+        else:
+            num = DEF_NUM_LIN
+
     # If only 'integers', use 'arange'
     if integers:
+        if num is not None:
+            raise ValueError("`num` does not apply when using `integers` scaling!")
+
         # Log-spacing : create each decade manually
         if log_flag:
             # Find the SciNot exp for lower and upper values

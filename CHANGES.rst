@@ -105,6 +105,8 @@ Current
                 -   Function that uses Rodriguez' formula to create a rotation matrix that will rotate one vector to another.
             -   `slice_with_inds_for_axis()`  [NEW-FUNCTION]
                 -   Slice an N-dimensional array using an N-1 dimensional array, with indices for the remaining axis.
+            -   `spacing()`
+                -   New agument `dex` to set the number of points per decade when using log spacing.
             -   `str_array()`
                 -   Guess default format based on array values (use `_guess_str_format_from_range`)
 			-   `zenum()`  [NEW-FUNCTION]
