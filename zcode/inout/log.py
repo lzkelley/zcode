@@ -50,7 +50,7 @@ class IndentFormatter(logging.Formatter):
 
 def get_logger(name, format_stream=None, format_file=None, format_date=None,
                level_stream=logging.WARNING, level_file=logging.DEBUG,
-               tofile=None, tostr=True, info_file=True):
+               tofile=None, tostr=sys.stdout, info_file=True):
     """Create a standard logger object which logs to file and or stdout stream.
 
     If logging to output stream (stdout) is enabled, an `IndentFormatter` object is used.
@@ -131,12 +131,12 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
 
     # Log To stdout
     # -------------
-    if tostr:
+    if tostr is not None:
         if format_stream is None:
             format_stream = "%(indent)s%(message)s"
 
         strFormatter = IndentFormatter(format_stream, format_date=format_date)
-        strHandler = logging.StreamHandler()
+        strHandler = logging.StreamHandler(tostr)
         strHandler.setFormatter(strFormatter)
         strHandler.setLevel(level_stream)
         logger.addHandler(strHandler)

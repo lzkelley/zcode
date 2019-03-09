@@ -58,6 +58,10 @@ Current
 				-   BUG: lists of files were being screwed up somehow
             -   `frac_str`  [NEW-FUNCTION]
                 -   New function to nicely format a string of the form '{}/{} = {}' given a numerator and denominator.  Chooses appropriate formatting given the values.
+        -   `log.py`
+            -   Have log to stream go to stdout (instead of stderr) by default.
+            -   `get_logger()`
+                -   Setup `StreamHandler` to log to stdout instead of stderr by default.
 
     -   `plot/`
         -   `draw.py`
