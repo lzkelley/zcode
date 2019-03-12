@@ -390,7 +390,7 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
     return out
 
 
-def percentiles(values, percentiles, weights=None, values_sorted=False):
+def percentiles(values, percs, weights=None, values_sorted=False):
     """Compute weighted percentiles.
 
     Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
@@ -399,7 +399,7 @@ def percentiles(values, percentiles, weights=None, values_sorted=False):
     ---------
     values: (N,)
         input data
-    percentiles: (M,) scalar [0.0, 1.0]
+    percs: (M,) scalar [0.0, 1.0]
         Desired percentiles of the data.
     weights: (N,) or `None`
         Weighted for each input data point in `values`.
@@ -413,11 +413,12 @@ def percentiles(values, percentiles, weights=None, values_sorted=False):
 
     """
     values = np.array(values).flatten()
-    percentiles = np.array(percentiles, dtype=values.dtype)
+    # percentiles = np.array(percentiles, dtype=values.dtype)
+    percs = np.array(percs)
     if weights is None:
         weights = np.ones_like(values)
     weights = np.array(weights)
-    assert np.all(percentiles >= 0.0) and np.all(percentiles <= 1.0), \
+    assert np.all(percs >= 0.0) and np.all(percs <= 1.0), \
         'percentiles should be in [0, 1]'
 
     if not values_sorted:
@@ -427,7 +428,9 @@ def percentiles(values, percentiles, weights=None, values_sorted=False):
 
     weighted_quantiles = np.cumsum(weights) - 0.5 * weights
     weighted_quantiles /= np.sum(weights)
-    percs = np.interp(percentiles, weighted_quantiles, values)
+    # print(percs)
+    # print(weighted_quantiles)
+    percs = np.interp(percs, weighted_quantiles, values)
     return percs
 
 

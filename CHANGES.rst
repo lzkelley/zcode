@@ -123,6 +123,8 @@ Current
         -   `statistic.py`
             -   `confidence_intervals()`
                 -   Implement a kludge to allow percentile calculation with masked arrays.
+            -   `percentiles()`
+                -   BUG: when integer values were being used, percentiles were converted to [0, 1].
 
     -   `constants.py`
         -   Added electron-charge `QELC`
