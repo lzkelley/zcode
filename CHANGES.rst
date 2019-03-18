@@ -43,6 +43,11 @@ Future / To-Do
 
 Current
 -------
+
+
+
+[0.1] - 2019/03/18
+------------------
     -   `astro/`
         -   `astro_core.py`
             -   `distance()` [NEW-FUNCTION]
