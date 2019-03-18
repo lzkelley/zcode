@@ -2,37 +2,31 @@
 
 Functions
 ---------
--   setAxis              - Set many different axis properties at once.
--   twinAxis             - Easily create and set a new twin axis (like `twinx()` or `twiny()`)
--   setLim               - Set limits on an axis
+-   set_axis             - Set many different axis properties at once.
+-   twin_axis            - Easily create and set a new twin axis (like `twinx()` or `twiny()`)
+-   set_lim              - Set limits on an axis
+-   set_ticks
 -   zoom                 - Zoom-in at a certain location on the given axes.
--   stretchAxes          - Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
 -   text                 - Add text to figure.
+-   label_line           - Add text to line
 -   legend               - Add a legend to the given figure.
--   unifyAxesLimits      - Set limits on all given axes to match global extrema.
 -   color_cycle          - Create a range of colors.
 -   colormap             - Create a colormap from scalars to colors.
+-   cut_colormap         - Select a truncated subset of the given colormap.
 -   color_set            - Retrieve a (small) set of color-strings with hand picked values.
--   setGrid              - Configure the axes' grid.
+-   set_grid             - Configure the axes' grid.
+-   scientific_notation  - Convert a scalar into a string with scientific notation.
+-   line_style_set       - Retrieve a set of line-style specifications.
+-   line_label           - Plot a vertical line, and give it a label outside the axes.
+
 -   skipTicks            - skip some tick marks
 -   saveFigure           - Save the given figure(s) to the given filename.
--   strSciNot            - Convert a scalar into a string with scientific notation.
-
--   plotHistLine         - Plot a histogram line.
--   plotSegmentedLine    - Draw a line segment by segment.
--   plotScatter          - Draw a scatter plot.
--   plotHistBars         - Plot a histogram bar graph.
--   plotConfFill         - Draw a median line and (set of) confidence interval(s).
--   line_label           - Plot a vertical line, and give it a label outside the axes.
--   full_extent          -
--   position_to_extent   -
--   backdrop             -
+-   stretchAxes          - Stretch the `x` and/or `y` limits of the given axes by a scaling factor.
+-   unifyAxesLimits      - Set limits on all given axes to match global extrema.
 
 -   _setAxis_scale       -
 -   _setAxis_label       -
--   _histLine            - construct a stepped line
 -   _clear_frame         -
--   _make_segments       -
 -   _scale_to_log_flag   -
 -   _clean_scale         -
 -   _get_cmap            - Retrieve a colormap with the given name if it is not already a colormap.
@@ -40,41 +34,124 @@ Functions
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 import six
-from six.moves import xrange
 
 import os
 import logging
-import numbers
 import warnings
 
 import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
+import seaborn as sns
 
 import zcode.math as zmath
 import zcode.inout as zio
+from zcode import utils
 
-__all__ = ['setAxis', 'twinAxis', 'setLim', 'zoom', 'stretchAxes', 'text', 'legend',
+from . layout import _loc_str_to_pars, _parse_align
+from . plot_const import _PAD
+
+__all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
+           'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
            'unifyAxesLimits', 'color_cycle',
-           'colorCycle', 'colormap', 'color_set', 'setGrid', 'skipTicks', 'saveFigure', 'strSciNot',
-           'plotHistLine', 'plotSegmentedLine', 'plotScatter', 'plotHistBars', 'plotConfFill',
-           'line_label', 'full_extent', 'position_to_extent', 'backdrop', '_histLine']
+           'colormap', 'color_set', 'set_grid',
+           'skipTicks', 'saveFigure', 'scientific_notation',
+           'line_style_set', 'line_label',
+           '_scale_to_log_flag',
+           # Deprecated
+           ]
 
-COL_CORR = 'royalblue'
-LW_CONF = 1.0
 VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
-_COLOR_SET = ['black', 'blue', 'red', 'green', 'purple',
+_COLOR_SET = ['blue', 'red', 'green', 'purple',
               'orange', 'cyan', 'brown', 'gold', 'pink',
               'forestgreen', 'grey', 'olive', 'coral', 'yellow']
-_LW_OUTLINE = 0.8
+
+_COLOR_SET_XKCD = ["blue", "red", "green", "purple", "orange", "cyan",
+                   "pink", "brown", "magenta", "amber", "slate blue",
+                   "teal", "light blue", "lavender", "rose", "turquoise", "azure",
+                   "lime green", "greyish", "windows blue",
+                   "faded green", "mustard", "brick red", "dusty purple"]
+
+_LS_DASH_BIG = 7
+_LS_DASH_MED = 5
+_LS_DASH_SML = 3
+_LS_DOT = 1
+_LINE_STYLE_SET = [
+    None,
+    (0, [_LS_DASH_BIG, 4]),
+    (0, [_LS_DOT, 1]),
+
+    (0, [_LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_MED, 1]),
+
+    (0, [_LS_DASH_MED, 2]),
+    (0, [_LS_DASH_SML, 1, _LS_DASH_MED, 1]),
+    (0, [_LS_DOT, 1, _LS_DASH_SML, 1, _LS_DASH_MED, 1]),
+
+    (0, [_LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 1, _LS_DASH_SML, 1]),
+
+    (0, [_LS_DOT, 4]),
+    (0, [_LS_DOT, 1, _LS_DOT, 4]),
+    (0, [_LS_DOT, 1, _LS_DOT, 1, _LS_DOT, 4]),
+]
 
 # Default length for lines in legend handles; in units of font-size
 _HANDLE_LENGTH = 2.5
+_HANDLE_PAD = 0.6
+_LEGEND_COLUMN_SPACING = 1.2
+_SCATTER_POINTS = 1
 
 
-def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, scale=None,
-            thresh=None, side=None, ts=8, grid=True, lim=None, invert=False, ticks=True,
-            stretch=1.0):
+def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True,
+          xscale='log', xlabel='', xlim=None,
+          yscale='log', ylabel='', ylim=None,
+          left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
+          grid=None):
+
+    fig, axes = plt.subplots(figsize=figsize, squeeze=False, ncols=ncols, nrows=nrows,
+                             sharex=sharex, sharey=sharey)
+
+    plt.subplots_adjust(
+        left=left, bottom=bottom, right=right, top=top, hspace=hspace, wspace=wspace)
+
+    if nrows > 1 or ncols > 1:
+        if ylim is not None and np.shape(ylim) == (2,):
+            ylim = np.array(ylim)[:, np.newaxis]
+
+    _, xscale, xlabel, xlim = np.broadcast_arrays(axes, xscale, xlabel, xlim)
+    _, yscale, ylabel, ylim = np.broadcast_arrays(axes, yscale, ylabel, ylim)
+
+    for idx, ax in np.ndenumerate(axes):
+        ax.set(xscale=xscale[idx], xlabel=xlabel[idx],
+               yscale=yscale[idx], ylabel=ylabel[idx])
+        if xlim[idx] is not None:
+            ax.set_xlim(xlim[idx])
+        if ylim[idx] is not None:
+            ax.set_ylim(ylim[idx])
+
+        if grid is not None:
+            if grid is True:
+                set_grid(ax)
+            else:
+                set_grid(ax, **grid)
+
+    if squeeze:
+        axes = np.squeeze(axes)
+        if np.ndim(axes) == 0:
+            axes = axes[()]
+
+    return fig, axes
+
+
+def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=None,
+             thresh=None, side=None, grid=True, lim=None, invert=False, ticks=True, stretch=1.0,
+             **kwargs):
     """
     Configure a particular axis of the given axes object.
 
@@ -82,7 +159,7 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
     ---------
        ax     : <matplotlib.axes.Axes>, base axes object to modify
        axis   : <str>, which axis to target {``x`` or ``y``}
-       c      : <str>, color for the axis (see ``matplotlib.colors``)
+       color      : <str>, color for the axis (see ``matplotlib.colors``)
        fs     : <int>, font size for labels
        pos    : <float>, position of axis-label/lines relative to the axes object
        trans  : <str>, transformation type for the axes
@@ -99,119 +176,144 @@ def setAxis(ax, axis='x', c='black', fs=12, pos=None, trans='axes', label=None, 
 
     """
 
-    assert axis in ['x', 'y'],                          "``axis`` must be `x` or `y`!"
-    assert trans in ['axes', 'figure'],                  "``trans`` must be `axes` or `figure`!"
+    assert axis in ['x', 'y'], "``axis`` must be `x` or `y`!"
+    assert trans in ['axes', 'figure'], "``trans`` must be `axes` or `figure`!"
     assert side in VALID_SIDES, "``side`` must be in '%s'" % (VALID_SIDES)
 
+    color = _color_from_kwargs(kwargs, pop=True)
+    if color is None:
+        color = 'k'
+
+    if len(kwargs) > 0:
+        raise ValueError("Additional arguments are not supported!")
+
     # Set tick colors and font-sizes
-    ax.tick_params(axis=axis, which='both', colors=c, labelsize=fs)
+    kw = {}
+    if fs is not None:
+        kw['labelsize'] = fs
+    ax.tick_params(axis=axis, which='both', colors=color, **kw)
     #    Set tick-size only for major ticks
-    ax.tick_params(axis=axis, which='major', size=ts)
+    # ax.tick_params(axis=axis, which='major')
 
     # Set Grid Lines
-    # ax.grid(grid, which='both', axis=axis)
-    # setGrid(ax, grid, axis=axis)
-    setGrid(ax, grid, axis='both')
+    set_grid(ax, grid, axis='both')
 
-    if(axis == 'x'):
-        ax.xaxis.label.set_color(c)
+    if axis == 'x':
+        ax.xaxis.label.set_color(color)
         offt = ax.get_xaxis().get_offset_text()
 
-        if(side is None):
-            if(pos is None):
+        if side is None:
+            if pos is None:
                 side = 'bottom'
             else:
-                if(pos < 0.5): side = 'bottom'
-                else:            side = 'top'
+                if pos < 0.5:
+                    side = 'bottom'
+                else:
+                    side = 'top'
 
-        if(pos is not None):
+        if pos is not None:
             offt.set_y(pos)
             ax.xaxis.set_label_position(side)
             ax.xaxis.set_ticks_position(side)
 
-        if(lim is not None):
-            if(np.size(lim) > 2): lim = zmath.minmax(lim)
+        if lim is not None:
+            if np.size(lim) > 2:
+                lim = zmath.minmax(lim)
             ax.set_xlim(lim)
 
-        if(invert): ax.invert_xaxis()
-        if(not ticks):
-            for tlab in ax.xaxis.get_ticklabels(): tlab.set_visible(False)
+        if invert:
+            ax.invert_xaxis()
+        if not ticks:
+            for tlab in ax.xaxis.get_ticklabels():
+                tlab.set_visible(False)
 
     else:
-        ax.yaxis.label.set_color(c)
+        ax.yaxis.label.set_color(color)
         offt = ax.get_yaxis().get_offset_text()
 
-        if(side is None):
-            if(pos is None):
+        if side is None:
+            if pos is None:
                 side = 'left'
             else:
-                if(pos < 0.5): side = 'left'
-                else:            side = 'right'
+                if pos < 0.5:
+                    side = 'left'
+                else:
+                    side = 'right'
 
-        if(pos is not None):
+        if pos is not None:
             offt.set_x(pos)
 
         ax.yaxis.set_label_position(side)
         ax.yaxis.set_ticks_position(side)
 
-        if(lim is not None): ax.set_ylim(lim)
+        if lim is not None:
+            ax.set_ylim(lim)
 
-        if(invert): ax.invert_yaxis()
-        if(not ticks):
-            for tlab in ax.yaxis.get_ticklabels(): tlab.set_visible(False)
+        if invert:
+            ax.invert_yaxis()
+        if not ticks:
+            for tlab in ax.yaxis.get_ticklabels():
+                tlab.set_visible(False)
 
     # Set Spine colors
-    ax.spines[side].set_color(c)
-    if(pos is not None):
+    ax.spines[side].set_color(color)
+    if pos is not None:
         ax.set_frame_on(True)
         ax.spines[side].set_position((trans, pos))
         ax.spines[side].set_visible(True)
         ax.patch.set_visible(False)
 
     # Set Axis Scaling
-    if(scale is not None): _setAxis_scale(ax, axis, scale, thresh=thresh)
+    if scale is not None:
+        _setAxis_scale(ax, axis, scale, thresh=thresh)
 
     # Set Axis Label
-    _setAxis_label(ax, axis, label, fs=fs, c=c)
+    if label is not None:
+        kw = {}
+        if fs is not None:
+            kw['fs'] = fs
+        _setAxis_label(ax, axis, label, color=color, **kw)
 
-    if(stretch != 1.0):
-        if(axis == 'x'): ax = stretchAxes(ax, xs=stretch)
-        elif(axis == 'y'): ax = stretchAxes(ax, ys=stretch)
+    if not np.isclose(stretch, 1.0):
+        if axis == 'x':
+            ax = stretchAxes(ax, xs=stretch)
+        elif axis == 'y':
+            ax = stretchAxes(ax, ys=stretch)
 
-    offt.set_color(c)
+    offt.set_color(color)
     return ax
 
 
-def twinAxis(ax, axis='x', pos=1.0, **kwargs):
+def twin_axis(ax, axis='x', pos=1.0, **kwargs):
     """
     """
-    if(axis == 'x'):
+    if axis == 'x':
         tw = ax.twinx()
         setax = 'y'
-    elif(axis == 'y'):
+    elif axis == 'y':
         tw = ax.twiny()
         setax = 'x'
     else:
         raise RuntimeError("``axis`` must be either {`x` or `y`}!")
 
-    tw = setAxis(tw, axis=setax, pos=pos, **kwargs)
+    tw = set_axis(tw, axis=setax, pos=pos, **kwargs)
     return tw
 
 
-def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
+def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly', invert=False):
     """Set the limits (range) of the given, target axis.
 
     When only ``lo`` or only ``hi`` is specified, the default behavior is to only set that axis
     limit and leave the other bound to its existing value.  When ``range`` is set to `True`, then
     the given axis boumds (``lo``/``hi``) are used as multipliers, i.e.
 
-        >>> Plotting.setLim(ax, lo=0.1, range=True, at='exactly')
+        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='exactly')
         will set the lower bound to be `0.1` times the existing upper bound
 
     The ``at`` keyword determines whether the given bounds are treated as limits to the bounds,
     or as fixed ('exact') values, i.e.
 
-        >>> Plotting.setLim(ax, lo=0.1, range=True, at='most')
+        >>> Plotting.set_lim(ax, lo=0.1, range=True, at='most')
         will set the lower bound to at-'most' `0.1` times the existing upper bound.  If the lower
         bound is already 0.05 times the upper bound, it will not be changed.
 
@@ -234,10 +336,10 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
     AT_VALID = [AT_LEAST, AT_EXACTLY, AT_MOST]
     assert at in AT_VALID, "``at`` must be in {'%s'}!" % (str(AT_VALID))
 
-    if(axis == 'y'):
+    if axis == 'y':
         get_lim = ax.get_ylim
         set_lim = ax.set_ylim
-    elif(axis == 'x'):
+    elif axis == 'x':
         get_lim = ax.get_xlim
         set_lim = ax.set_xlim
     else:
@@ -246,56 +348,76 @@ def setLim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly',
     lims = np.array(get_lim())
 
     # Set Range/Span of Limits
-    if(range):
-        if(lo is not None):
-            if(at == AT_EXACTLY):
+    if range:
+        if lo is not None:
+            if at == AT_EXACTLY:
                 lims[0] = lims[1]/lo
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[0] = np.max([lims[0], lims[0]/lo])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[0] = np.min([lims[0], lims[0]/lo])
-        elif(hi is not None):
-            if(at == AT_EXACTLY):
+        elif hi is not None:
+            if at == AT_EXACTLY:
                 lims[1] = lims[1]*hi
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[1] = np.max([lims[1], lims[1]*hi])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[1] = np.min([lims[1], lims[1]*hi])
         else:
             raise RuntimeError("``lo`` or ``hi`` must be provided!")
 
     # Set Limits explicitly
     else:
-        if(lo is not None):
-            if(at == AT_EXACTLY):
+        if lo is not None:
+            if at == AT_EXACTLY:
                 lims[0] = lo
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[0] = np.max([lims[0], lo])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[0] = np.min([lims[0], lo])
             else:
                 raise ValueError("Unrecognized `at` = '%s'" % (at))
-        elif(data is not None):
+        elif data is not None:
             lims[0] = np.min(data)
 
-        if(hi is not None):
-            if(at == AT_EXACTLY):
+        if hi is not None:
+            if at == AT_EXACTLY:
                 lims[1] = hi
-            elif(at == AT_LEAST):
+            elif at == AT_LEAST:
                 lims[1] = np.max([lims[1], hi])
-            elif(at == AT_MOST):
+            elif at == AT_MOST:
                 lims[1] = np.min([lims[1], hi])
             else:
                 raise ValueError("Unrecognized `at` = '%s'" % (at))
-        elif(data is not None):
+        elif data is not None:
             lims[1] = np.max(data)
 
     # Actually set the axes limits
     set_lim(lims)
-    if(invert):
-        if(axis == 'x'): ax.invert_xaxis()
-        else:            ax.invert_yaxis()
+    if invert:
+        if axis == 'x':
+            ax.invert_xaxis()
+        else:
+            ax.invert_yaxis()
 
+    return
+
+
+def set_ticks(ax, axis='y', every=2, log=True):
+    """DEV
+    """
+    if axis != 'y': raise ValueError("Only 'y' axis currently supported.")
+    if not log: raise ValueError("Only `log` scaling currently supported.")
+
+    ylims = np.array(ax.get_ylim())
+    man, exp = zmath.frexp10(ylims[0])
+    low = np.int(exp)
+    man, exp = zmath.frexp10(ylims[1])
+    high = np.int(exp)
+
+    vals = np.arange(low, high, every)
+    vals = np.power(10.0, vals)
+    ax.set_yticks(vals)
     return
 
 
@@ -304,11 +426,11 @@ def zoom(ax, loc, axis='x', scale=2.0):
     """
 
     # Choose functions based on target axis
-    if(axis == 'x'):
+    if axis == 'x':
         axScale = ax.get_xscale()
         lim = ax.get_xlim()
         set_lim = ax.set_xlim
-    elif(axis == 'y'):
+    elif axis == 'y':
         axScale = ax.get_yscale()
         lim = ax.get_ylim()
         set_lim = ax.set_ylim
@@ -318,15 +440,15 @@ def zoom(ax, loc, axis='x', scale=2.0):
     lim = np.array(lim)
 
     # Determine axis scaling
-    if(axScale.startswith('lin')):
+    if axScale.startswith('lin'):
         log = False
-    elif(axScale.startswith('log')):
+    elif axScale.startswith('log'):
         log = True
     else:
         raise ValueError("``axScale`` '%s' not implemented!" % (str(axScale)))
 
     # Convert to log if appropriate
-    if(log):
+    if log:
         lim = np.log10(lim)
         loc = np.log10(loc)
 
@@ -334,7 +456,7 @@ def zoom(ax, loc, axis='x', scale=2.0):
     delta = np.diff(zmath.minmax(lim))[0]
     lim = np.array([loc - (0.5/scale)*delta, loc + (0.5/scale)*delta])
     # Convert back to linear if appropriate
-    if(log): lim = np.power(10.0, lim)
+    if log: lim = np.power(10.0, lim)
     set_lim(lim)
 
     return lim
@@ -351,8 +473,8 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     xlims = np.array(ax.get_xlim())
     ylims = np.array(ax.get_ylim())
 
-    if(xlog): xlims = np.log10(xlims)
-    if(ylog): ylims = np.log10(ylims)
+    if xlog: xlims = np.log10(xlims)
+    if ylog: ylims = np.log10(ylims)
 
     xlims = [xlims[0] + 0.5*(1.0-xs)*(xlims[1]-xlims[0]),
              xlims[1] + 0.5*(1.0-xs)*(xlims[0]-xlims[1])]
@@ -360,8 +482,8 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     ylims = [ylims[0] + 0.5*(1.0-ys)*(ylims[1]-ylims[0]),
              ylims[1] + 0.5*(1.0-ys)*(ylims[0]-ylims[1])]
 
-    if(xlog): xlims = np.power(10.0, xlims)
-    if(ylog): ylims = np.power(10.0, ylims)
+    if xlog: xlims = np.power(10.0, xlims)
+    if ylog: ylims = np.power(10.0, ylims)
 
     ax.set_xlim(xlims)
     ax.set_ylim(ylims)
@@ -369,16 +491,19 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
     return ax
 
 
-def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=None, **kwargs):
+def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
+         fs=None, trans=None, pad=None, shift=None, **kwargs):
     """Add text to figure.
 
     Wrapper for the `matplotlib.figure.Figure.text` method.
 
     Arguments
     ---------
-    fig : `matplotlib.figure.Figure` object,
+    art : `matplotlib.figure.Figure` or `matplotlib.axes.Axes` object,
     pstr : str,
         String to be printed.
+    loc : str,
+        String with two letters specifying the horizontal and vertical positioning of the text.
     x : float,
         X-position at which to draw the string, relative to the transformation given by `trans`.
     y : float,
@@ -391,6 +516,11 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         Fontsize.
     trans : `matplotlib.BboxTransformTo` object, or `None`,
         Transformation to use for text placement.
+    pad : scalar, (2,) scalar, or `None`
+        Padding between edges of artist and the text object.
+        If two elements are given, they are interpretted as [xpad, ypad].
+    shift : (2,) scalar or `None`
+        Adjust the (x,y) position of the text by this amount.
     kwargs : any,
         Additional named arguments passed to `matplotlib.figure.Figure.text`.
         For example, ``color='blue'``, or ``rotation=90``.
@@ -401,23 +531,143 @@ def text(fig, pstr, x=0.5, y=0.98, halign='center', valign='top', fs=16, trans=N
         Handle storing the drawn text.
 
     """
-    if trans is None: trans = fig.transFigure
-    if valign == 'upper':
-        warnings.warn("Use `'top'` not `'upper'`!")
-        valign = 'top'
+    # if trans is None: trans = fig.transFigure
+    if trans is None:
+        trans = kwargs.pop('transform', None)
 
-    if valign == 'lower':
-        warnings.warn("Use `'bottom'` not `'lower'`!")
-        valign = 'bottom'
+    if fs is not None:
+        if 'size' in kwargs:
+            raise KeyError("Cannot provide both `fs` and `size`!")
+        kwargs['size'] = fs
 
-    txt = fig.text(x, y, pstr, size=fs, transform=trans,  #  family='monospace',
+    if trans is None:
+        if isinstance(art, mpl.figure.Figure):
+            trans = art.transFigure
+        elif isinstance(art, mpl.axes.Axes):
+            trans = art.transAxes
+
+    if pad is None:
+        pad = _PAD
+    pad = np.atleast_1d(pad)
+    if pad.size == 1:
+        pad = np.concatenate([pad, pad])
+
+    # If a location string is given, convert to parameters
+    if loc is not None:
+        x, y, halign, valign = _loc_str_to_pars(
+            loc, x=x, y=y, halign=halign, valign=valign, pad=pad)
+
+    # Set default values
+    if x is None:
+        x = 0.5
+    if y is None:
+        y = 1 - pad[1]
+
+    if shift is not None:
+        x += shift[0]
+        y += shift[1]
+
+    halign, valign = _parse_align(halign, valign)
+    txt = art.text(x, y, pstr, transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
 
 
-def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=16, trans=None,
-           **kwargs):
+def label_line(ax, line, label, x=None, y=None,
+               color='0.5', fs=14, halign='left', scale='linear', clip_on=True,
+               halign_scale=1.0, rotate=True, log=None):
+    """Add an annotation to the given line with appropriate placement and rotation.
+
+    Based on code from:
+        [How to rotate matplotlib annotation to match a line?]
+        (http://stackoverflow.com/a/18800233/230468)
+        User: [Adam](http://stackoverflow.com/users/321772/adam)
+
+    NOTE: this doesnt work if the line's data have a non-data-unit transformation, for example
+          from a line created using `axvline` or `axhline`.
+
+    Arguments
+    ---------
+    ax : `matplotlib.axes.Axes` object
+        Axes on which the label should be added.
+    line : `matplotlib.lines.Line2D` object
+        Line which is being labeled.
+    label : str
+        Text which should be drawn as the label.
+    ...
+
+    Returns
+    -------
+    text : `matplotlib.text.Text` object
+
+    """
+    xlim = np.array(ax.get_xlim())
+    ylim = np.array(ax.get_ylim())
+
+    xdata, ydata = line.get_data()
+    x1 = xdata[0]
+    x2 = xdata[-1]
+    y1 = ydata[0]
+    y2 = ydata[-1]
+    # Limit the edges to the plotted area
+    x1, x2 = zmath.limit([x1, x2], xlim)
+    y1, y2 = np.interp([x1, x2], xdata, ydata)
+    y1, y2 = zmath.limit([y1, y2], ylim)
+    x1, x2 = np.interp([y1, y2], ydata, xdata)
+
+    log_flag = _scale_to_log_flag(scale)
+
+    if halign.startswith('l'):
+        if x is None:
+            x = x1*halign_scale
+        halign = 'left'
+    elif halign.startswith('r'):
+        if x is None:
+            x = halign_scale*x2
+        halign = 'right'
+    elif halign.startswith('c'):
+        if x is None:
+            x = zmath.midpoints([x1, x2], log=log_flag)*halign_scale
+        halign = 'center'
+    else:
+        raise ValueError("Unrecognized `halign` = '{}'.".format(halign))
+
+    if log is not None:
+        log.warning("x = {}, y = {}, xdata = {}, ydata = {}".format(x, y, xdata, ydata))
+
+    # y = np.interp(x, xdata, ydata) if y is None else y
+    y = zmath.interp(x, xdata, ydata, xlog=log_flag, ylog=log_flag) if y is None else y
+    # print("y = ", y)
+
+    # Add Annotation to Text
+    xytext = (0, 0)
+    text = ax.annotate(label, xy=(x, y), xytext=xytext, textcoords='offset points',
+                       size=fs, color=color, zorder=1, clip_on=clip_on,
+                       horizontalalignment=halign, verticalalignment='center_baseline')
+
+    if log is not None:
+        log.warning("label xy = {}, xytext = {}".format((x, y), xytext))
+
+    if rotate:
+        sp1 = ax.transData.transform_point((x1, y1))
+        sp2 = ax.transData.transform_point((x2, y2))
+
+        rise = (sp2[1] - sp1[1])
+        run = (sp2[0] - sp1[0])
+
+        slope_degrees = np.degrees(np.arctan2(rise, run))
+        text.set_rotation_mode('anchor')
+        text.set_rotation(slope_degrees)
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return text
+
+
+def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
+           fs=None, trans=None, prev=None,
+           fs_title=None, loc=None, mono=False, zorder=None, align_title=None, **kwargs):
     """Add a legend to the given figure.
 
     Wrapper for the `matplotlib.pyplot.Legend` method.
@@ -443,6 +693,14 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
         Transformation to use for legend placement.
         If `None`, then it defaults to `transFigure` or `transAxes` if `art` is a 'Figure' or 'Axes'
         respectively.
+    fs_title : int,
+    loc : str or 'None',
+        Describe the location of the legend using a string, e.g. 'tl', 'br', 'cl', 'tc'
+        The string must be a two letter combination, such that:
+        -   First letter determines the vertical alingment {'t', 'b', 'c'};
+        -   Second letter the horizontal, {'l', 'r', 'c'}.
+    mono : bool,
+        Use a monospace font for the legend strings.
     kwargs : any,
         Additional named arguments passed to `matplotlib.pyplot.legend`.
         For example, ``ncol=1`` or ``title='Legend Title'``.
@@ -455,25 +713,68 @@ def legend(art, keys, names, x=0.99, y=0.5, halign='right', valign='center', fs=
     """
     if isinstance(art, mpl.figure.Figure):
         ax = art.axes[0]
-        if trans is None: trans = art.transFigure
+        if trans is None:
+            trans = art.transFigure
     elif isinstance(art, mpl.axes.Axes):
         ax = art
-        if trans is None: trans = ax.transAxes
+        if trans is None:
+            trans = ax.transAxes
+    else:
+        warnings.warn("Unexpected `art` object '{}' (type: {})".format(art, type(art)))
 
-    if 'handlelength' not in kwargs:
-        kwargs['handlelength'] = _HANDLE_LENGTH
+    kwargs.setdefault('handlelength', _HANDLE_LENGTH)
+    kwargs.setdefault('handletextpad', _HANDLE_PAD)
+    kwargs.setdefault('columnspacing', _LEGEND_COLUMN_SPACING)
+    kwargs.setdefault('scatterpoints', _SCATTER_POINTS)
+    kwargs.setdefault('numpoints', _SCATTER_POINTS)
+    kwargs.setdefault('fancybox', True)
+
+    # `alpha` should actually be `framealpha`
+    if 'alpha' in kwargs:
+        warnings.warn("For legends, use `framealpha` instead of `alpha`.")
+        kwargs['framealpha'] = kwargs.pop('alpha')
+
+    # Override alignment using `loc` argument
+    if loc is not None:
+        _x, _y, halign, valign = _loc_str_to_pars(loc)
+    else:
+        _x = 0.99
+        _y = 0.5
 
     if valign == 'top':
         valign = 'upper'
     if valign == 'bottom':
         valign = 'lower'
 
+    if x is None:
+        x = _x
+    if y is None:
+        y = _y
+
     alignStr = valign
     if not (valign == 'center' and halign == 'center'):
         alignStr += " " + halign
 
-    leg = ax.legend(keys, names, prop={'size': fs},  # 'family': 'monospace'},
+    prop_dict = {}
+    if fs is not None:
+        prop_dict['size'] = fs
+    if mono:
+        prop_dict['family'] = 'monospace'
+    leg = ax.legend(keys, names, prop=prop_dict,  # fancybox=True,
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
+    if fs_title is not None:
+        plt.setp(leg.get_title(), fontsize=fs_title)
+    if align_title is not None:
+        plt.setp(leg.get_title(), multialignment=align_title)
+
+    if zorder is not None:
+        leg.set_zorder(10)
+
+    if prev is not None:
+        prev = np.atleast_1d(prev)
+        for pp in prev:
+            ax.add_artist(pp)
+        
     return leg
 
 
@@ -500,14 +801,8 @@ def unifyAxesLimits(axes, axis='y'):
     return np.array([lo, hi])
 
 
-def colorCycle(args, **kwargs):
-    """Create a range of colors.  DEPRECATED: use `color_cycle`.
-    """
-    warnings.warn("Use `color_cycle` function.", DeprecationWarning, stacklevel=3)
-    return color_cycle(args, **kwargs)
-
-
-def color_cycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
+def color_cycle(num, ax=None, color=None, cmap=plt.cm.Spectral,
+                left=0.1, right=0.9, light=True):
     """Create a range of colors.
 
     Arguments
@@ -524,6 +819,9 @@ def color_cycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
         Start colors this fraction of the way into the colormap (to avoid black/white).
     right : float {0.0, 1.0}
         Stop colors at this fraction of the way through the colormap (to avoid black/white).
+    light : bool
+        If `color` is given instead of `cmap`, use a seaborn 'light' colormap (vs. 'dark').
+        Note: only works if `color` is given.
 
     Returns
     -------
@@ -531,13 +829,44 @@ def color_cycle(num, ax=None, cmap=plt.cm.spectral, left=0.1, right=0.9):
         Colors forming the color cycle.
 
     """
-    cmap = _get_cmap(cmap)
-    cols = [cmap(it) for it in np.linspace(left, right, num)]
-    if ax is not None: ax.set_color_cycle(cols[::-1])
+    nums = np.linspace(left, right, num)
+
+    # If a single color is not provided, use a colormap (`cmap`)
+    if color is None:
+        cmap = _get_cmap(cmap)
+    # If a single color is provided, create a cycle by altering its `a[lpha]`
+    else:
+        if isinstance(color, six.string_types):
+            cc = mpl.colors.ColorConverter()
+            color = cc.to_rgba(color)
+        if np.size(color) == 3:
+            color = np.append(color, 1.0)
+        if np.size(color) != 4:
+            raise ValueError("`color` = '{}', must be a RGBA series.".format(color))
+
+        if light:
+            palette = sns.light_palette
+        else:
+            palette = sns.dark_palette
+
+        cmap = palette(color, n_colors=num, as_cmap=True)
+
+    cols = [cmap(it) for it in nums]
+    if ax is not None:
+        ax.set_color_cycle(cols[::-1])
     return cols
 
 
-def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
+def invert_color(col):
+    rgba = mpl.colors.to_rgba(col)
+    alpha = rgba[-1]
+    col = 1.0 - np.array(rgba[:-1])
+    col = tuple(col.tolist() + [alpha])
+    return col
+
+
+def colormap(args=[0.0, 1.0], cmap=None, scale=None,
+             under='0.8', over='0.8', left=None, right=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
@@ -553,6 +882,12 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
         Color specification for values below range.
     over : str or `None`
         Color specification for values above range.
+    left : float {0.0, 1.0} or `None`
+        Truncate the left edge of the colormap to this value.
+        If `None`, 0.0 used (if `right` is provided).
+    right : float {0.0, 1.0} or `None`
+        Truncate the right edge of the colormap to this value
+        If `None`, 1.0 used (if `left` is provided).
 
     Returns
     -------
@@ -560,13 +895,32 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
         Scalar mappable object which contains the members:
         `norm`, `cmap`, and the function `to_rgba`.
 
+    Notes
+    -----
+    -   Truncation:
+        -   If neither `left` nor `right` is given, no truncation is performed.
+        -   If only one is given, the other is set to the extreme value: 0.0 or 1.0.
+
     """
+    args = np.asarray(args)
 
-    if cmap is None: cmap = 'jet'
+    if cmap is None:
+        cmap = 'jet'
+    if isinstance(cmap, six.string_types):
+        cmap = plt.get_cmap(cmap)
 
-    if isinstance(cmap, six.string_types): cmap = plt.get_cmap(cmap)
-    if under is not None: cmap.set_under(under)
-    if over is not None: cmap.set_over(over)
+    # Select a truncated subsection of the colormap
+    if (left is not None) or (right is not None):
+        if left is None:
+            left = 0.0
+        if right is None:
+            right = 1.0
+        cmap = cut_colormap(cmap, left, right)
+
+    if under is not None:
+        cmap.set_under(under)
+    if over is not None:
+        cmap.set_over(over)
 
     if scale is None:
         if np.size(args) > 1 and np.all(args > 0.0):
@@ -581,12 +935,24 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
         filter = None
 
     # Determine minimum and maximum
-    if np.size(args) > 1: min, max = zmath.minmax(args, filter=filter)
-    else:                 min, max = 0, np.int(args)-1
+    if np.size(args) > 1:
+        rv = zmath.minmax(args, filter=filter)
+        if rv is None:
+            min, max = 0.0, 0.0
+        else:
+            min, max = rv
+    elif np.size(args) == 1:
+        min, max = 0, np.int(args)-1
+    elif np.size(args) == 2:
+        min, max = args
+    else:
+        min, max = 0.0, 0.0
 
     # Create normalization
-    if log: norm = mpl.colors.LogNorm(vmin=min, vmax=max)
-    else:   norm = mpl.colors.Normalize(vmin=min, vmax=max)
+    if log:
+        norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+    else:
+        norm = mpl.colors.Normalize(vmin=min, vmax=max)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -598,7 +964,35 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8'):
     return smap
 
 
-def color_set(num, black=False):
+def cut_colormap(cmap, min=0.0, max=1.0, n=100):
+    """Select a truncated subset of the given colormap.
+
+    Code from: http://stackoverflow.com/a/18926541/230468
+
+    Arguments
+    ---------
+    cmap : `matplotlib.colors.Colormap`
+        Colormap to truncate
+    min : float, {0.0, 1.0}
+        Minimum edge of the colormap
+    max : float, {0.0, 1.0}
+        Maximum edge of the colormap
+    n : int
+        Number of points to use for sampling
+
+    Returns
+    -------
+    new_cmap : `matplotlib.colors.Colormap`
+        Truncated colormap.
+
+    """
+    name = 'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=min, b=max)
+    new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        name, cmap(np.linspace(min, max, n)))
+    return new_cmap
+
+
+def color_set(num, black=False, cset='xkcd'):
     """Retrieve a (small) set of color-strings with hand picked values.
 
     Arguments
@@ -607,37 +1001,100 @@ def color_set(num, black=False):
         Number of colors to retrieve.
     black : bool
         Include 'black' as the first color.
+    cset : str, {'xkcd', 'def'}
+        Which set of colors to choose from.
 
     Returns
     -------
-    cols : (`num`) list of str
-        List of `matplotlib` compatible color-strings.
+    cols : (`num`) list of str or RGBA tuples
+        List of `matplotlib` compatible color-strings or tuples.
 
     """
-    ncol = len(_COLOR_SET)
-    # Make sure enough colors are available
-    if (black and num > ncol) or (not black and num > ncol-1):
-        errStr = "Only have {} colors {}, `num` ({}) is too large."
-        if black: errStr = errStr.format(ncol, "with black", num)
-        else:     errStr = errStr.format(ncol-1, "without black", num)
-        raise ValueError(errStr)
+    if cset == 'xkcd':
+        colors = list(_COLOR_SET_XKCD)
+        colors = sns.xkcd_palette(colors)
+    elif cset.startswith('def'):
+        colors = list(_COLOR_SET)
+    else:
+        raise ValueError("`cset` '{}' unrecognized.".format(cset))
 
     if black:
-        cols = _COLOR_SET[:num]
-    else:
-        cols = _COLOR_SET[1:num+1]
+        colors = ['black'] + colors
 
-    return cols
+    ncol = len(colors)
+    # If more colors are requested than are available, fallback to `color_cycle`
+    if num > ncol:
+        # raise ValueError("Limited to {} colors, cannot produce `num` = '{}'.".format(ncol, num))
+        colors = color_cycle(num)
+        return colors
+
+    return colors[:num]
 
 
-def setGrid(ax, val, axis='both', below=True):
+def line_style_set(num, solid=True):
+    """Retrieve a (small) set of line-style specifications with hand constructed patterns.
+
+    Used by the `matplotlib.lines.Line2D.set_dashes` method.
+    The first element is a solid line.
+
+    Arguments
+    ---------
+    num : int or `None`
+        Number of line-styles to retrieve.
+        If `None`, then all available are returned.
+    solid : bool
+        Include solid line-style.
+
+    Returns
+    -------
+    lines : (`num`) list of tuples,
+        Set of line-styles.  Each line style is a tuple of values specifying dash spacings.
+
+    """
+    _lines = list(_LINE_STYLE_SET)
+    # Remove solid line specification if undesired
+    if not solid:
+        _lines = _lines[1:]
+    nline = len(_lines)
+    # If more colors are requested than are available, fallback to `color_cycle`
+    if (num is not None) and (num > nline):
+        raise ValueError("Limited to {} line-styles.".format(nline))
+
+    lines = [ll for ll in _lines[:num]]
+
+    return lines
+
+
+def set_grid(ax, val=True, axis='both', ls='-', clear=True,
+             below=True, major=True, minor=True, zorder=2, alpha=None, **kwargs):
     """Configure the axes' grid.
     """
-    ax.grid(False, which='both', axis='both')
+    color = _color_from_kwargs(kwargs)
+
+    if clear:
+        ax.grid(False, which='both', axis='both')
     ax.set_axisbelow(below)
     if val:
-        ax.grid(True, which='major', axis=axis, c='0.50', ls='-')
-        ax.grid(True, which='minor', axis=axis, c='0.75', ls='-')
+        if major:
+            if color is None:
+                _col = '0.60'
+            else:
+                _col = color
+            if alpha is None:
+                _alpha = 0.8
+            else:
+                _alpha = alpha
+            ax.grid(True, which='major', axis=axis, c=_col, ls=ls, zorder=zorder, alpha=_alpha)
+        if minor:
+            if color is None:
+                _col = '0.85'
+            else:
+                _col = color
+            if alpha is None:
+                _alpha = 0.5
+            else:
+                _alpha = alpha
+            ax.grid(True, which='minor', axis=axis, c=_col, ls=ls, zorder=zorder, alpha=_alpha)
     return
 
 
@@ -732,7 +1189,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
             if ii == 0:
                 usefname = str(fname)
             else:
-                usefname = zio.modifyFilename(fname, append='_%d' % (ii))
+                usefname = zio.modify_filename(fname, append='_%d' % (ii))
 
             ff.savefig(usefname, **kwargs)
             if close: plt.close(ff)
@@ -744,31 +1201,40 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     # No files saved or Some files were not saved
     if not len(saved_names) or len(saved_names) != len(fig):
         warn_str = "Error saving figures..."
-        if log is None: warnings.warn(warn_str)
-        else: log.warning(warn_str)
+        if log is None:
+            warnings.warn(warn_str)
+        else:
+            log.warning(warn_str)
 
     # Things look good.
     else:
         printStr = "Saved figure to '%s'" % (fname)
-        if log is not None: log.log(level, printStr)
-        elif verbose: print(printStr)
+        if log is not None:
+            log.log(level, printStr)
+        elif verbose:
+            print(printStr)
 
     return
 
 
-def strSciNot(val, precman=0, precexp=0, dollar=True):
+def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
+                        precman=None, precexp=None):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
     ---------
     val : scalar
         Numerical value to convert.
-    precman : int or `None`
+    man : int or `None`
         Precision of the mantissa (decimal points); or `None` for omit mantissa.
-    precexp : int or `None`
+    exp : int or `None`
         Precision of the exponent (decimal points); or `None` for omit exponent.
     dollar : bool
         Include dollar-signs ('$') around returned expression.
+    one : bool
+        Include the mantissa even if it is '1[.0...]'.
+    zero : bool
+        If the value is uniformly '0.0', write it as such (instead of 10^-inf).
 
     Returns
     -------
@@ -776,339 +1242,63 @@ def strSciNot(val, precman=0, precexp=0, dollar=True):
         Scientific notation string using latex formatting.
 
     """
-    man, exp = zmath.frexp10(val)
-    use_man = (precman is not None and np.isfinite(exp))
-    if use_man: manStr = "{0:.{1:d}f}".format(man, precman)
-    else:       manStr = ""
-    # if precexp is not None: expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
-    # else:                   expStr = ""
+    # Deprecation warnings for old parameters
+    if precman is not None:
+        utils.dep_warn("precman", "man", type='parameter')
+        man = precman
     if precexp is not None:
-        # Try to convert `exp` to integer, fails if 'inf' or 'nan'
+        utils.dep_warn("precexp", "exp", type='parameter')
+        exp = precexp
+
+    if zero and val == 0.0:
+        notStr = "$"*dollar + "0.0" + "$"*dollar
+        return notStr
+
+    val_man, val_exp = zmath.frexp10(val)
+    use_man = (man is not None and np.isfinite(val_exp))
+
+    val_man = np.around(val_man, man)
+    if val_man >= 10.0:
+        val_man /= 10.0
+        val_exp += 1
+
+    # Construct Mantissa String
+    # --------------------------------
+    if use_man:
+        str_man = "{0:.{1:d}f}".format(val_man, man)
+    else:
+        str_man = ""
+    # If the mantissa is '1' (or '1.0' or '1.00' etc), dont write it
+    if not one and str_man == "{0:.{1:d}f}".format(1.0, man):
+        str_man = ""
+
+    # Construct Exponent String
+    # --------------------------------
+    if exp is not None:
+        # Try to convert `val_exp` to integer, fails if 'inf' or 'nan'
         try:
-            exp = np.int(exp)
-            expStr = "10^{{ {:d} }}".format(exp)
+            val_exp = np.int(val_exp)
+            str_exp = "10^{{ {:d} }}".format(val_exp)
         except:
-            expStr = "10^{{ {0:.{1:d}f} }}".format(exp, precexp)
+            str_exp = "10^{{ {0:.{1:d}f} }}".format(val_exp, exp)
 
         # Add negative sign if needed
-        if not use_man and (man < 0.0 or val == -np.inf):
-            expStr = "-" + expStr
+        if not use_man and (val_man < 0.0 or val == -np.inf):
+            str_exp = "-" + str_exp
     else:
-        expStr = ""
+        str_exp = ""
 
-    notStr = "$"*dollar + manStr
-    if len(manStr) and len(expStr):
+    # Put them together
+    # --------------------------------
+    notStr = "$"*dollar + str_man
+    if len(str_man) and len(str_exp):
         notStr += " \\times"
-    notStr += expStr + "$"*dollar
+    notStr += str_exp + "$"*dollar
+
     return notStr
 
 
-def plotHistLine(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None,
-                 fill=None, invert=False, **kwargs):
-    """Given bin edges and histogram-like values, plot a histogram.
-
-    Arguments
-    ---------
-        ax       <obj>    : matplotlib axes object on which to plot
-        edges    <flt>[N] : positions of bin edges, length either that of hist ``M`` or ``M+1``
-        hist     <flt>[M] : histogram values for each bin
-        yerr     <flt>[M] : value for y-error-bars
-        nonzero  <bool>   : only plot non-zero values
-        positive <bool>   : only plot positive values
-        extend   <str>    : required if ``N != M+1``, sets direction to extend ``edges``
-        fill     <obj>    : If not ``None``, fill below line; can set as dict of fill parameters
-        **kwargs <dict>   : key value pairs to be passed to the plotting function
-
-    Returns
-    -------
-        line     <obj>    : the plotted object
-
-    """
-
-    # Determine color if included in ``kwargs``
-    col = 'black'
-    if kwargs.get('color') is not None: col = kwargs.get('color')
-    elif kwargs.get('c') is not None: col = kwargs.get('c')
-
-    # Extend bin edges if needed
-    if len(edges) != len(hist)+1:
-        if extend == 'left': edges = np.concatenate([[zmath.extend(edges)[0]], edges])
-        elif extend == 'right': edges = np.concatenate([edges, [zmath.extend(edges)[1]]])
-        else: raise RuntimeError("``edges`` must be longer than ``hist``, or ``extend`` given")
-
-    # Construct plot points to manually create a step-plot
-    xval, yval = _histLine(edges, hist)
-
-    # Select nonzero values
-    if(nonzero):
-        xval = np.ma.masked_where(yval == 0.0, xval)
-        yval = np.ma.masked_where(yval == 0.0, yval)
-
-    # Select positive values
-    if(positive):
-        xval = np.ma.masked_where(yval < 0.0, xval)
-        yval = np.ma.masked_where(yval < 0.0, yval)
-
-    if invert:
-        temp = np.array(xval)
-        xval = yval
-        yval = temp
-
-    # Plot Histogram
-    line, = ax.plot(xval, yval, **kwargs)
-
-    # Add yerror-bars
-    if(yerr is not None):
-        xmid = zmath.midpoints(edges)
-
-        if(nonzero):
-            inds = np.where(hist != 0.0)
-            ax.errorbar(xmid[inds], hist[inds], yerr=yerr[inds], fmt=None, ecolor=col)
-        else:
-            ax.errorbar(xmid,       hist,       yerr=yerr,       fmt=None, ecolor=col)
-
-    # Add a fill region
-    if(fill is not None):
-        ylim = ax.get_ylim()
-        if(type(fill) == dict): filldict = fill
-        else:                     filldict = dict()
-
-        ax.fill_between(xval, yval, 0.1*ylim[0], **filldict)
-        ax.set_ylim(ylim)
-
-    return line
-
-
-def plotSegmentedLine(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], lw=3.0, alpha=1.0):
-    """Draw a line segment by segment.
-    http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
-
-    Plot a colored line with coordinates xx and y
-    Optionally specify colors in the array z
-    Optionally specify a colormap, a norm function and a line width
-    """
-
-    # Get the minimum and maximum of ``norm``
-    norm = zmath.minmax(norm)
-    # conver to normalization
-    norm = plt.Normalize(norm[0], norm[1])
-
-    if(zz is None): zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
-    else:             zz = np.asarray(zz)
-
-    segments = _make_segments(xx, yy)
-    lc = mpl.collections.LineCollection(segments, array=zz, cmap=cmap, norm=norm,
-                                        linewidth=lw, alpha=alpha)
-
-    ax.add_collection(lc)
-
-    return lc
-
-
-def plotScatter(ax, xx, yy, scalex='log', scaley='log',
-                size=None, cont=False, color=None, alpha=None, **kwargs):
-    """Draw a scatter plot.
-    """
-    COL = COL_CORR
-
-    if(size is None): size = [30, 6]
-    if(color is None): color = ['0.25', COL]
-    if(alpha is None): alpha = [0.5, 0.8]
-
-    ax.scatter(xx, yy, s=size[0], color=color[0], alpha=alpha[0], **kwargs)
-    pnts = ax.scatter(xx, yy, s=size[1], color=color[1], alpha=alpha[1], **kwargs)
-
-    # Add Contours
-    if(cont):
-        NUM = 4
-        CMAP = 'jet'
-        res = 0.3*np.sqrt(len(xx))
-        res = np.max([1, res])
-
-        smap = colormap(NUM, CMAP, scale='lin')
-        cols = [smap.to_rgba(it) for it in range(NUM)]
-
-        xi = zmath.spacing(xx, scalex, num=res)
-        yi = zmath.spacing(yy, scaley, num=res)
-        hist, xedges, yedges = np.histogram2d(xx, yy, (xi, yi))
-        gx, gy = np.meshgrid(xedges[1:], yedges[1:])
-        ax.contour(gx, gy, hist.T, NUM, colors=cols)
-
-    return pnts
-
-
-def plotHistBars(ax, xx, bins=20, scalex='log', scaley='log', conf=True, **kwargs):
-    """Plot a histogram bar graph.
-
-    NOTE: For log-y, make sure `yscale` is either not manually set, or include `nonposy='clip'`
-
-    Arguments
-    ---------
-    ax : ``matplotlib.axes.Axes`` object,
-        Axes on which to plot.
-    xx : (N,) array_like scalars,
-        Values to be histogrammed.
-    bins : int or array_like,
-        Either the number of bins for bin-edges to be automatically generated, or the bin-edges
-        themselves.
-    ...
-
-    """
-    HIST_ALPHA = 0.75
-    CONF_ALPHA = 0.5
-
-    CONF_INTS = [0.95, 0.68]
-    CONF_COLS = ['green', 'orange']
-
-    if scaley.startswith('log'): logy = True
-    else:                        logy = False
-
-    if 'color' not in kwargs and 'c' not in kwargs:
-        kwargs['color'] = COL_CORR
-    if 'alpha' not in kwargs:
-        kwargs['alpha'] = HIST_ALPHA
-    if 'rwidth' not in kwargs:
-        kwargs['rwidth'] = 0.8
-    if 'zorder' not in kwargs:
-        kwargs['zorder'] = 100
-
-    # Add Confidence intervals
-    if conf:
-        med, cints = zmath.confidenceIntervals(xx, ci=CONF_INTS)
-        ax.axvline(med, color='red', ls='--', lw=LW_CONF, zorder=101)
-        # Add average
-        ave = np.average(xx)
-        ax.axvline(ave, color='red', ls=':', lw=LW_CONF, zorder=101)
-        for ii, (vals, col) in enumerate(zip(cints, CONF_COLS)):
-            ax.axvspan(*vals, color=col, alpha=CONF_ALPHA)
-
-    # Create a given number of log-spaced bins
-    #     If not log-spaced, then `ax.hist` will do the same
-    if isinstance(bins, numbers.Integral) and scalex.startswith('log'):
-        bins = zmath.spacing(xx, num=bins, scale='log')
-
-    cnts, bins, bars = ax.hist(xx, bins, histtype='bar', log=logy, **kwargs)
-
-    # Dont let lower y-lim be less than 0.8 with log-scaling
-    if scaley.startswith('log'):
-        # setLim(ax, 'y', lo=0.8, at='least')   <=== This isn't working for some reason!  FIX
-        ylim = np.array(ax.get_ylim())
-        if ylim[0] < 0.8:
-            ylim[0] = 0.8
-            ax.set_ylim(ylim)
-
-    return bars
-
-
-def plotConfFill(ax, rads, med, conf, color='red', fillalpha=0.5, lw=1.0, linealpha=0.8,
-                 filter=None, outline='0.5', edges=True, floor=None, ceil=None, **kwargs):
-    """Draw a median line and (set of) confidence interval(s).
-
-    The `med` and `conf` values can be obtained from `numpy.percentile` and or
-    `zcode.math.confidenceIntervals`.
-
-    Arguments
-    ---------
-    ax : `matplotlib.axes.Axes` object,
-        Axes on which to plot.
-    rads : (N,) array_like scalars,
-        Radii corresponding to each median and confidence value.
-    med : (N,) array_like scalars,
-        Median values to plot as line.
-    conf : (N,[M,]2,) array_like scalars,
-        Confidence intervals to plot as shaded regions.  There can be `M` different confidence
-        intervals, each with an upper and lower value.  Shape of `(N,2,)` is also allowed for a
-        single confidence interval.
-    color : `matplotlib` color spec,
-        Color for median lines and shaded region.
-    fillalpha : float or (M,) array_like of floats,
-        Alpha (opacity) specification for fill regions; each element must be ``{0.0, 1.0}``.
-        If ``(M,)`` are given, one is used for each confidence-interval.  Otherwise, for
-        confidence interval `i`, the alpha used is ``fillalpha^{i+1}``.
-    lw : float,
-        Line-weight used specifically for the median line (not the filled-regions).
-    filter : str or `None`
-        Apply a relative-to-zero filter to the y-data before plotting.
-    outline : str or `None`.
-        Draw a `outline` colored line behind the median line to make it easier to see.
-        If `None`, no outline is drawn.
-    edges : bool
-        Add lines along the edges of each confidence interval.
-    floor : array_like of float or `None`
-        Set the minimum value for confidence intervals to this value.
-    ceil : array_like of float or `None`
-        Set the maximmum value for confidence intervals to be this value.
-    **kwargs : additional key-value pairs,
-        Passed to `matplotlib.pyplot.fill_between` controlling `matplotlib.patches.Polygon`
-        properties.  These are included in the `linePatch` objects, but *not* the `confPatches`.
-
-    Returns
-    -------
-    linePatch : `matplotlib.patches.Patch`,
-        Composite patch of median line and shaded region patch (for use on legend).
-    confPatches : (M,) list of `matplotlib.patches.Patch`,
-        A patch for each confidence inteval (for use on legend).
-
-    """
-
-    ll, = ax.plot(rads, med, '-', color=color, lw=lw)
-
-    # `conf` has shape ``(num-rads, num-conf-ints, 2)``
-    if conf.ndim == 2:
-        conf = conf.reshape(len(rads), 1, 2)
-    elif conf.ndim != 3:
-        raise ValueError("`conf` must be 2 or 3 dimensions!")
-
-    if filter is not None:
-        filter = zmath._comparisonFunction(filter)
-
-    numConf = np.shape(conf)[-2]
-    confPatches = []
-    # Iterate over confidence intervals
-    for jj in xrange(numConf):
-        # Set fill-opacity
-        if np.size(fillalpha) == numConf: falph = fillalpha
-        else:                             falph = np.power(fillalpha, jj+1)
-
-        # Create a dummy-patch to return for a legend of confidence-intervals
-        pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
-        confPatches.append(pp[0])
-
-        xx = np.array(rads)
-        ylo = np.array(conf[:, jj, 0])
-        yhi = np.array(conf[:, jj, 1])
-        if floor is not None:
-            ylo = np.maximum(ylo, floor)
-        if ceil is not None:
-            yhi = np.minimum(yhi, ceil)
-
-        if filter:
-            ylo = np.ma.masked_where(~filter(ylo, 0.0), ylo)
-            yhi = np.ma.masked_where(~filter(yhi, 0.0), yhi)
-
-        # Fill between confidence intervals
-        pp = ax.fill_between(xx, ylo, yhi, alpha=falph, facecolor=color, **kwargs)
-
-        # Plot edges of confidence intervals
-        if edges:
-            ax.plot(rads, ylo, color=color, alpha=0.5*linealpha, lw=0.5*lw)
-            ax.plot(rads, yhi, color=color, alpha=0.5*linealpha, lw=0.5*lw)
-
-        # Create dummy-patch for the median-line and fill-color, for a legend
-        if jj == 0:
-            # pp = ax.fill(np.nan, np.nan, facecolor=color, alpha=falph, **kwargs)
-            # Create overlay of lines and patches
-            linePatch = (pp, ll)
-
-    # Plot Median Line
-    #    Plot black outline to improve contrast
-    if outline is not None:
-        ax.plot(rads, med, '-', color=outline, lw=2*lw, alpha=_LW_OUTLINE)
-    ll, = ax.plot(rads, med, '-', color=color, lw=lw, alpha=linealpha)
-    return linePatch, confPatches
-
-
-def line_label(ax, pos, label, dir='v', loc='top',
+def line_label(ax, pos, label, dir='v', loc='top', xx=None, yy=None, ha=None, va=None,
                line_kwargs={}, text_kwargs={}, dashes=None, rot=None):
     """Plot a vertical line, and give it a label outside the axes.
 
@@ -1137,7 +1327,6 @@ def line_label(ax, pos, label, dir='v', loc='top',
         Added text object.
 
     """
-    PAD = 0.01
     tdir = dir.lower()[:1]
     if tdir.startswith('v'):   VERT = True
     elif tdir.startswith('h'): VERT = False
@@ -1156,50 +1345,56 @@ def line_label(ax, pos, label, dir='v', loc='top',
 
     # Set alignment
     if tloc.startswith('l'):
-        ha = 'right'
-        va = 'center'
+        _ha = 'right'
+        _va = 'center'
     elif tloc.startswith('r'):
-        ha = 'left'
-        va = 'center'
+        _ha = 'left'
+        _va = 'center'
     elif tloc.startswith('t'):
-        ha = 'center'
-        va = 'bottom'
+        _ha = 'center'
+        _va = 'bottom'
     elif tloc.startswith('b'):
-        ha = 'center'
-        va = 'top'
+        _ha = 'center'
+        _va = 'top'
+
+    if ha is None: ha = _ha
+    if va is None: va = _va
 
     # Add vertical line
     if VERT:
         ll = ax.axvline(pos, **line_kwargs)
         trans = mpl.transforms.blended_transform_factory(ax.transData, ax.transAxes)
         if tloc.startswith('l'):
-            xx = pos
-            yy = 0.5
+            _xx = pos
+            _yy = 0.5
         elif tloc.startswith('r'):
-            xx = pos
-            yy = 0.5
+            _xx = pos
+            _yy = 0.5
         elif tloc.startswith('t'):
-            xx = pos
-            yy = 1.0 + PAD
+            _xx = pos
+            _yy = 1.0 + _PAD
         elif tloc.startswith('b'):
-            xx = pos
-            yy = 0.0 - PAD
+            _xx = pos
+            _yy = 0.0 - _PAD
     # Add horizontal line
     else:
         ll = ax.axhline(pos, **line_kwargs)
         trans = mpl.transforms.blended_transform_factory(ax.transAxes, ax.transData)
         if tloc.startswith('l'):
-            xx = 0.0 - PAD
-            yy = pos
+            _xx = 0.0 - _PAD
+            _yy = pos
         elif tloc.startswith('r'):
-            xx = 1.0 + PAD
-            yy = pos
+            _xx = 1.0 + _PAD
+            _yy = pos
         elif tloc.startswith('t'):
-            xx = 0.5
-            yy = pos
+            _xx = 0.5
+            _yy = pos
         elif tloc.startswith('b'):
-            xx = 0.5
-            yy = pos
+            _xx = 0.5
+            _yy = pos
+
+    if xx is None: xx = _xx
+    if yy is None: yy = _yy
 
     if dashes: ll.set_dashes(dashes)
 
@@ -1207,113 +1402,40 @@ def line_label(ax, pos, label, dir='v', loc='top',
     return ll, txt
 
 
-def full_extent(ax, pad=0.0, invert=None):
-    """Get the full extent of an axes, including axes labels, tick labels, and titles.
-
-    From: 'stackoverflow.com/questions/14712665/'
-    """
-    # Draw text objects so extents are defined
-    ax.figure.canvas.draw()
-    items = ax.get_xticklabels() + ax.get_yticklabels()
-    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
-    items += [ax, ax.title]
-    use_items = []
-    for item in items:
-        if isinstance(item, mpl.text.Text) and len(item.get_text()) == 0: continue
-        use_items.append(item)
-    bbox = mpl.transforms.Bbox.union([item.get_window_extent() for item in use_items])
-    bbox = bbox.expanded(1.0 + pad, 1.0 + pad)
-    if invert:
-        bbox = bbox.transformed(invert.inverted())
-
-    return bbox
-
-
-def position_to_extent(fig, ax, loc, pad=0.0, halign='left', valign='lower'):
-    """Reposition axis so that origin of 'full_extent' is at given `loc`.
-    """
-    bbox = full_extent(ax, pad=pad, invert=fig.transFigure)
-    ax_bbox = ax.get_position()
-
-    if halign.startswith('r'):
-        dx = ax_bbox.x1 - bbox.x1
-    elif halign.startswith('l'):
-        dx = ax_bbox.x0 - bbox.x0
-    else:
-        raise ValueError("`halign` = '{}' must start with 'l' or 'r'.".format(halign))
-
-    if valign.startswith('l'):
-        dy = ax_bbox.y0 - bbox.y0
-    elif valign.startswith('u'):
-        dy = ax_bbox.y1 - bbox.y1
-    else:
-        raise ValueError("`valign` = '{}' must start with 'l' or 'u'.".format(valign))
-
-    if len(loc) == 2:
-        new_loc = [loc[0]+dx, loc[1]+dy, ax_bbox.width, ax_bbox.height]
-    elif len(loc) == 4:
-        new_loc = [loc[0]+dx, loc[1]+dy, loc[2], loc[3]]
-    else:
-        raise ValueError("`loc` must be 2 or 4 long: [x, y, (width, height)]")
-
-    ax.set_position(new_loc)
-    return
-
-
-def _extents(ax, pad=0.0, invert=None):
-    """Get the extents of an axes, including axes labels, tick labels, and titles.
-
-    Adapted From: 'stackoverflow.com/questions/14712665/'
-    """
-    # For text objects, we need to draw the figure first, otherwise the extents
-    # are undefined.
-    ax.figure.canvas.draw()
-    items = ax.get_xticklabels() + ax.get_yticklabels()
-    items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
-    items += [ax, ax.title]
-    bboxes = [it.get_window_extent().expanded(1.0 + pad, 1.0 + pad) for it in items]
-    if invert:
-        bboxes = [bb.transformed(invert.inverted()) for bb in bboxes]
-
-    return bboxes
-
-
-def backdrop(fig, ax, pad=0.0, union=False, **kwargs):
-    if union:
-        bboxes = [full_extent(ax, pad=pad, invert=fig.transFigure)]
-    else:
-        bboxes = _extents(ax, pad=pad, invert=fig.transFigure)
-
-    pats = []
-    for bbox in bboxes:
-        rect = mpl.patches.Rectangle([bbox.xmin, bbox.ymin], bbox.width, bbox.height,
-                                     transform=fig.transFigure, **kwargs)
-        fig.patches.append(rect)
-        pats.append(rect)
-
-    return pats
+#     ==================================
+#     ====    INTERNAL FUNCTIONS    ====
+#     ==================================
 
 
 def _setAxis_scale(ax, axis, scale, thresh=None):
-    if(scale.startswith('lin')): scale = 'linear'
-    if(scale == 'symlog'): thresh = 1.0
-    if(axis == 'x'): ax.set_xscale(scale, linthreshx=thresh)
-    elif(axis == 'y'): ax.set_yscale(scale, linthreshy=thresh)
-    else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
+    kw = {}
+    if scale.startswith('lin'):
+        scale = 'linear'
+    elif scale == 'symlog':
+        if thresh is None:
+            thresh = 1.0
+        kw['linthresh' + axis] = thresh
+
+    if axis == 'x':
+        ax.set_xscale(scale, **kw)
+    elif axis == 'y':
+        ax.set_yscale(scale, **kw)
+    else:
+        raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
+
     return
 
 
-def _setAxis_label(ax, axis, label, fs=12, c='black'):
-    if axis == 'x': ax.set_xlabel(label, size=fs, color=c)
-    elif axis == 'y': ax.set_ylabel(label, size=fs, color=c)
-    else: raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
+def _setAxis_label(ax, axis, label, fs=None, **kwargs):
+    color = _color_from_kwargs(kwargs)
+
+    if axis == 'x':
+        ax.set_xlabel(label, size=fs, color=color)
+    elif axis == 'y':
+        ax.set_ylabel(label, size=fs, color=color)
+    else:
+        raise RuntimeError("Unrecognized ``axis`` = %s" % (axis))
     return
-
-
-def _histLine(edges, hist):
-    xval = np.hstack([[edges[jj], edges[jj+1]] for jj in range(len(edges)-1)])
-    yval = np.hstack([[hh, hh] for hh in hist])
-    return xval, yval
 
 
 def _clear_frame(ax=None):
@@ -1325,24 +1447,15 @@ def _clear_frame(ax=None):
     return
 
 
-def _make_segments(x, y):
-    """
-    http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
-
-    Create list of line segments from x and y coordinates, in the correct format for LineCollection:
-    an array of the form   [numlines, (points per line), 2 (x and y)] array
-    """
-    points = np.array([x, y]).T.reshape(-1, 1, 2)
-    segments = np.concatenate([points[:-1], points[1:]], axis=1)
-    return segments
-
-
 def _scale_to_log_flag(scale):
     # Check formatting of `scale` str
     scale = _clean_scale(scale)
-    if scale.startswith('log'): log = True
-    elif scale.startswith('lin'): log = False
-    else: raise ValueError("Unrecognized `scale` '%s'; must start with 'log' or 'lin'." % (scale))
+    if scale.startswith('log'):
+        log = True
+    elif scale.startswith('lin'):
+        log = False
+    else:
+        raise ValueError("Unrecognized `scale` '{}'; must start with 'log' or 'lin'".format(scale))
     return log
 
 
@@ -1350,7 +1463,8 @@ def _clean_scale(scale):
     """Cleanup a 'scaling' string to be matplotlib compatible.
     """
     scale = scale.lower()
-    if scale.startswith('lin'): scale = 'linear'
+    if scale.startswith('lin'):
+        scale = 'linear'
     return scale
 
 
@@ -1364,40 +1478,29 @@ def _get_cmap(cmap):
     else:
         raise ValueError("`cmap` '{}' is not a valid colormap or colormap name".format(cmap))
 
-'''
-def rescale(ax, which='both'):
-    """
-    """
 
-    if(which == 'x'):
-        scaley = False
-        scalex = True
-    elif(which == 'y'):
-        scaley = True
-        scalex = True
-    elif(which == 'both'):
-        scaley = True
-        scalex = True
+def _color_from_kwargs(kwargs, pop=False):
+
+    msg = "Use `color` instead of `c` or `col` for color specification!"
+
+    if 'c' in kwargs:
+        if pop:
+            col = kwargs.pop('c')
+        else:
+            col = kwargs['c']
+        warnings.warn(msg, DeprecationWarning, stacklevel=3)
+    elif 'col' in kwargs:
+        if pop:
+            col = kwargs.pop('col')
+        else:
+            col = kwargs['col']
+        warnings.warn(msg, DeprecationWarning, stacklevel=3)
+    elif 'color' in kwargs:
+        if pop:
+            col = kwargs.pop('color')
+        else:
+            col = kwargs['color']
     else:
-        raise ValueError("Unrecognized ``which`` = '%s'" % str(which))
+        col = None
 
-
-    # recompute the ax.dataLim
-    ax.relim()
-    # update ax.viewLim using the new dataLim
-    ax.autoscale_view(tight=True, scaley=scaley, scalex=scalex)
-    plt.draw()
-
-    return ax
-
-# } rescale()
-'''
-
-
-'''
-def limits(xx, yy, xlims):
-    """
-    """
-    inds = np.where((xx >= np.min(xlims)) & (xx <= np.max(xlims)))[0]
-    return zmath.minmax(yy[inds])
-'''
+    return col

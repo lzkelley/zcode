@@ -2,29 +2,37 @@
 
 Classes
 -------
--   Keys                     - Provide convenience for classes used as enumerated dictionary keys.
--   StreamCapture            - Class to capture/redirect output to stdout and stderr.
+    -   Keys                 - Provide convenience for classes used as enumerated dictionary keys.
+    -   StreamCapture        - Class to capture/redirect output to stdout and stderr.
 
 Functions
 ---------
--   bytesString              - Return a humanized string representation of a number of bytes.
--   getFileSize              - Return a human-readable size of a file or set of files.
--   countLines               - Count the number of lines in the given file.
--   estimateLines            - Estimate the number of lines in the given file.
--   checkPath                - Create the given filepath if it doesn't already exist.
--   dictToNPZ                - Save a dictionary to the given NPZ filename.
--   npzToDict                - Convert an NPZ file to a dictionary with the same keys and values.
--   getProgressBar           - Wrapper to create a progressbar object with default settings.
--   combineFiles             - Concatenate the contents of input files into a single output file.
--   checkURL                 - Check that the given url exists.
--   promptYesNo              - Prompt the user (via CLI) for yes or no.
--   modifyFilename           - Modify the given filename.
--   mpiError                 - Raise an error through MPI and exit all processes.
--   ascii_table              - Print a table with the given contents to output.
--   modify_exists            - Modify the given filename if it already exists.
--   iterable_notstring       - Return True' if the argument is an iterable and not a string type.
+    -   bytes_string         - Return a humanized string representation of a number of bytes.
+    -   get_file_size        - Return a human-readable size of a file or set of files.
+    -   countLines           - Count the number of lines in the given file.
+    -   environment_is_jupyter - Determine if current environment is a jupyter notebook.
+    -   estimateLines        - Estimate the number of lines in the given file.
+    -   check_path           - Create the given filepath if it doesn't already exist.
+    -   dictToNPZ            - Save a dictionary to the given NPZ filename.
+    -   npzToDict            - Convert an NPZ file to a dictionary with the same keys and values.
+    -   getProgressBar       - Wrapper to create a progressbar object with default settings.
+    -   combineFiles         - Concatenate the contents of input files into a single output file.
+    -   checkURL             - Check that the given url exists.
+    -   promptYesNo          - Prompt the user (via CLI) for yes or no.
+    -   modify_filename      - Modify the given filename.
+    -   mpiError             - Raise an error through MPI and exit all processes.
+    -   ascii_table          - Print a table with the given contents to output.
+    -   modify_exists        - Modify the given filename if it already exists.
+    -   python_environment   - Tries to determine the current python environment.
+    -   iterable_notstring   - Return True' if the argument is an iterable and not a string type.
+    -   str_format_dict      - Pretty-format a dict into a nice looking string.
+    -   par_dir              - Get parent (absolute) directory name from given file/directory.
+    -   top_dir              - Get the top level directory name from the given path.
+    -   underline            - Add a new line of characters appended to the given string.
+    -   warn_with_traceback  - Include traceback information in warnings.
 
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 import six
 from datetime import datetime
@@ -32,16 +40,21 @@ from datetime import datetime
 import os
 import sys
 import re
-import logging
 import warnings
 import numpy as np
 import collections
 
-__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytesString', 'getFileSize',
-           'countLines', 'estimateLines',
-           'checkPath', 'dictToNPZ', 'npzToDict', 'getProgressBar', 'combineFiles', 'checkURL',
-           'promptYesNo', 'modifyFilename', 'mpiError', 'ascii_table', 'modify_exists',
-           'iterable_notstring']
+from zcode import utils
+
+
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
+           'count_lines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
+           'check_path', 'dictToNPZ', 'npzToDict', 'checkURL',
+           'combine_files', 'frac_str',
+           'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists', 'python_environment',
+           'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
+           # === DEPRECATED ===
+           'countLines', 'combineFiles']
 
 
 class _Keys_Meta(type):
@@ -150,7 +163,7 @@ class StreamCapture(list):
         if(self.err): sys.stderr = self._stderr
 
 
-def bytesString(bytes, precision=1):
+def bytes_string(bytes, precision=1):
     """Return a humanized string representation of a number of bytes.
 
     Arguments
@@ -174,61 +187,70 @@ def bytesString(bytes, precision=1):
         (1 << 40, 'TB'),
         (1 << 30, 'GB'),
         (1 << 20, 'MB'),
-        (1 << 10, 'kB'),
+        (1 << 10, 'KB'),
         (1, 'bytes')
     )
 
     for factor, suffix in abbrevs:
-        if bytes >= factor: break
+        if bytes >= factor:
+            break
 
-    # NOTE: for this to work right, must "from __future__ import division" else integer
-    strSize = '%.*f %s' % (precision, 1.0*bytes / factor, suffix)
+    # size_str = '%.*f %s' % (precision, 1.0*bytes / factor, suffix)
+    size_str = '{size:.{prec:}f} {suff}'.format(
+        prec=precision, size=1.0*bytes / factor, suff=suffix)
+    return size_str
 
-    return strSize
 
-
-def getFileSize(fnames, precision=1):
+def get_file_size(fnames, precision=1):
     """Return a human-readable size of a file or set of files.
 
     Arguments
     ---------
-    fnames : <string> or list/array of <string>, paths to target file(s)
-    precisions : <int>, desired decimal precision of output
+    fnames : str or list
+        Paths to target file(s)
+    precisions : int,
+        Sesired decimal precision of output
 
     Returns
     -------
-    byteStr : <string>, human-readable size of file(s)
+    byte_str : str
+        Human-readable size of file(s)
 
     """
+    fnames = np.atleast_1d(fnames)
 
-    ftype = type(fnames)
-    if(ftype is not list and ftype is not np.ndarray): fnames = [fnames]
+    byte_size = 0.0
+    for fil in fnames:
+        byte_size += os.path.getsize(fil)
 
-    byteSize = 0.0
-    for fil in fnames: byteSize += os.path.getsize(fil)
-
-    byteStr = bytesString(byteSize, precision)
-    return byteStr
+    byte_str = bytes_string(byte_size, precision)
+    return byte_str
 
 
-def countLines(files, progress=False):
+def count_lines(files):
     """Count the number of lines in the given file.
     """
 
     # If string, or otherwise not-iterable, convert to list
-    if(np.iterable(files) and not isinstance(files, str)): files = [files]
-
-    if(progress): pbar = getProgressBar(len(files))
+    files = np.atleast_1d(files)
 
     nums = 0
     # Iterate over each file, count lines
     for ii, fil in enumerate(files):
         nums += sum(1 for line in open(fil))
-        if(progress): pbar.update(ii)
-
-    if(progress): pbar.finish()
 
     return nums
+
+
+def countLines(*args, **kwargs):
+    utils.dep_warn("countLines", newname="count_lines")
+    return count_lines(*args, **kwargs)
+
+
+def environment_is_jupyter():
+    """Tries to determine whether the current python environment is a jupyter notebook.
+    """
+    return python_environment().lower().startswith('jupyter')
 
 
 def estimateLines(files):
@@ -259,7 +281,7 @@ def estimateLines(files):
     return numLines
 
 
-def checkPath(tpath, create=True):
+def check_path(tpath, create=True):
     """Create the given filepath if it doesn't already exist.
 
     Arguments
@@ -281,26 +303,31 @@ def checkPath(tpath, create=True):
     if len(path) > 0:
         if not os.path.isdir(path):
             if create:
-                os.makedirs(path)
+                try:
+                    os.makedirs(path)
+                except FileExistsError:
+                    if not os.path.isdir(path):
+                        raise
             else:
                 return None
 
     return path
 
 
-def dictToNPZ(dataDict, savefile, verbose=False, log=None):
+def dictToNPZ(dataDict, savefile, verbose=False, log=None, warn=False):
     """Save a dictionary to the given NPZ filename.
 
     If the path to the given filename doesn't already exist, it is created.
     If ``verbose`` is True, the saved file size is printed out.
     """
     # Make sure path to file exists
-    checkPath(savefile)
+    check_path(savefile)
     # Make sure there are no scalars in the input dictionary
     for key, item in dataDict.items():
         if np.isscalar(item):
-            warnStr = "Value '%s' for key '%s' is a scalar." % (str(item), str(key))
-            warnings.warn(warnStr)
+            if warn:
+                warnStr = "Value '%s' for key '%s' is a scalar." % (str(item), str(key))
+                warnings.warn(warnStr)
             dataDict[key] = np.array(item)
 
     # Save and confirm
@@ -308,8 +335,8 @@ def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     if not os.path.exists(savefile):
         raise RuntimeError("Could not save to file '%s'." % (savefile))
 
-    logStr = " - Saved dictionary to '%s'" % (savefile)
-    logStr += " - - Size '%s'" % (getFileSize(savefile))
+    logStr = " - Saved dictionary to '{}'".format(savefile)
+    logStr += " - - Size '{}'".format(get_file_size(savefile))
     try:
         log.debug(logStr)
     except Exception:
@@ -335,86 +362,38 @@ def npzToDict(npz):
        Output dictionary with key-values from npz file.
 
     """
-    if(isinstance(npz, six.string_types)): npz = np.load(npz)
 
-    newDict = {}
-    for key in list(npz.keys()):
-        vals = npz[key]
-        # Extract objects (e.g. dictionaries) packaged into size=1 arrays
-        if(np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) and
-           vals.dtype.type is np.object_):
-            vals = vals.item()
+    try:
+        if isinstance(npz, six.string_types):
+            # Use `fix_imports` to try to resolve python2 to python3 issues.
+            _npz = np.load(npz, fix_imports=True)
+        else:
+            _npz = npz
+        newDict = _convert_npz_to_dict(_npz)
 
-        newDict[key] = vals
+    except Exception:
+        # warnings.warn("Normal load of `{}` failed ... trying different encoding".format(npz))
+        if isinstance(npz, six.string_types):
+            # Use `fix_imports` to try to resolve python2 to python3 issues.
+            _npz = np.load(npz, fix_imports=True, encoding="bytes")
+        else:
+            _npz = npz
+        newDict = _convert_npz_to_dict(_npz)
 
     return newDict
 
 
-def getProgressBar(maxval, width=100):
-    """Wrapper to create a progressbar object with default settings.
+def _convert_npz_to_dict(npz):
+    newDict = {}
+    for key in list(npz.keys()):
+        vals = npz[key]
+        # Extract objects (e.g. dictionaries) packaged into size=1 arrays
+        if ((np.size(vals) == 1 and (type(vals) == np.ndarray or type(vals) == np.array) and
+             vals.dtype.type is np.object_)):
+            vals = vals.item()
 
-    Use ``pbar.start()``, ``pbar.update(N)`` and ``pbar.finish()``
-    """
-
-    import progressbar
-
-    # Set Progress Bar Parameters
-    widgets = [
-        progressbar.Percentage(),
-        ' ', progressbar.Bar(),
-        ' ']
-
-    try:
-        widgets.append(progressbar.AdaptiveETA())
-    except:
-        widgets.append(progressbar.ETA())
-
-    # Start Progress Bar
-    pbar = progressbar.ProgressBar(widgets=widgets, maxval=maxval, term_width=width)
-
-    return pbar
-
-
-def combineFiles(inFilenames, outFilename, verbose=False):
-    """Concatenate the contents of a set of input files into a single output file.
-
-    Arguments
-    ---------
-    inFilenames : iterable<str>, list of input file names
-    outFilename : <str>, output file name
-    verbose : <bool> (optional=_VERBOSE), print verbose output
-
-    Returns
-
-    """
-
-    # Make sure outfile path exists
-    checkPath(outFilename)
-    inSize = 0.0
-    nums = len(inFilenames)
-
-    # Open output file for writing
-    if(verbose): pbar = getProgressBar(nums)
-    with open(outFilename, 'w') as outfil:
-
-        # Iterate over input files
-        for ii, inname in enumerate(inFilenames):
-            inSize += os.path.getsize(inname)
-            if(verbose): pbar.update(ii)
-
-            # Open input file for reading
-            with open(inname, 'r') as infil:
-                # Iterate over input file lines
-                for line in infil: outfil.write(line)
-
-    if(verbose): pbar.finish()
-
-    outSize = os.path.getsize(outFilename)
-    inStr = bytesString(inSize)
-    outStr = bytesString(outSize)
-
-    if(verbose): print(" - - - Total input size = %s, output size = %s" % (inStr, outStr))
-    return
+        newDict[key] = vals
+    return newDict
 
 
 def checkURL(url, codemax=200, timeout=3.0):
@@ -429,6 +408,7 @@ def checkURL(url, codemax=200, timeout=3.0):
 
     """
     import requests
+    import logging
 
     retval = False
     try:
@@ -477,7 +457,7 @@ def promptYesNo(msg='', default='n'):
     return retval
 
 
-def modifyFilename(fname, prepend='', append=''):
+def modify_filename(fname, prepend='', append=''):
     """Modify the given filename.
 
     Arguments
@@ -493,20 +473,29 @@ def modifyFilename(fname, prepend='', append=''):
 
     Returns
     -------
-    newName : str
+    new_name : str
         New filename, with modifications.
 
     """
-    oldPath, oldName = os.path.split(fname)
-    newName = prepend + oldName
-    if len(append) > 0:
-        oldSplit = newName.split('.')
-        if len(oldSplit) >= 2: oldSplit[-2] += append
-        else:                  oldSplit[-1] += append
-        newName = '.'.join(oldSplit)
+    is_dir = fname.endswith('/')
+    if is_dir:
+        o_path, o_name = _path_fname_split(fname)
+    else:
+        o_path, o_name = os.path.split(fname)
 
-    newName = os.path.join(oldPath, newName)
-    return newName
+    new_name = prepend + o_name
+    if len(append) > 0:
+        o_split = new_name.split('.')
+        if (len(o_split) >= 2) and (1 < len(o_split[-1]) < 5):
+            o_split[-2] += append
+        else:
+            o_split[-1] += append
+        new_name = '.'.join(o_split)
+
+    new_name = os.path.join(o_path, new_name)
+    if is_dir:
+        new_name = os.path.join(new_name, '')
+    return new_name
 
 
 def mpiError(comm, log=None, err="ERROR", exc_info=True):
@@ -667,7 +656,7 @@ def modify_exists(fname, max=1000):
 
     Returns
     -------
-    newName : {str, `None`}
+    new_name : {str, `None`}
         The input filename `fname` if it does not exist, or an appropriately modified version
         otherwise.  If the number for the new file exceeds the maximum `max`, then a warning is
         raise and `None` is returned.
@@ -689,18 +678,30 @@ def modify_exists(fname, max=1000):
     if not os.path.exists(fname):
         return fname
 
+    is_dir = os.path.isdir(fname)
+
     # Determine number of digits for modified filenames to allow up to `max` files
     prec = np.int(np.ceil(np.log10(max)))
 
     # Look for existing, modified filenames
     # -------------------------------------
     num = 0
+    # if is_dir:
+    #     path, filename = _path_fname_split(fname)
+    # else:
     path, filename = os.path.split(fname)
     if len(path) == 0:
-        path = './'
+        path += './'
+
     # construct regex for modified files
     #     look specifically for `prec`-digit numbers at the end of the filename
-    regex = modifyFilename(filename, append='_([0-9]){{{:d}}}'.format(prec))
+    # regex = modify_filename(re.escape(filename), append='_([0-9]){{{:d}}}'.format(prec))
+    if is_dir:
+        filename = os.path.join(filename, '')
+    regex = modify_filename(re.escape(filename), append='_([0-9]){{{:d}}}'.format(prec))
+    regex = regex.replace('./', '')
+    if regex.endswith('/'):
+        regex = regex[:-1]
     matches = sorted([ff for ff in os.listdir(path) if re.search(regex, ff)])
     # If there are matches, find the highest file-number in the matches
     if len(matches):
@@ -722,15 +723,212 @@ def modify_exists(fname, max=1000):
 
     # Construct new filename
     # ----------------------
-    newName = modifyFilename(fname, append='_{0:0{1:d}d}'.format(num, prec))
-    # New filename shouldnt exist; if it does, raise error
-    if os.path.exists(newName):
-        raise RuntimeError("New filename '{}' already exists.".format(newName))
+    if is_dir:
+        filename = os.path.join(filename, '')
+    new_name = modify_filename(fname, append='_{0:0{1:d}d}'.format(num, prec))
 
-    return newName
+    # New filename shouldnt exist; if it does, raise warning
+    if os.path.exists(new_name):
+        # raise RuntimeError("New filename '{}' already exists.".format(new_name))
+        warnings.warn("New filename '{}' already exists.".format(new_name))
+        return modify_exists(new_name)
+
+    return new_name
+
+
+def python_environment():
+    """Tries to determine the current python environment, one of: 'jupyter', 'ipython', 'terminal'.
+    """
+    try:
+        # NOTE: `get_ipython` should not be explicitly imported from anything
+        ipy_str = str(type(get_ipython())).lower()  # noqa
+        # print("ipy_str = '{}'".format(ipy_str))
+        if 'zmqshell' in ipy_str:
+            return 'jupyter'
+        if 'terminal' in ipy_str:
+            return 'ipython'
+    except:
+        return 'terminal'
 
 
 def iterable_notstring(var):
     """Return True' if the argument is an iterable and not a string type.
     """
     return not isinstance(var, six.string_types) and isinstance(var, collections.Iterable)
+
+
+def str_format_dict(jdict, **kwargs):
+    """Pretty-format a dictionary into a nice looking string using the `json` package.
+
+    Arguments
+    ---------
+    jdict : dict,
+        Input dictionary to be formatted.
+
+    Returns
+    -------
+    jstr : str,
+        Nicely formatted string.
+
+    """
+    kwargs.setdefault('sort_keys', True)
+    kwargs.setdefault('indent', 4)
+    import json
+    jstr = json.dumps(jdict, separators=(',', ': '), **kwargs)
+    return jstr
+
+
+def top_dir(idir):
+    """Get the top level directory name from the given path.
+
+    e.g. top_dir("/Users/lzkelley/Programs/zcode/zcode/")             -> "zcode"
+         top_dir("/Users/lzkelley/Programs/zcode/zcode")              -> "zcode"
+         top_dir("/Users/lzkelley/Programs/zcode/zcode/constants.py") -> "zcode"
+    """
+    # Removing trailing slash if included
+    if idir.endswith('/'):
+        idir = idir[:-1]
+
+    # If this is already a directory, then `basename` is the top-level directory
+    if os.path.isdir(idir):
+        top = os.path.basename(idir)
+    # Otherwise, split path first
+    else:
+        idir, fil = os.path.split(idir)
+        top = os.path.basename(idir)
+
+    return top
+
+
+def underline(in_str, char=None):
+    """Return a copy of the input string with a new line of '-' appended, with matching length.
+    """
+    if char is None:
+        char = '-'
+    use_str = in_str.split("\n")[-1]
+    out_str = in_str + "\n" + char*len(use_str)
+    return out_str
+
+
+def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
+    """Use this method in place of `warnings.showwarning` to include traceback information.
+
+    Use:
+        `warnings.showwarning = warn_with_traceback`
+
+    Taken from: http://stackoverflow.com/a/22376126/230468
+    """
+    import traceback
+    traceback.print_stack()
+    log = file if hasattr(file, 'write') else sys.stderr
+    log.write(warnings.formatwarning(message, category, filename, lineno, line))
+    return
+
+
+def _path_fname_split(fname):
+    """
+    """
+    path, filename = os.path.split(fname)
+    # Make sure `filename` stores directory names if needed
+    #    If a `fname` looks like "./dname/", then split yields ('./dname', '')
+    #    convert this to ('', './dname')
+    # print("\t", path, filename)
+    if len(filename) == 0 and len(path) > 0:
+        filename = path
+        path = ''
+    # convert ('', './dname') --> ('./', 'dname')
+    if filename.startswith('./'):
+        path = filename[:2]
+        filename = filename[2:]
+
+    # Either path should have a path stored, or it should be the local directory
+    if len(path) == 0:
+        path = './'
+    # print("\t", path, filename)
+    return path, filename
+
+
+def combine_files(inFilenames, outFilename, verbose=False):
+    """Concatenate the contents of a set of input files into a single output file.
+
+    Arguments
+    ---------
+    inFilenames : iterable<str>, list of input file names
+    outFilename : <str>, output file name
+    verbose : <bool> (optional=_VERBOSE), print verbose output
+
+    Returns
+
+    """
+
+    # Make sure outfile path exists
+    check_path(outFilename)
+    inSize = 0.0
+    # nums = len(inFilenames)
+
+    # Open output file for writing
+    if verbose:
+        warnings.warn("`progress` is deprecated!")
+        # pbar = getProgressBar(nums)
+    with open(outFilename, 'w') as outfil:
+
+        # Iterate over input files
+        for ii, inname in enumerate(inFilenames):
+            inSize += os.path.getsize(inname)
+            # if verbose:
+            #     pbar.update(ii)
+
+            # Open input file for reading
+            with open(inname, 'r') as infil:
+                # Iterate over input file lines
+                for line in infil: outfil.write(line)
+
+    # if verbose:
+    #     pbar.finish()
+
+    outSize = os.path.getsize(outFilename)
+    inStr = bytes_string(inSize)
+    outStr = bytes_string(outSize)
+
+    if verbose:
+        print("Total input size = %s, output size = %s" % (inStr, outStr))
+    return
+
+
+def combineFiles(*args, **kwargs):
+    utils.dep_warn("combineFiles", newname="combine_files")
+    return combine_files(*args, **kwargs)
+
+
+def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
+    """Create a string of the form '{}/{} = {}' for reporting fractional values.
+    """
+    if den is None:
+        assert num.dtype == bool, "If no `den` is given, array must be boolean!"
+        den = num.size
+        num = np.count_nonzero(num)
+
+    try:
+        dec_frac = num / den
+    except ZeroDivisionError:
+        dec_frac = np.nan
+
+    if frac_fmt is None:
+        frac_exp = np.fabs(np.log10([num, den]))
+
+        if np.any(frac_exp >= 4):
+            frac_fmt = ".1e"
+        else:
+            frac_fmt = "d"
+
+    if dec_fmt is None:
+        dec_exp = np.fabs(np.log10(dec_frac))
+        if dec_exp > 3:
+            dec_fmt = ".3e"
+        else:
+            dec_fmt = ".4f"
+
+    fstr = "{num:{ff}}/{den:{ff}} = {frac:{df}}".format(
+        num=num, den=den, frac=dec_frac, ff=frac_fmt, df=dec_fmt)
+
+    return fstr

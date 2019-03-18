@@ -1,5 +1,6 @@
 """IO related methods.
 """
+# flake8: noqa  --- ignore imported but unused flake8 warnings
 
 from . import inout_core
 from .inout_core import *

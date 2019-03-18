@@ -1,13 +1,17 @@
 from setuptools import setup
-import version
 
-readme = open('README.rst').read()
+with open('requirements.txt') as inn:
+    requirements = inn.read().splitlines()
 
-requirements = ['progressbar', 'enum34']
+with open("README.rst", "r") as inn:
+    long_description = inn.read().strip()
+
+with open('zcode/VERSION') as inn:
+    version = inn.read().strip()
 
 setup(
     name="zcode",
-    version=version.version,
+    version=version,
     author="Luke Zoltan Kelley",
     author_email="lkelley@cfa.harvard.edu",
     description=("General, commonly used functions for other projects."),
@@ -17,7 +21,7 @@ setup(
     packages=['zcode'],
     include_package_data=True,
     install_requires=requirements,
-    long_description=readme,
+    long_description=long_description,
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
