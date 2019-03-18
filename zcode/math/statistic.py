@@ -335,6 +335,8 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
     data = np.array(data)
     if filter is not None:
         data = math_core.comparison_filter(data, filter)
+        if np.size(data) == 0:
+            return "empty after filtering"
 
     if log:
         data = np.log10(data)
