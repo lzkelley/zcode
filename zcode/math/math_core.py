@@ -557,7 +557,7 @@ def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
 
 
 def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=None,
-           round=None, round_scale='log', type=None):
+           round=None, round_scale='log', type=None, percs=None):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
@@ -610,7 +610,13 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
         return prev
 
     # Find extrema
-    minmax = np.array([np.min(data), np.max(data)])
+    if percs is None:
+        minmax = np.array([np.min(data), np.max(data)])
+    else:
+        from zcode.math.statistic import percentiles
+        assert np.size(percs) == 2, "Provided `percs` must be length two!"
+        minmax = percentiles(data, percs)
+
     if type is not None:
         minmax = minmax.astype(type)
 

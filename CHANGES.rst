@@ -43,7 +43,10 @@ Future / To-Do
 
 Current
 -------
-
+    -   `math/`
+        -   `math_core.py`
+            -   `minmax()`
+                -   Add argument `percs` to allow for particular percentiles (instead of absolute min/max) to be used.
 
 
 [0.1] - 2019/03/18
