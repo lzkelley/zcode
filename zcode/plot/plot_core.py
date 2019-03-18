@@ -902,6 +902,7 @@ def colormap(args=[0.0, 1.0], cmap=None, scale=None,
         -   If only one is given, the other is set to the extreme value: 0.0 or 1.0.
 
     """
+    args = np.asarray(args)
 
     if cmap is None:
         cmap = 'jet'
