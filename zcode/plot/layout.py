@@ -6,7 +6,7 @@ import matplotlib as mpl
 import numpy as np
 import six
 
-from . plot_const import _PAD
+from zcode.plot import _PAD
 
 
 __all__ = ["backdrop", "extent", "full_extent", "position_to_extent", "rect_for_inset",

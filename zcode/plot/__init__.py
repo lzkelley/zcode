@@ -2,6 +2,13 @@
 """
 # flake8: noqa  --- ignore imported but unused flake8 warnings
 
+LW_CONF = 1.0
+LW_OUTLINE = 0.6
+
+COL_CORR = 'royalblue'
+
+_PAD = 0.01
+
 from . import plot_core
 from .plot_core import *
 from . import Hist2D

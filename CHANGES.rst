@@ -53,6 +53,8 @@ Current
         - `percentiles()`
             - New argument, `sigmas` which is used to calculate percentiles from sigma values.
 - `plot/`
+    - `plot_const.py` [FILE-DELETED]
+        - Constant values moved to `zcode.plot.__init__.py`
     - `plot_core.py`
         - `colormap()`
             - New `midpoint` argument and functionality to allow colormaps's colors to be centered at particular values in either log or linear space.  Uses new classes `MidpointNormalize` and `MidpointLogNormalize`.

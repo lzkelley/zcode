@@ -10,13 +10,12 @@
 import numbers
 
 import matplotlib as mpl
-from matplotlib import pyplot as plt
 import numpy as np
 
 from zcode import math as zmath
 from zcode import utils
 
-from . plot_const import COL_CORR, LW_CONF, LW_OUTLINE
+from zcode.plot import COL_CORR, LW_CONF, LW_OUTLINE
 from . plot_core import colormap
 
 __all__ = [

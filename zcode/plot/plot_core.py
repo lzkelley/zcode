@@ -48,8 +48,8 @@ import zcode.math as zmath
 import zcode.inout as zio
 from zcode import utils
 
-from . layout import _loc_str_to_pars, _parse_align
-from . plot_const import _PAD
+from zcode.plot.layout import _loc_str_to_pars, _parse_align
+from zcode.plot import _PAD
 
 __all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
