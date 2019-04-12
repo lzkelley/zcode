@@ -30,10 +30,12 @@ def backdrop(fig, obj, pad=0.0, union=False, group=False, draw=True, **kwargs):
     for bbox in bboxes:
         rect = mpl.patches.Rectangle([bbox.xmin, bbox.ymin], bbox.width, bbox.height,
                                      transform=fig.transFigure, **kwargs)
-        if draw: fig.patches.append(rect)
+        if draw:
+            fig.patches.append(rect)
         pats.append(rect)
 
-    if len(pats) == 1: return pats[0]
+    if len(pats) == 1:
+        return pats[0]
     return pats
 
 
