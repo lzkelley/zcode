@@ -42,7 +42,8 @@ __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
            'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate', 'rotation_matrix_between_vectors', 'zenum',
-           'sliceForAxis', 'spacing', 'str_array', 'str_array_2d', 'vecmag', 'within',
+           'sliceForAxis', 'spacing',
+           'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
            '_infer_scale', '_fracToInt']
 
@@ -1023,31 +1024,40 @@ def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=T
     return arr_str
 
 
+def str_array_neighbors(arr, inds, num=1, **kwargs):
+    if np.ndim(arr) != 1 or np.ndim(inds) != 1:
+        raise ValueError("`arr` and `inds` must be 1D!")
+
+    if isinstance(inds[0], (bool, np.bool_)):
+        inds = np.where(inds)[0]
+
+    vals = []
+    size = np.size(arr)
+    for ii in inds:
+        cut = slice(max(0, ii-num), min(size-1, ii+num+1))
+        temp = str_array(arr[cut], sides=num+1, **kwargs)
+        vals.append(temp)
+
+    rv = "...".join(vals)
+    return rv
+
+
 def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
     """
     """
 
-    if not np.all(arr > 0.0):
-        use_log = False
-    else:
-        try:
-            extr = np.log10(np.fabs(minmax(arr)))
-        # string values will raise a `TypeError` exception
-        except (TypeError, AttributeError):
-            return ":s"
+    try:
+        extr = np.log10(np.fabs(minmax(arr)))
+    # string values will raise a `TypeError` exception
+    except (TypeError, AttributeError):
+        return ":s"
 
-        if any(extr < -log_limit) or any(extr > log_limit):
-            use_log = True
-        else:
-            use_log = False
-
-    if use_log:
+    if any(extr < -log_limit) or any(extr > log_limit):
         form = ":.{precision:d}e"
+    elif np.issubdtype(arr.dtype, np.integer) and allow_int:
+        form = ":d"
     else:
-        if np.issubdtype(arr.dtype, np.integer) and allow_int:
-            form = ":d"
-        else:
-            form = ":.{precision:d}f"
+        form = ":.{precision:d}f"
 
     form = form.format(precision=prec)
 

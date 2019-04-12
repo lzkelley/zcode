@@ -43,7 +43,12 @@ Future / To-Do
 
 Current
 -------
-
+- `math/`
+    - `math_core.py`
+        - `str_array_neighbors()` [NEW-FUNCTION]
+            - Use 'str_array' to print particular indices, and its neighbors, in an array.
+        - `_guess_str_format_from_range()`
+            - BUG: fix issue where exponential notation was only being used for positive-definite values
 
 
 [0.1] - 2019/03/18
