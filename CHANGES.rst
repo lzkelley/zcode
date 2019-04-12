@@ -52,6 +52,11 @@ Current
     - `statistic.py`
         - `percentiles()`
             - New argument, `sigmas` which is used to calculate percentiles from sigma values.
+- `plot/`
+    - `plot_core.py`
+        - `colormap()`
+            - New `midpoint` argument and functionality to allow colormaps's colors to be centered at particular values in either log or linear space.  Uses new classes `MidpointNormalize` and `MidpointLogNormalize`.
+            
             
 
 [0.1] - 2019/03/18

@@ -774,7 +774,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
         prev = np.atleast_1d(prev)
         for pp in prev:
             ax.add_artist(pp)
-        
+
     return leg
 
 
@@ -865,7 +865,7 @@ def invert_color(col):
     return col
 
 
-def colormap(args=[0.0, 1.0], cmap=None, scale=None,
+def colormap(args=[0.0, 1.0], cmap=None, scale=None, midpoint=None,
              under='0.8', over='0.8', left=None, right=None):
     """Create a colormap from a scalar range to a set of colors.
 
@@ -950,9 +950,15 @@ def colormap(args=[0.0, 1.0], cmap=None, scale=None,
 
     # Create normalization
     if log:
-        norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+        if midpoint is None:
+            norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+        else:
+            norm = MidpointLogNormalize(vmin=min, vmax=max, midpoint=midpoint)
     else:
-        norm = mpl.colors.Normalize(vmin=min, vmax=max)
+        if midpoint is None:
+            norm = mpl.colors.Normalize(vmin=min, vmax=max)
+        else:
+            norm = MidpointNormalize(vmin=min, vmax=max, midpoint=midpoint)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -1504,3 +1510,42 @@ def _color_from_kwargs(kwargs, pop=False):
         col = None
 
     return col
+
+
+class MidpointNormalize(mpl.colors.Normalize):
+    """
+    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
+
+    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
+    """
+
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        super().__init__(vmin, vmax, clip)
+        self.midpoint = midpoint
+        return
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
+
+
+class MidpointLogNormalize(mpl.colors.LogNorm):
+    """
+    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
+
+    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
+    """
+
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        super().__init__(vmin, vmax, clip)
+        self.midpoint = midpoint
+        return
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        vals = zmath.interp(value, x, y, xlog=True, ylog=False)
+        return np.ma.masked_array(vals, np.isnan(value))
