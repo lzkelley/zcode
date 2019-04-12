@@ -49,7 +49,10 @@ Current
             - Use 'str_array' to print particular indices, and its neighbors, in an array.
         - `_guess_str_format_from_range()`
             - BUG: fix issue where exponential notation was only being used for positive-definite values
-
+    - `statistic.py`
+        - `percentiles()`
+            - New argument, `sigmas` which is used to calculate percentiles from sigma values.
+            
 
 [0.1] - 2019/03/18
 ------------------

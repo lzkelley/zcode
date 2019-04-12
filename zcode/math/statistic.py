@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import warnings
 import numpy as np
+import scipy as sp
+import scipy.stats  # noqa
 
 from . import math_core
 
@@ -249,9 +251,6 @@ def sigma(sig, side='in', boundaries=False):
         Percentiles corresponding to the input `sig`.
 
     """
-    import scipy as sp
-    import scipy.stats
-
     if side.startswith('in'):
         inside = True
     elif side.startswith('out'):
@@ -392,7 +391,7 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
     return out
 
 
-def percentiles(values, percs, weights=None, values_sorted=False):
+def percentiles(values, percs=None, sigmas=None, weights=None, values_sorted=False):
     """Compute weighted percentiles.
 
     Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
@@ -416,6 +415,9 @@ def percentiles(values, percs, weights=None, values_sorted=False):
     """
     values = np.array(values).flatten()
     # percentiles = np.array(percentiles, dtype=values.dtype)
+    if percs is None:
+        percs = sp.stats.norm.cdf(sigmas)
+
     percs = np.array(percs)
     if weights is None:
         weights = np.ones_like(values)
