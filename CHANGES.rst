@@ -43,6 +43,10 @@ Future / To-Do
 
 Current
 -------
+- `astro/`
+    - `astro_core.py`
+        - `eddington_accretion()`
+            - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
 - `math/`
     - `math_core.py`
         - `str_array_neighbors()` [NEW-FUNCTION]

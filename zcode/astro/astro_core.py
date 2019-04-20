@@ -25,7 +25,9 @@ _GW_SRC_CONST = 8 * np.power(NWTG, 5/3) * np.power(2*np.pi, 2/3) / np.sqrt(10) /
 _GW_HARD_CONST = - 64 * np.power(NWTG, 3) / 5 / np.power(SPLC, 5)
 
 
-def chirp_mass(m1, m2):
+def chirp_mass(m1, m2=None):
+    if m2 is None:
+        m1, m2 = np.moveaxis(m1, -1, 0)
     return np.power(m1*m2, 3/5)/np.power(m1+m2, 1/5)
 
 
@@ -63,7 +65,8 @@ def eddington_accretion(mass, eps=0.1):
 
     """
     edd_lum = eddington_luminosity(mass, eps=eps)
-    mdot = edd_lum/(eps*np.square(SPLC))
+    # NOTE: no `epsilon` (efficiency) in this equation, because included in `eddington_luminosity`
+    mdot = edd_lum/np.square(SPLC)
     return mdot
 
 
