@@ -38,14 +38,20 @@ import numpy as np
 import scipy as sp
 import scipy.interpolate  # noqa
 
-__all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
+__all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges',
+           'broadcast', 'broadcastable', 'contiguousInds',
            'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
-           'ordered_groups', 'really1d', 'renumerate', 'rotation_matrix_between_vectors', 'zenum',
+           'ordered_groups', 'really1d', 'renumerate', 'rotation_matrix_between_vectors',
            'sliceForAxis', 'spacing',
-           'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within',
+           'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
            'comparison_filter', '_comparisonFunction', '_comparison_function',
-           '_infer_scale', '_fracToInt']
+           '_infer_scale', '_fracToInt',
+           # DEPRECATED
+           'zenum'
+           ]
+
+from zcode import utils
 
 
 def argextrema(arr, type, filter=None):
@@ -315,6 +321,31 @@ def asBinEdges(bins, data, scale='lin'):
         edges = edges[0]
 
     return edges
+
+
+def broadcastable(*args):
+    """Expand N, 1D arrays be able to be broadcasted into N, ND arrays.
+
+    e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,1,1`, `1,4,1` and `1,1,2`.
+    """
+    ndim = len(args)
+    assert np.all([1 == np.ndim(aa) for aa in args]), "Each array in `args` must be 1D!"
+
+    cut_ref = [slice(None)] + [np.newaxis for ii in range(ndim-1)]
+    cuts = [np.roll(cut_ref, ii).tolist() for ii in range(ndim)]
+    outs = [aa[tuple(cc)] for aa, cc in zip(args, cuts)]
+    return outs
+
+
+def broadcast(*args):
+    """Broadcast N, 1D arrays into N, ND arrays.
+
+    e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,4,2`, `3,4,2` and `3,4,2`.
+    """
+    # outs = broadcastable(*args)
+    # outs = np.broadcast_arrays(outs)
+    outs = np.meshgrid(*args, indexing='ij')
+    return outs
 
 
 def contiguousInds(args):
@@ -830,6 +861,11 @@ def rotation_matrix_between_vectors(aa, bb):
 
 
 def zenum(*arr):
+    utils.dep_warn("zenum", newname="zenumerate")
+    return zenumerate(*arr)
+
+
+def zenumerate(*arr):
     zipped = zip(*arr)
     return enumerate(zipped)
 
@@ -1209,9 +1245,7 @@ def _comparisonFunction(comp):
     """[DEPRECATED]Retrieve the comparison function matching the input expression.
     """
     # ---- DECPRECATION SECTION ----
-    warnStr = ("Using deprecated function '_comparisonFunction'.  "
-               "Use '_comparison_function' instead.")
-    warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
+    utils.dep_warn("_comparisonFunction", newname="_comparison_function")
     # ------------------------------
 
     if comp == 'g' or comp == '>':
@@ -1274,9 +1308,8 @@ def _comparisonFilter(data, filter):
     """
     """
     # ---- DECPRECATION SECTION ----
-    warnStr = ("Using deprecated function '_comparisonFilter'.  "
-               "Use '_comparison_filter' instead.")
     warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
+    utils.dep_warn("_comparisonFilter", newname="_comparison_filter")
     # ------------------------------
     if filter is None:
         return data

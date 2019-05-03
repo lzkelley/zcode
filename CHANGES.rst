@@ -49,8 +49,13 @@ Current
             - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
 - `math/`
     - `math_core.py`
+        - `broadcast()` [NEW-FUNCTION]
+            - Expand N, 1D arrays into N, ND arrays each with the same shape.
+        - `broadcastable()` [NEW-FUNCTION]
+            - Method to expand N, 1D arrays into N, ND arrays which can be broadcasted together.
         - `str_array_neighbors()` [NEW-FUNCTION]
             - Use 'str_array' to print particular indices, and its neighbors, in an array.
+        - `zenumerate()` <== `zenum()` [DEPRECATION]
         - `_guess_str_format_from_range()`
             - BUG: fix issue where exponential notation was only being used for positive-definite values
     - `statistic.py`
