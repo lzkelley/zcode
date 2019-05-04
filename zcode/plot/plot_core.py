@@ -114,6 +114,13 @@ def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=
           left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
           grid=None):
 
+    scales = [xscale, yscale]
+    for ii in range(2):
+        if scales[ii].startswith('lin'):
+            scales[ii] = 'linear'
+
+    xscale, yscale = scales
+
     fig, axes = plt.subplots(figsize=figsize, squeeze=False, ncols=ncols, nrows=nrows,
                              sharex=sharex, sharey=sharey)
 
