@@ -1326,13 +1326,12 @@ def _comparisonFilter(data, filter):
     """
     """
     # ---- DECPRECATION SECTION ----
-    warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
     utils.dep_warn("_comparisonFilter", newname="_comparison_filter")
     # ------------------------------
     if filter is None:
         return data
     if not callable(filter):
-        filter = _comparisonFunction(filter)
+        filter = _comparison_function(filter)
     sel = np.where(filter(data, 0.0) & np.isfinite(data))
     return data[sel]
 
