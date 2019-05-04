@@ -61,26 +61,26 @@ def argextrema(arr, type, filter=None):
 
     # Valid filters, NOTE: do *not* include 'e' (equals), doesn't make sense here.
     good_filter = [None, 'g', 'ge', 'l', 'le']
-    if(filter not in good_filter):
+    if filter not in good_filter:
         raise ValueError("Filter '%s' Unrecognized." % (type))
     # Make sure `type` is valid
     good_type = ['min', 'max']
-    if(not np.any([type.startswith(gt) for gt in good_type])):
+    if not np.any([type.startswith(gt) for gt in good_type]):
         raise ValueError("Type '%s' Unrecognized." % (type))
     # Make sure input array `arr` is valid (1D)
     arr = np.asarray(arr)
-    if(arr.ndim != 1 or arr[0].ndim != 0):
+    if (arr.ndim != 1) or (arr[0].ndim != 0):
         raise ValueError("Only 1D arrays currently supported.")
 
-    if(type.startswith('min')):
+    if type.startswith('min'):
         func = np.argmin
-    elif(type.startswith('max')):
+    elif type.startswith('max'):
         func = np.argmax
 
     # Find whether the `filter` criteria is True
-    if(filter):
-        filterFunc = _comparisonFunction(filter)
-        sel = filterFunc(arr, 0.0)
+    if filter:
+        filter_func = _comparison_function(filter, 0.0)
+        sel = filter_func(arr)
     # If no filter (`None`), all values are valid
     else:
         sel = np.ones_like(arr, dtype=bool)
