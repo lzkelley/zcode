@@ -108,11 +108,15 @@ _LEGEND_COLUMN_SPACING = 1.2
 _SCATTER_POINTS = 1
 
 
-def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True,
+def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
           xscale='log', xlabel='', xlim=None,
           yscale='log', ylabel='', ylim=None,
           left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
           grid=None):
+
+    if scale is not None:
+        xscale = scale
+        yscale = scale
 
     scales = [xscale, yscale]
     for ii in range(2):
