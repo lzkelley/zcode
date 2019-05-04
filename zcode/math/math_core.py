@@ -1088,7 +1088,7 @@ def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
     """
 
     try:
-        extr = np.log10(np.fabs(minmax(arr)))
+        extr = np.log10(np.fabs(minmax(arr, filter='ne')))
     # string values will raise a `TypeError` exception
     except (TypeError, AttributeError):
         return ":s"
