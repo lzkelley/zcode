@@ -522,15 +522,59 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
     return y1
 
 
-def interp_func(xold, yold, kind='linear', xlog=True, ylog=True, **kwargs):
-    if (not xlog) or (not ylog):
-        raise ValueError("Not yet implemented!")
+def interp_func(xold, yold, kind='mono', xlog=True, ylog=True, fill_value=np.nan, **kwargs):
+    """Return an interpolation/extrapolation function constructed from the given values.
 
-    logx = np.log10(xold)
-    logy = np.log10(yold)
-    lin_interp = sp.interpolate.interp1d(logx, logy, kind=kind, **kwargs)
-    log_interp = lambda zz: np.power(10.0, lin_interp(np.log10(zz)))  # noqa
-    return log_interp
+    Generally the returned function is a wrapper around `interp1d` from the `scipy.interpolate`
+    module, unless `kind` is either 'mono' or 'Pchip' in which case the `PchipInterpolator` is
+    used.
+
+    """
+    def in_lin(xx):
+        return xx
+
+    def in_log(xx):
+        return np.log10(xx)
+
+    def out_lin(yy):
+        return yy
+
+    def out_log(yy):
+        return np.power(10.0, yy)
+
+    if xlog:
+        xold = np.log10(xold)
+        in_func = in_log
+    else:
+        in_func = in_lin
+
+    if ylog:
+        yold = np.log10(yold)
+        out_func = out_log
+        if isinstance(fill_value, tuple):
+            fill_value = tuple([np.log10(vv) for vv in fill_value])
+        else:
+            fill_value = np.log10(fill_value)
+
+    else:
+        out_func = out_lin
+
+    if kind == 'mono' or kind.lower() == 'pchip':
+        if not np.isscalar(fill_value) or not np.isnan(fill_value):
+            raise ValueError("`PchipInterpolator` only support 'nan' fill values!")
+        lin_interp = sp.interpolate.PchipInterpolator(
+            xold, yold, extrapolate=True, **kwargs)
+    else:
+        lin_interp = sp.interpolate.interp1d(
+            xold, yold, kind=kind, fill_value=fill_value, **kwargs)
+
+    def interp_func(xx):
+        xx = in_func(xx)
+        yy = lin_interp(xx)
+        yy = out_func(yy)
+        return yy
+
+    return interp_func
 
 
 def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):

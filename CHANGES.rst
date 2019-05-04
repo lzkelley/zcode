@@ -48,6 +48,10 @@ Current
         - `eddington_accretion()`
             - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
 - `math/`
+    - `tests/`
+        - `test_math_core.py`
+            - Fixed numerous tests.
+            - Added new tests for interpolation methods.
     - `math_core.py`
         - `broadcast()` [NEW-FUNCTION]
             - Expand N, 1D arrays into N, ND arrays each with the same shape.
@@ -55,6 +59,9 @@ Current
             - Method to expand N, 1D arrays into N, ND arrays which can be broadcasted together.
         - `interp()`
             - BUG: fix issue where 'left' and 'right' bounds were being taken to ten-to-the-power-of.
+        - `interp_func()`
+            - Implement optional 'xlog' and 'ylog' scalings.
+            - Implement 'mono' option for interpolation kind to use `PchipInterpolator` which enforced monotonicity.
         - `str_array_neighbors()` [NEW-FUNCTION]
             - Use 'str_array' to print particular indices, and its neighbors, in an array.
         - `within()`
