@@ -714,13 +714,14 @@ def mono(arr, type='g', axis=-1):
 
     """
     arr = np.atleast_1d(arr)
-    if arr.size == 1: return True
+    if arr.size == 1:
+        return True
     good_type = ['g', 'ge', 'l', 'le', 'e']
     assert type in good_type, "Type '%s' Unrecognized." % (type)
     # Retrieve the numpy comparison function (e.g. np.greater) for the given `type` (e.g. 'g')
-    func = _comparisonFunction(type)
+    func = _comparison_function(type, 0.0)
     delta = np.diff(arr, axis=axis)
-    retval = np.all(func(delta, 0.0))
+    retval = np.all(func(delta))
     return retval
 
 
