@@ -501,6 +501,10 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
         x0 = np.log10(x0)
     if ylog:
         y0 = np.log10(y0)
+        if np.isfinite(left):
+            left = np.log10(left)
+        if np.isfinite(right):
+            right = np.log10(right)
 
     if valid:
         inds = (~np.isnan(x0) & ~np.isinf(x0)) & (~np.isnan(y0) & ~np.isinf(y0))

@@ -53,6 +53,8 @@ Current
             - Expand N, 1D arrays into N, ND arrays each with the same shape.
         - `broadcastable()` [NEW-FUNCTION]
             - Method to expand N, 1D arrays into N, ND arrays which can be broadcasted together.
+        - `interp()`
+            - BUG: fix issue where 'left' and 'right' bounds were being taken to ten-to-the-power-of.
         - `str_array_neighbors()` [NEW-FUNCTION]
             - Use 'str_array' to print particular indices, and its neighbors, in an array.
         - `zenumerate()` <== `zenum()` [DEPRECATION]
