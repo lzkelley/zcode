@@ -1213,12 +1213,12 @@ def vecmag(r1, r2=None):
     return dist
 
 
-def within(vals, extr, edges=True, all=False, inv=False):
+def within(vals, extr, edges=True, all=False, inv=False, close=None):
     """Test whether a value or array is within the bounds of another.
 
     Arguments
     ---------
-       vals   <scalar>([N]) : test value(s)
+       vals  <scalar>([N])  : test value(s)
        extr  <scalar>[M]    : array or span to compare with
        edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
        all   <bool>         : optional, whether All values are within bounds (single return `bool`)
@@ -1233,15 +1233,28 @@ def within(vals, extr, edges=True, all=False, inv=False):
     extr_bnds = minmax(extr)
 
     # Include edges for WITHIN bounds (thus not including is outside)
-    if(edges): retval = np.asarray(((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])))
-    # Don't include edges for WITHIN  (thus include them for outside)
-    else:      retval = np.asarray(((vals > extr_bnds[0]) & (vals < extr_bnds[1])))
+    if edges:
+        above = (vals >= extr_bnds[0])
+        below = (vals <= extr_bnds[1])
+    else:
+        above = (vals > extr_bnds[0])
+        below = (vals < extr_bnds[1])
+
+    if close is not None:
+        if close is True:
+            close = dict()
+        above = above | np.isclose(vals, extr_bnds[0], **close)
+        below = below | np.isclose(vals, extr_bnds[1], **close)
+
+    retval = np.asarray(above & below)
 
     # Convert to single return value
-    if(all): retval = np.all(retval)
+    if all:
+        retval = np.all(retval)
 
     # Invert results
-    if(inv): retval = np.invert(retval)
+    if inv:
+        retval = np.invert(retval)
 
     return retval
 

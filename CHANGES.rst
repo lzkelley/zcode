@@ -57,6 +57,8 @@ Current
             - BUG: fix issue where 'left' and 'right' bounds were being taken to ten-to-the-power-of.
         - `str_array_neighbors()` [NEW-FUNCTION]
             - Use 'str_array' to print particular indices, and its neighbors, in an array.
+        - `within()`
+            - Add new `close` argument to allow `np.isclose` comparisons to bin edges.
         - `zenumerate()` <== `zenum()` [DEPRECATION]
         - `_guess_str_format_from_range()`
             - BUG: fix issue where exponential notation was only being used for positive-definite values
