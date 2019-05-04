@@ -968,7 +968,7 @@ def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **
         round = 0
     span = minmax(data, filter=filter, round=round, round_scale=scale, **kwargs)
 
-    if num is None:
+    if (num is None) and (not integers):
         if log_flag and (not integers):
             num_dex = np.fabs(np.diff(np.log10(span)))
             num = np.int(np.ceil(num_dex * dex)) + 1
