@@ -52,11 +52,14 @@ Current
         - `test_math_core.py`
             - Fixed numerous tests.
             - Added new tests for interpolation methods.
+            - Tests for `edges_from_cents`
     - `math_core.py`
         - `broadcast()` [NEW-FUNCTION]
             - Expand N, 1D arrays into N, ND arrays each with the same shape.
         - `broadcastable()` [NEW-FUNCTION]
             - Method to expand N, 1D arrays into N, ND arrays which can be broadcasted together.
+        - `edges_from_cents()` [NEW-FUNCTION]
+            - Method to estimate bin-edges given the local of bin-centers.
         - `interp()`
             - BUG: fix issue where 'left' and 'right' bounds were being taken to ten-to-the-power-of.
         - `interp_func()`

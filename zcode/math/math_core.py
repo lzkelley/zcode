@@ -379,6 +379,30 @@ def contiguousInds(args):
     return inds
 
 
+def edges_from_cents(cents, scale='lin', log=None):
+    if not any([scale.lower().startswith(sc) for sc in ['lin', 'log']]):
+        raise ValueError("`scale` must be 'lin' or 'log'!")
+
+    if log is None:
+        log = scale.lower().startswith('log')
+
+    if log:
+        cents = np.log10(cents)
+
+    widths = np.diff(cents)
+    NUM = 5
+
+    lo = sp.interpolate.PchipInterpolator(np.arange(NUM), widths[:NUM], extrapolate=True)(-1)
+    hi = sp.interpolate.PchipInterpolator(np.arange(NUM), widths[-NUM:], extrapolate=True)(NUM)
+    edges = midpoints(cents, log=False)
+    edges = np.concatenate(([edges[0] - lo], edges, [edges[-1] + hi]))
+
+    if log:
+        edges = np.power(10.0, edges)
+
+    return edges
+
+
 def slice_with_inds_for_axis(arr, inds, axis):
     """Use an N-1 dimensional array with indices along a particular axis of an N dimensional array
 

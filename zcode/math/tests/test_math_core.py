@@ -14,7 +14,7 @@ import scipy as sp
 import scipy.stats  # noqa
 from nose.tools import assert_true, assert_false, assert_equal, assert_raises, assert_almost_equal
 
-from zcode.math import math_core, statistic
+from zcode.math import math_core
 
 
 class TestMathCore(object):
@@ -746,6 +746,68 @@ class Test_Interp_Func_Mono(object):
                 func = math_core.interp_func(xo, yo, xlog=xlog, ylog=ylog, kind='cubic')
                 yn = func(xn)
                 assert_false(test_within(xn, yn))
+
+        return
+
+
+class Test_Edges_From_Cents(object):
+
+    def test_lin_spacing(self):
+        print("\n|test_lin_spacing()|")
+
+        edges_true = [
+            np.linspace(0.0, 1.0, 20),
+            np.linspace(1.0, 0.0, 20),
+            np.linspace(-100, 100, 100)
+        ]
+
+        for true in edges_true:
+            cents = math_core.midpoints(true, log=False)
+            edges = math_core.edges_from_cents(cents, log=False)
+
+            print("truth = {}".format(math_core.str_array(true)))
+            print("recov = {}".format(math_core.str_array(edges)))
+            assert_true(np.allclose(edges, true))
+
+        return
+
+    def test_log_spacing(self):
+        print("\n|test_log_spacing()|")
+
+        true_pars = [
+            [0.0, 1.0, 20],
+            [1.0, 0.0, 20],
+            [2.0, -2.0, 100]
+        ]
+
+        for pars in true_pars:
+            true = np.logspace(*pars)
+            cents = math_core.midpoints(true, log=True)
+            edges = math_core.edges_from_cents(cents, log=True)
+            print("pars = ", pars)
+            print("truth = {}".format(math_core.str_array(true)))
+            print("recov = {}".format(math_core.str_array(edges)))
+            assert_true(np.allclose(edges, true))
+
+        return
+
+    def test_irr_spacing(self):
+        print("\n|test_irr_spacing()|")
+
+        NUM = 10
+        xx = np.arange(NUM)
+        widths = 1.5 + 0.4*xx + 0.1*(xx**2)
+
+        true = np.zeros(NUM+1)
+        true[0] = 4.0
+        for ii in range(1, NUM+1):
+            true[ii] = true[ii-1] + widths[ii-1]
+
+        cents = math_core.midpoints(true, log=False)
+        edges = math_core.edges_from_cents(cents, log=False)
+        print("truth = {}".format(math_core.str_array(true)))
+        print("recov = {}".format(math_core.str_array(edges)))
+        assert_true(np.allclose(edges, true, rtol=1e-1))
 
         return
 
