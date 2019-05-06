@@ -59,8 +59,8 @@ def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
 
     # Choose the default "sigma" contour levels.
     if levels is None:
-        # levels = zmath.sigma(np.arange(0.5, 2.1, 0.5))
-        levels = zmath.sigma(np.arange(1, 4))
+        # levels = zmath.percs_from_sigma(np.arange(0.5, 2.1, 0.5))
+        levels = zmath.percs_from_sigma(np.arange(1, 4))
 
     # This is the color map for the density plot, over-plotted to indicate the
     # density of the points near the center.
@@ -243,10 +243,10 @@ ticks = [[1e6, 1e8, 1e10], [1e6, 1e8, 1e10], [1e-2, 1e0], [1e-1, 1e0, 1e1], [1e-
 
 hist_kw = dict(alpha=0.5, rwidth=0.8)
 
-# levels = zmath.sigma(np.arange(0.5, 2.1, 0.5))
-# levels = zmath.sigma(np.arange(1, 4))
-levels = zmath.sigma(np.arange(1, 3))
-# levels = zmath.sigma(np.arange(2, 4))
+# levels = zmath.percs_from_sigma(np.arange(0.5, 2.1, 0.5))
+# levels = zmath.percs_from_sigma(np.arange(1, 4))
+levels = zmath.percs_from_sigma(np.arange(1, 3))
+# levels = zmath.percs_from_sigma(np.arange(2, 4))
 
 space = 0.05
 

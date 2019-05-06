@@ -65,8 +65,8 @@ class TestStatistic(object):
         outside = 1 - np.array(inside)
 
         # Areas
-        ret_inside = statistic.sigma(sigma, side='in')
-        ret_outside = statistic.sigma(sigma, side='out')
+        ret_inside = statistic.percs_from_sigma(sigma, side='in')
+        ret_outside = statistic.percs_from_sigma(sigma, side='out')
         print("sigma = ", sigma)
         print("inside = ", inside)
         print("ret_inside = ", ret_inside)
@@ -81,8 +81,8 @@ class TestStatistic(object):
         inside_1 = [0.158655253931, 0.841344746069]
         outside_2 = [0.0227501319482, 0.977249868052]
 
-        ret_inside = statistic.sigma(sig_1, side='in', boundaries=True)
-        ret_outside = statistic.sigma(sig_2, side='out', boundaries=True)
+        ret_inside = statistic.percs_from_sigma(sig_1, side='in', boundaries=True)
+        ret_outside = statistic.percs_from_sigma(sig_2, side='out', boundaries=True)
         print("sigma_1 = ", sig_1)
         print("inside_1 = ", inside_1)
         print("ret_inside = ", ret_inside)

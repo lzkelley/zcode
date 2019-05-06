@@ -19,10 +19,13 @@ import numpy as np
 import scipy as sp
 import scipy.stats  # noqa
 
-from . import math_core
+from zcode import utils
+from zcode.math import math_core
 
 __all__ = ['confidence_bands', 'confidence_intervals',
-           'cumstats', 'log_normal_base_10', 'percentiles', 'sigma', 'stats', 'stats_str']
+           'cumstats', 'log_normal_base_10',
+           'percentiles', 'percs_from_sigma', 'sigma',
+           'stats', 'stats_str']
 
 
 def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter=None):
@@ -107,7 +110,7 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
     return count, med, conf, xbins
 
 
-def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
+def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return_ci=False):
     """Compute the values bounding the target confidence intervals for an array of data.
 
     Arguments
@@ -142,6 +145,7 @@ def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
     """
     if ci is None:
         ci = [0.68, 0.95, 0.997]
+
     ci = np.atleast_1d(ci)
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
 
@@ -217,7 +221,14 @@ def cumstats(arr):
     return ave, std
 
 
-def sigma(sig, side='in', boundaries=False):
+def sigma(*args, **kwargs):
+    # ---- DECPRECATION SECTION ----
+    utils.dep_warn("sigma", newname="percs_from_sigma")
+    # ------------------------------
+    return percs_from_sigma(*args, **kwargs)
+
+
+def percs_from_sigma(sigma, side='in', boundaries=False):
     """Convert from standard deviation 'sigma' to percentiles in/out-side the normal distribution.
 
     Arguments
@@ -243,7 +254,7 @@ def sigma(sig, side='in', boundaries=False):
         raise ValueError("`side` = '{}' must be {'in', 'out'}.".format(side))
 
     # From CDF from -inf to `sig`
-    cdf = sp.stats.norm.cdf(sig)
+    cdf = sp.stats.norm.cdf(sigma)
     # Area outside of [-sig, sig]
     vals = 2.0 * (1.0 - cdf)
     # Convert to area inside [-sig, sig]

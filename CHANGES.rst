@@ -32,6 +32,7 @@ Future / To-Do
                 -   BUG: Arguemnts `filter` and `axis` are currently incompatible.
             -   `percentiles()`
                 -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
+            -   `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
             -   `confidenceBands()` [DELETED-METHOD]
             -   `confidenceIntervals()` [DELETED-METHOD]
 
