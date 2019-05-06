@@ -28,14 +28,8 @@ Future / To-Do
             -   `monotonic_smooth`
                 +   BUG: fix shitty edge effects after many iterations.
         +   statistic.py
-            -   `confidence_intervals()`
-                -   BUG: Arguemnts `filter` and `axis` are currently incompatible.
             -   `percentiles()`
                 -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
-            -   `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
-            -   `confidenceBands()` [DELETED-METHOD]
-            -   `confidenceIntervals()` [DELETED-METHOD]
-
     -   plot/
         +   Hist2D.py
             -   Add ability to plot central axes as scatter plot, with projected histograms
@@ -78,6 +72,10 @@ Current
     - `statistic.py`
         - `percentiles()`
             - New argument, `sigmas` which is used to calculate percentiles from sigma values.
+        - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
+        - `confidenceBands()` [DELETED-METHOD]
+        - `confidenceIntervals()` [DELETED-METHOD]
+
 - `plot/`
     - `Hist2D.py`
         - `draw_hist2d()` [NEW-METHOD]
