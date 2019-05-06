@@ -15,16 +15,16 @@ To-do
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-import six
-import warnings
+# import six
+# import warnings
 import logging
 
 import numpy as np
-import scipy as sp
+import scipy as sp  # noqa
 import scipy.stats   # noqa
 import scipy.ndimage  # noqa
 import matplotlib as mpl
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 import zcode.math as zmath
 from . import plot_core, draw
@@ -44,7 +44,7 @@ _BAR_ALPHA = 0.8
 
 def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
                 color=None, quiet=False, alpha=1.0,
-                plot_density=True, log_stretch=0.1,
+                plot_density=True, log_stretch=0.1, norm=None, cmap=None,
                 plot_contours=True, no_fill_contours=False, fill_contours=False,
                 contour_kwargs=None, contourf_kwargs=None, data_kwargs=None,
                 **kwargs):
@@ -62,10 +62,14 @@ def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
         # levels = zmath.percs_from_sigma(np.arange(0.5, 2.1, 0.5))
         levels = zmath.percs_from_sigma(np.arange(1, 4))
 
+    levels = np.atleast_1d(levels)
     # This is the color map for the density plot, over-plotted to indicate the
     # density of the points near the center.
     density_cmap = mpl.colors.LinearSegmentedColormap.from_list(
         "density_cmap", [color, (1, 1, 1, 0)])
+
+    if cmap is None:
+        cmap = density_cmap
 
     # This color map is used to hide the points at the high density areas.
     # white_cmap = mpl.colors.LinearSegmentedColormap.from_list(
@@ -104,7 +108,8 @@ def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
         yc = zmath.midpoints(ye)
 
         # Extend the array for the sake of the contours at the plot edges.
-        H2 = hist.min() + np.zeros((hist.shape[0] + 4, hist.shape[1] + 4))
+        zeros_func = np.ma.zeros if isinstance(hist, np.ma.core.MaskedArray) else np.zeros
+        H2 = hist.min() + zeros_func((hist.shape[0] + 4, hist.shape[1] + 4))
         H2[2:-2, 2:-2] = hist
         H2[2:-2, 1] = hist[:, 0]
         H2[2:-2, -2] = hist[:, -1]
@@ -143,8 +148,8 @@ def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
     # Plot the density map. This can't be plotted at the same time as the
     # contour fills.
     elif plot_density:
-        # pc = ax.pcolor(xe, ye, hist.max() - hist.T, cmap=density_cmap, alpha=alpha)
-        pc = ax.pcolor(xe, ye, hist.T, cmap=density_cmap, alpha=alpha)
+        # pc = ax.pcolor(xe, ye, hist.max() - hist.T, cmap=cmap, alpha=alpha)
+        pc = ax.pcolor(xe, ye, hist.T, cmap=cmap, alpha=alpha, norm=norm)
 
     # Plot the contour edge colors.
     if plot_contours:
@@ -158,11 +163,9 @@ def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
         # cnt = ax.contour(X2, Y2, H2.T, levels, **contour_kwargs)
         xc = zmath.midpoints(xe)
         yc = zmath.midpoints(ye)
-        print(levels)
-        print(zmath.stats_str(hist))
         cnt = ax.contour(xc, yc, hist.T, levels, **contour_kwargs)
 
-    return pc, cnt, cnf
+    return pc, cnt, cnf, cmap
 
 
 def corner(axes, data, edges, labels, hist1d, hist2d, color='k', alpha=0.5,
