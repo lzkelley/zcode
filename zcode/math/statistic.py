@@ -118,6 +118,8 @@ def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return
     vals : array_like of scalars
         Data over which to calculate confidence intervals.
         This can be an arbitrarily shaped ndarray.
+    sigma : (M,) array_like of float
+        Confidence values as standard-deviations, converted to percentiles.
     ci : (M,) array_like of floats
         List of desired confidence intervals as fractions (e.g. `[0.68, 0.95]`)
     axis : int or None
@@ -125,6 +127,8 @@ def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return
     filter : str or `None`
         Filter the input array with a boolean comparison to zero.
         If no values remain after filtering, ``NaN, NaN`` is returned.
+    return_ci : bool
+        Return the confidence-interval values used (i.e. percentiles)
 
     Returns
     -------
@@ -141,10 +145,18 @@ def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return
         For example,
             if ``vals.shape = (4,3,5)` and `axis=1`, then `L = (4,5)`
             the final output shape will be: (4,5,M,2).
+    ci : (M,) ndarray of float, optional
+        The percentile-values used for calculating confidence intervals.
+        Only returned if `return_ci` is True.
 
     """
+    if ci is not None and sigma is not None:
+        raise ValueError("Only provide *either* `ci` or `sigma`!")
+
     if ci is None:
-        ci = [0.68, 0.95, 0.997]
+        if sigma is None:
+            sigma = [1.0, 2.0, 3.0]
+        ci = percs_from_sigma(sigma)
 
     ci = np.atleast_1d(ci)
     assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
@@ -156,11 +168,6 @@ def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return
         # Using the filter will flatten the array, so `axis` wont work...
         kw = {}
         if (axis is not None) and np.ndim(vals) > 1:
-            # err = "`filter` ({}) and `axis` ({}) arguments may be incompatible!".format(
-            #     filter, axis)
-            # err += "  (Shape: {})".format(np.shape(vals))
-            # raise ValueError(err)
-            # warnings.warn(err)
             kw['axis'] = axis
 
         vals = math_core.comparison_filter(vals, filter, **kw)

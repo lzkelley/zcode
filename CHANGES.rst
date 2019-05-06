@@ -70,11 +70,13 @@ Current
         - `_guess_str_format_from_range()`
             - BUG: fix issue where exponential notation was only being used for positive-definite values
     - `statistic.py`
+        - `confidenceBands()` [DELETED-METHOD]
+        - `confidenceIntervals()` [DELETED-METHOD]
+        - `confidence_intervals()`
+            - New argument `sigma` which is converted into percentiles
         - `percentiles()`
             - New argument, `sigmas` which is used to calculate percentiles from sigma values.
         - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
-        - `confidenceBands()` [DELETED-METHOD]
-        - `confidenceIntervals()` [DELETED-METHOD]
 
 - `plot/`
     - `Hist2D.py`
