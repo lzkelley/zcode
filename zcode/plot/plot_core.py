@@ -894,7 +894,7 @@ def invert_color(col):
     return col
 
 
-def colormap(args=[0.0, 1.0], cmap=None, scale=None, midpoint=None,
+def colormap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
              under='0.8', over='0.8', left=None, right=None):
     """Create a colormap from a scalar range to a set of colors.
 
@@ -902,11 +902,13 @@ def colormap(args=[0.0, 1.0], cmap=None, scale=None, midpoint=None,
     ---------
     args : scalar or array_like of scalar
         Range of valid scalar values to normalize with
-    cmap : ``matplotlib.colors.Colormap`` object
+    cmap : None, str, or ``matplotlib.colors.Colormap`` object
         Colormap to use.
     scale : str or `None`
         Scaling specification of colormap {'lin', 'log', `None`}.
         If `None`, scaling is inferred based on input `args`.
+    norm : None or `matplotlib.colors.Normalize`
+        Normalization to use.
     under : str or `None`
         Color specification for values below range.
     over : str or `None`
@@ -933,24 +935,6 @@ def colormap(args=[0.0, 1.0], cmap=None, scale=None, midpoint=None,
     """
     args = np.asarray(args)
 
-    if cmap is None:
-        cmap = 'jet'
-    if isinstance(cmap, six.string_types):
-        cmap = plt.get_cmap(cmap)
-
-    # Select a truncated subsection of the colormap
-    if (left is not None) or (right is not None):
-        if left is None:
-            left = 0.0
-        if right is None:
-            right = 1.0
-        cmap = cut_colormap(cmap, left, right)
-
-    if under is not None:
-        cmap.set_under(under)
-    if over is not None:
-        cmap.set_over(over)
-
     if scale is None:
         if np.size(args) > 1 and np.all(args > 0.0):
             scale = 'log'
@@ -958,36 +942,57 @@ def colormap(args=[0.0, 1.0], cmap=None, scale=None, midpoint=None,
             scale = 'lin'
 
     log = _scale_to_log_flag(scale)
-    if log:
-        filter = 'g'
-    else:
-        filter = None
 
-    # Determine minimum and maximum
-    if np.size(args) > 1:
-        rv = zmath.minmax(args, filter=filter)
-        if rv is None:
+    if not isinstance(cmap, mpl.colors.Colormap):
+        if cmap is None:
+            cmap = 'jet'
+        if isinstance(cmap, six.string_types):
+            cmap = plt.get_cmap(cmap)
+
+        # Select a truncated subsection of the colormap
+        if (left is not None) or (right is not None):
+            if left is None:
+                left = 0.0
+            if right is None:
+                right = 1.0
+            cmap = cut_colormap(cmap, left, right)
+
+        if under is not None:
+            cmap.set_under(under)
+        if over is not None:
+            cmap.set_over(over)
+
+    if norm is None:
+        if log:
+            filter = 'g'
+        else:
+            filter = None
+
+        # Determine minimum and maximum
+        if np.size(args) > 1:
+            rv = zmath.minmax(args, filter=filter)
+            if rv is None:
+                min, max = 0.0, 0.0
+            else:
+                min, max = rv
+        elif np.size(args) == 1:
+            min, max = 0, np.int(args)-1
+        elif np.size(args) == 2:
+            min, max = args
+        else:
             min, max = 0.0, 0.0
-        else:
-            min, max = rv
-    elif np.size(args) == 1:
-        min, max = 0, np.int(args)-1
-    elif np.size(args) == 2:
-        min, max = args
-    else:
-        min, max = 0.0, 0.0
 
-    # Create normalization
-    if log:
-        if midpoint is None:
-            norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+        # Create normalization
+        if log:
+            if midpoint is None:
+                norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+            else:
+                norm = MidpointLogNormalize(vmin=min, vmax=max, midpoint=midpoint)
         else:
-            norm = MidpointLogNormalize(vmin=min, vmax=max, midpoint=midpoint)
-    else:
-        if midpoint is None:
-            norm = mpl.colors.Normalize(vmin=min, vmax=max)
-        else:
-            norm = MidpointNormalize(vmin=min, vmax=max, midpoint=midpoint)
+            if midpoint is None:
+                norm = mpl.colors.Normalize(vmin=min, vmax=max)
+            else:
+                norm = MidpointNormalize(vmin=min, vmax=max, midpoint=midpoint)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
