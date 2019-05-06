@@ -79,6 +79,7 @@ Current
             - New argument `sigma` which is converted into percentiles
         - `percentiles()`
             - New argument, `sigmas` which is used to calculate percentiles from sigma values.
+            - `percs` <== `ci` [DEPRECATION-VARIABLE]
         - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
 
 - `plot/`

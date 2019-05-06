@@ -110,7 +110,9 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
     return count, med, conf, xbins
 
 
-def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return_ci=False):
+def confidence_intervals(vals, sigma=None, percs=None, axis=-1, filter=None, return_ci=False,
+                         # DEPRECATED ARGUMENTS:
+                         ci=None):
     """Compute the values bounding the target confidence intervals for an array of data.
 
     Arguments
@@ -120,7 +122,7 @@ def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return
         This can be an arbitrarily shaped ndarray.
     sigma : (M,) array_like of float
         Confidence values as standard-deviations, converted to percentiles.
-    ci : (M,) array_like of floats
+    percs : (M,) array_like of floats
         List of desired confidence intervals as fractions (e.g. `[0.68, 0.95]`)
     axis : int or None
         Axis over which to calculate confidence intervals, or 'None' to marginalize over all axes.
@@ -129,6 +131,7 @@ def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return
         If no values remain after filtering, ``NaN, NaN`` is returned.
     return_ci : bool
         Return the confidence-interval values used (i.e. percentiles)
+    ci : DEPRECATED, use `percs` instead
 
     Returns
     -------
@@ -137,7 +140,7 @@ def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return
         `None` if there are no values (e.g. after filtering).
     conf : ([L, ]M, 2) ndarray of scalar
         Bounds for each confidence interval.  Shape depends on the number of confidence intervals
-        passed in `ci`, and the input shape of `vals`.
+        passed in `percs`, and the input shape of `vals`.
         `None` if there are no values (e.g. after filtering).
         If `vals` is 1D or `axis` is 'None', then the output shape will be (M, 2).
         If `vals` has more than one-dimension, and `axis` is not 'None', then the shape `L`
@@ -145,21 +148,23 @@ def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return
         For example,
             if ``vals.shape = (4,3,5)` and `axis=1`, then `L = (4,5)`
             the final output shape will be: (4,5,M,2).
-    ci : (M,) ndarray of float, optional
+    percs : (M,) ndarray of float, optional
         The percentile-values used for calculating confidence intervals.
         Only returned if `return_ci` is True.
 
     """
-    if ci is not None and sigma is not None:
-        raise ValueError("Only provide *either* `ci` or `sigma`!")
+    percs = utils.dep_warn_var("ci", ci, "percs", percs)
 
-    if ci is None:
+    if percs is not None and sigma is not None:
+        raise ValueError("Only provide *either* `percs` or `sigma`!")
+
+    if percs is None:
         if sigma is None:
             sigma = [1.0, 2.0, 3.0]
-        ci = percs_from_sigma(sigma)
+        percs = percs_from_sigma(sigma)
 
-    ci = np.atleast_1d(ci)
-    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
+    percs = np.atleast_1d(percs)
+    assert np.all(percs >= 0.0) and np.all(percs <= 1.0), "`percs` must be {0.0, 1.0}!"
 
     PERC_FUNC = np.percentile
 
@@ -178,7 +183,7 @@ def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return
             return np.nan, np.nan
 
     # Calculate confidence-intervals and median
-    cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
+    cdf_vals = np.array([(1.0-percs)/2.0, (1.0+percs)/2.0]).T
     # This produces an ndarray with shape `[M, 2(, L)]`
     #    If ``axis is None`` or `np.ndim(vals) == 1` then the shape will be simply `[M, 2]`
     #    Otherwise, `L` will be the shape of `vals` without axis `axis`.
@@ -195,7 +200,7 @@ def confidence_intervals(vals, sigma=None, ci=None, axis=-1, filter=None, return
         conf = conf[0]
 
     if return_ci:
-        return med, conf, ci
+        return med, conf, percs
 
     return med, conf
 
