@@ -32,6 +32,8 @@ Future / To-Do
                 -   BUG: Arguemnts `filter` and `axis` are currently incompatible.
             -   `percentiles()`
                 -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
+            -   `confidenceBands()` [DELETED-METHOD]
+            -   `confidenceIntervals()` [DELETED-METHOD]
 
     -   plot/
         +   Hist2D.py
@@ -89,6 +91,8 @@ Current
         - `figax()`
             - New `scale` argument to set the scale of both x and y axes.
             - BUG: xlim and ylim were not being broadcast correctly
+
+
 
 [0.1] - 2019/03/18
 ------------------

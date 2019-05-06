@@ -21,16 +21,8 @@ import scipy.stats  # noqa
 
 from . import math_core
 
-__all__ = ['confidenceBands', 'confidence_bands', 'confidenceIntervals', 'confidence_intervals',
+__all__ = ['confidence_bands', 'confidence_intervals',
            'cumstats', 'log_normal_base_10', 'percentiles', 'sigma', 'stats', 'stats_str']
-
-
-def confidenceBands(*args, **kwargs):
-    """DEPRECATED: use `confidence_bands`.
-    """
-    warnings.warn("`confidenceBands` is deprecated.  Use `confidence_bands`",
-                  DeprecationWarning, stacklevel=3)
-    return confidence_bands(*args, **kwargs)
 
 
 def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter=None):
@@ -113,14 +105,6 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
         conf = conf.squeeze()
 
     return count, med, conf, xbins
-
-
-def confidenceIntervals(*args, **kwargs):
-    """DEPRECATED: use `confidence_intervals`.
-    """
-    warnings.warn("`confidenceIntervals` is deprecated.  Use `confidence_intervals`",
-                  DeprecationWarning, stacklevel=3)
-    return confidence_intervals(*args, **kwargs)
 
 
 def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
