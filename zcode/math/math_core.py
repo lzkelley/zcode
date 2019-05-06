@@ -39,7 +39,7 @@ import scipy as sp
 import scipy.interpolate  # noqa
 
 __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges',
-           'broadcast', 'broadcastable', 'contiguousInds',
+           'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
            'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate', 'rotation_matrix_between_vectors',
@@ -592,13 +592,13 @@ def interp_func(xold, yold, kind='mono', xlog=True, ylog=True, fill_value=np.nan
         lin_interp = sp.interpolate.interp1d(
             xold, yold, kind=kind, fill_value=fill_value, **kwargs)
 
-    def interp_func(xx):
+    def ifunc(xx):
         xx = in_func(xx)
         yy = lin_interp(xx)
         yy = out_func(yy)
         return yy
 
-    return interp_func
+    return ifunc
 
 
 def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
