@@ -40,6 +40,9 @@ Future / To-Do
 
 Current
 -------
+- `utils.py`
+    - `dep_warn_var()` [NEW-METHOD]
+        - Standardized method for handling deprecated variables.
 - `astro/`
     - `astro_core.py`
         - `eddington_accretion()`
