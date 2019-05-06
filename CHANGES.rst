@@ -76,6 +76,11 @@ Current
         - `percentiles()`
             - New argument, `sigmas` which is used to calculate percentiles from sigma values.
 - `plot/`
+    - `Hist2D.py`
+        - `draw_hist2d()` [NEW-METHOD]
+            - New 2D histogram plotting method from `corner.hist2d` method by 'Dan Foreman-Mackey'.
+        - `corner()` [NEW-METHOD]
+            - New corner plotting method.
     - `plot_const.py` [FILE-DELETED]
         - Constant values moved to `zcode.plot.__init__.py`
     - `plot_core.py`

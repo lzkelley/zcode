@@ -17,17 +17,20 @@ To-do
 from __future__ import absolute_import, division, print_function, unicode_literals
 import six
 import warnings
+import logging
 
 import numpy as np
 import scipy as sp
 import scipy.stats   # noqa
 import scipy.ndimage  # noqa
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import zcode.math as zmath
-from . import plot_core
+from . import plot_core, draw
 
-__all__ = ['plot2DHist', 'plot2DHistProj']
+# __all__ = ['plot2DHist', 'plot2DHistProj']
+__all__ = ['draw_hist2d']
 
 _LEFT = 0.09
 _RIGHT = 0.92     # Location of right of plots
@@ -39,6 +42,314 @@ _CB_WPAD = 0.1
 _BAR_ALPHA = 0.8
 
 
+def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
+                color=None, quiet=False, alpha=1.0,
+                plot_density=True, log_stretch=0.1,
+                plot_contours=True, no_fill_contours=False, fill_contours=False,
+                contour_kwargs=None, contourf_kwargs=None, data_kwargs=None,
+                **kwargs):
+    """
+
+    Minor modifications to the `corner.hist2d` method by 'Dan Foreman-Mackey'.
+    """
+
+    # Set up the default plotting arguments.
+    if color is None:
+        color = "k"
+
+    # Choose the default "sigma" contour levels.
+    if levels is None:
+        # levels = zmath.sigma(np.arange(0.5, 2.1, 0.5))
+        levels = zmath.sigma(np.arange(1, 4))
+
+    # This is the color map for the density plot, over-plotted to indicate the
+    # density of the points near the center.
+    density_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        "density_cmap", [color, (1, 1, 1, 0)])
+
+    # This color map is used to hide the points at the high density areas.
+    # white_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+    #     "white_cmap", [(1, 1, 1), (1, 1, 1)], N=2)
+
+    # This "color map" is the list of colors for the contour levels if the
+    # contours are filled.
+    rgba_color = mpl.colors.colorConverter.to_rgba(color)
+    contour_cmap = [list(rgba_color) for l in levels] + [rgba_color]
+    for i, l in enumerate(levels):
+        contour_cmap[i][-1] *= float(i) / (len(levels)+1)
+
+    if plot_contours or plot_density:
+        # Compute the density levels.
+        Hflat = hist.flatten()
+        inds = np.argsort(Hflat)[::-1]
+        Hflat = Hflat[inds]
+        sm = np.cumsum(Hflat)
+        sm /= sm[-1]
+        V = np.empty(len(levels))
+        for i, v0 in enumerate(levels):
+            try:
+                V[i] = Hflat[sm <= v0][-1]
+            except:
+                V[i] = Hflat[0]
+        V.sort()
+        m = np.diff(V) == 0
+        if np.any(m) and not quiet:
+            logging.warning("Too few points to create valid contours")
+        while np.any(m):
+            V[np.where(m)[0][0]] *= 1.0 - 1e-4
+            m = np.diff(V) == 0
+        V.sort()
+
+        xc = zmath.midpoints(xe)
+        yc = zmath.midpoints(ye)
+
+        # Extend the array for the sake of the contours at the plot edges.
+        H2 = hist.min() + np.zeros((hist.shape[0] + 4, hist.shape[1] + 4))
+        H2[2:-2, 2:-2] = hist
+        H2[2:-2, 1] = hist[:, 0]
+        H2[2:-2, -2] = hist[:, -1]
+        H2[1, 2:-2] = hist[0]
+        H2[-2, 2:-2] = hist[-1]
+        H2[1, 1] = hist[0, 0]
+        H2[1, -2] = hist[0, -1]
+        H2[-2, 1] = hist[-1, 0]
+        H2[-2, -2] = hist[-1, -1]
+        X2 = np.concatenate([
+            xc[0] + np.array([-2, -1]) * np.diff(xc[:2]),
+            xc,
+            xc[-1] + np.array([1, 2]) * np.diff(xc[-2:]),
+        ])
+        Y2 = np.concatenate([
+            yc[0] + np.array([-2, -1]) * np.diff(yc[:2]),
+            yc,
+            yc[-1] + np.array([1, 2]) * np.diff(yc[-2:]),
+        ])
+
+    # Contour-filled
+    cnf = None
+    # pcolor (mesh)
+    pc = None
+    # contours
+    cnt = None
+
+    if plot_contours and fill_contours:
+        if contourf_kwargs is None:
+            contourf_kwargs = dict()
+        contourf_kwargs["colors"] = contourf_kwargs.get("colors", contour_cmap)
+        contourf_kwargs["antialiased"] = contourf_kwargs.get("antialiased", False)
+        # levels = np.concatenate([[0], V, [hist.max()*(1+1e-4)]])
+        cnf = ax.contourf(X2, Y2, H2.T, levels, alpha=alpha, **contourf_kwargs)
+
+    # Plot the density map. This can't be plotted at the same time as the
+    # contour fills.
+    elif plot_density:
+        # pc = ax.pcolor(xe, ye, hist.max() - hist.T, cmap=density_cmap, alpha=alpha)
+        pc = ax.pcolor(xe, ye, hist.T, cmap=density_cmap, alpha=alpha)
+
+    # Plot the contour edge colors.
+    if plot_contours:
+        if contour_kwargs is None:
+            contour_kwargs = dict()
+        contour_kwargs["colors"] = contour_kwargs.get("colors", color)
+        contour_kwargs["alpha"] = contour_kwargs.get("alpha", 0.75)
+        contour_kwargs["linewidths"] = contour_kwargs.pop("lw", 0.5)
+        # print("V = ", V)
+        # levels = V
+        # cnt = ax.contour(X2, Y2, H2.T, levels, **contour_kwargs)
+        xc = zmath.midpoints(xe)
+        yc = zmath.midpoints(ye)
+        print(levels)
+        print(zmath.stats_str(hist))
+        cnt = ax.contour(xc, yc, hist.T, levels, **contour_kwargs)
+
+    return pc, cnt, cnf
+
+
+def corner(axes, data, edges, labels, hist1d, hist2d, color='k', alpha=0.5,
+           levels=None, hextr=None, ticks=None):
+
+    if ticks is not None:
+        ticklabels = []
+        for xx in ticks:
+            _tl = []
+            for tt in xx:
+                lab = "$10^{{{:.0f}}}$".format(np.log10(tt))
+                _tl.append(lab)
+            ticklabels.append(_tl)
+
+    for (ii, jj), ax in np.ndenumerate(axes):
+        di = data[ii]
+        ei = edges[ii]
+        li = labels[ii]
+
+        dj = data[jj]
+        ej = edges[jj]
+        lj = labels[jj]
+
+        xextr = zmath.minmax(ej, log_stretch=0.0)
+        yextr = zmath.minmax(ei, log_stretch=0.0)
+
+        if jj == 0 and ii > 0:
+            ax.set_ylabel(li)
+            if ticks is not None:
+                ax.set_yticks(ticks[ii])
+                ax.set_yticklabels(ticklabels[ii])
+
+        if jj > 0 and ii != jj:
+            ax.set_yticklabels([])
+        if ii == jj:
+            ax.yaxis.set_label_position('right')
+            ax.yaxis.set_ticks_position('right')
+
+        if ii == size-1:
+            ax.set_xlabel(lj)
+            if ticks is not None:
+                ax.set_xticks(ticks[jj])
+                ax.set_xticklabels(ticklabels[jj])
+        else:
+            ax.set_xticklabels([])
+
+        if jj > ii:
+            ax.set_visible(False)
+            continue
+        elif ii == jj:
+            handle = draw.plot_hist_line(ax, ej, hist1d[jj], color=color, alpha=alpha)
+            if hextr is not None:
+                ax.set_ylim(hextr[jj])
+
+            ax.set_xlim(xextr)
+        else:
+            draw_hist2d(ax, ej, ei, hist2d[ii, jj].T, color=color, alpha=alpha, levels=levels)
+
+            ax.set_xlim(xextr)
+            ax.set_ylim(yextr)
+
+    return handle
+
+
+
+'''
+data = np.array([m2/MSOL, mt/MSOL, mr, sepa/PC, fedds_sys])
+weights = pv[:, 3]
+NAME = 'either_5'
+NUM_OVERPLOT = 1
+
+NBINS = 20
+UNIFORM_HIST1D_YLIM = True
+NORMALIZE_TO_MAX = True
+
+labels = ['$m \, [M_\odot]$', '$M \, [M_\odot]$', '$q$', '$a \, [\mathrm{{pc}}]$', '$f_\mathrm{{Edd}}$']
+ticks = [[1e6, 1e8, 1e10], [1e6, 1e8, 1e10], [1e-2, 1e0], [1e-1, 1e0, 1e1], [1e-2, 1e-1, 1e0]]
+
+hist_kw = dict(alpha=0.5, rwidth=0.8)
+
+# levels = zmath.sigma(np.arange(0.5, 2.1, 0.5))
+# levels = zmath.sigma(np.arange(1, 4))
+levels = zmath.sigma(np.arange(1, 3))
+# levels = zmath.sigma(np.arange(2, 4))
+
+space = 0.05
+
+
+size = len(data)
+fig, axes = zplot.figax(figsize=[10, 10], nrows=size, ncols=size,
+                        hspace=space, wspace=space, left=0.1, bottom=0.08, top=0.97, right=0.92)
+
+hist2d_a = np.empty_like(axes, dtype=object)
+hist2d_w = np.empty_like(axes, dtype=object)
+hist2d_ratio = np.empty_like(axes, dtype=object)
+
+hist1d_a = np.zeros((size, NBINS))
+hist1d_w = np.zeros((size, NBINS))
+hist1d_ratio = np.zeros((size, NBINS))
+
+edges = np.zeros((size, NBINS+1))
+cents = np.zeros((size, NBINS))
+hextr = []
+hextr_ratio = []
+
+for ii, dd in enumerate(data):
+    xx = zmath.minmax(dd, filter='>')
+    edges[ii, :] = zmath.spacing(xx, 'log', NBINS+1)
+    cents[ii, :] = zmath.midpoints(edges[ii])
+
+    hist_a, _ = np.histogram(dd, bins=edges[ii])
+    hist_w, _ = np.histogram(dd, bins=edges[ii], weights=weights)
+
+    hist_r = np.zeros_like(hist_a, dtype=float)
+    idx = (hist_a > 0.0)
+    hist_r[idx] = hist_w[idx] / hist_a[idx]
+    hist1d_ratio[ii, :] = hist_r
+    hextr_ratio.append(zmath.minmax(hist_r, filter='>'))
+
+    if NORMALIZE_TO_MAX:
+        hist_a = hist_a / hist_a.max()
+        hist_w = hist_w / hist_w.max()
+
+    ha = zmath.minmax(hist_a.astype(float), filter='>', log_stretch=0.1)
+    hw = zmath.minmax(hist_w.astype(float), filter='>', log_stretch=0.1)
+
+    hist1d_a[ii, :] = hist_a
+    hist1d_w[ii, :] = hist_w
+
+    hh = zmath.minmax(ha, prev=hw, limit=[1e-4, None])
+    hextr.append(hh)
+
+if UNIFORM_HIST1D_YLIM:
+    hh = zmath.minmax(hextr)
+    hextr = [hh for _ in hextr]
+
+for ii in range(size):
+    di = data[ii]
+    ei = edges[ii]
+    for jj in range(0, ii):
+        dj = data[jj]
+        ej = edges[jj]
+        hist2d_a[ii, jj], *_ = np.histogram2d(di, dj, bins=[ei, ej])
+        hist2d_w[ii, jj], *_ = np.histogram2d(di, dj, bins=[ei, ej], weights=weights)
+
+        idx = (hist2d_a[ii, jj] > 0.0)
+        hist2d_ratio[ii, jj] = np.zeros_like(idx, dtype=float)
+        hist2d_ratio[ii, jj][idx] = hist2d_w[ii, jj][idx] / hist2d_a[ii, jj][idx]
+
+
+lines = []
+names = []
+
+if NUM_OVERPLOT > 1:
+    h1 = draw_corner(axes, data, bins, labels, hist1d_a, hist2d_a, color='red', hextr=hextr, levels=levels, ticks=ticks)
+    h2 = draw_corner(axes, data, bins, labels, hist1d_w, hist2d_w, color='blue', hextr=hextr, levels=levels, ticks=ticks)
+    lines.append(h1)
+    names.append('All')
+    lines.append(h2)
+    names.append('Obs')
+
+if NUM_OVERPLOT in [1, 3]:
+    h3 = draw_corner(axes, data, bins, labels, hist1d_ratio, hist2d_ratio, color='purple', hextr=hextr, levels=levels, ticks=ticks)
+    lines.append(h3)
+    names.append('Frac')
+
+if NUM_OVERPLOT == 1:
+    fname = "analytic-kinematic_corner_fraction.pdf"
+    subdir = 'analytic-kinematic'
+elif NUM_OVERPLOT == 2:
+    fname = "analytic-kinematic_corner_all-weighted.pdf"
+    subdir = 'analytic-kinematic'
+elif NUM_OVERPLOT == 3:
+    fname = "analytic-kinematic_corner_all-weighted_fraction.pdf"
+    subdir = 'analytic-kinematic'
+else:
+    raise RuntimeError("Shouldn't be here!")
+
+zplot.legend(fig, lines, names, loc='ur', fs=14)
+
+fname = zio.modify_filename(fname, append="_{}".format(NAME))
+core.paths.save_fig(fig, fname, subdir=subdir)
+plt.show()
+'''
+
+
+'''
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None, extrema=None,
                    cumulative=None,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0, alpha=1.0,
@@ -869,3 +1180,4 @@ def _cumulative_stat1d(values, shape, bins, statistic, cumulative):
             cumul[ii] = stat_func(use_vals[row_bool])
 
     return cumul
+'''
