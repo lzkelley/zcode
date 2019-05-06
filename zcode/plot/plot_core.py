@@ -131,14 +131,32 @@ def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=
     plt.subplots_adjust(
         left=left, bottom=bottom, right=right, top=top, hspace=hspace, wspace=wspace)
 
-    if nrows > 1 or ncols > 1:
-        if ylim is not None and np.shape(ylim) == (2,):
-            ylim = np.array(ylim)[:, np.newaxis]
+    if ylim is not None:
+        shape = (nrows, ncols, 2)
+        if np.shape(ylim) == (2,):
+            ylim = np.array(ylim)[np.newaxis, np.newaxis, :]
+    else:
+        shape = (nrows, ncols,)
 
-    _, xscale, xlabel, xlim = np.broadcast_arrays(axes, xscale, xlabel, xlim)
-    _, yscale, ylabel, ylim = np.broadcast_arrays(axes, yscale, ylabel, ylim)
+    ylim = np.broadcast_to(ylim, shape)
+
+    if xlim is not None:
+        shape = (nrows, ncols, 2)
+        if np.shape(xlim) == (2,):
+            xlim = np.array(xlim)[np.newaxis, np.newaxis, :]
+    else:
+        shape = (nrows, ncols)
+
+    xlim = np.broadcast_to(xlim, shape)
+
+    # _, xscale, xlabel, xlim = np.broadcast_arrays(axes, xscale, xlabel, xlim)
+    # _, yscale, ylabel, ylim = np.broadcast_arrays(axes, yscale, ylabel, ylim)
+    _, xscale, xlabel = np.broadcast_arrays(axes, xscale, xlabel)
+    _, yscale, ylabel = np.broadcast_arrays(axes, yscale, ylabel)
 
     for idx, ax in np.ndenumerate(axes):
+        # print(idx, xscale[idx], xlabel[idx], xlim[idx])
+        # print(idx, yscale[idx], ylabel[idx], ylim[idx])
         ax.set(xscale=xscale[idx], xlabel=xlabel[idx],
                yscale=yscale[idx], ylabel=ylabel[idx])
         if xlim[idx] is not None:

@@ -88,7 +88,7 @@ Current
             - New `midpoint` argument and functionality to allow colormaps's colors to be centered at particular values in either log or linear space.  Uses new classes `MidpointNormalize` and `MidpointLogNormalize`.
         - `figax()`
             - New `scale` argument to set the scale of both x and y axes.
-            
+            - BUG: xlim and ylim were not being broadcast correctly
 
 [0.1] - 2019/03/18
 ------------------
