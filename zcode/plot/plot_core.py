@@ -53,7 +53,7 @@ from zcode.plot import _PAD
 
 __all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
-           'unifyAxesLimits', 'color_cycle',
+           'unifyAxesLimits', 'color_cycle', 'get_norm',
            'colormap', 'color_set', 'set_grid',
            'skipTicks', 'saveFigure', 'scientific_notation',
            'line_style_set', 'line_label',
@@ -949,18 +949,18 @@ def colormap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
         if isinstance(cmap, six.string_types):
             cmap = plt.get_cmap(cmap)
 
-        # Select a truncated subsection of the colormap
-        if (left is not None) or (right is not None):
-            if left is None:
-                left = 0.0
-            if right is None:
-                right = 1.0
-            cmap = cut_colormap(cmap, left, right)
+    # Select a truncated subsection of the colormap
+    if (left is not None) or (right is not None):
+        if left is None:
+            left = 0.0
+        if right is None:
+            right = 1.0
+        cmap = cut_colormap(cmap, left, right)
 
-        if under is not None:
-            cmap.set_under(under)
-        if over is not None:
-            cmap.set_over(over)
+    if under is not None:
+        cmap.set_under(under)
+    if over is not None:
+        cmap.set_over(over)
 
     if norm is None:
         norm = get_norm(args, midpoint=midpoint, log=log, filter=filter)
