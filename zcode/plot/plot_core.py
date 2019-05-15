@@ -963,36 +963,7 @@ def colormap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
             cmap.set_over(over)
 
     if norm is None:
-        if log:
-            filter = 'g'
-        else:
-            filter = None
-
-        # Determine minimum and maximum
-        if np.size(args) > 1:
-            rv = zmath.minmax(args, filter=filter)
-            if rv is None:
-                min, max = 0.0, 0.0
-            else:
-                min, max = rv
-        elif np.size(args) == 1:
-            min, max = 0, np.int(args)-1
-        elif np.size(args) == 2:
-            min, max = args
-        else:
-            min, max = 0.0, 0.0
-
-        # Create normalization
-        if log:
-            if midpoint is None:
-                norm = mpl.colors.LogNorm(vmin=min, vmax=max)
-            else:
-                norm = MidpointLogNormalize(vmin=min, vmax=max, midpoint=midpoint)
-        else:
-            if midpoint is None:
-                norm = mpl.colors.Normalize(vmin=min, vmax=max)
-            else:
-                norm = MidpointNormalize(vmin=min, vmax=max, midpoint=midpoint)
+        norm = get_norm(args, midpoint=midpoint, log=log, filter=filter)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -1440,6 +1411,43 @@ def line_label(ax, pos, label, dir='v', loc='top', xx=None, yy=None, ha=None, va
 
     txt = text(ax, label, x=xx, y=yy, halign=ha, valign=va, trans=trans, **text_kwargs)
     return ll, txt
+
+
+def get_norm(data, midpoint=None, log=False, filter=None):
+    """
+    """
+    if log:
+        filter = 'g'
+    else:
+        filter = None
+
+    # Determine minimum and maximum
+    if np.size(data) > 1:
+        rv = zmath.minmax(data, filter=filter)
+        if rv is None:
+            min, max = 0.0, 0.0
+        else:
+            min, max = rv
+    elif np.size(data) == 1:
+        min, max = 0, np.int(data)-1
+    elif np.size(data) == 2:
+        min, max = data
+    else:
+        raise ValueError("Invalid `data` to construct norm!")
+
+    # Create normalization
+    if log:
+        if midpoint is None:
+            norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+        else:
+            norm = MidpointLogNormalize(vmin=min, vmax=max, midpoint=midpoint)
+    else:
+        if midpoint is None:
+            norm = mpl.colors.Normalize(vmin=min, vmax=max)
+        else:
+            norm = MidpointNormalize(vmin=min, vmax=max, midpoint=midpoint)
+
+    return norm
 
 
 #     ==================================

@@ -116,6 +116,8 @@ Current
             - `figax()`
                 - New `scale` argument to set the scale of both x and y axes.
                 - BUG: xlim and ylim were not being broadcast correctly
+            - `get_norm()`  [NEW-METHOD]
+                - Separated out from `colormap()`, same functionality.
 
 
 
