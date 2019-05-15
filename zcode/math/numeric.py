@@ -23,7 +23,7 @@ from .. import utils
 
 __all__ = [
     'cumtrapz_loglog', 'even_selection', 'extend', 'monotonic_smooth', 'sample_inverse',
-    'smooth_convolve', 'spline', 'kde', 'kde_hist',
+    'smooth_convolve', 'spline',   # 'kde', 'kde_hist',
     # DEPRECATED
     'sampleInverse', 'smooth', '_smooth'
 ]
@@ -377,6 +377,7 @@ def even_selection(size, select, sel_is_true=True):
     return cut
 
 
+'''
 def kde(vals, scale=None, log=None):
     log, scale = _log_from_scale(log, scale)
 
@@ -415,6 +416,7 @@ def kde_hist(vals, edges, scale=None, log=None, density=False):
         yy *= dx
 
     return yy
+'''
 
 
 def _log_from_scale(log, scale):

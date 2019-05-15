@@ -78,6 +78,11 @@ Current
             - `zenumerate()` <== `zenum()` [DEPRECATION]
             - `_guess_str_format_from_range()`
                 - BUG: fix issue where exponential notation was only being used for positive-definite values
+        - `numeric.py`
+            - `kde()`  [DEPRECATED]
+                - Use new functionality from `kde.py`
+            - `kde_hist()`  [DEPRECATED]
+                - Use new functionality from `kde.py`
         - `statistic.py`
             - `confidenceBands()` [DELETED-METHOD]
             - `confidenceIntervals()` [DELETED-METHOD]
