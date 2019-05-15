@@ -23,12 +23,12 @@ from zcode import utils
 from zcode.math import math_core
 
 __all__ = ['confidence_bands', 'confidence_intervals',
-           'cumstats', 'log_normal_base_10',
+           'cumstats', 'log_normal_base_10', 'mean',
            'percentiles', 'percs_from_sigma', 'sigma',
-           'stats', 'stats_str']
+           'stats', 'stats_str', 'std']
 
 
-def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter=None):
+def confidence_bands(xx, yy, xbins=10, xscale='lin', percs=[0.68, 0.95], filter=None):
     """Bin the given data with respect to `xx` and calculate confidence intervals in `yy`.
 
     Arguments
@@ -69,9 +69,9 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
 
     """
     squeeze = False
-    if not np.iterable(confInt):
+    if not np.iterable(percs):
         squeeze = True
-        confInt = [confInt]
+        percs = [percs]
     xx = np.asarray(xx).flatten()
     yy = np.asarray(yy).flatten()
     if xx.shape != yy.shape:
@@ -93,14 +93,14 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
     groups = math_core.groupDigitized(xx, xbins[1:], edges='right')
     # Allocate storage for results
     med = np.zeros(nbins)
-    conf = np.zeros((nbins, np.size(confInt), 2))
+    conf = np.zeros((nbins, np.size(percs), 2))
     count = np.zeros(nbins, dtype=int)
 
     # Calculate medians and confidence intervals
     for ii, gg in enumerate(groups):
         count[ii] = np.size(gg)
         if count[ii] == 0: continue
-        mm, cc = confidence_intervals(yy[gg], ci=confInt)
+        mm, cc = confidence_intervals(yy[gg], percs=percs)
         med[ii] = mm
         conf[ii, ...] = cc[...]
 
@@ -110,7 +110,8 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
     return count, med, conf, xbins
 
 
-def confidence_intervals(vals, sigma=None, percs=None, axis=-1, filter=None, return_ci=False,
+def confidence_intervals(vals, sigma=None, percs=None, weights=None, axis=None,
+                         filter=None, return_ci=False,
                          # DEPRECATED ARGUMENTS:
                          ci=None):
     """Compute the values bounding the target confidence intervals for an array of data.
@@ -164,9 +165,12 @@ def confidence_intervals(vals, sigma=None, percs=None, axis=-1, filter=None, ret
         percs = percs_from_sigma(sigma)
 
     percs = np.atleast_1d(percs)
-    assert np.all(percs >= 0.0) and np.all(percs <= 1.0), "`percs` must be {0.0, 1.0}!"
+    if np.any(percs < 0.0) or np.all(percs > 1.0):
+        raise ValueError("`percs` must be [0.0, 1.0]!   {}".format(stats_str(percs)))
 
-    PERC_FUNC = np.percentile
+    # PERC_FUNC = np.percentile
+    def PERC_FUNC(xx, pp, **kwargs):
+        return percentiles(xx, pp/100.0, weights=weights, **kwargs)
 
     # Filter input values
     if filter is not None:
@@ -175,9 +179,12 @@ def confidence_intervals(vals, sigma=None, percs=None, axis=-1, filter=None, ret
         if (axis is not None) and np.ndim(vals) > 1:
             kw['axis'] = axis
 
+        if weights is not None:
+            raise NotImplementedError("`weights` argument does not work with `filter`!")
+
         vals = math_core.comparison_filter(vals, filter, **kw)
         vals = np.ma.filled(vals, np.nan)
-        PERC_FUNC = np.nanpercentile
+        PERC_FUNC = np.nanpercentile  # noqa
 
         if vals.size == 0:
             return np.nan, np.nan
@@ -193,7 +200,7 @@ def confidence_intervals(vals, sigma=None, percs=None, axis=-1, filter=None, ret
     conf = np.array(conf)
     # Reshape from `[M, 2, L]` to `[L, M, 2]`
     if (np.ndim(vals) > 1) and (axis is not None):
-        conf = np.moveaxis(conf, 2, 0)
+        conf = np.moveaxis(conf, -1, 0)
 
     med = PERC_FUNC(vals, 50.0, axis=axis)
     if len(conf) == 1:
@@ -233,11 +240,98 @@ def cumstats(arr):
     return ave, std
 
 
-def sigma(*args, **kwargs):
-    # ---- DECPRECATION SECTION ----
-    utils.dep_warn("sigma", newname="percs_from_sigma")
-    # ------------------------------
-    return percs_from_sigma(*args, **kwargs)
+def log_normal_base_10(mu, sigma, size=None, shift=0.0):
+    """Draw from a lognormal distribution with values in base-10 (instead of e).
+
+    Arguments
+    ---------
+    mu : (N,) scalar
+        Mean of the distribution in linear space (e.g. 1.0e8 instead of 8.0).
+    sigma : (N,) scalar
+        Variance of the distribution *in dex* (e.g. 1.0 means factor of 10.0 variance)
+    size : (M,) int
+        Desired size of sample.
+
+    Returns
+    -------
+    dist : (M,...) scalar
+        Resulting distribution of values (in linear space).
+
+    """
+    _sigma = np.log(10**sigma)
+    dist = np.random.lognormal(np.log(mu) + shift*np.log(10.0), _sigma, size)
+    return dist
+
+
+def mean(vals, weights=None, **kwargs):
+    if weights is None:
+        return np.mean(vals, **kwargs)
+
+    ave = np.sum(vals*weights, **kwargs) / np.sum(weights, **kwargs)
+    return ave
+
+
+def percentiles(values, percs=None, sigmas=None, weights=None, axis=None,
+                values_sorted=False, filter=None):
+    """Compute weighted percentiles.
+
+    Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
+
+    Arguments
+    ---------
+    values: (N,)
+        input data
+    percs: (M,) scalar [0.0, 1.0]
+        Desired percentiles of the data.
+    weights: (N,) or `None`
+        Weighted for each input data point in `values`.
+    values_sorted: bool
+        If True, then input values are assumed to already be sorted.
+
+    Returns
+    -------
+    percs : (M,) float
+        Array of percentiles of the weighted input data.
+
+    """
+    if filter is not None:
+        values = math_core.comparison_filter(values, filter)
+
+    values = np.array(values)
+    # percentiles = np.array(percentiles, dtype=values.dtype)
+    if percs is None:
+        percs = sp.stats.norm.cdf(sigmas)
+
+    if np.ndim(values) > 1:
+        if axis is None:
+            values = values.flatten()
+    else:
+        if axis is not None:
+            raise ValueError("Cannot act along axis '{}' for 1D data!".format(axis))
+
+    percs = np.array(percs)
+    if weights is None:
+        weights = np.ones_like(values)
+    weights = np.array(weights)
+    assert np.all(percs >= 0.0) and np.all(percs <= 1.0), 'percentiles should be in [0, 1]'
+
+    if not values_sorted:
+        sorter = np.argsort(values, axis=axis)
+        values = np.take_along_axis(values, sorter, axis=axis)
+        weights = np.take_along_axis(weights, sorter, axis=axis)
+
+    weighted_quantiles = np.cumsum(weights, axis=axis) - 0.5 * weights
+    weighted_quantiles /= np.sum(weights, axis=axis)[..., np.newaxis]
+    if axis is None:
+        percs = np.interp(percs, weighted_quantiles, values)
+    else:
+        values = np.moveaxis(values, axis, -1)
+        weighted_quantiles = np.moveaxis(weighted_quantiles, axis, -1)
+        percs = [np.interp(percs, weighted_quantiles[idx], values[idx])
+                 for idx in np.ndindex(values.shape[:-1])]
+        percs = np.array(percs)
+
+    return percs
 
 
 def percs_from_sigma(sigma, side='in', boundaries=False):
@@ -284,6 +378,13 @@ def percs_from_sigma(sigma, side='in', boundaries=False):
         return vlo, vhi
 
     return vals
+
+
+def sigma(*args, **kwargs):
+    # ---- DECPRECATION SECTION ----
+    utils.dep_warn("sigma", newname="percs_from_sigma")
+    # ------------------------------
+    return percs_from_sigma(*args, **kwargs)
 
 
 def stats(vals, median=False):
@@ -398,71 +499,17 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
     return out
 
 
-def percentiles(values, percs=None, sigmas=None, weights=None, values_sorted=False):
-    """Compute weighted percentiles.
-
-    Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
-
-    Arguments
-    ---------
-    values: (N,)
-        input data
-    percs: (M,) scalar [0.0, 1.0]
-        Desired percentiles of the data.
-    weights: (N,) or `None`
-        Weighted for each input data point in `values`.
-    values_sorted: bool
-        If True, then input values are assumed to already be sorted.
-
-    Returns
-    -------
-    percs : (M,) float
-        Array of percentiles of the weighted input data.
-
+def std(vals, weights=None, **kwargs):
     """
-    values = np.array(values).flatten()
-    # percentiles = np.array(percentiles, dtype=values.dtype)
-    if percs is None:
-        percs = sp.stats.norm.cdf(sigmas)
 
-    percs = np.array(percs)
+    See: https://www.itl.nist.gov/div898/software/dataplot/refman2/ch2/weightsd.pdf
+    """
     if weights is None:
-        weights = np.ones_like(values)
-    weights = np.array(weights)
-    assert np.all(percs >= 0.0) and np.all(percs <= 1.0), \
-        'percentiles should be in [0, 1]'
+        return np.std(vals, **kwargs)
 
-    if not values_sorted:
-        sorter = np.argsort(values)
-        values = values[sorter]
-        weights = weights[sorter]
-
-    weighted_quantiles = np.cumsum(weights) - 0.5 * weights
-    weighted_quantiles /= np.sum(weights)
-    # print(percs)
-    # print(weighted_quantiles)
-    percs = np.interp(percs, weighted_quantiles, values)
-    return percs
-
-
-def log_normal_base_10(mu, sigma, size=None, shift=0.0):
-    """Draw from a lognormal distribution with values in base-10 (instead of e).
-
-    Arguments
-    ---------
-    mu : (N,) scalar
-        Mean of the distribution in linear space (e.g. 1.0e8 instead of 8.0).
-    sigma : (N,) scalar
-        Variance of the distribution *in dex* (e.g. 1.0 means factor of 10.0 variance)
-    size : (M,) int
-        Desired size of sample.
-
-    Returns
-    -------
-    dist : (M,...) scalar
-        Resulting distribution of values (in linear space).
-
-    """
-    _sigma = np.log(10**sigma)
-    dist = np.random.lognormal(np.log(mu) + shift*np.log(10.0), _sigma, size)
-    return dist
+    mm = np.count_nonzero(weights)
+    ave = mean(vals, weights=weights, **kwargs)
+    num = np.sum(weights * (vals - ave)**2)
+    den = np.sum(weights) * (mm - 1) / mm
+    std = np.sqrt(num/den)
+    return std

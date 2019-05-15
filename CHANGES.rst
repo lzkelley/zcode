@@ -85,13 +85,20 @@ Current
                 - Use new functionality from `kde.py`
         - `statistic.py`
             - `confidenceBands()` [DELETED-METHOD]
+            - `confidence_intervals()`
+                - `percs` <== `confInts`  [DEPRECATION-VARIABLE]
             - `confidenceIntervals()` [DELETED-METHOD]
             - `confidence_intervals()`
                 - New argument `sigma` which is converted into percentiles
+                - New argument `weights` for performing weighted percentiles
+            - `mean()`  [NEW-METHOD]
+                - Method for calculating distribution mean, optionally with weights.
             - `percentiles()`
                 - New argument, `sigmas` which is used to calculate percentiles from sigma values.
                 - `percs` <== `ci` [DEPRECATION-VARIABLE]
             - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
+            - `std()`  [NEW-METHOD]
+                - Method for calculating distribution standard-deviations, optionally with weights.
 
     - `plot/`
         - `Hist2D.py`
