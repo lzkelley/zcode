@@ -57,6 +57,8 @@ Current
                 - Fixed numerous tests.
                 - Added new tests for interpolation methods.
                 - Tests for `edges_from_cents`
+            - `test_statistic.py`
+                - New test for percentiles.
         - `kde.py`  [NEW-FILE]
             - File for performing KDE operations, based on `scipy.stats.gaussian_kde`.
         - `math_core.py`
