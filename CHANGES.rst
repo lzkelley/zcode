@@ -40,62 +40,68 @@ Future / To-Do
 
 Current
 -------
-- `utils.py`
-    - `dep_warn_var()` [NEW-METHOD]
-        - Standardized method for handling deprecated variables.
-- `astro/`
-    - `astro_core.py`
-        - `eddington_accretion()`
-            - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
-- `math/`
-    - `tests/`
-        - `test_math_core.py`
-            - Fixed numerous tests.
-            - Added new tests for interpolation methods.
-            - Tests for `edges_from_cents`
-    - `math_core.py`
-        - `broadcast()` [NEW-FUNCTION]
-            - Expand N, 1D arrays into N, ND arrays each with the same shape.
-        - `broadcastable()` [NEW-FUNCTION]
-            - Method to expand N, 1D arrays into N, ND arrays which can be broadcasted together.
-        - `edges_from_cents()` [NEW-FUNCTION]
-            - Method to estimate bin-edges given the local of bin-centers.
-        - `interp()`
-            - BUG: fix issue where 'left' and 'right' bounds were being taken to ten-to-the-power-of.
-        - `interp_func()`
-            - Implement optional 'xlog' and 'ylog' scalings.
-            - Implement 'mono' option for interpolation kind to use `PchipInterpolator` which enforced monotonicity.
-        - `str_array_neighbors()` [NEW-FUNCTION]
-            - Use 'str_array' to print particular indices, and its neighbors, in an array.
-        - `within()`
-            - Add new `close` argument to allow `np.isclose` comparisons to bin edges.
-        - `zenumerate()` <== `zenum()` [DEPRECATION]
-        - `_guess_str_format_from_range()`
-            - BUG: fix issue where exponential notation was only being used for positive-definite values
-    - `statistic.py`
-        - `confidenceBands()` [DELETED-METHOD]
-        - `confidenceIntervals()` [DELETED-METHOD]
-        - `confidence_intervals()`
-            - New argument `sigma` which is converted into percentiles
-        - `percentiles()`
-            - New argument, `sigmas` which is used to calculate percentiles from sigma values.
-            - `percs` <== `ci` [DEPRECATION-VARIABLE]
-        - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
+    - `utils.py`
+        - `dep_warn_var()` [NEW-METHOD]
+            - Standardized method for handling deprecated variables.
+            
+    - `astro/`
+        - `astro_core.py`
+            - `eddington_accretion()`
+                - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
 
-- `plot/`
-    - `Hist2D.py`
-        - `draw_hist2d()` [NEW-METHOD]
-            - New 2D histogram plotting method from `corner.hist2d` method by 'Dan Foreman-Mackey'.
-        - `corner()` [NEW-METHOD]
-            - New corner plotting method.
-    - `plot_const.py` [FILE-DELETED]
-        - Constant values moved to `zcode.plot.__init__.py`
-    - `plot_core.py`
-        - `colormap()`
-            - New `midpoint` argument and functionality to allow colormaps's colors to be centered at particular values in either log or linear space.  Uses new classes `MidpointNormalize` and `MidpointLogNormalize`.
-        - `figax()`
-            - New `scale` argument to set the scale of both x and y axes.
-            - BUG: xlim and ylim were not being broadcast correctly
+    - `math/`
+        - `tests/`
+            - `test_kde.py` [NEW-FILE]
+                - Tests for the new kde classes.
+            - `test_math_core.py`
+                - Fixed numerous tests.
+                - Added new tests for interpolation methods.
+                - Tests for `edges_from_cents`
+        - `kde.py`  [NEW-FILE]
+            - File for performing KDE operations, based on `scipy.stats.gaussian_kde`.
+        - `math_core.py`
+            - `broadcast()` [NEW-FUNCTION]
+                - Expand N, 1D arrays into N, ND arrays each with the same shape.
+            - `broadcastable()` [NEW-FUNCTION]
+                - Method to expand N, 1D arrays into N, ND arrays which can be broadcasted together.
+            - `edges_from_cents()` [NEW-FUNCTION]
+                - Method to estimate bin-edges given the local of bin-centers.
+            - `interp()`
+                - BUG: fix issue where 'left' and 'right' bounds were being taken to ten-to-the-power-of.
+            - `interp_func()`
+                - Implement optional 'xlog' and 'ylog' scalings.
+                - Implement 'mono' option for interpolation kind to use `PchipInterpolator` which enforced monotonicity.
+            - `str_array_neighbors()` [NEW-FUNCTION]
+                - Use 'str_array' to print particular indices, and its neighbors, in an array.
+            - `within()`
+                - Add new `close` argument to allow `np.isclose` comparisons to bin edges.
+            - `zenumerate()` <== `zenum()` [DEPRECATION]
+            - `_guess_str_format_from_range()`
+                - BUG: fix issue where exponential notation was only being used for positive-definite values
+        - `statistic.py`
+            - `confidenceBands()` [DELETED-METHOD]
+            - `confidenceIntervals()` [DELETED-METHOD]
+            - `confidence_intervals()`
+                - New argument `sigma` which is converted into percentiles
+            - `percentiles()`
+                - New argument, `sigmas` which is used to calculate percentiles from sigma values.
+                - `percs` <== `ci` [DEPRECATION-VARIABLE]
+            - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
+
+    - `plot/`
+        - `Hist2D.py`
+            - `draw_hist2d()` [NEW-METHOD]
+                - New 2D histogram plotting method from `corner.hist2d` method by 'Dan Foreman-Mackey'.
+            - `corner()` [NEW-METHOD]
+                - New corner plotting method.
+        - `plot_const.py` [FILE-DELETED]
+            - Constant values moved to `zcode.plot.__init__.py`
+        - `plot_core.py`
+            - `colormap()`
+                - New `midpoint` argument and functionality to allow colormaps's colors to be centered at particular values in either log or linear space.  Uses new classes `MidpointNormalize` and `MidpointLogNormalize`.
+            - `figax()`
+                - New `scale` argument to set the scale of both x and y axes.
+                - BUG: xlim and ylim were not being broadcast correctly
 
 
 
@@ -188,8 +194,6 @@ Current
         -   Added electron-charge `QELC`
         -   Added Jansky unit `JY`
                     
-
-
 
 [0.0.12] - 2018/06/20
 ---------------------
@@ -368,7 +372,6 @@ Current
         -   Added `ARCSEC` arcsecond constant.
 
 
-
 [0.0.10] - 2017/05/06
 ---------------------
     -   `inout/`
@@ -508,7 +511,6 @@ Current
         -   New file for general purpose, internal methods, etc.
         -   `dep_warn` [new-function]
             -   Function for sending deprecation warnings.
-
 
 
 [0.0.8] - 2016/05/15
