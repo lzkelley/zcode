@@ -27,10 +27,10 @@ import matplotlib as mpl
 # import matplotlib.pyplot as plt
 
 import zcode.math as zmath
-from . import plot_core, draw
+from . import draw, plot_core
 
 # __all__ = ['plot2DHist', 'plot2DHistProj']
-__all__ = ['draw_hist2d']
+__all__ = ['draw_hist2d', 'corner']
 
 _LEFT = 0.09
 _RIGHT = 0.92     # Location of right of plots
@@ -42,8 +42,9 @@ _CB_WPAD = 0.1
 _BAR_ALPHA = 0.8
 
 
-def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
+def draw_hist2d(ax, edges, hist=None, data=None, levels=None, smooth=None,
                 color=None, quiet=False, alpha=1.0,
+                plot_scatter=None, scatter_kwargs=None,
                 plot_density=True, log_stretch=0.1, norm=None, cmap=None,
                 plot_contours=True, no_fill_contours=False, fill_contours=False,
                 contour_kwargs=None, contourf_kwargs=None, data_kwargs=None,
@@ -52,6 +53,17 @@ def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
 
     Minor modifications to the `corner.hist2d` method by 'Dan Foreman-Mackey'.
     """
+
+    if hist is None and data is None:
+        raise ValueError("Either `hist` or `data` must be provided!")
+
+    xe, ye = edges
+    if hist is None:
+        xx, yy = data
+        hist = np.histogram2d(xx, yy, bins=edges)[0]
+
+    if plot_scatter is None:
+        plot_scatter = (data is not None)
 
     # Set up the default plotting arguments.
     if color is None:
@@ -137,6 +149,19 @@ def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
     # contours
     cnt = None
 
+    if plot_scatter:
+        if scatter_kwargs is None:
+            scatter_kwargs = dict()
+
+        bg_color = plot_core.invert_color(color)
+
+        scatter_kwargs.setdefault("color", color)
+        scatter_kwargs.setdefault("ms", 2.0)
+        scatter_kwargs.setdefault("mec", bg_color)
+        scatter_kwargs.setdefault("alpha", 0.1)
+        xx, yy = data
+        ax.plot(xx, yy, "o", zorder=-1, rasterized=True, **scatter_kwargs)
+
     if plot_contours and fill_contours:
         if contourf_kwargs is None:
             contourf_kwargs = dict()
@@ -168,8 +193,27 @@ def draw_hist2d(ax, xe, ye, hist, levels=None, smooth=None,
     return pc, cnt, cnf, cmap
 
 
-def corner(axes, data, edges, labels, hist1d, hist2d, color='k', alpha=0.5,
-           levels=None, hextr=None, ticks=None):
+def corner(axes, data, edges, hist1d=None, hist2d=None, labels=None, color='k', alpha=0.5,
+           levels=None, hextr=None, ticks=None, log_stretch=0.0, hist2d_kwargs={}):
+
+    ndim, nvals = np.shape(data)
+
+    if hist1d is None:
+        hist1d = [np.histogram(data[ii], bins=edges[ii])[0] for ii in range(ndim)]
+
+    if hist2d is None:
+        hist2d = np.zeros((ndim, ndim), dtype=object)
+        for (ii, jj), h2d in np.ndenumerate(hist2d):
+            if jj >= ii:
+                continue
+
+            di = data[ii]
+            ei = edges[ii]
+
+            dj = data[jj]
+            ej = edges[jj]
+
+            hist2d[ii, jj] = np.histogram2d(di, dj, bins=(ei, ej))[0]
 
     if ticks is not None:
         ticklabels = []
@@ -183,14 +227,14 @@ def corner(axes, data, edges, labels, hist1d, hist2d, color='k', alpha=0.5,
     for (ii, jj), ax in np.ndenumerate(axes):
         di = data[ii]
         ei = edges[ii]
-        li = labels[ii]
+        li = labels[ii] if labels is not None else None
 
         dj = data[jj]
         ej = edges[jj]
-        lj = labels[jj]
+        lj = labels[jj] if labels is not None else None
 
-        xextr = zmath.minmax(ej, log_stretch=0.0)
-        yextr = zmath.minmax(ei, log_stretch=0.0)
+        xextr = zmath.minmax(ej, log_stretch=log_stretch)
+        yextr = zmath.minmax(ei, log_stretch=log_stretch)
 
         if jj == 0 and ii > 0:
             ax.set_ylabel(li)
@@ -204,7 +248,7 @@ def corner(axes, data, edges, labels, hist1d, hist2d, color='k', alpha=0.5,
             ax.yaxis.set_label_position('right')
             ax.yaxis.set_ticks_position('right')
 
-        if ii == size-1:
+        if ii == ndim-1:
             ax.set_xlabel(lj)
             if ticks is not None:
                 ax.set_xticks(ticks[jj])
@@ -222,7 +266,8 @@ def corner(axes, data, edges, labels, hist1d, hist2d, color='k', alpha=0.5,
 
             ax.set_xlim(xextr)
         else:
-            draw_hist2d(ax, ej, ei, hist2d[ii, jj].T, color=color, alpha=alpha, levels=levels)
+            draw_hist2d(ax, [ej, ei], data=[dj, di], hist=hist2d[ii, jj].T,
+                        color=color, alpha=alpha, levels=levels, **hist2d_kwargs)
 
             ax.set_xlim(xextr)
             ax.set_ylim(yextr)
