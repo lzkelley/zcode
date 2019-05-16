@@ -47,7 +47,7 @@ class KDE(object):
         self.set_bandwidth(bandwidth=bandwidth)
         return
 
-    def pdf(self, points):
+    def pdf(self, points, reflect=None):
         points = np.atleast_2d(points)
 
         ndim, nv = points.shape
@@ -62,6 +62,7 @@ class KDE(object):
 
         result = np.zeros((nv,), dtype=float)
 
+        '''
         # Compute Cholesky matrix from the covariance matrix, this matrix will transform the
         # dataset to one with a diagonal covariance matrix (i.e. independent variables)
         # note: `sp.linalg.cholesky` uses an *upper* matrix by default, and numpy uses *lower*
@@ -86,6 +87,40 @@ class KDE(object):
                 diff = scaled_dataset - scaled_points[:, i, np.newaxis]
                 energy = np.sum(diff * diff, axis=0) / 2.0
                 result[i] = np.sum(np.exp(-energy)*self.weights, axis=0)
+        '''
+
+        whitening = sp.linalg.cholesky(self.bw_cov_inv)
+        # Construct the 'whitened' (independent) dataset
+
+        scaled_dataset = np.dot(whitening, self.dataset)
+        # Construct the whitened sampling points
+        scaled_points = np.dot(whitening, points)
+
+        for i in range(self.data_size):
+            diff = scaled_points - scaled_dataset[:, i, np.newaxis]
+            energy = np.sum(diff * diff, axis=0) / 2.0
+            result += self.weights[i]*np.exp(-energy)
+
+        if reflect is not None:
+            if np.shape(reflect) != (2,):
+                raise ValueError("Reflect must have shape (2,) with lower and upper values!")
+
+            for loc in reflect:
+                if loc is None:
+                    continue
+                scaled_dataset = np.dot(whitening, self.dataset - loc)
+                # Construct the whitened sampling points
+                scaled_points = np.dot(whitening, points - loc)
+
+                for i in range(self.data_size):
+                    diff = scaled_points + scaled_dataset[:, i, np.newaxis]
+                    energy = np.sum(diff * diff, axis=0) / 2.0
+                    result += self.weights[i]*np.exp(-energy)
+
+            reflect[0] = -np.inf if reflect[0] is None else reflect[0]
+            reflect[1] = +np.inf if reflect[1] is None else reflect[1]
+            idx = (points.squeeze() < reflect[0]) | (reflect[1] < points.squeeze())
+            result[idx] = 0.0
 
         result = result / self.bw_norm
 

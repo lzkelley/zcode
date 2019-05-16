@@ -190,6 +190,47 @@ class Test_KDE(object):
 
         return
 
+    def test_reflect_1d(self):
+        print("\n|Test_KDE:test_reflect_1d()|")
+
+        np.random.seed(124)
+        NUM = 1000
+        EXTR = [0.0, 2.0]
+        aa = np.random.uniform(*EXTR, NUM)
+
+        egrid = zmath.spacing(aa, 'lin', 1000, stretch=0.5)
+        cgrid = zmath.midpoints(egrid, 'lin')
+        delta = np.diff(egrid)
+
+        boundaries = [None, EXTR]
+        for bnd in boundaries:
+            kde = zmath.kde.KDE(aa)
+            pdf = kde.pdf(cgrid, reflect=bnd)
+
+            # Make sure unitarity is preserved
+            tot = np.sum(pdf*delta)
+            assert_true(np.isclose(tot, 1.0, rtol=1e-3))
+
+            ratio_extr = np.max(pdf)/np.min(pdf[pdf > 0])
+            # No reflection, then non-zero PDF everywhere, and large ratio of extrema
+            if bnd is None:
+                assert_true(np.all(pdf[cgrid < EXTR[0]] > 0.0))
+                assert_true(np.all(pdf[cgrid > EXTR[1]] > 0.0))
+                assert_true(ratio_extr > 10.0)
+            # No lower-reflection, nonzero values below 0.0
+            elif bnd[0] is None:
+                assert_true(np.all(pdf[cgrid < EXTR[0]] > 0.0))
+                assert_true(np.all(pdf[cgrid > EXTR[1]] == 0.0))
+            # No upper-reflection, nonzero values above 2.0
+            elif bnd[1] is None:
+                assert_true(np.all(pdf[cgrid < EXTR[0]] == 0.0))
+                assert_true(np.all(pdf[cgrid > EXTR[1]] > 0.0))
+            else:
+                assert_true(np.all(pdf[cgrid < EXTR[0]] == 0.0))
+                assert_true(np.all(pdf[cgrid > EXTR[1]] == 0.0))
+                assert_true(ratio_extr < 2.0)
+
+        return
 
 # Run all methods as if with `nosetests ...`
 if __name__ == "__main__":
