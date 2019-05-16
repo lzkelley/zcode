@@ -14,6 +14,8 @@ __all__ = ['KDE']
 
 class KDE(object):
     """
+
+    Uses Fukunaga’s method.
     """
     _BANDWIDTH_DEFAULT = 'scott'
     _SET_OFF_DIAGONAL = True
@@ -30,12 +32,13 @@ class KDE(object):
         if weights is not None:
             if np.count_nonzero(weights) == 0 or np.any(~np.isfinite(weights) | (weights < 0)):
                 raise ValueError("Invalid `weights` entries, all must be finite and > 0!")
-            self._weights = np.atleast_1d(weights).astype(float)
-            self._weights /= np.sum(self._weights)
-            if self.weights.ndim != 1:
+            weights = np.atleast_1d(weights).astype(float)
+            weights /= np.sum(weights)
+            if weights.ndim != 1:
                 raise ValueError("`weights` input should be one-dimensional.")
-            if len(self._weights) != self.data_size:
-                raise ValueError("`weights` input should be of length n")
+            if len(weights) != self.data_size:
+                msg = "`weights` input should be of length N ({})".format(self.data_size)
+                raise ValueError(msg)
 
         self._neff = neff
         self._weights = weights
