@@ -32,9 +32,10 @@ class Test_KDE(object):
 
         methods = ['scott', 0.04, 0.2, 0.8]
         classes = [sp.stats.gaussian_kde, zmath.kde.KDE]
+        setters = ['bw_method', 'bandwidth']
         for mm in methods:
-            kdes = [cc(aa, bw_method=mm).pdf(grid) for cc in classes]
-            print("bw_method='{}'".format(mm))
+            kdes = [cc(aa, **{ss: mm}).pdf(grid)
+                    for cc, ss in zip(classes, setters)]
             assert_true(np.allclose(kdes[0], kdes[1]))
 
         return
@@ -59,9 +60,10 @@ class Test_KDE(object):
 
         methods = ['scott', 0.04, 0.2, 0.8]
         classes = [sp.stats.gaussian_kde, zmath.kde.KDE]
+        setters = ['bw_method', 'bandwidth']
         for mm in methods:
-            print("bw_method='{}'".format(mm))
-            kdes = [cc(data, bw_method=mm).pdf(grid).reshape(xc.shape).T for cc in classes]
+            kdes = [cc(data, **{ss: mm}).pdf(grid).reshape(xc.shape).T
+                    for cc, ss in zip(classes, setters)]
             assert_true(np.allclose(kdes[0], kdes[1]))
 
         return
@@ -84,8 +86,8 @@ class Test_KDE(object):
         xc, yc = np.meshgrid(*cents)
 
         bws = [0.5, 2.0]
-        kde2d = zmath.kde.KDE(data, bw_method=bws)
-        kde1d = [zmath.kde.KDE(dd, bw_method=ss) for dd, ss in zip(data, bws)]
+        kde2d = zmath.kde.KDE(data, bandwidth=bws)
+        kde1d = [zmath.kde.KDE(dd, bandwidth=ss) for dd, ss in zip(data, bws)]
 
         for ii in range(2):
             samp_1d = kde1d[ii].resample(NUM).squeeze()
@@ -187,7 +189,6 @@ class Test_KDE(object):
                 assert_true(pv > 0.1)
 
         return
-
 
 
 # Run all methods as if with `nosetests ...`

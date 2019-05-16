@@ -9,53 +9,52 @@ import scipy.special  # noqa
 
 import numpy as np
 
-import zcode.math as zmath
-
 __all__ = ['KDE']
 
 
 class KDE(object):
     """
     """
-    bw_method_default = 'scott'
+    _BANDWIDTH_DEFAULT = 'scott'
+    _SET_OFF_DIAGONAL = True
 
-    def __init__(self, dataset, bw_method=None, weights=None, neff=None):
+    def __init__(self, dataset, bandwidth=None, weights=None, neff=None, quiet=False):
         self.dataset = np.atleast_2d(dataset)
         if not self.dataset.size > 1:
             raise ValueError("`dataset` input should have multiple elements.")
 
-        self.ndims, self.nvals = self.dataset.shape
+        self._ndim, self._data_size = self.dataset.shape
         if weights is None:
-            weights = np.ones(self.nvals)/self.nvals
+            weights = np.ones(self.data_size)/self.data_size
 
         if weights is not None:
             if np.count_nonzero(weights) == 0 or np.any(~np.isfinite(weights) | (weights < 0)):
-                logging.error("weights = '{}'".format(zmath.stats_str(weights)))
                 raise ValueError("Invalid `weights` entries, all must be finite and > 0!")
             self._weights = np.atleast_1d(weights).astype(float)
             self._weights /= np.sum(self._weights)
             if self.weights.ndim != 1:
                 raise ValueError("`weights` input should be one-dimensional.")
-            if len(self._weights) != self.nvals:
+            if len(self._weights) != self.data_size:
                 raise ValueError("`weights` input should be of length n")
 
         self._neff = neff
         self._weights = weights
         self._compute_covariance()
-        self.set_bandwidth(bw_method=bw_method)
+        self._quiet = quiet
+        self.set_bandwidth(bandwidth=bandwidth)
         return
 
     def pdf(self, points):
         points = np.atleast_2d(points)
 
         ndim, nv = points.shape
-        if ndim != self.ndims:
-            if ndim == 1 and nv == self.ndims:
+        if ndim != self.ndim:
+            if ndim == 1 and nv == self.ndim:
                 # points was passed in as a row vector
-                points = np.reshape(points, (self.ndims, 1))
+                points = np.reshape(points, (self.ndim, 1))
                 nv = 1
             else:
-                msg = "points have dimension %s, dataset has dimension %s" % (ndim, self.ndims)
+                msg = "points have dimension %s, dataset has dimension %s" % (ndim, self.ndim)
                 raise ValueError(msg)
 
         result = np.zeros((nv,), dtype=float)
@@ -72,9 +71,9 @@ class KDE(object):
         # Evaluate kernel at the target sample points
 
         # Determine the smaller dataset to loop over
-        if nv >= self.nvals:
+        if nv >= self.data_size:
             # there are more points than data, so loop over data
-            for i in range(self.nvals):
+            for i in range(self.data_size):
                 diff = scaled_dataset[:, i, np.newaxis] - scaled_points
                 energy = np.sum(diff * diff, axis=0) / 2.0
                 result += self.weights[i]*np.exp(-energy)
@@ -100,19 +99,10 @@ class KDE(object):
                 bw_cov[pp, :] = 0.0
                 bw_cov[:, pp] = 0.0
 
-        # Draw from the smoothing kernel
-        # here the `cov` includes the bandwidth
-        try:
-            norm = np.random.multivariate_normal(np.zeros(self.ndims), bw_cov, size=size)
-        except ValueError as err:
-            logging.error("Failed to construct `multivariate_normal`!  " + str(err))
-            logging.error("cov = '{}'".format(self.bw_cov))
-            logging.error("dataset = '{}'".format(zmath.stats_str(self.dataset)))
-            raise
-
-        norm = np.transpose(norm)
+        # Draw from the smoothing kernel, here the `cov` includes the bandwidth
+        norm = np.random.multivariate_normal(np.zeros(self.ndim), bw_cov, size=size).T
         # Draw randomly from the given data points, proportionally to their weights
-        indices = np.random.choice(self.nvals, size=size, p=self.weights)
+        indices = np.random.choice(self.data_size, size=size, p=self.weights)
         means = self.dataset[:, indices]
         # Shift each re-drawn sample based on the kernel-samples
         samps = means + norm
@@ -120,78 +110,85 @@ class KDE(object):
         return samps
 
     def scott_factor(self, *args, **kwargs):
-        return np.power(self.neff, -1./(self.ndims+4))
+        return np.power(self.neff, -1./(self.ndim+4))
 
     def silverman_factor(self, *args, **kwargs):
-        return np.power(self.neff*(self.ndims+2.0)/4.0, -1./(self.ndims+4))
+        return np.power(self.neff*(self.ndim+2.0)/4.0, -1./(self.ndim+4))
 
-    def set_bandwidth(self, bw_method=None):
-        ndims = self.ndims
-        _bw_method = bw_method
-        bw_white = np.zeros((ndims, ndims))
+    def set_bandwidth(self, bandwidth=None):
+        ndim = self.ndim
+        _bandwidth = bandwidth
+        bw_white = np.zeros((ndim, ndim))
 
-        if len(np.atleast_1d(bw_method)) == 1:
-            _bw, bw_method = self._compute_bandwidth(bw_method)
-            bw_white[...] = _bw
-        else:
-            if np.shape(bw_method) == (ndims,):
-                # bw_method = 'diagonal'
-                for ii in range(self.ndims):
-                    bw_white[ii, ii] = self._compute_bandwidth(
-                        bw_method[ii], param=(ii, ii))[0]
-                bw_method = 'diagonal'
-            elif np.shape(bw_method) == (ndims, ndims):
-                for ii, jj in np.ndindex(ndims, ndims):
-                    bw_white[ii, jj] = self._compute_bandwidth(
-                        bw_method[ii, jj], param=(ii, jj))[0]
-                bw_method = 'matrix'
+        if len(np.atleast_1d(bandwidth)) == 1:
+            _bw, bw_type = self._compute_bandwidth(bandwidth)
+            if self._SET_OFF_DIAGONAL:
+                bw_white[...] = _bw
             else:
-                raise ValueError("`bw_method` have shape (1,), (N,) or (N,) for `N` dimensions!")
+                idx = np.arange(ndim)
+                bw_white[idx, idx] = _bw
+        else:
+            if np.shape(bandwidth) == (ndim,):
+                # bw_method = 'diagonal'
+                for ii in range(self.ndim):
+                    bw_white[ii, ii] = self._compute_bandwidth(
+                        bandwidth[ii], param=(ii, ii))[0]
+                bw_type = 'diagonal'
+            elif np.shape(bandwidth) == (ndim, ndim):
+                for ii, jj in np.ndindex(ndim, ndim):
+                    bw_white[ii, jj] = self._compute_bandwidth(
+                        bandwidth[ii, jj], param=(ii, jj))[0]
+                bw_type = 'matrix'
+            else:
+                raise ValueError("`bandwidth` have shape (1,), (N,) or (N,) for `N` dimensions!")
 
         bw_cov = self._data_cov * (bw_white ** 2)
         try:
             bw_cov_inv = np.linalg.inv(bw_cov)
         except np.linalg.LinAlgError:
-            logging.warning("WARNING: singular `bw_cov` matrix, trying SVD...")
+            if not self._quiet:
+                logging.warning("WARNING: singular `bw_cov` matrix, trying SVD...")
             bw_cov_inv = np.linalg.pinv(bw_cov)
 
         self.bw_white = bw_white
-        self.bw_method = bw_method
-        self._bw_method = _bw_method
+        self.bw_type = bw_type
+        self._bandwidth = _bandwidth
         self.bw_cov = bw_cov
         self.bw_cov_inv = bw_cov_inv
         self.bw_norm = np.sqrt(np.linalg.det(2*np.pi*self.bw_cov))
         return
 
-    def _compute_bandwidth(self, bw_method, param=None):
-        if bw_method is None:
-            bw_method = self.bw_method_default
+    def _compute_bandwidth(self, bandwidth, param=None):
+        if bandwidth is None:
+            bandwidth = self._BANDWIDTH_DEFAULT
 
-        if isinstance(bw_method, six.string_types):
-            if bw_method == 'scott':
-                bandwidth = self.scott_factor(param=param)
-            elif bw_method == 'silverman':
-                bandwidth = self.silverman_factor(param=param)
+        if isinstance(bandwidth, six.string_types):
+            if bandwidth == 'scott':
+                bw = self.scott_factor(param=param)
+            elif bandwidth == 'silverman':
+                bw = self.silverman_factor(param=param)
             else:
-                msg = "Unrecognized bandwidth str specification '{}'!".format(bw_method)
+                msg = "Unrecognized bandwidth str specification '{}'!".format(bandwidth)
                 raise ValueError(msg)
 
-        elif np.isscalar(bw_method):
-            if np.isclose(bw_method, 0.0):
-                msg = "`bw_method` '{}' for param '{}' cannot be zero!".format(bw_method, param)
+            bw_type = bandwidth
+
+        elif np.isscalar(bandwidth):
+            if np.isclose(bandwidth, 0.0):
+                msg = "`bandwidth` '{}' for param '{}' cannot be zero!".format(bandwidth, param)
                 raise ValueError(msg)
 
-            bandwidth = bw_method
-            bw_method = 'constant scalar'
+            bw = bandwidth
+            bw_type = 'constant scalar'
 
-        elif callable(bw_method):
-            bw_method = bw_method
-            bandwidth = bw_method(self, param=param)
+        elif callable(bandwidth):
+            bw = bandwidth(self, param=param)
+            bw_type = 'function'
 
         else:
-            raise ValueError("Unrecognized `bw_method` '{}'!".format(bw_method))
+            raise ValueError("Unrecognized `bandwidth` '{}'!".format(bandwidth))
 
-        return bandwidth, bw_method
+        return bw, bw_type
 
     def _compute_covariance(self):
         """Computes the covariance matrix for each Gaussian kernel using bandwidth_func().
@@ -213,7 +210,7 @@ class KDE(object):
                 raise AttributeError
             return self._weights
         except AttributeError:
-            self._weights = np.ones(self.nvals)/self.nvals
+            self._weights = np.ones(self.data_size)/self.data_size
             return self._weights
 
     @property
@@ -225,3 +222,23 @@ class KDE(object):
         except AttributeError:
             self._neff = 1.0 / np.sum(self.weights**2)
             return self._neff
+
+    @property
+    def ndim(self):
+        try:
+            if self._ndim is None:
+                raise AttributeError
+            return self._ndim
+        except AttributeError:
+            self._ndim, self._data_size = np.shape(self.dataset)
+            return self._ndim
+
+    @property
+    def data_size(self):
+        try:
+            if self._data_size is None:
+                raise AttributeError
+            return self._data_size
+        except AttributeError:
+            self._ndim, self._data_size = np.shape(self.dataset)
+            return self._data_size
