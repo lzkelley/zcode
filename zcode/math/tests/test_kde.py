@@ -232,6 +232,7 @@ class Test_KDE(object):
 
         return
 
+
 # Run all methods as if with `nosetests ...`
 if __name__ == "__main__":
     run_module_suite()
