@@ -51,16 +51,12 @@ Current
 
     - `math/`
         - `tests/`
-            - `test_kde.py` [NEW-FILE]
-                - Tests for the new kde classes.
             - `test_math_core.py`
                 - Fixed numerous tests.
                 - Added new tests for interpolation methods.
                 - Tests for `edges_from_cents`
             - `test_statistic.py`
                 - New test for percentiles.
-        - `kde.py`  [NEW-FILE]
-            - File for performing KDE operations, based on `scipy.stats.gaussian_kde`.
         - `math_core.py`
             - `broadcast()` [NEW-FUNCTION]
                 - Expand N, 1D arrays into N, ND arrays each with the same shape.
