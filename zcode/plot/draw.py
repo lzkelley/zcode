@@ -8,6 +8,7 @@
 
 """
 import numbers
+import logging
 
 import matplotlib as mpl
 import numpy as np
@@ -21,7 +22,7 @@ from . plot_core import colormap
 __all__ = [
     "conf_fill",
     "plot_bg", "plot_contiguous", "plot_hist_line", "plot_segmented_line", "plot_scatter",
-    "plot_hist_bars", "plot_conf_fill",
+    "plot_hist_bars", "plot_conf_fill", "plot_carpet",
     # Deprecated
     "plotHistLine", "plotSegmentedLine", "plotScatter", "plotHistBars", "plotConfFill"
 ]
@@ -511,6 +512,40 @@ def plot_bg(ax, xx, yy, thicker=2.0, fainter=0.65, color_bg='0.7', **kwargs):
     lb, = ax.plot(xx, yy, **bg_kw)
     lf, = ax.plot(xx, yy, **kwargs)
     return lb, lf
+
+
+def plot_carpet(ax, xx, length=0.05, y0=None, reset=None, direction='down', **kwargs):
+    if direction.startswith('d'):
+        vec = -1
+    elif direction.startswith('u'):
+        vec = +1
+    else:
+        raise ValueError("`direction` must be 'u[p]' or 'd[own]'!")
+
+    kwargs.setdefault('color', '0.5')
+    kwargs.setdefault('alpha', 0.5)
+
+    ylim = np.array(ax.get_ylim())
+    if y0 is None:
+        y0 = ylim[0]
+        if reset is None:
+            reset = True
+
+    yd = np.diff(ylim)[0]
+    yy = [y0, y0 + vec*length*yd]
+    yy = [np.min(yy), np.max(yy)]
+    if reset:
+        ylim[0] = np.min([ylim[0], yy[0]])
+        ylim[1] = np.max([ylim[1], yy[1]])
+        ax.set_ylim(ylim)
+    elif (ylim[0] > yy[0]) or (ylim[1] < yy[1]):
+        msg = "carpet ticks extend outside of current plot range (y={}, ylim={})".format(yy, ylim)
+        logging.warning(msg)
+
+    for pnt in xx:
+        ax.plot([pnt, pnt], yy, **kwargs)
+
+    return
 
 
 # === Deprecations ===

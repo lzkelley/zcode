@@ -99,6 +99,9 @@ Current
                 - Method for calculating distribution standard-deviations, optionally with weights.
 
     - `plot/`
+        - `draw.py`
+            - `plot_carpet()` [NEW-METHOD]
+                - New method for drawing carpet-plots (i.e. tick marks)
         - `Hist2D.py`
             - `draw_hist2d()` [NEW-METHOD]
                 - New 2D histogram plotting method from `corner.hist2d` method by 'Dan Foreman-Mackey'.
