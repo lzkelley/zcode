@@ -362,11 +362,12 @@ def npzToDict(npz):
        Output dictionary with key-values from npz file.
 
     """
+    kw = dict(fix_imports=True, allow_pickle=True)
 
     try:
         if isinstance(npz, six.string_types):
             # Use `fix_imports` to try to resolve python2 to python3 issues.
-            _npz = np.load(npz, fix_imports=True)
+            _npz = np.load(npz, **kw)
         else:
             _npz = npz
         newDict = _convert_npz_to_dict(_npz)
@@ -375,7 +376,7 @@ def npzToDict(npz):
         # warnings.warn("Normal load of `{}` failed ... trying different encoding".format(npz))
         if isinstance(npz, six.string_types):
             # Use `fix_imports` to try to resolve python2 to python3 issues.
-            _npz = np.load(npz, fix_imports=True, encoding="bytes")
+            _npz = np.load(npz, encoding="bytes", **kw)
         else:
             _npz = npz
         newDict = _convert_npz_to_dict(_npz)
