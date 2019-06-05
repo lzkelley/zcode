@@ -42,15 +42,14 @@ _CB_WPAD = 0.1
 _BAR_ALPHA = 0.8
 
 
-def draw_hist2d(ax, edges, hist=None, data=None, levels=None, smooth=None,
-                color=None, quiet=False, alpha=1.0,
-                plot_scatter=None, scatter_kwargs=None,
-                plot_density=True, log_stretch=0.1, norm=None, cmap=None,
+def draw_hist2d(ax, edges, hist=None, data=None, cents=None, levels=None, smooth=None,
+                color=None, quiet=True, alpha=1.0,
+                plot_scatter=None, scatter_kwargs=None, mask_dense=False,
+                plot_density=True, log_stretch=0.1, norm=None, cmap=None, mask_zero=False,
                 plot_contours=True, no_fill_contours=False, fill_contours=False,
                 contour_kwargs=None, contourf_kwargs=None, data_kwargs=None,
                 **kwargs):
     """
-
     Minor modifications to the `corner.hist2d` method by 'Dan Foreman-Mackey'.
     """
 
@@ -62,37 +61,49 @@ def draw_hist2d(ax, edges, hist=None, data=None, levels=None, smooth=None,
         xx, yy = data
         hist = np.histogram2d(xx, yy, bins=edges)[0]
 
+    if mask_zero and plot_density:
+        density_hist = np.ma.masked_array(hist, mask=np.isclose(hist, 0.0))
+    else:
+        density_hist = hist
+
     if plot_scatter is None:
         plot_scatter = (data is not None)
 
     # Set up the default plotting arguments.
     if color is None:
-        color = "k"
+        if cmap is None:
+            color = "k"
+        else:
+            color = cmap(0.5)
 
     # Choose the default "sigma" contour levels.
     if levels is None:
         # levels = zmath.percs_from_sigma(np.arange(0.5, 2.1, 0.5))
         levels = zmath.percs_from_sigma(np.arange(1, 4))
+        # levels = zmath.percentiles(hist[hist > 0], levels, weights=hist[hist > 0])
+        # print("levels = ", levels)
 
     levels = np.atleast_1d(levels)
-    # This is the color map for the density plot, over-plotted to indicate the
-    # density of the points near the center.
-    density_cmap = mpl.colors.LinearSegmentedColormap.from_list(
-        "density_cmap", [color, (1, 1, 1, 0)])
+
+    if norm is None:
+        norm = plot_core.get_norm(hist, filter='>')
 
     if cmap is None:
-        cmap = density_cmap
+        cmap = mpl.colors.LinearSegmentedColormap.from_list(
+            "density_cmap", [color, (1, 1, 1, 0)])
+        cmap.set_bad('white')
 
     # This color map is used to hide the points at the high density areas.
-    # white_cmap = mpl.colors.LinearSegmentedColormap.from_list(
-    #     "white_cmap", [(1, 1, 1), (1, 1, 1)], N=2)
+    mask_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        "mask_cmap", [(1, 1, 1), (1, 1, 1)], N=2)
 
     # This "color map" is the list of colors for the contour levels if the
     # contours are filled.
-    rgba_color = mpl.colors.colorConverter.to_rgba(color)
-    contour_cmap = [list(rgba_color) for l in levels] + [rgba_color]
-    for i, l in enumerate(levels):
-        contour_cmap[i][-1] *= float(i) / (len(levels)+1)
+    contour_cmap = [cmap(ll) for ll in levels]
+    # rgba_color = mpl.colors.colorConverter.to_rgba(color)
+    # contour_cmap = [list(rgba_color) for l in levels] + [rgba_color]
+    # for i, l in enumerate(levels):
+    #     contour_cmap[i][-1] *= float(i) / (len(levels)+1)
 
     if plot_contours or plot_density:
         # Compute the density levels.
@@ -115,9 +126,12 @@ def draw_hist2d(ax, edges, hist=None, data=None, levels=None, smooth=None,
             V[np.where(m)[0][0]] *= 1.0 - 1e-4
             m = np.diff(V) == 0
         V.sort()
-
-        xc = zmath.midpoints(xe)
-        yc = zmath.midpoints(ye)
+        levels = V
+        if cents is None:
+            xc = zmath.midpoints(xe)
+            yc = zmath.midpoints(ye)
+        else:
+            xc, yc = cents
 
         # Extend the array for the sake of the contours at the plot edges.
         zeros_func = np.ma.zeros if isinstance(hist, np.ma.core.MaskedArray) else np.zeros
@@ -153,14 +167,20 @@ def draw_hist2d(ax, edges, hist=None, data=None, levels=None, smooth=None,
         if scatter_kwargs is None:
             scatter_kwargs = dict()
 
-        bg_color = plot_core.invert_color(color)
+        # bg_color = plot_core.invert_color(color)
 
         scatter_kwargs.setdefault("color", color)
         scatter_kwargs.setdefault("ms", 2.0)
-        scatter_kwargs.setdefault("mec", bg_color)
+        # scatter_kwargs.setdefault("mec", bg_color)
         scatter_kwargs.setdefault("alpha", 0.1)
         xx, yy = data
         ax.plot(xx, yy, "o", zorder=-1, rasterized=True, **scatter_kwargs)
+
+    if plot_scatter and mask_dense and (plot_contours or plot_density):
+        # ax.contourf(X2, Y2, H2.T, [V.min(), H2.max()],
+        #             cmap=mask_cmap, antialiased=False)
+        ax.contourf(X2, Y2, H2.T, [V.min(), H2.max()],
+                    cmap=mask_cmap, antialiased=False)
 
     if plot_contours and fill_contours:
         if contourf_kwargs is None:
@@ -174,20 +194,19 @@ def draw_hist2d(ax, edges, hist=None, data=None, levels=None, smooth=None,
     # contour fills.
     elif plot_density:
         # pc = ax.pcolor(xe, ye, hist.max() - hist.T, cmap=cmap, alpha=alpha)
-        pc = ax.pcolor(xe, ye, hist.T, cmap=cmap, alpha=alpha, norm=norm)
+        pc = ax.pcolor(xe, ye, density_hist.T, cmap=cmap, alpha=alpha, norm=norm)
 
     # Plot the contour edge colors.
     if plot_contours:
         if contour_kwargs is None:
             contour_kwargs = dict()
-        contour_kwargs["colors"] = contour_kwargs.get("colors", color)
+        # contour_kwargs["colors"] = contour_kwargs.get("colors", color)
+        contour_kwargs["colors"] = contour_kwargs.get("colors", contour_cmap)
         contour_kwargs["alpha"] = contour_kwargs.get("alpha", 0.75)
         contour_kwargs["linewidths"] = contour_kwargs.pop("lw", 0.5)
         # print("V = ", V)
         # levels = V
         # cnt = ax.contour(X2, Y2, H2.T, levels, **contour_kwargs)
-        xc = zmath.midpoints(xe)
-        yc = zmath.midpoints(ye)
         cnt = ax.contour(xc, yc, hist.T, levels, **contour_kwargs)
 
     return pc, cnt, cnf, cmap
@@ -273,6 +292,185 @@ def corner(axes, data, edges, hist1d=None, hist2d=None, labels=None, color='k', 
             ax.set_ylim(yextr)
 
     return handle
+
+
+'''
+def hist2d(x, y, bins=20, range=None, weights=None, levels=None, smooth=None,
+           ax=None, color=None, quiet=False,
+           plot_datapoints=True, plot_density=True,
+           plot_contours=True, no_fill_contours=False, fill_contours=False,
+           contour_kwargs=None, contourf_kwargs=None, data_kwargs=None,
+           **kwargs):
+    """
+    Plot a 2-D histogram of samples.
+    Parameters
+    ----------
+    x : array_like[nsamples,]
+       The samples.
+    y : array_like[nsamples,]
+       The samples.
+    quiet : bool
+        If true, suppress warnings for small datasets.
+    levels : array_like
+        The contour levels to draw.
+    ax : matplotlib.Axes
+        A axes instance on which to add the 2-D histogram.
+    plot_datapoints : bool
+        Draw the individual data points.
+    plot_density : bool
+        Draw the density colormap.
+    plot_contours : bool
+        Draw the contours.
+    no_fill_contours : bool
+        Add no filling at all to the contours (unlike setting
+        ``fill_contours=False``, which still adds a white fill at the densest
+        points).
+    fill_contours : bool
+        Fill the contours.
+    contour_kwargs : dict
+        Any additional keyword arguments to pass to the `contour` method.
+    contourf_kwargs : dict
+        Any additional keyword arguments to pass to the `contourf` method.
+    data_kwargs : dict
+        Any additional keyword arguments to pass to the `plot` method when
+        adding the individual data points.
+    """
+    if ax is None:
+        ax = pl.gca()
+
+    # Set the default range based on the data range if not provided.
+    if range is None:
+        if "extent" in kwargs:
+            logging.warn("Deprecated keyword argument 'extent'. "
+                         "Use 'range' instead.")
+            range = kwargs["extent"]
+        else:
+            range = [[x.min(), x.max()], [y.min(), y.max()]]
+
+    # Set up the default plotting arguments.
+    if color is None:
+        color = "k"
+
+    # Choose the default "sigma" contour levels.
+    if levels is None:
+        levels = 1.0 - np.exp(-0.5 * np.arange(0.5, 2.1, 0.5) ** 2)
+
+    # This is the color map for the density plot, over-plotted to indicate the
+    # density of the points near the center.
+    density_cmap = LinearSegmentedColormap.from_list(
+        "density_cmap", [color, (1, 1, 1, 0)])
+
+    # This color map is used to hide the points at the high density areas.
+    white_cmap = LinearSegmentedColormap.from_list(
+        "white_cmap", [(1, 1, 1), (1, 1, 1)], N=2)
+
+    # This "color map" is the list of colors for the contour levels if the
+    # contours are filled.
+    rgba_color = colorConverter.to_rgba(color)
+    contour_cmap = [list(rgba_color) for l in levels] + [rgba_color]
+    for i, l in enumerate(levels):
+        contour_cmap[i][-1] *= float(i) / (len(levels)+1)
+
+    # We'll make the 2D histogram to directly estimate the density.
+    try:
+        H, X, Y = np.histogram2d(x.flatten(), y.flatten(), bins=bins,
+                                 range=list(map(np.sort, range)),
+                                 weights=weights)
+    except ValueError:
+        raise ValueError("It looks like at least one of your sample columns "
+                         "have no dynamic range. You could try using the "
+                         "'range' argument.")
+
+    if smooth is not None:
+        if gaussian_filter is None:
+            raise ImportError("Please install scipy for smoothing")
+        H = gaussian_filter(H, smooth)
+
+    if plot_contours or plot_density:
+        # Compute the density levels.
+        Hflat = H.flatten()
+        inds = np.argsort(Hflat)[::-1]
+        Hflat = Hflat[inds]
+        sm = np.cumsum(Hflat)
+        sm /= sm[-1]
+        V = np.empty(len(levels))
+        for i, v0 in enumerate(levels):
+            try:
+                V[i] = Hflat[sm <= v0][-1]
+            except:
+                V[i] = Hflat[0]
+        V.sort()
+        m = np.diff(V) == 0
+        if np.any(m) and not quiet:
+            logging.warning("Too few points to create valid contours")
+        while np.any(m):
+            V[np.where(m)[0][0]] *= 1.0 - 1e-4
+            m = np.diff(V) == 0
+        V.sort()
+
+        # Compute the bin centers.
+        X1, Y1 = 0.5 * (X[1:] + X[:-1]), 0.5 * (Y[1:] + Y[:-1])
+
+        # Extend the array for the sake of the contours at the plot edges.
+        H2 = H.min() + np.zeros((H.shape[0] + 4, H.shape[1] + 4))
+        H2[2:-2, 2:-2] = H
+        H2[2:-2, 1] = H[:, 0]
+        H2[2:-2, -2] = H[:, -1]
+        H2[1, 2:-2] = H[0]
+        H2[-2, 2:-2] = H[-1]
+        H2[1, 1] = H[0, 0]
+        H2[1, -2] = H[0, -1]
+        H2[-2, 1] = H[-1, 0]
+        H2[-2, -2] = H[-1, -1]
+        X2 = np.concatenate([
+            X1[0] + np.array([-2, -1]) * np.diff(X1[:2]),
+            X1,
+            X1[-1] + np.array([1, 2]) * np.diff(X1[-2:]),
+        ])
+        Y2 = np.concatenate([
+            Y1[0] + np.array([-2, -1]) * np.diff(Y1[:2]),
+            Y1,
+            Y1[-1] + np.array([1, 2]) * np.diff(Y1[-2:]),
+        ])
+
+    if plot_datapoints:
+        if data_kwargs is None:
+            data_kwargs = dict()
+        data_kwargs["color"] = data_kwargs.get("color", color)
+        data_kwargs["ms"] = data_kwargs.get("ms", 2.0)
+        data_kwargs["mec"] = data_kwargs.get("mec", "none")
+        data_kwargs["alpha"] = data_kwargs.get("alpha", 0.1)
+        ax.plot(x, y, "o", zorder=-1, rasterized=True, **data_kwargs)
+
+    # Plot the base fill to hide the densest data points.
+    if (plot_contours or plot_density) and not no_fill_contours:
+        ax.contourf(X2, Y2, H2.T, [V.min(), H.max()],
+                    cmap=white_cmap, antialiased=False)
+
+    if plot_contours and fill_contours:
+        if contourf_kwargs is None:
+            contourf_kwargs = dict()
+        contourf_kwargs["colors"] = contourf_kwargs.get("colors", contour_cmap)
+        contourf_kwargs["antialiased"] = contourf_kwargs.get("antialiased",
+                                                             False)
+        ax.contourf(X2, Y2, H2.T, np.concatenate([[0], V, [H.max()*(1+1e-4)]]),
+                    **contourf_kwargs)
+
+    # Plot the density map. This can't be plotted at the same time as the
+    # contour fills.
+    elif plot_density:
+        ax.pcolor(X, Y, H.max() - H.T, cmap=density_cmap)
+
+    # Plot the contour edge colors.
+    if plot_contours:
+        if contour_kwargs is None:
+            contour_kwargs = dict()
+        contour_kwargs["colors"] = contour_kwargs.get("colors", color)
+        ax.contour(X2, Y2, H2.T, V, **contour_kwargs)
+
+    ax.set_xlim(range[0])
+    ax.set_ylim(range[1])
+'''
 
 
 
