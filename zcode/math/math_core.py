@@ -45,7 +45,7 @@ __all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges',
            'ordered_groups', 'really1d', 'renumerate', 'rotation_matrix_between_vectors',
            'sliceForAxis', 'spacing',
            'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
-           'comparison_filter', '_comparisonFunction', '_comparison_function',
+           'comparison_filter', '_comparison_function',
            '_infer_scale', '_fracToInt',
            # DEPRECATED
            'zenum'
@@ -1327,31 +1327,6 @@ def within(vals, extr, edges=True, all=False, inv=False, close=None):
     return retval
 
 
-def _comparisonFunction(comp):
-    """[DEPRECATED]Retrieve the comparison function matching the input expression.
-    """
-    # ---- DECPRECATION SECTION ----
-    utils.dep_warn("_comparisonFunction", newname="_comparison_function")
-    # ------------------------------
-
-    if comp == 'g' or comp == '>':
-        func = np.greater
-    elif comp == 'ge' or comp == '>=':
-        func = np.greater_equal
-    elif comp == 'l' or comp == '<':
-        func = np.less
-    elif comp == 'le' or comp == '<=':
-        func = np.less_equal
-    elif comp == 'e' or comp == '=' or comp == '==':
-        func = np.equal
-    elif comp == 'ne' or comp == '!=':
-        func = np.not_equal
-    else:
-        raise ValueError("Unrecognized comparison '%s'." % (comp))
-
-    return func
-
-
 def _comparison_function(comp, value=0.0, **kwargs):
     """Retrieve the comparison function matching the input expression.
 
@@ -1388,20 +1363,6 @@ def _comparison_function(comp, value=0.0, **kwargs):
         return func(xx, value, **kwargs)
 
     return comp_func
-
-
-def _comparisonFilter(data, filter):
-    """
-    """
-    # ---- DECPRECATION SECTION ----
-    utils.dep_warn("_comparisonFilter", newname="_comparison_filter")
-    # ------------------------------
-    if filter is None:
-        return data
-    if not callable(filter):
-        filter = _comparison_function(filter)
-    sel = np.where(filter(data, 0.0) & np.isfinite(data))
-    return data[sel]
 
 
 def comparison_filter(data, filter, inds=False, value=0.0, finite=True, mask=False, **kwargs):
