@@ -32,6 +32,7 @@ Functions
 from __future__ import absolute_import, division, print_function, unicode_literals
 import warnings
 import numbers
+import logging
 # import six
 
 import numpy as np
@@ -706,11 +707,13 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     if limit is not None:
         assert len(limit) == 2, "`limit` must have length 2."
 
-    if filter:
+    if filter is not None:
         data = comparison_filter(data, filter)
 
     # If there are no elements (left), return `prev` (`None` if not provided)
     if np.size(data) == 0:
+        msg = "" if filter is None else " after filtering"
+        logging.warning("Empty `data` array{}!".format(msg))
         return prev
 
     # Find extrema
@@ -1035,6 +1038,8 @@ def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **
     if integers:
         round = 0
     span = minmax(data, filter=filter, round=round, round_scale=scale, **kwargs)
+    if span is None:
+        raise ValueError("Invalid span on input data!")
 
     if (num is None) and (not integers):
         if log_flag and (not integers):
