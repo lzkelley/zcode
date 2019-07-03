@@ -50,11 +50,11 @@ from zcode import utils
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
            'count_lines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
            'check_path', 'dictToNPZ', 'npzToDict', 'checkURL',
-           'combine_files', 'frac_str',
+           'combine_files',
            'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists', 'python_environment',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
            # === DEPRECATED ===
-           'countLines', 'combineFiles']
+           'frac_str', 'countLines', 'combineFiles']
 
 
 class _Keys_Meta(type):
@@ -901,6 +901,13 @@ def combineFiles(*args, **kwargs):
     return combine_files(*args, **kwargs)
 
 
+def frac_str(*args, **kwargs):
+    utils.dep_warn("inout_core.frac_str", newname="math.statistic.frac_str")
+    from zcode.math import statistic
+    return statistic.frac_str(*args, **kwargs)
+
+
+'''
 def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
     """Create a string of the form '{}/{} = {}' for reporting fractional values.
     """
@@ -933,3 +940,4 @@ def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
         num=num, den=den, frac=dec_frac, ff=frac_fmt, df=dec_fmt)
 
     return fstr
+'''

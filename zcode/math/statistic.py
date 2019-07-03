@@ -23,7 +23,7 @@ from zcode import utils
 from zcode.math import math_core
 
 __all__ = ['confidence_bands', 'confidence_intervals',
-           'cumstats', 'log_normal_base_10', 'mean',
+           'cumstats', 'frac_str', 'log_normal_base_10', 'mean',
            'percentiles', 'percs_from_sigma', 'sigma',
            'stats', 'stats_str', 'std']
 
@@ -240,6 +240,40 @@ def cumstats(arr):
     return ave, std
 
 
+def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
+    """Create a string of the form '{}/{} = {}' for reporting fractional values.
+    """
+    if den is None:
+        assert num.dtype == bool, "If no `den` is given, array must be boolean!"
+        den = num.size
+        num = np.count_nonzero(num)
+
+    try:
+        dec_frac = num / den
+    except ZeroDivisionError:
+        dec_frac = np.nan
+
+    if frac_fmt is None:
+        frac_exp = np.fabs(np.log10([num, den]))
+
+        if np.any(frac_exp >= 4):
+            frac_fmt = ".1e"
+        else:
+            frac_fmt = "d"
+
+    if dec_fmt is None:
+        dec_exp = np.fabs(np.log10(dec_frac))
+        if dec_exp > 3:
+            dec_fmt = ".3e"
+        else:
+            dec_fmt = ".4f"
+
+    fstr = "{num:{ff}}/{den:{ff}} = {frac:{df}}".format(
+        num=num, den=den, frac=dec_frac, ff=frac_fmt, df=dec_fmt)
+
+    return fstr
+
+
 def log_normal_base_10(mu, sigma, size=None, shift=0.0):
     """Draw from a lognormal distribution with values in base-10 (instead of e).
 
@@ -412,7 +446,7 @@ def stats(vals, median=False):
 
 
 def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, weights=None,
-              format=None, label=None, log=False, label_log=True, filter=None):
+              format=None, log=False, label_log=True, filter=None):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -490,11 +524,6 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
     # Note if these are log-values
     if log and label_log:
         out += " (log values)"
-
-    if label is not None:
-        warnings.warn("WARNING: `label` argument is deprecated in `math_core.stats_str`",
-                      stacklevel=3)
-        out = label + ': ' + out
 
     return out
 

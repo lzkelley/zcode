@@ -49,6 +49,9 @@ Current
             - `eddington_accretion()`
                 - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
 
+    - `inout/`
+        - `stats_str()`  ==>  moved to `math.statistic.stats_str()`
+
     - `math/`
         - `tests/`
             - `test_math_core.py`
@@ -95,6 +98,7 @@ Current
                 - New argument, `sigmas` which is used to calculate percentiles from sigma values.
                 - `percs` <== `ci` [DEPRECATION-VARIABLE]
             - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
+            - `stats_str()`  <=== moved from `inout_core.stats_str()`
             - `std()`  [NEW-METHOD]
                 - Method for calculating distribution standard-deviations, optionally with weights.
 
