@@ -39,7 +39,7 @@ import numpy as np
 import scipy as sp
 import scipy.interpolate  # noqa
 
-__all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges',
+__all__ = ['argextrema', 'argnearest', 'around', 'array_str', 'asBinEdges',
            'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
            'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
@@ -1087,6 +1087,10 @@ def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **
             spaced = np.linspace(*span, num=num)
 
     return spaced
+
+
+def array_str(*args, **kwargs):
+    return str_array(*args, **kwargs)
 
 
 def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):

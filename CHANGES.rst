@@ -61,6 +61,8 @@ Current
             - `test_statistic.py`
                 - New test for percentiles.
         - `math_core.py`
+            - `array_str()` [NEW-FUNCTION]
+                - Alias of `str_array()`
             - `broadcast()` [NEW-FUNCTION]
                 - Expand N, 1D arrays into N, ND arrays each with the same shape.
             - `broadcastable()` [NEW-FUNCTION]
