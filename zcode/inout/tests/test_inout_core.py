@@ -38,6 +38,9 @@ class TestInoutCore(object):
         if os.path.exists(cls.fname_npz_subdir):
             print("removing '{}'".format(cls.fname_npz_subdir))
             os.remove(cls.fname_npz_subdir)
+            tname = os.path.dirname(cls.fname_npz_subdir)
+            print("Removing '{}'".format(tname))
+            os.rmdir(tname)
         if os.path.exists(cls.fname_npz):
             print("removing '{}'".format(cls.fname_npz))
             os.remove(cls.fname_npz)
@@ -157,12 +160,15 @@ class TestInoutCore(object):
         # Test that filenames are appropriately modified
         # ----------------------------------------------
         print("fname = '{}'".format(fdir))
+        created = []
         for ii in range(num_files):
             new_name = modify_exists(fdir, max=max_files)
             print(ii, "new_name = ", new_name)
             assert_false(os.path.exists(new_name))
             # Create directory
             os.makedirs(new_name)
+            created.append(new_name)
+
             if ii == 0:
                 intended_name = str(fdir)
             else:
@@ -172,6 +178,12 @@ class TestInoutCore(object):
             assert_true(os.path.exists(intended_name))
             if not os.path.exists(new_name):
                 raise RuntimeError("New file should have been created '{}'.".format(new_name))
+
+        # Cleanup
+        for fdir in created:
+            shutil.rmtree(fdir)
+
+        return
 
 
 # Run all methods as if with `nosetests ...`

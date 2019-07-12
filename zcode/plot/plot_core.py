@@ -48,12 +48,12 @@ import zcode.math as zmath
 import zcode.inout as zio
 from zcode import utils
 
-from . layout import _loc_str_to_pars, _parse_align
-from . plot_const import _PAD
+from zcode.plot.layout import _loc_str_to_pars, _parse_align
+from zcode.plot import _PAD
 
-__all__ = ['set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
+__all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
-           'unifyAxesLimits', 'color_cycle',
+           'unifyAxesLimits', 'color_cycle', 'get_norm',
            'colormap', 'color_set', 'set_grid',
            'skipTicks', 'saveFigure', 'scientific_notation',
            'line_style_set', 'line_label',
@@ -106,6 +106,76 @@ _HANDLE_LENGTH = 2.5
 _HANDLE_PAD = 0.6
 _LEGEND_COLUMN_SPACING = 1.2
 _SCATTER_POINTS = 1
+
+
+def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
+          xscale='log', xlabel='', xlim=None,
+          yscale='log', ylabel='', ylim=None,
+          left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
+          grid=None):
+
+    if scale is not None:
+        xscale = scale
+        yscale = scale
+
+    scales = [xscale, yscale]
+    for ii in range(2):
+        if scales[ii].startswith('lin'):
+            scales[ii] = 'linear'
+
+    xscale, yscale = scales
+
+    fig, axes = plt.subplots(figsize=figsize, squeeze=False, ncols=ncols, nrows=nrows,
+                             sharex=sharex, sharey=sharey)
+
+    plt.subplots_adjust(
+        left=left, bottom=bottom, right=right, top=top, hspace=hspace, wspace=wspace)
+
+    if ylim is not None:
+        shape = (nrows, ncols, 2)
+        if np.shape(ylim) == (2,):
+            ylim = np.array(ylim)[np.newaxis, np.newaxis, :]
+    else:
+        shape = (nrows, ncols,)
+
+    ylim = np.broadcast_to(ylim, shape)
+
+    if xlim is not None:
+        shape = (nrows, ncols, 2)
+        if np.shape(xlim) == (2,):
+            xlim = np.array(xlim)[np.newaxis, np.newaxis, :]
+    else:
+        shape = (nrows, ncols)
+
+    xlim = np.broadcast_to(xlim, shape)
+
+    # _, xscale, xlabel, xlim = np.broadcast_arrays(axes, xscale, xlabel, xlim)
+    # _, yscale, ylabel, ylim = np.broadcast_arrays(axes, yscale, ylabel, ylim)
+    _, xscale, xlabel = np.broadcast_arrays(axes, xscale, xlabel)
+    _, yscale, ylabel = np.broadcast_arrays(axes, yscale, ylabel)
+
+    for idx, ax in np.ndenumerate(axes):
+        # print(idx, xscale[idx], xlabel[idx], xlim[idx])
+        # print(idx, yscale[idx], ylabel[idx], ylim[idx])
+        ax.set(xscale=xscale[idx], xlabel=xlabel[idx],
+               yscale=yscale[idx], ylabel=ylabel[idx])
+        if xlim[idx] is not None:
+            ax.set_xlim(xlim[idx])
+        if ylim[idx] is not None:
+            ax.set_ylim(ylim[idx])
+
+        if grid is not None:
+            if grid is True:
+                set_grid(ax)
+            else:
+                set_grid(ax, **grid)
+
+    if squeeze:
+        axes = np.squeeze(axes)
+        if np.ndim(axes) == 0:
+            axes = axes[()]
+
+    return fig, axes
 
 
 def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=None,
@@ -458,7 +528,7 @@ def stretchAxes(ax, xs=1.0, ys=1.0):
 
 
 def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
-         fs=16, trans=None, pad=None, shift=None, **kwargs):
+         fs=None, trans=None, pad=None, shift=None, **kwargs):
     """Add text to figure.
 
     Wrapper for the `matplotlib.figure.Figure.text` method.
@@ -501,6 +571,11 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     if trans is None:
         trans = kwargs.pop('transform', None)
 
+    if fs is not None:
+        if 'size' in kwargs:
+            raise KeyError("Cannot provide both `fs` and `size`!")
+        kwargs['size'] = fs
+
     if trans is None:
         if isinstance(art, mpl.figure.Figure):
             trans = art.transFigure
@@ -529,7 +604,7 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
         y += shift[1]
 
     halign, valign = _parse_align(halign, valign)
-    txt = art.text(x, y, pstr, size=fs, transform=trans,
+    txt = art.text(x, y, pstr, transform=trans,
                    horizontalalignment=halign, verticalalignment=valign, **kwargs)
 
     return txt
@@ -627,7 +702,7 @@ def label_line(ax, line, label, x=None, y=None,
 
 
 def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
-           fs=12, trans=None,
+           fs=None, trans=None, prev=None,
            fs_title=None, loc=None, mono=False, zorder=None, align_title=None, **kwargs):
     """Add a legend to the given figure.
 
@@ -688,6 +763,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     kwargs.setdefault('columnspacing', _LEGEND_COLUMN_SPACING)
     kwargs.setdefault('scatterpoints', _SCATTER_POINTS)
     kwargs.setdefault('numpoints', _SCATTER_POINTS)
+    kwargs.setdefault('fancybox', True)
 
     # `alpha` should actually be `framealpha`
     if 'alpha' in kwargs:
@@ -715,10 +791,12 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     if not (valign == 'center' and halign == 'center'):
         alignStr += " " + halign
 
-    prop_dict = {'size': fs}
+    prop_dict = {}
+    if fs is not None:
+        prop_dict['size'] = fs
     if mono:
         prop_dict['family'] = 'monospace'
-    leg = ax.legend(keys, names, prop=prop_dict, fancybox=True,
+    leg = ax.legend(keys, names, prop=prop_dict,  # fancybox=True,
                     loc=alignStr, bbox_transform=trans, bbox_to_anchor=(x, y), **kwargs)
     if fs_title is not None:
         plt.setp(leg.get_title(), fontsize=fs_title)
@@ -727,6 +805,11 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
 
     if zorder is not None:
         leg.set_zorder(10)
+
+    if prev is not None:
+        prev = np.atleast_1d(prev)
+        for pp in prev:
+            ax.add_artist(pp)
 
     return leg
 
@@ -818,18 +901,21 @@ def invert_color(col):
     return col
 
 
-def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, right=None):
+def colormap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
+             under='0.8', over='0.8', left=None, right=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
     ---------
     args : scalar or array_like of scalar
         Range of valid scalar values to normalize with
-    cmap : ``matplotlib.colors.Colormap`` object
+    cmap : None, str, or ``matplotlib.colors.Colormap`` object
         Colormap to use.
     scale : str or `None`
         Scaling specification of colormap {'lin', 'log', `None`}.
         If `None`, scaling is inferred based on input `args`.
+    norm : None or `matplotlib.colors.Normalize`
+        Normalization to use.
     under : str or `None`
         Color specification for values below range.
     over : str or `None`
@@ -854,11 +940,21 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, ri
         -   If only one is given, the other is set to the extreme value: 0.0 or 1.0.
 
     """
+    args = np.asarray(args)
 
-    if cmap is None:
-        cmap = 'jet'
-    if isinstance(cmap, six.string_types):
-        cmap = plt.get_cmap(cmap)
+    if scale is None:
+        if np.size(args) > 1 and np.all(args > 0.0):
+            scale = 'log'
+        else:
+            scale = 'lin'
+
+    log = _scale_to_log_flag(scale)
+
+    if not isinstance(cmap, mpl.colors.Colormap):
+        if cmap is None:
+            cmap = 'jet'
+        if isinstance(cmap, six.string_types):
+            cmap = plt.get_cmap(cmap)
 
     # Select a truncated subsection of the colormap
     if (left is not None) or (right is not None):
@@ -873,37 +969,8 @@ def colormap(args, cmap=None, scale=None, under='0.8', over='0.8', left=None, ri
     if over is not None:
         cmap.set_over(over)
 
-    if scale is None:
-        if np.size(args) > 1 and np.all(args > 0.0):
-            scale = 'log'
-        else:
-            scale = 'lin'
-
-    log = _scale_to_log_flag(scale)
-    if log:
-        filter = 'g'
-    else:
-        filter = None
-
-    # Determine minimum and maximum
-    if np.size(args) > 1:
-        rv = zmath.minmax(args, filter=filter)
-        if rv is None:
-            min, max = 0.0, 0.0
-        else:
-            min, max = rv
-    elif np.size(args) == 1:
-        min, max = 0, np.int(args)-1
-    elif np.size(args) == 2:
-        min, max = args
-    else:
-        min, max = 0.0, 0.0
-
-    # Create normalization
-    if log:
-        norm = mpl.colors.LogNorm(vmin=min, vmax=max)
-    else:
-        norm = mpl.colors.Normalize(vmin=min, vmax=max)
+    if norm is None:
+        norm = get_norm(args, midpoint=midpoint, log=log, filter=filter)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -1353,6 +1420,43 @@ def line_label(ax, pos, label, dir='v', loc='top', xx=None, yy=None, ha=None, va
     return ll, txt
 
 
+def get_norm(data, midpoint=None, log=False, filter=None):
+    """
+    """
+    if log:
+        filter = 'g'
+    else:
+        filter = None
+
+    # Determine minimum and maximum
+    if np.size(data) > 1:
+        rv = zmath.minmax(data, filter=filter)
+        if rv is None:
+            min, max = 0.0, 0.0
+        else:
+            min, max = rv
+    elif np.size(data) == 1:
+        min, max = 0, np.int(data)-1
+    elif np.size(data) == 2:
+        min, max = data
+    else:
+        raise ValueError("Invalid `data` to construct norm!")
+
+    # Create normalization
+    if log:
+        if midpoint is None:
+            norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+        else:
+            norm = MidpointLogNormalize(vmin=min, vmax=max, midpoint=midpoint)
+    else:
+        if midpoint is None:
+            norm = mpl.colors.Normalize(vmin=min, vmax=max)
+        else:
+            norm = MidpointNormalize(vmin=min, vmax=max, midpoint=midpoint)
+
+    return norm
+
+
 #     ==================================
 #     ====    INTERNAL FUNCTIONS    ====
 #     ==================================
@@ -1455,3 +1559,42 @@ def _color_from_kwargs(kwargs, pop=False):
         col = None
 
     return col
+
+
+class MidpointNormalize(mpl.colors.Normalize):
+    """
+    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
+
+    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
+    """
+
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        super().__init__(vmin, vmax, clip)
+        self.midpoint = midpoint
+        return
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
+
+
+class MidpointLogNormalize(mpl.colors.LogNorm):
+    """
+    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
+
+    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
+    """
+
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        super().__init__(vmin, vmax, clip)
+        self.midpoint = midpoint
+        return
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        vals = zmath.interp(value, x, y, xlog=True, ylog=False)
+        return np.ma.masked_array(vals, np.isnan(value))

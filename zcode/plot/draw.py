@@ -8,21 +8,21 @@
 
 """
 import numbers
+import logging
 
 import matplotlib as mpl
-from matplotlib import pyplot as plt
 import numpy as np
 
 from zcode import math as zmath
 from zcode import utils
 
-from . plot_const import COL_CORR, LW_CONF, LW_OUTLINE
+from zcode.plot import COL_CORR, LW_CONF, LW_OUTLINE
 from . plot_core import colormap
 
 __all__ = [
     "conf_fill",
     "plot_bg", "plot_contiguous", "plot_hist_line", "plot_segmented_line", "plot_scatter",
-    "plot_hist_bars", "plot_conf_fill",
+    "plot_hist_bars", "plot_conf_fill", "plot_carpet",
     # Deprecated
     "plotHistLine", "plotSegmentedLine", "plotScatter", "plotHistBars", "plotConfFill"
 ]
@@ -118,7 +118,10 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
     return line
 
 
-def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], lw=3.0, alpha=1.0):
+# def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0],
+#                         lw=3.0, alpha=1.0):
+def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='jet'),
+                        lw=3.0, alpha=1.0):
     """Draw a line segment by segment.
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
 
@@ -127,18 +130,22 @@ def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0], l
     Optionally specify a colormap, a norm function and a line width
     """
 
-    # Get the minimum and maximum of ``norm``
-    norm = zmath.minmax(norm)
-    # conver to normalization
-    norm = plt.Normalize(norm[0], norm[1])
-
     if zz is None:
-        zz = np.linspace(norm.vmin, norm.vmax, num=len(xx))
+        zz = np.linspace(0.0, 1.0, num=len(xx))
     else:
         zz = np.asarray(zz)
 
+    # # Get the minimum and maximum of ``norm``
+    # norm = zmath.minmax(zz)
+    # # conver to normalization
+    # norm = plt.Normalize(norm[0], norm[1])
+
+    if isinstance(smap, dict):
+        smap = colormap(args=zz, **smap)
+
+    colors = smap.to_rgba(zz)
     segments = _make_segments(xx, yy)
-    lc = mpl.collections.LineCollection(segments, array=zz, cmap=cmap, norm=norm,
+    lc = mpl.collections.LineCollection(segments, colors=colors, cmap=smap.cmap, norm=smap.norm,
                                         linewidth=lw, alpha=alpha)
 
     ax.add_collection(lc)
@@ -505,6 +512,40 @@ def plot_bg(ax, xx, yy, thicker=2.0, fainter=0.65, color_bg='0.7', **kwargs):
     lb, = ax.plot(xx, yy, **bg_kw)
     lf, = ax.plot(xx, yy, **kwargs)
     return lb, lf
+
+
+def plot_carpet(ax, xx, length=0.05, y0=None, reset=None, direction='down', **kwargs):
+    if direction.startswith('d'):
+        vec = -1
+    elif direction.startswith('u'):
+        vec = +1
+    else:
+        raise ValueError("`direction` must be 'u[p]' or 'd[own]'!")
+
+    kwargs.setdefault('color', '0.5')
+    kwargs.setdefault('alpha', 0.5)
+
+    ylim = np.array(ax.get_ylim())
+    if y0 is None:
+        y0 = ylim[0]
+        if reset is None:
+            reset = True
+
+    yd = np.diff(ylim)[0]
+    yy = [y0, y0 + vec*length*yd]
+    yy = [np.min(yy), np.max(yy)]
+    if reset:
+        ylim[0] = np.min([ylim[0], yy[0]])
+        ylim[1] = np.max([ylim[1], yy[1]])
+        ax.set_ylim(ylim)
+    elif (ylim[0] > yy[0]) or (ylim[1] < yy[1]):
+        msg = "carpet ticks extend outside of current plot range (y={}, ylim={})".format(yy, ylim)
+        logging.warning(msg)
+
+    for pnt in xx:
+        ax.plot([pnt, pnt], yy, **kwargs)
+
+    return
 
 
 # === Deprecations ===

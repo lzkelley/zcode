@@ -14,6 +14,8 @@ Functions
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
+import scipy as sp
+import scipy.stats  # noqa
 import warnings
 
 from . import math_core
@@ -21,7 +23,7 @@ from .. import utils
 
 __all__ = [
     'cumtrapz_loglog', 'even_selection', 'extend', 'monotonic_smooth', 'sample_inverse',
-    'smooth_convolve', 'spline',
+    'smooth_convolve', 'spline',   # 'kde', 'kde_hist',
     # DEPRECATED
     'sampleInverse', 'smooth', '_smooth'
 ]
@@ -373,6 +375,71 @@ def even_selection(size, select, sel_is_true=True):
         cut[indices] = y
 
     return cut
+
+
+'''
+def kde(vals, scale=None, log=None):
+    log, scale = _log_from_scale(log, scale)
+
+    vals = np.asarray(vals)[:]
+
+    func = np.log10 if log else (lambda xx: xx)
+    func_inv = (lambda xx: np.power(10, xx)) if log else (lambda xx: xx)
+    my_kde = sp.stats.gaussian_kde(func(vals))
+
+    class Use_KDE:
+
+        def __init__(self, kde):
+            self._kde = kde
+
+        def __call__(self, xx):
+            return self._kde(func(xx))
+
+        def resample(self, *args, **kwargs):
+            return func_inv(self._kde.resample(*args, **kwargs))
+
+    return Use_KDE(my_kde)
+
+
+def kde_hist(vals, edges, scale=None, log=None, density=False):
+    log, scale = _log_from_scale(log, scale)
+
+    use_kde = kde(vals, scale=scale, log=log)
+
+    cents = math_core.midpoints(edges, scale=scale)
+
+    yy = use_kde(cents)
+
+    # Convert from density to probability per bin
+    if not density:
+        dx = np.diff(edges)
+        yy *= dx
+
+    return yy
+'''
+
+
+def _log_from_scale(log, scale):
+    if log is None:
+        if scale is None:
+            log = True
+            scale = 'log'
+        elif scale.startswith('log'):
+            log = True
+        elif scale.startswith('linear'):
+            log = False
+        else:
+            raise ValueError("Unrecognized `scale` parameter '{}'".format(scale))
+
+    if scale is None:
+        if log is True:
+            scale = 'log'
+        elif log is False:
+            scale = 'linear'
+        else:
+            raise ValueError("Unrecognized `log` parameter '{}'".format(log))
+
+    return log, scale
 
 
 # ==================================================

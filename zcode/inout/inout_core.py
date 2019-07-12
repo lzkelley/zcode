@@ -48,13 +48,13 @@ from zcode import utils
 
 
 __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
-           'countLines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
+           'count_lines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
            'check_path', 'dictToNPZ', 'npzToDict', 'checkURL',
            'combine_files',
            'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists', 'python_environment',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
            # === DEPRECATED ===
-           'combineFiles']
+           'frac_str', 'countLines', 'combineFiles']
 
 
 class _Keys_Meta(type):
@@ -227,29 +227,24 @@ def get_file_size(fnames, precision=1):
     return byte_str
 
 
-def countLines(files, progress=False):
+def count_lines(files):
     """Count the number of lines in the given file.
     """
 
     # If string, or otherwise not-iterable, convert to list
-    if np.iterable(files) and not isinstance(files, str):
-        files = [files]
-
-    if progress:
-        warnings.warn("`progress` argument is deprecated!")
-        # pbar = getProgressBar(len(files))
+    files = np.atleast_1d(files)
 
     nums = 0
     # Iterate over each file, count lines
     for ii, fil in enumerate(files):
         nums += sum(1 for line in open(fil))
-        # if(progress):
-        #     pbar.update(ii)
-
-    # if(progress):
-    #     pbar.finish()
 
     return nums
+
+
+def countLines(*args, **kwargs):
+    utils.dep_warn("countLines", newname="count_lines")
+    return count_lines(*args, **kwargs)
 
 
 def environment_is_jupyter():
@@ -319,7 +314,7 @@ def check_path(tpath, create=True):
     return path
 
 
-def dictToNPZ(dataDict, savefile, verbose=False, log=None):
+def dictToNPZ(dataDict, savefile, verbose=False, log=None, warn=False):
     """Save a dictionary to the given NPZ filename.
 
     If the path to the given filename doesn't already exist, it is created.
@@ -330,8 +325,9 @@ def dictToNPZ(dataDict, savefile, verbose=False, log=None):
     # Make sure there are no scalars in the input dictionary
     for key, item in dataDict.items():
         if np.isscalar(item):
-            warnStr = "Value '%s' for key '%s' is a scalar." % (str(item), str(key))
-            warnings.warn(warnStr)
+            if warn:
+                warnStr = "Value '%s' for key '%s' is a scalar." % (str(item), str(key))
+                warnings.warn(warnStr)
             dataDict[key] = np.array(item)
 
     # Save and confirm
@@ -366,21 +362,21 @@ def npzToDict(npz):
        Output dictionary with key-values from npz file.
 
     """
+    kw = dict(fix_imports=True, allow_pickle=True)
 
     try:
         if isinstance(npz, six.string_types):
             # Use `fix_imports` to try to resolve python2 to python3 issues.
-            _npz = np.load(npz, fix_imports=True)
+            _npz = np.load(npz, **kw)
         else:
             _npz = npz
         newDict = _convert_npz_to_dict(_npz)
 
     except Exception:
-        # warnings.warn("Normal load of `{}` failed ... trying different encoding".format(
-        #     npz))
+        # warnings.warn("Normal load of `{}` failed ... trying different encoding".format(npz))
         if isinstance(npz, six.string_types):
             # Use `fix_imports` to try to resolve python2 to python3 issues.
-            _npz = np.load(npz, fix_imports=True, encoding="bytes")
+            _npz = np.load(npz, encoding="bytes", **kw)
         else:
             _npz = npz
         newDict = _convert_npz_to_dict(_npz)
@@ -903,3 +899,45 @@ def combine_files(inFilenames, outFilename, verbose=False):
 def combineFiles(*args, **kwargs):
     utils.dep_warn("combineFiles", newname="combine_files")
     return combine_files(*args, **kwargs)
+
+
+def frac_str(*args, **kwargs):
+    utils.dep_warn("inout_core.frac_str", newname="math.statistic.frac_str")
+    from zcode.math import statistic
+    return statistic.frac_str(*args, **kwargs)
+
+
+'''
+def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
+    """Create a string of the form '{}/{} = {}' for reporting fractional values.
+    """
+    if den is None:
+        assert num.dtype == bool, "If no `den` is given, array must be boolean!"
+        den = num.size
+        num = np.count_nonzero(num)
+
+    try:
+        dec_frac = num / den
+    except ZeroDivisionError:
+        dec_frac = np.nan
+
+    if frac_fmt is None:
+        frac_exp = np.fabs(np.log10([num, den]))
+
+        if np.any(frac_exp >= 4):
+            frac_fmt = ".1e"
+        else:
+            frac_fmt = "d"
+
+    if dec_fmt is None:
+        dec_exp = np.fabs(np.log10(dec_frac))
+        if dec_exp > 3:
+            dec_fmt = ".3e"
+        else:
+            dec_fmt = ".4f"
+
+    fstr = "{num:{ff}}/{den:{ff}} = {frac:{df}}".format(
+        num=num, den=den, frac=dec_frac, ff=frac_fmt, df=dec_fmt)
+
+    return fstr
+'''

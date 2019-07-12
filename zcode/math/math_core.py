@@ -32,46 +32,56 @@ Functions
 from __future__ import absolute_import, division, print_function, unicode_literals
 import warnings
 import numbers
-import six
+import logging
+# import six
 
 import numpy as np
 import scipy as sp
 import scipy.interpolate  # noqa
 
-__all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
-           'frexp10', 'groupDigitized',
+__all__ = ['argextrema', 'argnearest', 'around', 'array_str', 'asBinEdges',
+           'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
+           'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
-           'ordered_groups', 'really1d', 'renumerate',
-           'sliceForAxis', 'spacing', 'str_array', 'str_array_2d', 'vecmag', 'within',
-           'comparison_filter', '_comparisonFunction', '_comparison_function',
-           '_infer_scale', '_fracToInt']
+           'ordered_groups', 'really1d', 'renumerate', 'rotation_matrix_between_vectors',
+           'sliceForAxis', 'spacing',
+           'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
+           'comparison_filter', '_comparison_function',
+           '_infer_scale', '_fracToInt',
+           # DEPRECATED
+           'zenum'
+           ]
+
+from zcode import utils
 
 
 def argextrema(arr, type, filter=None):
     """Find the index of the desired type of extrema in the input array.
     """
+    warnings.warn("This function sucks!  Dont use it!")
+
     # Valid filters, NOTE: do *not* include 'e' (equals), doesn't make sense here.
     good_filter = [None, 'g', 'ge', 'l', 'le']
-    if(filter not in good_filter):
+    if filter not in good_filter:
         raise ValueError("Filter '%s' Unrecognized." % (type))
     # Make sure `type` is valid
     good_type = ['min', 'max']
-    if(not np.any([type.startswith(gt) for gt in good_type])):
+    if not np.any([type.startswith(gt) for gt in good_type]):
         raise ValueError("Type '%s' Unrecognized." % (type))
     # Make sure input array `arr` is valid (1D)
     arr = np.asarray(arr)
-    if(arr.ndim != 1 or arr[0].ndim != 0):
+    if (arr.ndim != 1) or (arr[0].ndim != 0):
         raise ValueError("Only 1D arrays currently supported.")
 
-    if(type.startswith('min')):
+    if type.startswith('min'):
         func = np.argmin
-    elif(type.startswith('max')):
+    elif type.startswith('max'):
         func = np.argmax
 
     # Find whether the `filter` criteria is True
-    if(filter):
-        filterFunc = _comparisonFunction(filter)
-        sel = filterFunc(arr, 0.0)
+    if filter:
+        filter_func = _comparison_function(filter, 0.0)
+        sel = filter_func(arr)
     # If no filter (`None`), all values are valid
     else:
         sel = np.ones_like(arr, dtype=bool)
@@ -83,42 +93,70 @@ def argextrema(arr, type, filter=None):
     return ind
 
 
-def argnearest(options, targets, assume_sorted=False):
-    """Find the indices of elements in the `options` array closest to those in the `targets` array.
+def argnearest(edges, vals, assume_sorted=False, side=None):
+    """Find the indices of elements in the `edges` array closest to those in the `vals` array.
 
     Arguments
     ---------
-    options : (N,) array of scalar
+    edges : (N,) array of scalar
         Find indices for elements in this array.
-    targets : (M,) array of scalar
-        Look for elements in the `options` array closest to these `targets` values.
+    vals : (M,) array of scalar
+        Look for elements in the `edges` array closest to these `vals` values.
     assume_sorted : bool,
-        Assume the input array of `options` is sorted.
-        (Note: `targets` can be unsorted regardless)
+        Assume the input array of `edges` is sorted.
+        (Note: `vals` can be unsorted regardless)
+    side : str or `None`
 
     Returns
     -------
     idx : (M,) array of int
-        Indices of `options` nearest `targets`.  May include duplicates.
+        Indices of `edges` nearest `vals`.  May include duplicates.
 
     """
-    options = np.atleast_1d(options)
-    scalar = np.isscalar(targets)
-    targets = np.atleast_1d(targets)
+    edges = np.atleast_1d(edges)
+    scalar = np.isscalar(vals)
+    vals = np.atleast_1d(vals)
+
     # Sort the input array if needed
     if not assume_sorted:
-        srt = np.argsort(options)
-        options = options[srt]
+        srt = np.argsort(edges)
+        edges = edges[srt]
 
-    idx = np.searchsorted(options, targets, side="left").clip(max=options.size-1)
-    dist_lo = np.fabs(targets - options[idx-1])
-    dist_hi = np.fabs(targets - options[idx])
-    mask = (idx > 0) & ((idx == options.size) | (dist_lo < dist_hi))
-    idx = idx - mask
+    # Find the nearest bin on either side
+    if side is None:
+        # This is the index of the edge to the *right* of (i.e. above) each value
+        idx = np.searchsorted(edges, vals, side="left").clip(max=edges.size-1)
+        # Find the distances to each nearest bin edge
+        dist_lo = np.fabs(vals - edges[idx-1])
+        dist_hi = np.fabs(vals - edges[idx])
+        # If left ('lo') is nearer, mask=1, and we shift from the right edge to the left edge
+        mask = (idx > 0) & ((idx == edges.size) | (dist_lo < dist_hi))
+        idx = idx - mask
+    # If we want the 'r'ight nearest edge
+    elif side.startswith('r'):
+        # This is the index of the edge to the *right* of (i.e. above) each value
+        #    WARNING: if a value is exactly on an edge, the *next* edge will be selected
+        idx = np.searchsorted(edges, vals, side="right")
+        # mask = (vals == edges[-1])
+        # idx = idx + mask
+    elif side.startswith('l'):
+        # This is the index of the edge to the *right* of (i.e. above) each value
+        #    WARNING: if a value is exactly on an edge, the *prev* edge will be selected
+        idx = np.searchsorted(edges, vals, side="left") - 1
+        # If a value matches the right-most edge, it should also be shifted to the prev edge,
+        #    which requires an extra shift
+        # mask = (vals == edges[-1])
+        # idx = idx - mask
+    else:
+        raise ValueError("Unrecognized `side` argument '{}'!".format(side))
 
     # Reorder the indices if the input was unsorted
+    #    NOTE: this is not re/un-sorting, this is changing the resulting numbers to reflect the
+    #          input order of `edges`
     if not assume_sorted:
-        idx = [srt[ii] for ii in idx]
+        # Leave out-of-bounds results (for 'left' and 'right') as the same value
+        idx = [srt[ii] if (ii >= 0) and (ii < edges.size) else ii
+               for ii in idx]
 
     if scalar:
         idx = idx[0]
@@ -286,6 +324,31 @@ def asBinEdges(bins, data, scale='lin'):
     return edges
 
 
+def broadcastable(*args):
+    """Expand N, 1D arrays be able to be broadcasted into N, ND arrays.
+
+    e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,1,1`, `1,4,1` and `1,1,2`.
+    """
+    ndim = len(args)
+    assert np.all([1 == np.ndim(aa) for aa in args]), "Each array in `args` must be 1D!"
+
+    cut_ref = [slice(None)] + [np.newaxis for ii in range(ndim-1)]
+    cuts = [np.roll(cut_ref, ii).tolist() for ii in range(ndim)]
+    outs = [aa[tuple(cc)] for aa, cc in zip(args, cuts)]
+    return outs
+
+
+def broadcast(*args):
+    """Broadcast N, 1D arrays into N, ND arrays.
+
+    e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,4,2`, `3,4,2` and `3,4,2`.
+    """
+    # outs = broadcastable(*args)
+    # outs = np.broadcast_arrays(outs)
+    outs = np.meshgrid(*args, indexing='ij')
+    return outs
+
+
 def contiguousInds(args):
     """Find the longest contiguous segment of positive values in the array.
     """
@@ -315,6 +378,47 @@ def contiguousInds(args):
     inds = np.arange(*idx[maxPos])
 
     return inds
+
+
+def edges_from_cents(cents, scale='lin', log=None):
+    if not any([scale.lower().startswith(sc) for sc in ['lin', 'log']]):
+        raise ValueError("`scale` must be 'lin' or 'log'!")
+
+    if log is None:
+        log = scale.lower().startswith('log')
+
+    if log:
+        cents = np.log10(cents)
+
+    widths = np.diff(cents)
+    NUM = 5
+
+    lo = sp.interpolate.PchipInterpolator(np.arange(NUM), widths[:NUM], extrapolate=True)(-1)
+    hi = sp.interpolate.PchipInterpolator(np.arange(NUM), widths[-NUM:], extrapolate=True)(NUM)
+    edges = midpoints(cents, log=False)
+    edges = np.concatenate(([edges[0] - lo], edges, [edges[-1] + hi]))
+
+    if log:
+        edges = np.power(10.0, edges)
+
+    return edges
+
+
+def slice_with_inds_for_axis(arr, inds, axis):
+    """Use an N-1 dimensional array with indices along a particular axis of an N dimensional array
+
+    See: https://stackoverflow.com/a/46103129/230468
+    """
+    if axis < 0:
+        axis += np.ndim(arr)
+
+    new_shape = list(arr.shape)
+    del new_shape[axis]
+
+    grid = np.ogrid[tuple(map(slice, new_shape))]
+    grid.insert(axis, inds)
+
+    return arr[tuple(grid)]
 
 
 def frexp10(vals):
@@ -422,6 +526,10 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
         x0 = np.log10(x0)
     if ylog:
         y0 = np.log10(y0)
+        if np.isfinite(left):
+            left = np.log10(left)
+        if np.isfinite(right):
+            right = np.log10(right)
 
     if valid:
         inds = (~np.isnan(x0) & ~np.isinf(x0)) & (~np.isnan(y0) & ~np.isinf(y0))
@@ -439,18 +547,62 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
     return y1
 
 
-def interp_func(xold, yold, kind='linear', xlog=True, ylog=True, **kwargs):
-    if (not xlog) or (not ylog):
-        raise ValueError("Not yet implemented!")
+def interp_func(xold, yold, kind='mono', xlog=True, ylog=True, fill_value=np.nan, **kwargs):
+    """Return an interpolation/extrapolation function constructed from the given values.
 
-    logx = np.log10(xold)
-    logy = np.log10(yold)
-    lin_interp = sp.interpolate.interp1d(logx, logy, kind=kind, **kwargs)
-    log_interp = lambda zz: np.power(10.0, lin_interp(np.log10(zz)))  # noqa
-    return log_interp
+    Generally the returned function is a wrapper around `interp1d` from the `scipy.interpolate`
+    module, unless `kind` is either 'mono' or 'Pchip' in which case the `PchipInterpolator` is
+    used.
+
+    """
+    def in_lin(xx):
+        return xx
+
+    def in_log(xx):
+        return np.log10(xx)
+
+    def out_lin(yy):
+        return yy
+
+    def out_log(yy):
+        return np.power(10.0, yy)
+
+    if xlog:
+        xold = np.log10(xold)
+        in_func = in_log
+    else:
+        in_func = in_lin
+
+    if ylog:
+        yold = np.log10(yold)
+        out_func = out_log
+        if isinstance(fill_value, tuple):
+            fill_value = tuple([np.log10(vv) for vv in fill_value])
+        else:
+            fill_value = np.log10(fill_value)
+
+    else:
+        out_func = out_lin
+
+    if kind == 'mono' or kind.lower() == 'pchip':
+        if not np.isscalar(fill_value) or not np.isnan(fill_value):
+            raise ValueError("`PchipInterpolator` only support 'nan' fill values!")
+        lin_interp = sp.interpolate.PchipInterpolator(
+            xold, yold, extrapolate=True, **kwargs)
+    else:
+        lin_interp = sp.interpolate.interp1d(
+            xold, yold, kind=kind, fill_value=fill_value, **kwargs)
+
+    def ifunc(xx):
+        xx = in_func(xx)
+        yy = lin_interp(xx)
+        yy = out_func(yy)
+        return yy
+
+    return ifunc
 
 
-def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
+def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
     """Return the midpoints between values in the given array.
 
     If the given array is N-dimensional, midpoints are calculated from the last dimension.
@@ -478,8 +630,18 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
     if (np.shape(arr)[axis] < 2):
         raise RuntimeError("Input ``arr`` does not have a valid shape!")
 
+    if log is not None:
+        if scale is not None:
+            raise ValueError("Provide either `scale` or `log`, not both!")
+        log_flag = log
+    elif scale is not None:
+        log_flag = scale.lower().startswith('log')
+    # Default to log scaling
+    else:
+        log_flag = True
+
     # Convert to log-space
-    if log:
+    if log_flag:
         user = np.log10(arr)
     else:
         user = np.array(arr)
@@ -491,7 +653,7 @@ def midpoints(arr, log=False, frac=0.5, axis=-1, squeeze=True):
     start = user[cut]
     mids = start + frac*diff
 
-    if log:
+    if log_flag:
         mids = np.power(10.0, mids)
     if squeeze:
         mids = mids.squeeze()
@@ -517,10 +679,12 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     filter : str or `None`,
         Key describing how to filter the input data, or `None` for no filter.
         See, ``comparison_filter``.
-    stretch : flt or `None`
+    stretch : float, `None`, or (2,) or float
         Factor by which to stretch min and max by (``1.0 +- stretch``) in linear space.
-    log_stretch : flt or `None`
+        If two values are given, they are applied to low (-) and high (+) side respectively.
+    log_stretch : float, `None`, or (2,) or float
         Factor by which to stretch min and max by (``1.0 +- stretch``) in log space.
+        If two values are given, they are applied to low (-) and high (+) side respectively.
     limit :
     round : int or 'None'
         The number of significant figures to which to round the min and max values.
@@ -543,11 +707,13 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     if limit is not None:
         assert len(limit) == 2, "`limit` must have length 2."
 
-    if filter:
+    if filter is not None:
         data = comparison_filter(data, filter)
 
     # If there are no elements (left), return `prev` (`None` if not provided)
     if np.size(data) == 0:
+        msg = "" if filter is None else " after filtering"
+        logging.warning("Empty `data` array{}!".format(msg))
         return prev
 
     # Find extrema
@@ -557,11 +723,26 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
 
     # Add stretch (relative to center point)
     if (stretch is not None) or (log_stretch is not None):
+        if (stretch is not None) and (log_stretch is not None):
+            raise ValueError("Only `stretch` OR `log_stretch` can be applied!")
+
+        # Choose the given value
         fact = stretch if (stretch is not None) else log_stretch
+
+        # If a single stretch value is given, duplicate it for both lo and hi sides
+        if (fact is not None) and np.isscalar(fact):
+            fact = [fact, fact]
+        # Make sure size is right
+        if (fact is not None) and np.size(fact) != 2:
+            raise ValueError("`log_stretch` and `stretch` must be None, scalar or (2,)!")
+
+        # Use log-values as needed (stretching in log-space)
         _minmax = np.log10(minmax) if (log_stretch is not None) else minmax
+        # Find the center, and stretch relative to that
         cent = np.average(_minmax)
-        _minmax[0] = cent - (1.0 + fact)*(cent - _minmax[0])
-        _minmax[1] = cent + (1.0 + fact)*(_minmax[1] - cent)
+        _minmax[0] = cent - (1.0 + fact[0])*(cent - _minmax[0])
+        _minmax[1] = cent + (1.0 + fact[1])*(_minmax[1] - cent)
+        # Convert back to normal-space as needed
         minmax = np.power(10.0, _minmax) if (log_stretch is not None) else _minmax
 
     # Compare to previous extrema, if given
@@ -574,9 +755,9 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     # Compare to limits, if given
     if limit is not None:
         if limit[0] is not None:
-            minmax[0] = np.max([minmax[0], limit[0]])
+            minmax[0] = np.max([minmax[0], limit[0]]) if not np.isnan(minmax[0]) else limit[0]
         if limit[1] is not None:
-            minmax[1] = np.min([minmax[1], limit[1]])
+            minmax[1] = np.min([minmax[1], limit[1]]) if not np.isnan(minmax[1]) else limit[1]
 
     # Round the min/max results to given number of sig-figs
     if round is not None:
@@ -604,13 +785,14 @@ def mono(arr, type='g', axis=-1):
 
     """
     arr = np.atleast_1d(arr)
-    if arr.size == 1: return True
+    if arr.size == 1:
+        return True
     good_type = ['g', 'ge', 'l', 'le', 'e']
     assert type in good_type, "Type '%s' Unrecognized." % (type)
     # Retrieve the numpy comparison function (e.g. np.greater) for the given `type` (e.g. 'g')
-    func = _comparisonFunction(type)
+    func = _comparison_function(type, 0.0)
     delta = np.diff(arr, axis=axis)
-    retval = np.all(func(delta, 0.0))
+    retval = np.all(func(delta))
     return retval
 
 
@@ -746,6 +928,24 @@ def renumerate(arr):
     return zip(reversed(range(len(arr))), reversed(arr))
 
 
+def rotation_matrix_between_vectors(aa, bb):
+    """Construct a rotation matrix that rotates vector `aa` to vector `bb`.
+    """
+    ab = np.matrix(aa + bb)
+    rot = 2*((ab*ab.T) / (ab.T*ab)) - np.eye(3)
+    return rot
+
+
+def zenum(*arr):
+    utils.dep_warn("zenum", newname="zenumerate")
+    return zenumerate(*arr)
+
+
+def zenumerate(*arr):
+    zipped = zip(*arr)
+    return enumerate(zipped)
+
+
 def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     """
     Creates an array slicing object which slices only the target axis.
@@ -788,7 +988,7 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
-def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
+def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **kwargs):
     """Create an evenly spaced array between extrema from the given data.
 
     Arguments
@@ -819,6 +1019,8 @@ def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
         argument above.
 
     """
+    DEF_NUM_LIN = 20
+
     if scale.startswith('log'):
         log_flag = True
     elif scale.startswith('lin'):
@@ -836,8 +1038,21 @@ def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
     if integers:
         round = 0
     span = minmax(data, filter=filter, round=round, round_scale=scale, **kwargs)
+    if span is None:
+        raise ValueError("Invalid span on input data!")
+
+    if (num is None) and (not integers):
+        if log_flag and (not integers):
+            num_dex = np.fabs(np.diff(np.log10(span)))
+            num = np.int(np.ceil(num_dex * dex)) + 1
+        else:
+            num = DEF_NUM_LIN
+
     # If only 'integers', use 'arange'
     if integers:
+        if num is not None:
+            raise ValueError("`num` does not apply when using `integers` scaling!")
+
         # Log-spacing : create each decade manually
         if log_flag:
             # Find the SciNot exp for lower and upper values
@@ -872,6 +1087,10 @@ def spacing(data, scale='log', num=100, filter=None, integers=False, **kwargs):
             spaced = np.linspace(*span, num=num)
 
     return spaced
+
+
+def array_str(*args, **kwargs):
+    return str_array(*args, **kwargs)
 
 
 def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
@@ -923,22 +1142,38 @@ def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=T
     return arr_str
 
 
-def _guess_str_format_from_range(arr, prec=2, log_limit=2):
+def str_array_neighbors(arr, inds, num=1, **kwargs):
+    if np.ndim(arr) != 1 or np.ndim(inds) != 1:
+        raise ValueError("`arr` and `inds` must be 1D!")
+
+    if isinstance(inds[0], (bool, np.bool_)):
+        inds = np.where(inds)[0]
+
+    vals = []
+    size = np.size(arr)
+    for ii in inds:
+        cut = slice(max(0, ii-num), min(size-1, ii+num+1))
+        temp = str_array(arr[cut], sides=num+1, **kwargs)
+        vals.append(temp)
+
+    rv = "...".join(vals)
+    return rv
+
+
+def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
     """
     """
+
     try:
-        extr = np.log10(np.fabs(minmax(arr)))
+        extr = np.log10(np.fabs(minmax(arr, filter='ne')))
     # string values will raise a `TypeError` exception
-    except TypeError:
-        return ":s"
+    except (TypeError, AttributeError):
+        return ":"
 
     if any(extr < -log_limit) or any(extr > log_limit):
-        use_log = True
-    else:
-        use_log = False
-
-    if use_log:
         form = ":.{precision:d}e"
+    elif np.issubdtype(arr.dtype, np.integer) and allow_int:
+        form = ":d"
     else:
         form = ":.{precision:d}f"
 
@@ -1055,12 +1290,12 @@ def vecmag(r1, r2=None):
     return dist
 
 
-def within(vals, extr, edges=True, all=False, inv=False):
+def within(vals, extr, edges=True, all=False, inv=False, close=None):
     """Test whether a value or array is within the bounds of another.
 
     Arguments
     ---------
-       vals   <scalar>([N]) : test value(s)
+       vals  <scalar>([N])  : test value(s)
        extr  <scalar>[M]    : array or span to compare with
        edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
        all   <bool>         : optional, whether All values are within bounds (single return `bool`)
@@ -1075,44 +1310,30 @@ def within(vals, extr, edges=True, all=False, inv=False):
     extr_bnds = minmax(extr)
 
     # Include edges for WITHIN bounds (thus not including is outside)
-    if(edges): retval = np.asarray(((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])))
-    # Don't include edges for WITHIN  (thus include them for outside)
-    else:      retval = np.asarray(((vals > extr_bnds[0]) & (vals < extr_bnds[1])))
+    if edges:
+        above = (vals >= extr_bnds[0])
+        below = (vals <= extr_bnds[1])
+    else:
+        above = (vals > extr_bnds[0])
+        below = (vals < extr_bnds[1])
+
+    if close is not None:
+        if close is True:
+            close = dict()
+        above = above | np.isclose(vals, extr_bnds[0], **close)
+        below = below | np.isclose(vals, extr_bnds[1], **close)
+
+    retval = np.asarray(above & below)
 
     # Convert to single return value
-    if(all): retval = np.all(retval)
+    if all:
+        retval = np.all(retval)
 
     # Invert results
-    if(inv): retval = np.invert(retval)
+    if inv:
+        retval = np.invert(retval)
 
     return retval
-
-
-def _comparisonFunction(comp):
-    """[DEPRECATED]Retrieve the comparison function matching the input expression.
-    """
-    # ---- DECPRECATION SECTION ----
-    warnStr = ("Using deprecated function '_comparisonFunction'.  "
-               "Use '_comparison_function' instead.")
-    warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
-    # ------------------------------
-
-    if comp == 'g' or comp == '>':
-        func = np.greater
-    elif comp == 'ge' or comp == '>=':
-        func = np.greater_equal
-    elif comp == 'l' or comp == '<':
-        func = np.less
-    elif comp == 'le' or comp == '<=':
-        func = np.less_equal
-    elif comp == 'e' or comp == '=' or comp == '==':
-        func = np.equal
-    elif comp == 'ne' or comp == '!=':
-        func = np.not_equal
-    else:
-        raise ValueError("Unrecognized comparison '%s'." % (comp))
-
-    return func
 
 
 def _comparison_function(comp, value=0.0, **kwargs):
@@ -1153,23 +1374,7 @@ def _comparison_function(comp, value=0.0, **kwargs):
     return comp_func
 
 
-def _comparisonFilter(data, filter):
-    """
-    """
-    # ---- DECPRECATION SECTION ----
-    warnStr = ("Using deprecated function '_comparisonFilter'.  "
-               "Use '_comparison_filter' instead.")
-    warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
-    # ------------------------------
-    if filter is None:
-        return data
-    if not callable(filter):
-        filter = _comparisonFunction(filter)
-    sel = np.where(filter(data, 0.0) & np.isfinite(data))
-    return data[sel]
-
-
-def comparison_filter(data, filter, inds=False, value=0.0, finite=True, **kwargs):
+def comparison_filter(data, filter, inds=False, value=0.0, finite=True, mask=False, **kwargs):
     """
     """
     if filter is None:
@@ -1186,8 +1391,10 @@ def comparison_filter(data, filter, inds=False, value=0.0, finite=True, **kwargs
     if inds:
         return sel
     else:
-        # return np.asarray(data)[sel]
-        return np.ma.masked_where(~sel, data)
+        if mask:
+            return np.ma.masked_where(~sel, data)
+        else:
+            return np.asarray(data)[sel]
 
 
 def _fracToInt(frac, size, within=None, round='floor'):

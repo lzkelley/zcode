@@ -6,10 +6,11 @@ import matplotlib as mpl
 import numpy as np
 import six
 
-from . plot_const import _PAD
+from zcode.plot import _PAD
 
 
-__all__ = ["backdrop", "full_extent", "position_to_extent", "rect_for_inset", "transform"]
+__all__ = ["backdrop", "extent", "full_extent", "position_to_extent", "rect_for_inset",
+           "transform"]
 
 
 def backdrop(fig, obj, pad=0.0, union=False, group=False, draw=True, **kwargs):
@@ -29,11 +30,27 @@ def backdrop(fig, obj, pad=0.0, union=False, group=False, draw=True, **kwargs):
     for bbox in bboxes:
         rect = mpl.patches.Rectangle([bbox.xmin, bbox.ymin], bbox.width, bbox.height,
                                      transform=fig.transFigure, **kwargs)
-        if draw: fig.patches.append(rect)
+        if draw:
+            fig.patches.append(rect)
         pats.append(rect)
 
-    if len(pats) == 1: return pats[0]
+    if len(pats) == 1:
+        return pats[0]
     return pats
+
+
+def extent(ax, pad=0.0, invert=None, fig=None):
+    """Get the full extent of an axes, including axes labels, tick labels, and titles.
+
+    From: 'stackoverflow.com/questions/14712665/'
+    """
+    # Draw text objects so extents are defined
+    ax.figure.canvas.draw()
+    bbox = ax.get_window_extent().expanded(1.0 + pad, 1.0 + pad)
+    if invert:
+        bbox = bbox.transformed(invert.inverted())
+
+    return bbox
 
 
 def full_extent(ax, pad=0.0, invert=None):

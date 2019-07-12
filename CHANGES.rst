@@ -28,11 +28,8 @@ Future / To-Do
             -   `monotonic_smooth`
                 +   BUG: fix shitty edge effects after many iterations.
         +   statistic.py
-            -   `confidence_intervals()`
-                -   BUG: Arguemnts `filter` and `axis` are currently incompatible.
             -   `percentiles()`
                 -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
-
     -   plot/
         +   Hist2D.py
             -   Add ability to plot central axes as scatter plot, with projected histograms
@@ -43,12 +40,113 @@ Future / To-Do
 
 Current
 -------
+    - `utils.py`
+        - `dep_warn_var()` [NEW-METHOD]
+            - Standardized method for handling deprecated variables.
+            
+    - `astro/`
+        - `astro_core.py`
+            - `eddington_accretion()`
+                - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
+
+    - `inout/`
+        - `stats_str()`  ==>  moved to `math.statistic.stats_str()`
+
+    - `math/`
+        - `tests/`
+            - `test_math_core.py`
+                - Fixed numerous tests.
+                - Added new tests for interpolation methods.
+                - Tests for `edges_from_cents`
+            - `test_statistic.py`
+                - New test for percentiles.
+        - `math_core.py`
+            - `array_str()` [NEW-FUNCTION]
+                - Alias of `str_array()`
+            - `broadcast()` [NEW-FUNCTION]
+                - Expand N, 1D arrays into N, ND arrays each with the same shape.
+            - `broadcastable()` [NEW-FUNCTION]
+                - Method to expand N, 1D arrays into N, ND arrays which can be broadcasted together.
+            - `edges_from_cents()` [NEW-FUNCTION]
+                - Method to estimate bin-edges given the local of bin-centers.
+            - `interp()`
+                - BUG: fix issue where 'left' and 'right' bounds were being taken to ten-to-the-power-of.
+            - `interp_func()`
+                - Implement optional 'xlog' and 'ylog' scalings.
+                - Implement 'mono' option for interpolation kind to use `PchipInterpolator` which enforced monotonicity.
+            - `str_array_neighbors()` [NEW-FUNCTION]
+                - Use 'str_array' to print particular indices, and its neighbors, in an array.
+            - `within()`
+                - Add new `close` argument to allow `np.isclose` comparisons to bin edges.
+            - `zenumerate()` <== `zenum()` [DEPRECATION]
+            - `_guess_str_format_from_range()`
+                - BUG: fix issue where exponential notation was only being used for positive-definite values
+        - `numeric.py`
+            - `kde()`  [DEPRECATED]
+                - Use new functionality from `kde.py`
+            - `kde_hist()`  [DEPRECATED]
+                - Use new functionality from `kde.py`
+        - `statistic.py`
+            - `confidenceBands()` [DELETED-METHOD]
+            - `confidence_intervals()`
+                - `percs` <== `confInts`  [DEPRECATION-VARIABLE]
+            - `confidenceIntervals()` [DELETED-METHOD]
+            - `confidence_intervals()`
+                - New argument `sigma` which is converted into percentiles
+                - New argument `weights` for performing weighted percentiles
+            - `mean()`  [NEW-METHOD]
+                - Method for calculating distribution mean, optionally with weights.
+            - `percentiles()`
+                - New argument, `sigmas` which is used to calculate percentiles from sigma values.
+                - `percs` <== `ci` [DEPRECATION-VARIABLE]
+            - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
+            - `stats_str()`  <=== moved from `inout_core.stats_str()`
+            - `std()`  [NEW-METHOD]
+                - Method for calculating distribution standard-deviations, optionally with weights.
+
+    - `plot/`
+        - `draw.py`
+            - `plot_carpet()` [NEW-METHOD]
+                - New method for drawing carpet-plots (i.e. tick marks)
+        - `Hist2D.py`
+            - `draw_hist2d()` [NEW-METHOD]
+                - New 2D histogram plotting method from `corner.hist2d` method by 'Dan Foreman-Mackey'.
+            - `corner()` [NEW-METHOD]
+                - New corner plotting method.
+        - `plot_const.py` [FILE-DELETED]
+            - Constant values moved to `zcode.plot.__init__.py`
+        - `plot_core.py`
+            - `colormap()`
+                - New `midpoint` argument and functionality to allow colormaps's colors to be centered at particular values in either log or linear space.  Uses new classes `MidpointNormalize` and `MidpointLogNormalize`.
+            - `figax()`
+                - New `scale` argument to set the scale of both x and y axes.
+                - BUG: xlim and ylim were not being broadcast correctly
+            - `get_norm()`  [NEW-METHOD]
+                - Separated out from `colormap()`, same functionality.
+
+
+
+[0.1] - 2019/03/18
+------------------
     -   `astro/`
         -   `astro_core.py`
             -   `distance()` [NEW-FUNCTION]
                 -   Calculate the cartesian distance between vectors
+            -   `kepler_vel_from_freq()` [NEW-FUNCTION]
+                -   Calculate keplerian velocity from frequency
             -   `mtmr_from_m1m2()` [NEW-FUNCTION]
                 -   Convert from primary and secondary masses to total-mass and mass-ratio
+
+    -   `inout/`
+        -   `inout_core.py`
+            -   `count_lines` <== `countLines`  [DEPRECATION]
+				-   BUG: lists of files were being screwed up somehow
+            -   `frac_str`  [NEW-FUNCTION]
+                -   New function to nicely format a string of the form '{}/{} = {}' given a numerator and denominator.  Chooses appropriate formatting given the values.
+        -   `log.py`
+            -   Have log to stream go to stdout (instead of stderr) by default.
+            -   `get_logger()`
+                -   Setup `StreamHandler` to log to stdout instead of stderr by default.
 
     -   `plot/`
         -   `draw.py`
@@ -58,25 +156,65 @@ Current
             -   `plot_conf_fill()`
                 -   [BUG]: bad function call using filter.
                 -   [BUG]: `filter`/`floor`/`ceil` parameters were not correctly selecting elements.  Improved using masked arrays.
+            -   `plot_segmented_line()`
+                -   Utilize `colormap()` method
+        -   `layout.py`
+            -   `extent()` [NEW-FUNCTION]
+                -   Function for calculating the extent of an object.  Currently only axes work.
         -   `plot_core.py`
             -   [BUG]: `_LINE_STYLE_SET` did not match new linestyle format for matplotlib
+            -   `colormap()`
+                -   First argument `args` is now optional, defaults to [0.0, 1.0]
+            -   `figax()`  [NEW-FUNCTION]
+                -   New method for conveniently creating and adjusting plots using `plt.subplots()`
             -   `invert_color()` [NEW-FUNCTION]
                 -   Invert the given named or RGB(A) color.
+            -   `legend()`
+                -   New argument 'prev' for previous artists (i.e. legends) to be readded to axis after creating new legend.
             -   `set_axis()`
                 -   Catch 'fs' keyword-argument and replace with 'labelsize'
+            -   `text()`
+                -   Do not set default fontsize `fs`
+
     -   `math/`
         -   `math_core.py`
+			-   `argnearest()`
+				-   Add `side` argument to select if a particular side should be chosen, otherwise find the nearest on either side (default and previous behavior).  Tests Added.
             -   `comparison_filter()`
                 -   Use numpy masked arrays, instead of flattening multi-dimensional arrays.
+            -   `midpoints()`
+                -   Add option to use a `scale` argument instead of `log` boolean
+			-   `minmax()`
+				-   Allow (2,) values to be given for `stretch` and `log_stretch` to apply to left and right sides respectively.
+            -   `rotation_matrix_between_vectors()`  [NEW-FUNCTION]
+                -   Function that uses Rodriguez' formula to create a rotation matrix that will rotate one vector to another.
+            -   `slice_with_inds_for_axis()`  [NEW-FUNCTION]
+                -   Slice an N-dimensional array using an N-1 dimensional array, with indices for the remaining axis.
+            -   `spacing()`
+                -   New agument `dex` to set the number of points per decade when using log spacing.
             -   `str_array()`
                 -   Guess default format based on array values (use `_guess_str_format_from_range`)
+			-   `zenum()`  [NEW-FUNCTION]
+				-   Method to perform `enumerate(zip(*args))`
             -   `_guess_str_format_from_range()` [NEW-FUNCTION]
                 -   Based on the dynamical (logarithmic) range of an array, guess the appropriate string formatting (i.e. 'f' vs 'e')
+            
+        -   `numeric.py`
+            -   `kde()`  [NEW-FUNCTION]
+                -   Construct a custom KDE object, optionally in log-space.
+            -   `kde_hist()`  [NEW-FUNCTION]
+                -   Construct a KDE "histogram" resampling from the KDE distribution.
             
         -   `statistic.py`
             -   `confidence_intervals()`
                 -   Implement a kludge to allow percentile calculation with masked arrays.
+            -   `percentiles()`
+                -   BUG: when integer values were being used, percentiles were converted to [0, 1].
 
+    -   `constants.py`
+        -   Added electron-charge `QELC`
+        -   Added Jansky unit `JY`
+                    
 
 [0.0.12] - 2018/06/20
 ---------------------
@@ -255,7 +393,6 @@ Current
         -   Added `ARCSEC` arcsecond constant.
 
 
-
 [0.0.10] - 2017/05/06
 ---------------------
     -   `inout/`
@@ -395,7 +532,6 @@ Current
         -   New file for general purpose, internal methods, etc.
         -   `dep_warn` [new-function]
             -   Function for sending deprecation warnings.
-
 
 
 [0.0.8] - 2016/05/15
