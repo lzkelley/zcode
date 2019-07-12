@@ -249,13 +249,20 @@ def twin_axis(ax, axis='x', pos=1.0, **kwargs):
     if axis == 'x':
         tw = ax.twinx()
         setax = 'y'
+        store_name = "_twinx"
     elif axis == 'y':
         tw = ax.twiny()
         setax = 'x'
+        store_name = "_twiny"
     else:
         raise RuntimeError("``axis`` must be either {`x` or `y`}!")
 
     tw = set_axis(tw, axis=setax, pos=pos, **kwargs)
+    if not hasattr(ax, store_name):
+        setattr(ax, store_name, [tw])
+    else:
+        getattr(ax, store_name).append(tw)
+
     return tw
 
 
