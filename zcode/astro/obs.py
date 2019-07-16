@@ -36,6 +36,15 @@ UNITS = {
 __all__ = ["ABmag_to_flux", "abs_mag_to_lum", "flux_to_mag", "lum_to_abs_mag", "mag_to_flux"]
 
 
+# _band_name = ['u', 'b', 'v', 'r', 'i']
+# _band_wlen = [365, 445, 551, 658, 806]   # nm
+# _band_color = ['violet', 'blue', 'green', 'red', 'darkred']
+# Band = namedtuple('band', ['name', 'freq', 'wlen', 'color'])
+#
+# BANDS = {nn: Band(nn, SPLC/(ll*1e-7), ll*1e-7, cc)
+#          for nn, ll, cc in zip(_band_name, _band_wlen, _band_color)}
+
+
 def _get_units_type(type):
     try:
         units = UNITS[type]
