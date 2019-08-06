@@ -517,7 +517,7 @@ def indsWithin(vals, extr, edges=True):
     return inds
 
 
-def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, valid=True):
+def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, valid=False):
     x1 = np.asarray(xnew)
     x0 = np.asarray(xold)
     y0 = np.asarray(yold)
@@ -533,7 +533,7 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
 
     if valid:
         inds = (~np.isnan(x0) & ~np.isinf(x0)) & (~np.isnan(y0) & ~np.isinf(y0))
-        inds = np.where(inds)
+        # inds = np.where(inds)
     else:
         inds = slice(None)
 
@@ -544,6 +544,7 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
 
     if ylog:
         y1 = np.power(10.0, y1)
+
     return y1
 
 
