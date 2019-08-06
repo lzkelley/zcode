@@ -53,6 +53,7 @@ __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
            'combine_files',
            'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists', 'python_environment',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
+           'tqdm',
            # === DEPRECATED ===
            'frac_str', 'countLines', 'combineFiles']
 
@@ -905,6 +906,12 @@ def frac_str(*args, **kwargs):
     utils.dep_warn("inout_core.frac_str", newname="math.statistic.frac_str")
     from zcode.math import statistic
     return statistic.frac_str(*args, **kwargs)
+
+
+def tqdm(*args, **kwargs):
+    import tqdm
+    tqdm_method = tqdm.tqdm_notebook if environment_is_jupyter() else tqdm.tqdm
+    return tqdm_method(*args, **kwargs)
 
 
 '''
