@@ -82,6 +82,8 @@ Current
             - `_guess_str_format_from_range()`
                 - BUG: fix issue where exponential notation was only being used for positive-definite values
         - `numeric.py`
+            - `cumtrapz_loglog()`
+                - Previous version of this function used an algorithm found online.  New version uses a similar algorithm -- which is basically the trapezoid rule in log-log space (i.e. for power-laws) -- with some minor improvements and niceties.
             - `kde()`  [DEPRECATED]
                 - Use new functionality from `kde.py`
             - `kde_hist()`  [DEPRECATED]

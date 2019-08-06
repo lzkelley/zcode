@@ -10,12 +10,12 @@ import numpy as np
 from numpy.testing import run_module_suite
 from nose.tools import assert_true
 
-import zcode
-import zcode.plot
+# import zcodes
+# import zcode.plot
 from zcode.math import numeric
 
 
-class TestMathCore(object):
+class Test_Numeric(object):
 
     @classmethod
     def setup_class(cls):
@@ -23,37 +23,42 @@ class TestMathCore(object):
         cls.SIZE = 1000
         cls.r2 = np.random.uniform(-1.0, 1.0, size=cls.SIZE)
 
-    def test_smooth(self):
-        r2 = self.r2
-        ARR_SIZE = r2.size
-        AMP = 10.0
-        NOISE = 1.4
-        SMOOTH_LENGTHS = [1, 4, 10]
-        NUM = len(SMOOTH_LENGTHS)
+    def test_cumtrapz(self):
 
-        xx = np.linspace(-np.pi/4.0, 3.0*np.pi, num=ARR_SIZE)
-        arrs = [AMP*np.sin(xx) + NOISE*r2
-                for ii in range(len(SMOOTH_LENGTHS))]
-        sm_arrs = [numeric.smooth(arr, smlen)
-                   for (arr, smlen) in zip(arrs, SMOOTH_LENGTHS)]
+        bounds = [10.0, 23.0]
+        # bounds = [10, 100]
+        xx = np.logspace(0, 2, 100)
+        # xx = np.logspace(0, 3, 91)
 
-        # from matplotlib import pyplot as plt
-        # fig, ax = plt.subplots()
-        # colors = zcode.plot.plot_core.color_cycle(NUM)
-        # for ii, (ar, sm) in enumerate(zip(arrs, sm_arrs)):
-        #     ax.plot(ar, color=colors[ii], alpha=0.5)
-        #     ax.plot(sm, color=colors[ii], alpha=0.5, ls='--')
-        #
-        # fig.savefig('test.pdf')
-        # plt.close('all')
+        for amp in [3.0, 3.25]:
+            for gamma in [-1.8, 2.3]:
+                print("\namp = {}, gamma = {}".format(amp, gamma))
 
-        # average derivative should be progressively smaller
-        stds = [np.mean(np.diff(sm[10:-10])) for sm in sm_arrs]
-        print("stds = {}".format(stds))
-        assert_true(stds[0] > stds[1] > stds[2])
+                def func(zz):
+                    return amp * np.power(zz, gamma)
 
-        # Smoothing length 1 should have no effect
-        assert_true(np.all(sm_arrs[0] == arrs[0]))
+                # y = dA/dx
+                bounds = np.array(bounds)
+                limits = func(bounds)
+                exact = np.diff(limits * bounds)[0] / (gamma + 1)
+
+                yy = func(xx)
+                test_dadx = numeric.cumtrapz_loglog(yy, xx, bounds=bounds, dlogx=None)
+                error = (test_dadx - exact) / exact
+                print("dA/dx, true: {:.4e}, test: {:.4e}, error = {:.4e}".format(exact, test_dadx, error))
+                assert_true(np.fabs(error) < 1e-6)
+
+                # y = dA/dlog10x
+                bounds = np.array(bounds)
+                limits = func(bounds)
+                exact = np.log(10.0) * np.diff(limits)[0] / gamma
+
+                yy = func(xx)
+                test_dadx = numeric.cumtrapz_loglog(yy, xx, bounds=bounds, dlogx=10.0)
+                error = (test_dadx - exact) / exact
+                print("dA/dlogx, true: {:.4e}, test: {:.4e}, error = {:.4e}".format(exact, test_dadx, error))
+                assert_true(np.fabs(error) < 1e-6)
+
         return
 
 
