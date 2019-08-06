@@ -998,7 +998,9 @@ def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **
     scale : str
         Scaling for spacing, {'lin', 'log'}.
     num : int
-        Number of points to produce, `N`.
+        Number of points to produce.
+    dex : int
+        Number of points per decade (order of magnitude) to produce.
     filter : str or `None`
         String specifying how to filter the input `data` relative to zero.
     integers : bool
