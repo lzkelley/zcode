@@ -127,18 +127,30 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
       the interpolation is better performed on the input `yy` values.
 
     """
+
     if bounds is not None:
         if len(bounds) != 2 or np.any(~math_core.within(bounds, xx)) or (bounds[0] > bounds[1]):
             err = "Invalid `bounds` = '{}', xx extrema = '{}'!".format(
                 bounds, math_core.minmax(xx))
             raise ValueError(err)
 
-        newy = math_core.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
+        if axis != -1 or np.ndim(yy) > 1:
+            newy = math_core.interp_func(xx, yy, xlog=True, ylog=True)(bounds)
+        else:
+            newy = math_core.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
+
+        # newy = math_core.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
         ii = np.searchsorted(xx, bounds)
-        xx = np.insert(xx, ii, bounds)
-        yy = np.insert(yy, ii, newy)
+        xx = np.insert(xx, ii, bounds, axis=axis)
+        yy = np.insert(yy, ii, newy, axis=axis)
         ii = np.array([ii[0], ii[1]+1])
         assert np.alltrue(xx[ii] == bounds), "FAILED!"
+
+    yy = np.ma.masked_values(yy, value=0.0)
+
+    if np.ndim(yy) > 1:
+        cut = [slice(None)] + [np.newaxis for ii in range(np.ndim(yy)-1)]
+        xx = xx[tuple(cut)]
 
     log_base = np.e
     if dlogx is not None:
@@ -163,9 +175,9 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
         # NOTE: **DO NOT INTERPOLATE INTEGRAL** this works badly for negative power-laws
         # lo, hi = math_core.interp(bounds, xx[1:], integ, xlog=True, ylog=True, valid=False)
         # integ = hi - lo
-        lo, hi = integ[ii-1]
-        print(xx[1:][ii-1], bounds)
-        integ = hi-lo
+        integ = np.moveaxis(integ, axis, 0)
+        lo, hi = integ[ii-1, ...]
+        integ = hi - lo
 
     return integ
 
