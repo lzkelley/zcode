@@ -74,6 +74,8 @@ Current
             - `interp_func()`
                 - Implement optional 'xlog' and 'ylog' scalings.
                 - Implement 'mono' option for interpolation kind to use `PchipInterpolator` which enforced monotonicity.
+            - `minmax()`
+                - BUG: Jagged input arrays would fail in `comparison_filter`.  FIX: pre-flatten input data.
             - `str_array_neighbors()` [NEW-FUNCTION]
                 - Use 'str_array' to print particular indices, and its neighbors, in an array.
             - `within()`

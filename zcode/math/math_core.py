@@ -708,6 +708,18 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     if limit is not None:
         assert len(limit) == 2, "`limit` must have length 2."
 
+    # Pre-flatten the input data (NOTE: `comparison_filter` fails for jagged arrays!)
+    try:
+        np.product(data)
+        data = np.array(data).flatten()
+    except ValueError:
+        try:
+            data = [np.array(dd).flatten() for dd in data]
+            data = np.concatenate(data)
+        except:
+            logging.error("Failed to flatten input data!")
+            raise
+
     if filter is not None:
         data = comparison_filter(data, filter)
 
