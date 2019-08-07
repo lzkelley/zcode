@@ -13,7 +13,7 @@ from zcode.constants import NWTG, SPLC, MPRT, SIGMA_T
 __all__ = ['chirp_mass', 'distance', 'dynamical_time',
            'eddington_accretion', 'eddington_luminosity',
            'gw_hardening_rate_dadt', 'gw_strain_source_circ',
-           'm1m2_from_mtmr', 'mtmr_from_m1m2',
+           'm1m2_from_mtmr', 'mtmr_from_m1m2', 'orbital_velocities',
            'kepler_freq_from_sep', 'kepler_sep_from_freq', 'rad_isco', 'schwarzschild_radius',
            'sep_to_merge_in_time', 'time_to_merge_at_sep']
 
@@ -109,6 +109,13 @@ def kepler_sep_from_freq(mass, freq):
 def kepler_vel_from_freq(mass, freq):
     vel = np.power(NWTG*mass*(2.0*np.pi*freq), 1.0/3.0)
     return vel
+
+
+def orbital_velocities(mt, mr, per):
+    beta2 = (np.power(2*np.pi*NWTG*mt/per, 1/3.0) / (1 + mr) / SPLC)
+    beta1 = beta2 * mr
+    betas = np.moveaxis([beta1, beta2], 0, -1)
+    return betas
 
 
 def m1m2_from_mtmr(mt, mr):

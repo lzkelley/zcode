@@ -48,6 +48,8 @@ Current
         - `astro_core.py`
             - `eddington_accretion()`
                 - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
+            - `orbital_velocities()` [NEW-METHOD]
+                - Orbital velocity of both objects given mtot and mrat.
 
     - `inout/`
         - `stats_str()`  ==>  moved to `math.statistic.stats_str()`
