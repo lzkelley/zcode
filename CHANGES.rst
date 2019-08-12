@@ -50,6 +50,8 @@ Current
                 - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
             - `orbital_velocities()` [NEW-METHOD]
                 - Orbital velocity of both objects given mtot and mrat.
+        - `obs.py`
+            - Added SDSS AB ugriz magnitude to conversion tables.
 
     - `inout/`
         - `stats_str()`  ==>  moved to `math.statistic.stats_str()`
