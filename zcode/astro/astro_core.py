@@ -111,11 +111,13 @@ def kepler_vel_from_freq(mass, freq):
     return vel
 
 
-def orbital_velocities(mt, mr, per):
-    beta2 = (np.power(2*np.pi*NWTG*mt/per, 1/3.0) / (1 + mr) / SPLC)
-    beta1 = beta2 * mr
-    betas = np.moveaxis([beta1, beta2], 0, -1)
-    return betas
+def orbital_velocities(mt, mr, per=None, sep=None):
+    sep, per = _get_sep_per(mt, sep, per)
+    v2 = np.power(NWTG*mt/sep, 1.0/2.0) / (1 + mr)
+    # v2 = np.power(2*np.pi*NWTG*mt/per, 1.0/3.0) / (1 + mr)
+    v1 = v2 * mr
+    vels = np.moveaxis([v1, v2], 0, -1)
+    return vels
 
 
 def m1m2_from_mtmr(mt, mr):
@@ -180,3 +182,18 @@ def _gw_hardening_ecc_func(ecc):
     den = np.power(1 - e2, 7/2)
     fe = num / den
     return fe
+
+
+def _get_sep_per(mt, sep, per):
+    if (per is None) and (sep is None):
+        raise ValueError("Either `per` or `sep` must be provided!")
+    if (per is not None) and (sep is not None):
+        raise ValueError("Only one of `per` or `sep` should be provided!")
+
+    if per is None:
+        per = 1 / kepler_freq_from_sep(mt, sep)
+
+    if sep is None:
+        sep = kepler_sep_from_freq(mt, 1/per)
+
+    return sep, per
