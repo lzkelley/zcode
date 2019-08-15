@@ -80,6 +80,10 @@ Current
                 - Implement 'mono' option for interpolation kind to use `PchipInterpolator` which enforced monotonicity.
             - `minmax()`
                 - BUG: Jagged input arrays would fail in `comparison_filter`.  FIX: pre-flatten input data.
+            - `spacing()`
+                - Pass along `endpoint` argument to numpy functions
+            - `spacing_composite()`  [NEW-FUNCTION]
+                - New function to create composite (stacked) spacings with different ranges.
             - `str_array_neighbors()` [NEW-FUNCTION]
                 - Use 'str_array' to print particular indices, and its neighbors, in an array.
             - `within()`

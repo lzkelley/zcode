@@ -1001,7 +1001,8 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
-def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **kwargs):
+def spacing(data, scale='log', num=None, dex=10, dex_plus=1,
+            filter=None, integers=False, endpoint=True, **kwargs):
     """Create an evenly spaced array between extrema from the given data.
 
     Arguments
@@ -1059,7 +1060,7 @@ def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **
     if (num is None) and (not integers):
         if log_flag and (not integers):
             num_dex = np.fabs(np.diff(np.log10(span)))
-            num = np.int(np.ceil(num_dex * dex)) + 1
+            num = np.int(np.ceil(num_dex * dex)) + dex_plus
         else:
             num = DEF_NUM_LIN
 
@@ -1097,11 +1098,45 @@ def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **
     # Create spacing between min/max values exactly
     else:
         if log_flag:
-            spaced = np.logspace(*np.log10(span), num=num)
+            spaced = np.logspace(*np.log10(span), num=num, endpoint=endpoint)
         else:
-            spaced = np.linspace(*span, num=num)
+            spaced = np.linspace(*span, num=num, endpoint=endpoint)
 
     return spaced
+
+
+def spacing_composite(comp_edges, scale, dex=None, num=None, **kwargs):
+    nsegs = len(scale)
+    if len(comp_edges) != nsegs + 1:
+        raise ValueError("`comp_edges` must have one more entry than `scale`")
+
+    if dex is None and num is None:
+        raise ValueError("`dex` or `num` must be provided!")
+
+    if dex is None:
+        dex = [None for ii in range(nsegs)]
+    elif len(dex) != nsegs:
+        raise ValueError("Length mismatch between `scale` and `dex`!")
+
+    if num is None:
+        num = [None for ii in range(nsegs)]
+    elif len(num) != nsegs:
+        raise ValueError("Length mismatch between `scale` and `num`!")
+
+    edges = []
+    for ii, (sc, dd, nn) in enumerate(zip(scale, dex, num)):
+        lo = comp_edges[ii]
+        hi = comp_edges[ii+1]
+
+        ep = True if (ii == nsegs - 1) else False
+        dp = 1 if ep else 0
+
+        tt = spacing([lo, hi], dex=dd, num=nn, endpoint=ep, dex_plus=dp, **kwargs)
+        edges.append(tt)
+
+    edges = np.concatenate(edges)
+
+    return edges
 
 
 def array_str(*args, **kwargs):
