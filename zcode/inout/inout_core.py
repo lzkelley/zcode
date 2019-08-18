@@ -53,7 +53,7 @@ __all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
            'combine_files',
            'promptYesNo', 'mpiError', 'ascii_table', 'modify_exists', 'python_environment',
            'iterable_notstring', 'str_format_dict', 'top_dir', 'underline', 'warn_with_traceback',
-           'tqdm',
+           'tqdm', 'unzip',
            # === DEPRECATED ===
            'frac_str', 'countLines', 'combineFiles']
 
@@ -912,6 +912,12 @@ def tqdm(*args, **kwargs):
     import tqdm
     tqdm_method = tqdm.tqdm_notebook if environment_is_jupyter() else tqdm.tqdm
     return tqdm_method(*args, **kwargs)
+
+
+def unzip(iterable):
+    """Extract an inner-iterable from an outer one, e.g. `a, b = unzip([(aa, bb) for ...])`
+    """
+    return map(list, zip(*iterable))
 
 
 '''

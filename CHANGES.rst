@@ -55,6 +55,9 @@ Current
 
     - `inout/`
         - `stats_str()`  ==>  moved to `math.statistic.stats_str()`
+        - `inout_core.py`
+            - `unzip()`  [NEW-METHOD]
+                - Function to extract an inner-iterable from an outer-iterable; analogous to the transpose of a 2D numpy-array.
 
     - `math/`
         - `tests/`
