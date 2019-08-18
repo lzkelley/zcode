@@ -1106,7 +1106,12 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=1,
 
 
 def spacing_composite(comp_edges, scale, dex=None, num=None, **kwargs):
-    nsegs = len(scale)
+    if np.isscalar(scale):
+        nsegs = len(comp_edges) - 1
+        scale = [scale for ii in range(nsegs)]
+    else:
+        nsegs = len(scale)
+
     if len(comp_edges) != nsegs + 1:
         raise ValueError("`comp_edges` must have one more entry than `scale`")
 
@@ -1115,11 +1120,15 @@ def spacing_composite(comp_edges, scale, dex=None, num=None, **kwargs):
 
     if dex is None:
         dex = [None for ii in range(nsegs)]
+    elif np.isscalar(dex):
+        dex = [dex for ii in range(nsegs)]
     elif len(dex) != nsegs:
         raise ValueError("Length mismatch between `scale` and `dex`!")
 
     if num is None:
         num = [None for ii in range(nsegs)]
+    elif np.isscalar(num):
+        num = [num for ii in range(nsegs)]
     elif len(num) != nsegs:
         raise ValueError("Length mismatch between `scale` and `num`!")
 
