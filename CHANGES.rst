@@ -116,6 +116,7 @@ Current
                 - `percs` <== `ci` [DEPRECATION-VARIABLE]
             - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
             - `stats_str()`  <=== moved from `inout_core.stats_str()`
+                - New argument `label` which determines whether the percentiles are listed.
             - `std()`  [NEW-METHOD]
                 - Method for calculating distribution standard-deviations, optionally with weights.
 
