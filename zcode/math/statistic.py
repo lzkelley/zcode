@@ -446,7 +446,7 @@ def stats(vals, median=False):
 
 
 def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, weights=None,
-              format=None, log=False, label_log=True, filter=None):
+              format=None, log=False, label=True, label_log=True, filter=None):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -463,6 +463,8 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
         Formatting for all numerical output, (e.g. `":.2f"`).
     log : bool
         Convert values to log10 before printing.
+    label : bool
+        Add label for which percentiles are being printed
     label_log : bool
         If `log` is also true, append a string saying these are log values.
 
@@ -519,7 +521,8 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
     if percs_flag:
         tiles = percentiles(data, percs, weights=weights).astype(data.dtype)
         out += "(" + ", ".join(form.format(tt) for tt in tiles) + ")"
-        out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"
+        if label:
+            out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"
 
     # Note if these are log-values
     if log and label_log:
