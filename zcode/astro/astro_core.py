@@ -14,8 +14,9 @@ __all__ = ['chirp_mass', 'distance', 'dynamical_time',
            'eddington_accretion', 'eddington_luminosity',
            'gw_hardening_rate_dadt', 'gw_strain_source_circ',
            'm1m2_from_mtmr', 'mtmr_from_m1m2', 'orbital_velocities',
-           'kepler_freq_from_sep', 'kepler_sep_from_freq', 'rad_isco', 'schwarzschild_radius',
-           'sep_to_merge_in_time', 'time_to_merge_at_sep']
+           'kepler_freq_from_sep', 'kepler_sep_from_freq', 'rad_isco', 'uniform_inclinations',
+           'schwarzschild_radius', 'sep_to_merge_in_time', 'time_to_merge_at_sep',
+           'rad_hill', 'rad_roche']
 
 _SCHW_CONST = 2*NWTG/np.square(SPLC)
 _EDD_CONST = 4.0*np.pi*SPLC*NWTG*MPRT/SIGMA_T
@@ -151,6 +152,13 @@ def rad_isco(m1, m2, factor=3.0):
     return factor * schwarzschild_radius(m1+m2)
 
 
+def uniform_inclinations(shape):
+    """Generate inclinations (0,pi) uniformly in sin(theta), i.e. spherically.
+    """
+    inclins = np.arccos(1 - np.random.uniform(0.0, 1.0, shape))
+    return inclins
+
+
 def sep_to_merge_in_time(m1, m2, time):
     """The initial separation required to merge within the given time.
 
@@ -197,3 +205,41 @@ def _get_sep_per(mt, sep, per):
         sep = kepler_sep_from_freq(mt, 1/per)
 
     return sep, per
+
+
+def rad_hill(sep, mrat):
+    """Hill Radius / L1 Lagrangian Point
+
+    See Eq.3.82 (and 3.75) in Murray & Dermott
+    NOTE: this differs from other forms of the relation
+    """
+    rh = sep * np.power(mrat/3.0, 1.0/3.0)
+    return rh
+
+
+def rad_roche(sep, mfrac, ecc=0.0):
+    """Average Roche-Lobe radius from [Eggleton-1983]/[Miranda+Lai-2015]
+
+    NOTE: [Miranda+Lai-2015] give this form of the equation, with eccentricity dependence, and
+          cite [Eggleton-1983], however, that paper includes no eccentricity dependence.
+          The eccentricity dependence comes from switching from semi-major-axis to pericenter,
+          which is appropriate based on model-dependent assumptions, but not universally.
+
+    Arguments
+    ---------
+    sep : binary separation / semi-major-axis
+    mfrac : mass fraction of the target object, defined as M_i/(M1+M2)
+    ecc : binary eccentricity
+
+    """
+    # This is M_2 / M_1 if mfrac is $M_2 / (M1+M2)$, and $M_1/M_2$ if it is $M1 / (M1+M2)$.
+    qq = mfrac / (1 - mfrac)
+
+    # Note that these papers use `q \equiv M1/M2` which is `1/mrat` as we define it here
+    q13 = np.power(qq, 1.0/3.0)
+    q23 = q13**2
+    rl = 0.49 * q23 * sep / (0.6*q23 + np.log(1.0 + q13))
+    if ecc != 0.0:
+        rl *= (1.0 - ecc)
+
+    return rl

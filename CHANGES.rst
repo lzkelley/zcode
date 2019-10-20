@@ -50,6 +50,12 @@ Current
                 - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
             - `orbital_velocities()` [NEW-METHOD]
                 - Orbital velocity of both objects given mtot and mrat.
+            - `rad_hill` [NEW-METHOD]
+                - Hill radius equation from Murray & Dermott
+            - `rad_roche` [NEW-METHOD]
+                - Average roche-lobe radius from Eggleton-1983
+            - `uniform_inclinations()`  [NEW-FUNCTION]
+                - New function to draw random, uniform inclination angles.
         - `obs.py`
             - Added SDSS AB ugriz magnitude to conversion tables.
             - `fnu_to_flambda()` & `flambda_to_fnu()`  [NEW-FUNCTION]
