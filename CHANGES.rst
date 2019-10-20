@@ -52,6 +52,8 @@ Current
                 - Orbital velocity of both objects given mtot and mrat.
         - `obs.py`
             - Added SDSS AB ugriz magnitude to conversion tables.
+            - `fnu_to_flambda()` & `flambda_to_fnu()`  [NEW-FUNCTION]
+                - Functions to convert spectral flux from wavelength to frequency and visa-versa.
 
     - `inout/`
         - `stats_str()`  ==>  moved to `math.statistic.stats_str()`
@@ -67,6 +69,7 @@ Current
                 - Tests for `edges_from_cents`
             - `test_statistic.py`
                 - New test for percentiles.
+                
         - `math_core.py`
             - `array_str()` [NEW-FUNCTION]
                 - Alias of `str_array()`
@@ -96,6 +99,7 @@ Current
             - `zenumerate()` <== `zenum()` [DEPRECATION]
             - `_guess_str_format_from_range()`
                 - BUG: fix issue where exponential notation was only being used for positive-definite values
+                
         - `numeric.py`
             - `cumtrapz_loglog()`
                 - Previous version of this function used an algorithm found online.  New version uses a similar algorithm -- which is basically the trapezoid rule in log-log space (i.e. for power-laws) -- with some minor improvements and niceties.
@@ -103,6 +107,7 @@ Current
                 - Use new functionality from `kde.py`
             - `kde_hist()`  [DEPRECATED]
                 - Use new functionality from `kde.py`
+                
         - `statistic.py`
             - `confidenceBands()` [DELETED-METHOD]
             - `confidence_intervals()`

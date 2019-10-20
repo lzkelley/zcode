@@ -3,7 +3,7 @@
 
 import numpy as np
 
-from zcode.constants import PC
+from zcode.constants import PC, SPLC
 
 # VEGA/Johnson/Bessell: http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/magsystems.pdf
 # SDSS/AB/Fukugita: http://www.astronomy.ohio-state.edu/~martini/usefuldata.html
@@ -56,7 +56,8 @@ UNITS = {
     "l": 1.0e-11   # erg/s/Angstrom/cm^2
 }
 
-__all__ = ["ABmag_to_flux", "abs_mag_to_lum", "flux_to_mag", "lum_to_abs_mag", "mag_to_flux"]
+__all__ = ["ABmag_to_flux", "abs_mag_to_lum", "flux_to_mag", "lum_to_abs_mag", "mag_to_flux",
+           "fnu_to_flambda", "flambda_to_fnu"]
 
 
 # _band_name = ['u', 'b', 'v', 'r', 'i']
@@ -180,3 +181,19 @@ def lum_to_abs_mag(band, lum, type='f'):
     mag = lum/ref_lum
     mag = -2.5 * np.log10(mag) + 5
     return mag
+
+
+def fnu_to_flambda(fnu, freq=None, wavelength=None):
+    if freq is None:
+        freq = SPLC / wavelength
+
+    flambda = fnu * freq**2 / SPLC
+    return flambda
+
+
+def flambda_to_fnu(flambda, freq=None, wavelength=None):
+    if wavelength is None:
+        wavelength = SPLC / freq
+
+    fnu = flambda * freq**2 / SPLC
+    return fnu
