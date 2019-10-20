@@ -83,6 +83,8 @@ Current
                 - Implement 'mono' option for interpolation kind to use `PchipInterpolator` which enforced monotonicity.
             - `minmax()`
                 - BUG: Jagged input arrays would fail in `comparison_filter`.  FIX: pre-flatten input data.
+            - `roll()`  [NEW-FUNCTION]
+                - Roll an array along a target axis by varying amounts for each index.
             - `spacing()`
                 - Pass along `endpoint` argument to numpy functions
             - `spacing_composite()`  [NEW-FUNCTION]

@@ -43,7 +43,7 @@ __all__ = ['argextrema', 'argnearest', 'around', 'array_str', 'asBinEdges',
            'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
            'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
-           'ordered_groups', 'really1d', 'renumerate', 'rotation_matrix_between_vectors',
+           'ordered_groups', 'really1d', 'renumerate', 'roll', 'rotation_matrix_between_vectors',
            'sliceForAxis', 'spacing', 'spacing_composite',
            'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
            'comparison_filter', '_comparison_function',
@@ -710,7 +710,9 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
 
     # Pre-flatten the input data (NOTE: `comparison_filter` fails for jagged arrays!)
     try:
-        np.product(data)
+        # Check if input array is jagged (will raise an error)
+        # np.product(data)   # NOTE: this causes overflow errors.
+        np.linalg.norm(data)
         data = np.array(data).flatten()
     except ValueError:
         try:
@@ -939,6 +941,54 @@ def renumerate(arr):
     Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
     """
     return zip(reversed(range(len(arr))), reversed(arr))
+
+
+def roll(a, r, axis=-1):
+    """Roll an array along a target axis by a varying amount.
+
+    Arguments
+    ---------
+    a : array_like
+        Array to be rolled
+    r : array_like of int
+        Amount to roll `a`.  Must be the same shape as `a`, without the target axis.
+        e.g. if `a` has shape (N,M,L,) and `axis=1` then `r` must have shape (N,L,).
+
+    From Stackoverflow @Divakar: https://stackoverflow.com/a/58474469/230468
+
+    """
+
+    import skimage
+
+    if np.isscalar(r):
+        return np.roll(a, r, axis=axis)
+
+    r = np.asarray(r)
+    a = np.asarray(a)
+
+    if axis != -1:
+        a = np.moveaxis(a, axis, -1)
+
+    if a.shape[:-1] != r.shape:
+        err = "Shape of `a` ({}) must match `r` ({}) except for target axis (axis={})!".format(
+            a.shape, r.shape, axis)
+        raise ValueError(err)
+
+    # Repeate along target axis to accomodate any roll
+    a_ext = np.concatenate((a, a[..., :-1]), axis=-1)
+
+    # Get sliding windows; use advanced-indexing to select appropriate ones
+    n = a.shape[-1]
+    w = skimage.util.shape.view_as_windows(a_ext, (1,)*r.ndim + (n,)).reshape(a.shape + (n,))
+    idx = (n - r) % n
+    idxr = idx.reshape(idx.shape + (1,)*(w.ndim - r.ndim))
+
+    res = np.take_along_axis(w, idxr, axis=r.ndim)[..., 0, :]
+
+    if axis != -1:
+        res = np.moveaxis(res, -1, axis)
+
+    return res
 
 
 def rotation_matrix_between_vectors(aa, bb):
