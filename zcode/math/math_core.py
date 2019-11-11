@@ -117,6 +117,16 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
     scalar = np.isscalar(vals)
     vals = np.atleast_1d(vals)
 
+    if edges.ndim != 1:
+        raise ValueError("`edges` must be 1D!")
+
+    shape = None
+    # Flatten input array if it is multidimensional
+    if vals.ndim > 1:
+        shape = vals.shape
+        size = np.product(shape)
+        vals = vals.reshape(size)
+
     # Sort the input array if needed
     if not assume_sorted:
         srt = np.argsort(edges)
@@ -160,6 +170,12 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
 
     if scalar:
         idx = idx[0]
+    else:
+        idx = np.asarray(idx)
+
+    # Reshape output array if input was multidimensional
+    if shape is not None:
+        idx = idx.reshape(shape)
 
     return idx
 
@@ -943,7 +959,7 @@ def renumerate(arr):
     return zip(reversed(range(len(arr))), reversed(arr))
 
 
-def roll(a, r, axis=-1):
+def roll(a, r, cat=None, axis=-1):
     """Roll an array along a target axis by a varying amount.
 
     Arguments
@@ -961,13 +977,21 @@ def roll(a, r, axis=-1):
     import skimage
 
     if np.isscalar(r):
-        return np.roll(a, r, axis=axis)
+        # If `cat` is not None, then `np.roll` does not achieve the same thing
+        if cat is None:
+            return np.roll(a, r, axis=axis)
+        else:
+            r = r * np.ones_like(a)
 
     r = np.asarray(r)
     a = np.asarray(a)
+    # If no concatenation array is provided, repeat a itself
+    if cat is None:
+        cat = a   # [..., :-1]
 
     if axis != -1:
         a = np.moveaxis(a, axis, -1)
+        cat = np.moveaxis(cat, axis, -1)
 
     if a.shape[:-1] != r.shape:
         err = "Shape of `a` ({}) must match `r` ({}) except for target axis (axis={})!".format(
@@ -975,7 +999,8 @@ def roll(a, r, axis=-1):
         raise ValueError(err)
 
     # Repeate along target axis to accomodate any roll
-    a_ext = np.concatenate((a, a[..., :-1]), axis=-1)
+    # a_ext = np.concatenate((a, a[..., :-1]), axis=-1)
+    a_ext = np.concatenate((a, cat), axis=-1)
 
     # Get sliding windows; use advanced-indexing to select appropriate ones
     n = a.shape[-1]

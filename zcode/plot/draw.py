@@ -11,6 +11,8 @@ import numbers
 import logging
 
 import matplotlib as mpl
+import matplotlib.patheffects
+
 import numpy as np
 
 from zcode import math as zmath
@@ -22,7 +24,7 @@ from . plot_core import colormap
 __all__ = [
     "conf_fill",
     "plot_bg", "plot_contiguous", "plot_hist_line", "plot_segmented_line", "plot_scatter",
-    "plot_hist_bars", "plot_conf_fill", "plot_carpet",
+    "plot_hist_bars", "plot_conf_fill", "plot_carpet", "outline_text",
     # Deprecated
     "plotHistLine", "plotSegmentedLine", "plotScatter", "plotHistBars", "plotConfFill"
 ]
@@ -544,6 +546,23 @@ def plot_carpet(ax, xx, length=0.05, y0=None, reset=None, direction='down', **kw
 
     for pnt in xx:
         ax.plot([pnt, pnt], yy, **kwargs)
+
+    return
+
+
+def outline_text(art, **kwargs):
+    lw = kwargs.pop('lw', None)
+    lw = 1.0 if lw is None else lw
+    kwargs.setdefault('linewidth', lw)
+    kwargs.setdefault('foreground', 'w')
+    # Otherwise, add the path effects.
+    # effects = [mpl.patheffects.withStroke(linewidth=2, foreground='w')]  # , zorder=2)]
+    effects = [mpl.patheffects.withStroke(**kwargs)]  # , zorder=2)]
+    if isinstance(art, mpl.axes.Axes):
+        art = art.findobj(mpl.text.Text)
+    art = np.atleast_1d(art)
+    for aa in art:
+        aa.set_path_effects(effects)
 
     return
 
