@@ -43,7 +43,7 @@ Current
     - `utils.py`
         - `dep_warn_var()` [NEW-METHOD]
             - Standardized method for handling deprecated variables.
-            
+
     - `astro/`
         - `astro_core.py`
             - `eddington_accretion()`
@@ -75,7 +75,7 @@ Current
                 - Tests for `edges_from_cents`
             - `test_statistic.py`
                 - New test for percentiles.
-                
+
         - `math_core.py`
             - `array_str()` [NEW-FUNCTION]
                 - Alias of `str_array()`
@@ -94,6 +94,8 @@ Current
                 - BUG: Jagged input arrays would fail in `comparison_filter`.  FIX: pre-flatten input data.
             - `roll()`  [NEW-FUNCTION]
                 - Roll an array along a target axis by varying amounts for each index.
+            - `rotation_matrix_about()`  [NEW-FUNCTION]
+                - Construct a rotation matrix about the given axis (vector) by the given angle.
             - `spacing()`
                 - Pass along `endpoint` argument to numpy functions
             - `spacing_composite()`  [NEW-FUNCTION]
@@ -105,7 +107,7 @@ Current
             - `zenumerate()` <== `zenum()` [DEPRECATION]
             - `_guess_str_format_from_range()`
                 - BUG: fix issue where exponential notation was only being used for positive-definite values
-                
+
         - `numeric.py`
             - `cumtrapz_loglog()`
                 - Previous version of this function used an algorithm found online.  New version uses a similar algorithm -- which is basically the trapezoid rule in log-log space (i.e. for power-laws) -- with some minor improvements and niceties.
@@ -113,7 +115,7 @@ Current
                 - Use new functionality from `kde.py`
             - `kde_hist()`  [DEPRECATED]
                 - Use new functionality from `kde.py`
-                
+
         - `statistic.py`
             - `confidenceBands()` [DELETED-METHOD]
             - `confidence_intervals()`
@@ -227,13 +229,13 @@ Current
 				-   Method to perform `enumerate(zip(*args))`
             -   `_guess_str_format_from_range()` [NEW-FUNCTION]
                 -   Based on the dynamical (logarithmic) range of an array, guess the appropriate string formatting (i.e. 'f' vs 'e')
-            
+
         -   `numeric.py`
             -   `kde()`  [NEW-FUNCTION]
                 -   Construct a custom KDE object, optionally in log-space.
             -   `kde_hist()`  [NEW-FUNCTION]
                 -   Construct a KDE "histogram" resampling from the KDE distribution.
-            
+
         -   `statistic.py`
             -   `confidence_intervals()`
                 -   Implement a kludge to allow percentile calculation with masked arrays.
@@ -243,7 +245,7 @@ Current
     -   `constants.py`
         -   Added electron-charge `QELC`
         -   Added Jansky unit `JY`
-                    
+
 
 [0.0.12] - 2018/06/20
 ---------------------
@@ -290,7 +292,7 @@ Current
                 -   Return 'True' if the current environment is a jupyter notebook.
             -   `python_environment()` [NEW-FUNCTION]
                 -   Determine the current python environment (e.g. 'jupyter') and return string.
-                
+
     -   math/
         +   math_core.py
             -   `argnearest`
@@ -310,7 +312,7 @@ Current
                 -   BUG: `scipy.stats` wasnt being imported
             -   `stats_str()`
                 -   Improve default formatting choice based on extrema of input values.
-                
+
     -   plot/
         -   `draw.py`
             -   `conf_fill()` [NEW-FUNCTION]
@@ -334,7 +336,7 @@ Current
                 -   [BUG] Error when `color` was `None`, set to black as default
             -   `text()
                 -   [BUG] Transform argument was getting lost in kwargs.
-            
+
             -   `_color_from_kwargs()`
                 -   Add option to pop (remove) color argument from dictionary.
             -   `_setAxis_scale()`
@@ -454,7 +456,7 @@ Current
                 -   Also change from `precman` and `precexp` to just `man` and `exp`.
             -   `line_style_set()` [new-function]
                 -   Retrieve a list of line-style specifications to be used with `Line2D.set_dashes`.
-                
+
     -   `math/`
         -   `statistic.py`
             -   `stats_str`
@@ -482,7 +484,7 @@ Current
 
     -   `requirements.txt` [new-file]
         -   Started to add requirements file, nearly empty at the moment.
-        
+
 
 [0.0.9] - 2017/03/07
 --------------------
@@ -514,7 +516,7 @@ Current
             -   `argnearest` [new-function]
                 +   Find the arguments in one array closest to those in another.
             -   `limit` [new-function]
-                +   Limit the given value(s) to the given extrema. 
+                +   Limit the given value(s) to the given extrema.
             -   `str_array` <== `strArray`
         +   statistic.py
             -   `confidence_intervals`
@@ -537,7 +539,7 @@ Current
                 +   BUG: contour lines were using a different grid for some reason (unknown), was messing up edges and spacings.
                 +   BUG: default `fs=None` to not change the preset font size.
             -   `plot2DHistProj`
-                +   BUG: errors when x and y projection axes were turned off. 
+                +   BUG: errors when x and y projection axes were turned off.
         +   plot_core.py
             -   `colormap`
                 -   ENH: added `left` and `right` parameters to allow truncation of colormaps.

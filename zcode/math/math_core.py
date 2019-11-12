@@ -44,6 +44,7 @@ __all__ = ['argextrema', 'argnearest', 'around', 'array_str', 'asBinEdges',
            'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate', 'roll', 'rotation_matrix_between_vectors',
+           'rotation_matrix_about',
            'sliceForAxis', 'spacing', 'spacing_composite',
            'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
            'comparison_filter', '_comparison_function',
@@ -1021,6 +1022,26 @@ def rotation_matrix_between_vectors(aa, bb):
     """
     ab = np.matrix(aa + bb)
     rot = 2*((ab*ab.T) / (ab.T*ab)) - np.eye(3)
+    return rot
+
+
+def rotation_matrix_about(axis, theta):
+    """Return the rotation matrix associated with counterclockwise rotation about
+    the given axis by theta radians.
+
+    Taken from: https://stackoverflow.com/a/6802723
+
+    """
+    axis = np.asarray(axis)
+    axis = axis / np.sqrt(np.dot(axis, axis))
+    a = np.cos(theta / 2.0)
+    b, c, d = - axis * np.sin(theta / 2.0)
+    aa, bb, cc, dd = a * a, b * b, c * c, d * d
+    bc, ad, ac, ab, bd, cd = b * c, a * d, a * c, a * b, b * d, c * d
+    rot = np.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
+                    [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
+                    [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
+
     return rot
 
 
