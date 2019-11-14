@@ -1024,7 +1024,7 @@ def invert_color(col):
 
 
 def colormap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
-             under='0.8', over='0.8', left=None, right=None):
+             under='0.8', over='0.8', left=None, right=None, filter=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
@@ -1558,7 +1558,7 @@ def get_norm(data, midpoint=None, log=False, filter=None):
         else:
             min, max = rv
     elif np.size(data) == 1:
-        min, max = 0, np.int(data)-1
+        min, max = 0, np.int(data) - 1
     elif np.size(data) == 2:
         min, max = data
     else:
