@@ -32,19 +32,28 @@ Functions
 from __future__ import absolute_import, division, print_function, unicode_literals
 import warnings
 import numbers
+import logging
 # import six
 
 import numpy as np
 import scipy as sp
 import scipy.interpolate  # noqa
 
-__all__ = ['argextrema', 'argnearest', 'around', 'asBinEdges', 'contiguousInds',
+__all__ = ['argextrema', 'argnearest', 'around', 'array_str', 'asBinEdges',
+           'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
            'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
-           'ordered_groups', 'really1d', 'renumerate', 'rotation_matrix_between_vectors', 'zenum',
-           'sliceForAxis', 'spacing', 'str_array', 'str_array_2d', 'vecmag', 'within',
-           'comparison_filter', '_comparisonFunction', '_comparison_function',
-           '_infer_scale', '_fracToInt']
+           'ordered_groups', 'really1d', 'renumerate', 'roll', 'rotation_matrix_between_vectors',
+           'rotation_matrix_about',
+           'sliceForAxis', 'spacing', 'spacing_composite',
+           'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
+           'comparison_filter', '_comparison_function',
+           '_infer_scale', '_fracToInt',
+           # DEPRECATED
+           'zenum'
+           ]
+
+from zcode import utils
 
 
 def argextrema(arr, type, filter=None):
@@ -54,26 +63,26 @@ def argextrema(arr, type, filter=None):
 
     # Valid filters, NOTE: do *not* include 'e' (equals), doesn't make sense here.
     good_filter = [None, 'g', 'ge', 'l', 'le']
-    if(filter not in good_filter):
+    if filter not in good_filter:
         raise ValueError("Filter '%s' Unrecognized." % (type))
     # Make sure `type` is valid
     good_type = ['min', 'max']
-    if(not np.any([type.startswith(gt) for gt in good_type])):
+    if not np.any([type.startswith(gt) for gt in good_type]):
         raise ValueError("Type '%s' Unrecognized." % (type))
     # Make sure input array `arr` is valid (1D)
     arr = np.asarray(arr)
-    if(arr.ndim != 1 or arr[0].ndim != 0):
+    if (arr.ndim != 1) or (arr[0].ndim != 0):
         raise ValueError("Only 1D arrays currently supported.")
 
-    if(type.startswith('min')):
+    if type.startswith('min'):
         func = np.argmin
-    elif(type.startswith('max')):
+    elif type.startswith('max'):
         func = np.argmax
 
     # Find whether the `filter` criteria is True
-    if(filter):
-        filterFunc = _comparisonFunction(filter)
-        sel = filterFunc(arr, 0.0)
+    if filter:
+        filter_func = _comparison_function(filter, 0.0)
+        sel = filter_func(arr)
     # If no filter (`None`), all values are valid
     else:
         sel = np.ones_like(arr, dtype=bool)
@@ -108,6 +117,16 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
     edges = np.atleast_1d(edges)
     scalar = np.isscalar(vals)
     vals = np.atleast_1d(vals)
+
+    if edges.ndim != 1:
+        raise ValueError("`edges` must be 1D!")
+
+    shape = None
+    # Flatten input array if it is multidimensional
+    if vals.ndim > 1:
+        shape = vals.shape
+        size = np.product(shape)
+        vals = vals.reshape(size)
 
     # Sort the input array if needed
     if not assume_sorted:
@@ -152,6 +171,12 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
 
     if scalar:
         idx = idx[0]
+    else:
+        idx = np.asarray(idx)
+
+    # Reshape output array if input was multidimensional
+    if shape is not None:
+        idx = idx.reshape(shape)
 
     return idx
 
@@ -316,6 +341,31 @@ def asBinEdges(bins, data, scale='lin'):
     return edges
 
 
+def broadcastable(*args):
+    """Expand N, 1D arrays be able to be broadcasted into N, ND arrays.
+
+    e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,1,1`, `1,4,1` and `1,1,2`.
+    """
+    ndim = len(args)
+    assert np.all([1 == np.ndim(aa) for aa in args]), "Each array in `args` must be 1D!"
+
+    cut_ref = [slice(None)] + [np.newaxis for ii in range(ndim-1)]
+    cuts = [np.roll(cut_ref, ii).tolist() for ii in range(ndim)]
+    outs = [aa[tuple(cc)] for aa, cc in zip(args, cuts)]
+    return outs
+
+
+def broadcast(*args):
+    """Broadcast N, 1D arrays into N, ND arrays.
+
+    e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,4,2`, `3,4,2` and `3,4,2`.
+    """
+    # outs = broadcastable(*args)
+    # outs = np.broadcast_arrays(outs)
+    outs = np.meshgrid(*args, indexing='ij')
+    return outs
+
+
 def contiguousInds(args):
     """Find the longest contiguous segment of positive values in the array.
     """
@@ -345,6 +395,30 @@ def contiguousInds(args):
     inds = np.arange(*idx[maxPos])
 
     return inds
+
+
+def edges_from_cents(cents, scale='lin', log=None):
+    if not any([scale.lower().startswith(sc) for sc in ['lin', 'log']]):
+        raise ValueError("`scale` must be 'lin' or 'log'!")
+
+    if log is None:
+        log = scale.lower().startswith('log')
+
+    if log:
+        cents = np.log10(cents)
+
+    widths = np.diff(cents)
+    NUM = 5
+
+    lo = sp.interpolate.PchipInterpolator(np.arange(NUM), widths[:NUM], extrapolate=True)(-1)
+    hi = sp.interpolate.PchipInterpolator(np.arange(NUM), widths[-NUM:], extrapolate=True)(NUM)
+    edges = midpoints(cents, log=False)
+    edges = np.concatenate(([edges[0] - lo], edges, [edges[-1] + hi]))
+
+    if log:
+        edges = np.power(10.0, edges)
+
+    return edges
 
 
 def slice_with_inds_for_axis(arr, inds, axis):
@@ -460,7 +534,7 @@ def indsWithin(vals, extr, edges=True):
     return inds
 
 
-def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, valid=True):
+def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, valid=False):
     x1 = np.asarray(xnew)
     x0 = np.asarray(xold)
     y0 = np.asarray(yold)
@@ -469,10 +543,14 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
         x0 = np.log10(x0)
     if ylog:
         y0 = np.log10(y0)
+        if np.isfinite(left):
+            left = np.log10(left)
+        if np.isfinite(right):
+            right = np.log10(right)
 
     if valid:
         inds = (~np.isnan(x0) & ~np.isinf(x0)) & (~np.isnan(y0) & ~np.isinf(y0))
-        inds = np.where(inds)
+        # inds = np.where(inds)
     else:
         inds = slice(None)
 
@@ -483,18 +561,63 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
 
     if ylog:
         y1 = np.power(10.0, y1)
+
     return y1
 
 
-def interp_func(xold, yold, kind='linear', xlog=True, ylog=True, **kwargs):
-    if (not xlog) or (not ylog):
-        raise ValueError("Not yet implemented!")
+def interp_func(xold, yold, kind='mono', xlog=True, ylog=True, fill_value=np.nan, **kwargs):
+    """Return an interpolation/extrapolation function constructed from the given values.
 
-    logx = np.log10(xold)
-    logy = np.log10(yold)
-    lin_interp = sp.interpolate.interp1d(logx, logy, kind=kind, **kwargs)
-    log_interp = lambda zz: np.power(10.0, lin_interp(np.log10(zz)))  # noqa
-    return log_interp
+    Generally the returned function is a wrapper around `interp1d` from the `scipy.interpolate`
+    module, unless `kind` is either 'mono' or 'Pchip' in which case the `PchipInterpolator` is
+    used.
+
+    """
+    def in_lin(xx):
+        return xx
+
+    def in_log(xx):
+        return np.log10(xx)
+
+    def out_lin(yy):
+        return yy
+
+    def out_log(yy):
+        return np.power(10.0, yy)
+
+    if xlog:
+        xold = np.log10(xold)
+        in_func = in_log
+    else:
+        in_func = in_lin
+
+    if ylog:
+        yold = np.log10(yold)
+        out_func = out_log
+        if isinstance(fill_value, tuple):
+            fill_value = tuple([np.log10(vv) for vv in fill_value])
+        else:
+            fill_value = np.log10(fill_value)
+
+    else:
+        out_func = out_lin
+
+    if kind == 'mono' or kind.lower() == 'pchip':
+        if not np.isscalar(fill_value) or not np.isnan(fill_value):
+            raise ValueError("`PchipInterpolator` only support 'nan' fill values!")
+        lin_interp = sp.interpolate.PchipInterpolator(
+            xold, yold, extrapolate=True, **kwargs)
+    else:
+        lin_interp = sp.interpolate.interp1d(
+            xold, yold, kind=kind, fill_value=fill_value, **kwargs)
+
+    def ifunc(xx):
+        xx = in_func(xx)
+        yy = lin_interp(xx)
+        yy = out_func(yy)
+        return yy
+
+    return ifunc
 
 
 def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
@@ -602,11 +725,27 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     if limit is not None:
         assert len(limit) == 2, "`limit` must have length 2."
 
-    if filter:
+    # Pre-flatten the input data (NOTE: `comparison_filter` fails for jagged arrays!)
+    try:
+        # Check if input array is jagged (will raise an error)
+        # np.product(data)   # NOTE: this causes overflow errors.
+        np.linalg.norm(data)
+        data = np.array(data).flatten()
+    except ValueError:
+        try:
+            data = [np.array(dd).flatten() for dd in data]
+            data = np.concatenate(data)
+        except:
+            logging.error("Failed to flatten input data!")
+            raise
+
+    if filter is not None:
         data = comparison_filter(data, filter)
 
     # If there are no elements (left), return `prev` (`None` if not provided)
     if np.size(data) == 0:
+        msg = "" if filter is None else " after filtering"
+        logging.warning("Empty `data` array{}!".format(msg))
         return prev
 
     # Find extrema
@@ -684,13 +823,14 @@ def mono(arr, type='g', axis=-1):
 
     """
     arr = np.atleast_1d(arr)
-    if arr.size == 1: return True
+    if arr.size == 1:
+        return True
     good_type = ['g', 'ge', 'l', 'le', 'e']
     assert type in good_type, "Type '%s' Unrecognized." % (type)
     # Retrieve the numpy comparison function (e.g. np.greater) for the given `type` (e.g. 'g')
-    func = _comparisonFunction(type)
+    func = _comparison_function(type, 0.0)
     delta = np.diff(arr, axis=axis)
-    retval = np.all(func(delta, 0.0))
+    retval = np.all(func(delta))
     return retval
 
 
@@ -826,6 +966,63 @@ def renumerate(arr):
     return zip(reversed(range(len(arr))), reversed(arr))
 
 
+def roll(a, r, cat=None, axis=-1):
+    """Roll an array along a target axis by a varying amount.
+
+    Arguments
+    ---------
+    a : array_like
+        Array to be rolled
+    r : array_like of int
+        Amount to roll `a`.  Must be the same shape as `a`, without the target axis.
+        e.g. if `a` has shape (N,M,L,) and `axis=1` then `r` must have shape (N,L,).
+
+    From Stackoverflow @Divakar: https://stackoverflow.com/a/58474469/230468
+
+    """
+
+    import skimage
+
+    if np.isscalar(r):
+        # If `cat` is not None, then `np.roll` does not achieve the same thing
+        if cat is None:
+            return np.roll(a, r, axis=axis)
+        else:
+            r = r * np.ones_like(a)
+
+    r = np.asarray(r)
+    a = np.asarray(a)
+    # If no concatenation array is provided, repeat a itself
+    if cat is None:
+        cat = a   # [..., :-1]
+
+    if axis != -1:
+        a = np.moveaxis(a, axis, -1)
+        cat = np.moveaxis(cat, axis, -1)
+
+    if a.shape[:-1] != r.shape:
+        err = "Shape of `a` ({}) must match `r` ({}) except for target axis (axis={})!".format(
+            a.shape, r.shape, axis)
+        raise ValueError(err)
+
+    # Repeate along target axis to accomodate any roll
+    # a_ext = np.concatenate((a, a[..., :-1]), axis=-1)
+    a_ext = np.concatenate((a, cat), axis=-1)
+
+    # Get sliding windows; use advanced-indexing to select appropriate ones
+    n = a.shape[-1]
+    w = skimage.util.shape.view_as_windows(a_ext, (1,)*r.ndim + (n,)).reshape(a.shape + (n,))
+    idx = (n - r) % n
+    idxr = idx.reshape(idx.shape + (1,)*(w.ndim - r.ndim))
+
+    res = np.take_along_axis(w, idxr, axis=r.ndim)[..., 0, :]
+
+    if axis != -1:
+        res = np.moveaxis(res, -1, axis)
+
+    return res
+
+
 def rotation_matrix_between_vectors(aa, bb):
     """Construct a rotation matrix that rotates vector `aa` to vector `bb`.
     """
@@ -834,7 +1031,32 @@ def rotation_matrix_between_vectors(aa, bb):
     return rot
 
 
+def rotation_matrix_about(axis, theta):
+    """Return the rotation matrix associated with counterclockwise rotation about
+    the given axis by theta radians.
+
+    Taken from: https://stackoverflow.com/a/6802723
+
+    """
+    axis = np.asarray(axis)
+    axis = axis / np.sqrt(np.dot(axis, axis))
+    a = np.cos(theta / 2.0)
+    b, c, d = - axis * np.sin(theta / 2.0)
+    aa, bb, cc, dd = a * a, b * b, c * c, d * d
+    bc, ad, ac, ab, bd, cd = b * c, a * d, a * c, a * b, b * d, c * d
+    rot = np.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
+                    [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
+                    [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
+
+    return rot
+
+
 def zenum(*arr):
+    utils.dep_warn("zenum", newname="zenumerate")
+    return zenumerate(*arr)
+
+
+def zenumerate(*arr):
     zipped = zip(*arr)
     return enumerate(zipped)
 
@@ -881,7 +1103,8 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
-def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **kwargs):
+def spacing(data, scale='log', num=None, dex=10, dex_plus=1,
+            filter=None, integers=False, endpoint=True, **kwargs):
     """Create an evenly spaced array between extrema from the given data.
 
     Arguments
@@ -891,7 +1114,9 @@ def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **
     scale : str
         Scaling for spacing, {'lin', 'log'}.
     num : int
-        Number of points to produce, `N`.
+        Number of points to produce.
+    dex : int
+        Number of points per decade (order of magnitude) to produce.
     filter : str or `None`
         String specifying how to filter the input `data` relative to zero.
     integers : bool
@@ -931,11 +1156,13 @@ def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **
     if integers:
         round = 0
     span = minmax(data, filter=filter, round=round, round_scale=scale, **kwargs)
+    if span is None:
+        raise ValueError("Invalid span on input data!")
 
-    if num is None:
+    if (num is None) and (not integers):
         if log_flag and (not integers):
             num_dex = np.fabs(np.diff(np.log10(span)))
-            num = np.int(np.ceil(num_dex * dex)) + 1
+            num = np.int(np.ceil(num_dex * dex)) + dex_plus
         else:
             num = DEF_NUM_LIN
 
@@ -973,11 +1200,58 @@ def spacing(data, scale='log', num=None, dex=10, filter=None, integers=False, **
     # Create spacing between min/max values exactly
     else:
         if log_flag:
-            spaced = np.logspace(*np.log10(span), num=num)
+            spaced = np.logspace(*np.log10(span), num=num, endpoint=endpoint)
         else:
-            spaced = np.linspace(*span, num=num)
+            spaced = np.linspace(*span, num=num, endpoint=endpoint)
 
     return spaced
+
+
+def spacing_composite(comp_edges, scale, dex=None, num=None, **kwargs):
+    if np.isscalar(scale):
+        nsegs = len(comp_edges) - 1
+        scale = [scale for ii in range(nsegs)]
+    else:
+        nsegs = len(scale)
+
+    if len(comp_edges) != nsegs + 1:
+        raise ValueError("`comp_edges` must have one more entry than `scale`")
+
+    if dex is None and num is None:
+        raise ValueError("`dex` or `num` must be provided!")
+
+    if dex is None:
+        dex = [None for ii in range(nsegs)]
+    elif np.isscalar(dex):
+        dex = [dex for ii in range(nsegs)]
+    elif len(dex) != nsegs:
+        raise ValueError("Length mismatch between `scale` and `dex`!")
+
+    if num is None:
+        num = [None for ii in range(nsegs)]
+    elif np.isscalar(num):
+        num = [num for ii in range(nsegs)]
+    elif len(num) != nsegs:
+        raise ValueError("Length mismatch between `scale` and `num`!")
+
+    edges = []
+    for ii, (sc, dd, nn) in enumerate(zip(scale, dex, num)):
+        lo = comp_edges[ii]
+        hi = comp_edges[ii+1]
+
+        ep = True if (ii == nsegs - 1) else False
+        dp = 1 if ep else 0
+
+        tt = spacing([lo, hi], dex=dd, num=nn, endpoint=ep, dex_plus=dp, **kwargs)
+        edges.append(tt)
+
+    edges = np.concatenate(edges)
+
+    return edges
+
+
+def array_str(*args, **kwargs):
+    return str_array(*args, **kwargs)
 
 
 def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
@@ -1029,31 +1303,43 @@ def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=T
     return arr_str
 
 
+def str_array_neighbors(arr, inds, num=1, **kwargs):
+    if np.ndim(arr) != 1 or np.ndim(inds) != 1:
+        raise ValueError("`arr` and `inds` must be 1D!")
+
+    if isinstance(inds[0], (bool, np.bool_)):
+        inds = np.where(inds)[0]
+
+    vals = []
+    size = np.size(arr)
+    for ii in inds:
+        cut = slice(max(0, ii-num), min(size-1, ii+num+1))
+        temp = str_array(arr[cut], sides=num+1, **kwargs)
+        vals.append(temp)
+
+    rv = "...".join(vals)
+    return rv
+
+
 def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
     """
     """
 
-    if not np.all(arr > 0.0):
-        use_log = False
-    else:
-        try:
-            extr = np.log10(np.fabs(minmax(arr)))
-        # string values will raise a `TypeError` exception
-        except (TypeError, AttributeError):
-            return ":s"
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            extr = np.log10(np.fabs(minmax(arr, filter='ne')))
 
-        if any(extr < -log_limit) or any(extr > log_limit):
-            use_log = True
-        else:
-            use_log = False
+    # string values will raise a `TypeError` exception
+    except (TypeError, AttributeError):
+        return ":"
 
-    if use_log:
+    if any(extr < -log_limit) or any(extr > log_limit):
         form = ":.{precision:d}e"
+    elif np.issubdtype(arr.dtype, np.integer) and allow_int:
+        form = ":d"
     else:
-        if np.issubdtype(arr.dtype, np.integer) and allow_int:
-            form = ":d"
-        else:
-            form = ":.{precision:d}f"
+        form = ":.{precision:d}f"
 
     form = form.format(precision=prec)
 
@@ -1168,12 +1454,12 @@ def vecmag(r1, r2=None):
     return dist
 
 
-def within(vals, extr, edges=True, all=False, inv=False):
+def within(vals, extr, edges=True, all=False, inv=False, close=None):
     """Test whether a value or array is within the bounds of another.
 
     Arguments
     ---------
-       vals   <scalar>([N]) : test value(s)
+       vals  <scalar>([N])  : test value(s)
        extr  <scalar>[M]    : array or span to compare with
        edges <bool>         : optional, include the boundaries of ``extr`` as 'within'
        all   <bool>         : optional, whether All values are within bounds (single return `bool`)
@@ -1188,44 +1474,30 @@ def within(vals, extr, edges=True, all=False, inv=False):
     extr_bnds = minmax(extr)
 
     # Include edges for WITHIN bounds (thus not including is outside)
-    if(edges): retval = np.asarray(((vals >= extr_bnds[0]) & (vals <= extr_bnds[1])))
-    # Don't include edges for WITHIN  (thus include them for outside)
-    else:      retval = np.asarray(((vals > extr_bnds[0]) & (vals < extr_bnds[1])))
+    if edges:
+        above = (vals >= extr_bnds[0])
+        below = (vals <= extr_bnds[1])
+    else:
+        above = (vals > extr_bnds[0])
+        below = (vals < extr_bnds[1])
+
+    if close is not None:
+        if close is True:
+            close = dict()
+        above = above | np.isclose(vals, extr_bnds[0], **close)
+        below = below | np.isclose(vals, extr_bnds[1], **close)
+
+    retval = np.asarray(above & below)
 
     # Convert to single return value
-    if(all): retval = np.all(retval)
+    if all:
+        retval = np.all(retval)
 
     # Invert results
-    if(inv): retval = np.invert(retval)
+    if inv:
+        retval = np.invert(retval)
 
     return retval
-
-
-def _comparisonFunction(comp):
-    """[DEPRECATED]Retrieve the comparison function matching the input expression.
-    """
-    # ---- DECPRECATION SECTION ----
-    warnStr = ("Using deprecated function '_comparisonFunction'.  "
-               "Use '_comparison_function' instead.")
-    warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
-    # ------------------------------
-
-    if comp == 'g' or comp == '>':
-        func = np.greater
-    elif comp == 'ge' or comp == '>=':
-        func = np.greater_equal
-    elif comp == 'l' or comp == '<':
-        func = np.less
-    elif comp == 'le' or comp == '<=':
-        func = np.less_equal
-    elif comp == 'e' or comp == '=' or comp == '==':
-        func = np.equal
-    elif comp == 'ne' or comp == '!=':
-        func = np.not_equal
-    else:
-        raise ValueError("Unrecognized comparison '%s'." % (comp))
-
-    return func
 
 
 def _comparison_function(comp, value=0.0, **kwargs):
@@ -1264,22 +1536,6 @@ def _comparison_function(comp, value=0.0, **kwargs):
         return func(xx, value, **kwargs)
 
     return comp_func
-
-
-def _comparisonFilter(data, filter):
-    """
-    """
-    # ---- DECPRECATION SECTION ----
-    warnStr = ("Using deprecated function '_comparisonFilter'.  "
-               "Use '_comparison_filter' instead.")
-    warnings.warn(warnStr, DeprecationWarning, stacklevel=3)
-    # ------------------------------
-    if filter is None:
-        return data
-    if not callable(filter):
-        filter = _comparisonFunction(filter)
-    sel = np.where(filter(data, 0.0) & np.isfinite(data))
-    return data[sel]
 
 
 def comparison_filter(data, filter, inds=False, value=0.0, finite=True, mask=False, **kwargs):

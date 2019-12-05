@@ -28,11 +28,8 @@ Future / To-Do
             -   `monotonic_smooth`
                 +   BUG: fix shitty edge effects after many iterations.
         +   statistic.py
-            -   `confidence_intervals()`
-                -   BUG: Arguemnts `filter` and `axis` are currently incompatible.
             -   `percentiles()`
                 -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
-
     -   plot/
         +   Hist2D.py
             -   Add ability to plot central axes as scatter plot, with projected histograms
@@ -43,10 +40,122 @@ Future / To-Do
 
 Current
 -------
-    -   `math/`
-        -   `math_core.py`
-            -   `minmax()`
-                -   Add argument `percs` to allow for particular percentiles (instead of absolute min/max) to be used.
+    - `utils.py`
+        - `dep_warn_var()` [NEW-METHOD]
+            - Standardized method for handling deprecated variables.
+
+    - `astro/`
+        - `astro_core.py`
+            - `eddington_accretion()`
+                - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
+            - `orbital_velocities()` [NEW-METHOD]
+                - Orbital velocity of both objects given mtot and mrat.
+            - `rad_hill` [NEW-METHOD]
+                - Hill radius equation from Murray & Dermott
+            - `rad_roche` [NEW-METHOD]
+                - Average roche-lobe radius from Eggleton-1983
+            - `uniform_inclinations()`  [NEW-FUNCTION]
+                - New function to draw random, uniform inclination angles.
+        - `obs.py`
+            - Added SDSS AB ugriz magnitude to conversion tables.
+            - `fnu_to_flambda()` & `flambda_to_fnu()`  [NEW-FUNCTION]
+                - Functions to convert spectral flux from wavelength to frequency and visa-versa.
+
+    - `inout/`
+        - `stats_str()`  ==>  moved to `math.statistic.stats_str()`
+        - `inout_core.py`
+            - `unzip()`  [NEW-METHOD]
+                - Function to extract an inner-iterable from an outer-iterable; analogous to the transpose of a 2D numpy-array.
+
+    - `math/`
+        - `tests/`
+            - `test_math_core.py`
+                - Fixed numerous tests.
+                - Added new tests for interpolation methods.
+                - Tests for `edges_from_cents`
+            - `test_statistic.py`
+                - New test for percentiles.
+
+        - `math_core.py`
+            - `array_str()` [NEW-FUNCTION]
+                - Alias of `str_array()`
+            - `broadcast()` [NEW-FUNCTION]
+                - Expand N, 1D arrays into N, ND arrays each with the same shape.
+            - `broadcastable()` [NEW-FUNCTION]
+                - Method to expand N, 1D arrays into N, ND arrays which can be broadcasted together.
+            - `edges_from_cents()` [NEW-FUNCTION]
+                - Method to estimate bin-edges given the local of bin-centers.
+            - `interp()`
+                - BUG: fix issue where 'left' and 'right' bounds were being taken to ten-to-the-power-of.
+            - `interp_func()`
+                - Implement optional 'xlog' and 'ylog' scalings.
+                - Implement 'mono' option for interpolation kind to use `PchipInterpolator` which enforced monotonicity.
+            - `minmax()`
+                - BUG: Jagged input arrays would fail in `comparison_filter`.  FIX: pre-flatten input data.
+            - `roll()`  [NEW-FUNCTION]
+                - Roll an array along a target axis by varying amounts for each index.
+            - `rotation_matrix_about()`  [NEW-FUNCTION]
+                - Construct a rotation matrix about the given axis (vector) by the given angle.
+            - `spacing()`
+                - Pass along `endpoint` argument to numpy functions
+            - `spacing_composite()`  [NEW-FUNCTION]
+                - New function to create composite (stacked) spacings with different ranges.
+            - `str_array_neighbors()` [NEW-FUNCTION]
+                - Use 'str_array' to print particular indices, and its neighbors, in an array.
+            - `within()`
+                - Add new `close` argument to allow `np.isclose` comparisons to bin edges.
+            - `zenumerate()` <== `zenum()` [DEPRECATION]
+            - `_guess_str_format_from_range()`
+                - BUG: fix issue where exponential notation was only being used for positive-definite values
+
+        - `numeric.py`
+            - `cumtrapz_loglog()`
+                - Previous version of this function used an algorithm found online.  New version uses a similar algorithm -- which is basically the trapezoid rule in log-log space (i.e. for power-laws) -- with some minor improvements and niceties.
+            - `kde()`  [DEPRECATED]
+                - Use new functionality from `kde.py`
+            - `kde_hist()`  [DEPRECATED]
+                - Use new functionality from `kde.py`
+
+        - `statistic.py`
+            - `confidenceBands()` [DELETED-METHOD]
+            - `confidence_intervals()`
+                - `percs` <== `confInts`  [DEPRECATION-VARIABLE]
+            - `confidenceIntervals()` [DELETED-METHOD]
+            - `confidence_intervals()`
+                - New argument `sigma` which is converted into percentiles
+                - New argument `weights` for performing weighted percentiles
+            - `mean()`  [NEW-METHOD]
+                - Method for calculating distribution mean, optionally with weights.
+            - `percentiles()`
+                - New argument, `sigmas` which is used to calculate percentiles from sigma values.
+                - `percs` <== `ci` [DEPRECATION-VARIABLE]
+            - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
+            - `stats_str()`  <=== moved from `inout_core.stats_str()`
+                - New argument `label` which determines whether the percentiles are listed.
+            - `std()`  [NEW-METHOD]
+                - Method for calculating distribution standard-deviations, optionally with weights.
+
+    - `plot/`
+        - `draw.py`
+            - `plot_carpet()` [NEW-METHOD]
+                - New method for drawing carpet-plots (i.e. tick marks)
+        - `Hist2D.py`
+            - `draw_hist2d()` [NEW-METHOD]
+                - New 2D histogram plotting method from `corner.hist2d` method by 'Dan Foreman-Mackey'.
+            - `corner()` [NEW-METHOD]
+                - New corner plotting method.
+        - `plot_const.py` [FILE-DELETED]
+            - Constant values moved to `zcode.plot.__init__.py`
+        - `plot_core.py`
+            - `colormap()`
+                - New `midpoint` argument and functionality to allow colormaps's colors to be centered at particular values in either log or linear space.  Uses new classes `MidpointNormalize` and `MidpointLogNormalize`.
+            - `figax()`
+                - New `scale` argument to set the scale of both x and y axes.
+                - BUG: xlim and ylim were not being broadcast correctly
+            - `get_norm()`  [NEW-METHOD]
+                - Separated out from `colormap()`, same functionality.
+
+
 
 
 [0.1] - 2019/03/18
@@ -121,13 +230,13 @@ Current
 				-   Method to perform `enumerate(zip(*args))`
             -   `_guess_str_format_from_range()` [NEW-FUNCTION]
                 -   Based on the dynamical (logarithmic) range of an array, guess the appropriate string formatting (i.e. 'f' vs 'e')
-            
+
         -   `numeric.py`
             -   `kde()`  [NEW-FUNCTION]
                 -   Construct a custom KDE object, optionally in log-space.
             -   `kde_hist()`  [NEW-FUNCTION]
                 -   Construct a KDE "histogram" resampling from the KDE distribution.
-            
+
         -   `statistic.py`
             -   `confidence_intervals()`
                 -   Implement a kludge to allow percentile calculation with masked arrays.
@@ -137,8 +246,6 @@ Current
     -   `constants.py`
         -   Added electron-charge `QELC`
         -   Added Jansky unit `JY`
-                    
-
 
 
 [0.0.12] - 2018/06/20
@@ -186,7 +293,7 @@ Current
                 -   Return 'True' if the current environment is a jupyter notebook.
             -   `python_environment()` [NEW-FUNCTION]
                 -   Determine the current python environment (e.g. 'jupyter') and return string.
-                
+
     -   math/
         +   math_core.py
             -   `argnearest`
@@ -206,7 +313,7 @@ Current
                 -   BUG: `scipy.stats` wasnt being imported
             -   `stats_str()`
                 -   Improve default formatting choice based on extrema of input values.
-                
+
     -   plot/
         -   `draw.py`
             -   `conf_fill()` [NEW-FUNCTION]
@@ -230,7 +337,7 @@ Current
                 -   [BUG] Error when `color` was `None`, set to black as default
             -   `text()
                 -   [BUG] Transform argument was getting lost in kwargs.
-            
+
             -   `_color_from_kwargs()`
                 -   Add option to pop (remove) color argument from dictionary.
             -   `_setAxis_scale()`
@@ -318,7 +425,6 @@ Current
         -   Added `ARCSEC` arcsecond constant.
 
 
-
 [0.0.10] - 2017/05/06
 ---------------------
     -   `inout/`
@@ -351,7 +457,7 @@ Current
                 -   Also change from `precman` and `precexp` to just `man` and `exp`.
             -   `line_style_set()` [new-function]
                 -   Retrieve a list of line-style specifications to be used with `Line2D.set_dashes`.
-                
+
     -   `math/`
         -   `statistic.py`
             -   `stats_str`
@@ -379,7 +485,7 @@ Current
 
     -   `requirements.txt` [new-file]
         -   Started to add requirements file, nearly empty at the moment.
-        
+
 
 [0.0.9] - 2017/03/07
 --------------------
@@ -411,7 +517,7 @@ Current
             -   `argnearest` [new-function]
                 +   Find the arguments in one array closest to those in another.
             -   `limit` [new-function]
-                +   Limit the given value(s) to the given extrema. 
+                +   Limit the given value(s) to the given extrema.
             -   `str_array` <== `strArray`
         +   statistic.py
             -   `confidence_intervals`
@@ -434,7 +540,7 @@ Current
                 +   BUG: contour lines were using a different grid for some reason (unknown), was messing up edges and spacings.
                 +   BUG: default `fs=None` to not change the preset font size.
             -   `plot2DHistProj`
-                +   BUG: errors when x and y projection axes were turned off. 
+                +   BUG: errors when x and y projection axes were turned off.
         +   plot_core.py
             -   `colormap`
                 -   ENH: added `left` and `right` parameters to allow truncation of colormaps.
@@ -458,7 +564,6 @@ Current
         -   New file for general purpose, internal methods, etc.
         -   `dep_warn` [new-function]
             -   Function for sending deprecation warnings.
-
 
 
 [0.0.8] - 2016/05/15

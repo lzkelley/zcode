@@ -6,7 +6,7 @@ import matplotlib as mpl
 import numpy as np
 import six
 
-from . plot_const import _PAD
+from zcode.plot import _PAD
 
 
 __all__ = ["backdrop", "extent", "full_extent", "position_to_extent", "rect_for_inset",
@@ -30,10 +30,12 @@ def backdrop(fig, obj, pad=0.0, union=False, group=False, draw=True, **kwargs):
     for bbox in bboxes:
         rect = mpl.patches.Rectangle([bbox.xmin, bbox.ymin], bbox.width, bbox.height,
                                      transform=fig.transFigure, **kwargs)
-        if draw: fig.patches.append(rect)
+        if draw:
+            fig.patches.append(rect)
         pats.append(rect)
 
-    if len(pats) == 1: return pats[0]
+    if len(pats) == 1:
+        return pats[0]
     return pats
 
 
@@ -58,16 +60,18 @@ def full_extent(ax, pad=0.0, invert=None):
     """
     # Draw text objects so extents are defined
     ax.figure.canvas.draw()
+    rend = ax.figure.canvas.get_renderer()
     if isinstance(ax, mpl.axes.Axes):
         items = ax.get_xticklabels() + ax.get_yticklabels()
         items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
         # items += [ax, ax.title]
         use_items = []
         for item in items:
-            if isinstance(item, mpl.text.Text) and len(item.get_text()) == 0: continue
+            if isinstance(item, mpl.text.Text) and len(item.get_text()) == 0:
+                continue
             use_items.append(item)
         # bbox = mpl.transforms.Bbox.union([item.get_window_extent() for item in use_items])
-        bbox = _set_extents(use_items, union=True, pad=0.0)
+        bbox = _set_extents(use_items, union=True, pad=0.0, renderer=rend)
     elif isinstance(ax, mpl.legend.Legend):
         bbox = ax.get_frame().get_bbox()
     else:
@@ -138,19 +142,22 @@ def rect_for_inset(parent, loc='tl', width=None, height=None,
     hit = pos.height * height_frac if (height is None) else height
 
     if pad is None:
-        pad = _PAD
+        pad = [_PAD, _PAD]
+
+    if np.isscalar(pad):
+        pad = [pad, pad]
 
     if loc[0] == 'b':
-        yy = pos.y0 + pad
+        yy = pos.y0 + pad[1]
     elif loc[0] == 't':
-        yy = pos.y1 - pad - hit
+        yy = pos.y1 - pad[1] - hit
     else:
         raise ValueError("`loc[0]` must be ['b', 't']!")
 
     if loc[1] == 'l':
-        xx = pos.x0 + pad
+        xx = pos.x0 + pad[0]
     elif loc[1] == 'r':
-        xx = pos.x1 - pad - wid
+        xx = pos.x1 - pad[0] - wid
     else:
         raise ValueError("`loc[1]` must be ['l', 'r']!")
 
@@ -255,16 +262,18 @@ def _extents(ax, pad=0.0, invert=None, group=False):
     # For text objects, we need to draw the figure first, otherwise the extents
     # are undefined.
     ax.figure.canvas.draw()
+    rend = ax.figure.canvas.get_renderer()
+    kw = dict(pad=pad, renderer=rend)
     if group:
         items = [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
-        bboxes = [_set_extents(ax.get_xticklabels(), pad=pad, union=True)]
-        bboxes += [_set_extents(ax.get_yticklabels(), pad=pad, union=True)]
-        bboxes += _set_extents(items, pad=pad, union=False)
+        bboxes = [_set_extents(ax.get_xticklabels(), union=True, **kw)]
+        bboxes += [_set_extents(ax.get_yticklabels(), union=True, **kw)]
+        bboxes += _set_extents(items, union=False, **kw)
     else:
         items = ax.get_xticklabels() + ax.get_yticklabels()
         items += [ax, ax.title, ax.xaxis.label, ax.yaxis.label]
         # bboxes = [it.get_window_extent().expanded(1.0 + pad, 1.0 + pad) for it in items]
-        bboxes = _set_extents(items, pad=pad, union=False)
+        bboxes = _set_extents(items, union=False, **kw)
 
     if invert:
         bboxes = [bb.transformed(invert.inverted()) for bb in bboxes]
@@ -302,8 +311,8 @@ def _parse_align(halign=None, valign=None):
     return halign, valign
 
 
-def _set_extents(items, pad=0.0, union=False):
-    bboxes = [it.get_window_extent().expanded(1.0 + pad, 1.0 + pad) for it in items]
+def _set_extents(items, pad=0.0, union=False, **kw):
+    bboxes = [it.get_window_extent(**kw).expanded(1.0 + pad, 1.0 + pad) for it in items]
     if union:
         bboxes = mpl.transforms.Bbox.union(bboxes)
     return bboxes

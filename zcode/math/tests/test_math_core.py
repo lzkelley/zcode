@@ -11,8 +11,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 from numpy.testing import run_module_suite
 import scipy as sp
-import scipy.stats
-from nose.tools import assert_true, assert_false, assert_equal, assert_raises
+import scipy.stats  # noqa
+from nose.tools import assert_true, assert_false, assert_equal, assert_raises, assert_almost_equal
 
 from zcode.math import math_core
 
@@ -465,9 +465,10 @@ class TestMathCore(object):
         print("TestMathCore.test_str_array()")
 
         arr = np.linspace(0, 10.0, 6)
+        correct = '[0.00, 2.00, 4.00, 6.00, 8.00, 10.00]'
         sa = str_array(arr)
-        print("'({})' ==> '{}'".format(arr, sa))
-        assert_true(sa == '[0.00, 2.00, 4.00, 6.00, 8.00, 10.00]')
+        print("'({})' ==> '{}', should be '{}'".format(arr, sa, correct))
+        assert_true(sa == correct)
 
         sa = str_array(arr, (2, 2))
         print("'({}, (2, 2))' ==> '{}'".format(arr, sa))
@@ -496,6 +497,317 @@ class TestMathCore(object):
         sa = str_array(arr, (2, 1), format=':.1e')
         print("'({}, (2, 1), format=':.1e')' ==> '{}'".format(arr, sa))
         assert_true(sa == '[0.0e+00, 2.0e+00... 1.0e+01]')
+
+        return
+
+
+class Test_Interp(object):
+
+    def test_interp_lin_lin(self):
+        print("\ntest_interp_lin_lin()")
+        kw = dict(xlog=False, ylog=False, valid=False, left=np.nan, right=100.0)
+
+        xo = [1.0, 2.0, 3.0]
+        yo = [10.0, 20.0, 30.0]
+
+        tests = [1.5, 2.5, 0.5, 3.5]
+        truth = [15.0, 25.0, np.nan, 100.0]
+
+        for xx, zz in zip(tests, truth):
+            yy = math_core.interp(xx, xo, yo, **kw)
+            print("{} ==> {}, should be {}".format(xx, yy, zz))
+            if np.isnan(zz):
+                assert_true(np.isnan(yy))
+            else:
+                assert_almost_equal(yy, zz)
+
+        return
+
+    def test_interp_lin_log(self):
+        print("\ntest_interp_lin_log()")
+        kw = dict(xlog=False, ylog=True, valid=False, left=100.0, right=np.nan)
+
+        xo = [1.0, 2.0, 3.0]
+        yo = [1.0e1, 1.0e3, 1.0e5]
+
+        tests = [1.5, 2.5, 0.5, 3.5]
+        truth = [1.0e2, 1.0e4, 100.0, np.nan]
+
+        for xx, zz in zip(tests, truth):
+            yy = math_core.interp(xx, xo, yo, **kw)
+            print("{} ==> {}, should be {}".format(xx, yy, zz))
+            if np.isnan(zz):
+                assert_true(np.isnan(yy))
+            else:
+                assert_almost_equal(yy, zz)
+
+        return
+
+    def test_interp_log_lin(self):
+        print("\ntest_interp_log_lin()")
+        kw = dict(xlog=True, ylog=False, valid=False, left=100.0, right=np.nan)
+
+        xo = [2.0e-5, 2.0e-3, 2.0e-1]
+        yo = [-10.0, -20.0, -30.0]
+
+        tests = [2.0e-4, 2.0e-2, 1.0e-8, 1.0e8]
+        truth = [-15.0, -25.0, 100.0, np.nan]
+
+        for xx, zz in zip(tests, truth):
+            yy = math_core.interp(xx, xo, yo, **kw)
+            print("{} ==> {}, should be {}".format(xx, yy, zz))
+            if np.isnan(zz):
+                assert_true(np.isnan(yy))
+            else:
+                assert_almost_equal(yy, zz)
+
+        return
+
+    def test_interp_log_log(self):
+        print("\ntest_interp_log_log()")
+        kw = dict(xlog=True, ylog=True, valid=False, left=np.nan, right=100.0)
+
+        xo = [1.0e-1, 1.0e1, 1.0e5]
+        yo = [3.0e0, 3.0e-2, 3.0e6]
+
+        tests = [1.0, 1.0e3, 1.0e-8, 1.0e8]
+        truth = [3.0e-1, 3.0e2, np.nan, 100.0]
+
+        for xx, zz in zip(tests, truth):
+            yy = math_core.interp(xx, xo, yo, **kw)
+            print("{} ==> {}, should be {}".format(xx, yy, zz))
+            if np.isnan(zz):
+                assert_true(np.isnan(yy))
+            else:
+                assert_almost_equal(yy, zz)
+
+        return
+
+
+class Test_Interp_Func_Linear(object):
+
+    KW = dict(kind='linear', bounds_error=False)
+
+    def test_interp_func(self):
+        print("\n|test_interp_func()|")
+        options = [True, False]
+        TRIES = 10
+        SAMPS = 40
+        TESTS = 100
+        LOG_RANGE = [-8.0, 8.0]
+
+        for xlog in options:
+            for ylog in options:
+                kw = dict(xlog=xlog, ylog=ylog)
+                print("xlog = {}, ylog = {}".format(xlog, ylog))
+
+                for kk in range(TRIES):
+                    xo = np.random.uniform(*LOG_RANGE, SAMPS)
+                    xo = np.sort(xo)
+                    yo = np.random.uniform(*LOG_RANGE, SAMPS)
+
+                    xx = np.random.uniform(*math_core.minmax(xo), TESTS)
+
+                    if xlog:
+                        xo = np.power(10.0, xo)
+                        xx = np.power(10.0, xx)
+                    if ylog:
+                        yo = np.power(10.0, yo)
+
+                    y1 = math_core.interp(xx, xo, yo, valid=False, **kw)
+                    y2 = math_core.interp_func(xo, yo, kind='linear', bounds_error=False, **kw)(xx)
+                    assert_true(np.allclose(y1, y2))
+
+        return
+
+    def test_interp_func_lin_lin(self):
+        print("\n|test_interp_func_lin_lin()|")
+        kw = dict(xlog=False, ylog=False, fill_value=(np.nan, 100.0))
+        kw.update(self.KW)
+
+        xo = [1.0, 2.0, 3.0]
+        yo = [10.0, 20.0, 30.0]
+
+        tests = [1.5, 2.5, 0.5, 3.5]
+        truth = [15.0, 25.0, np.nan, 100.0]
+
+        for xx, zz in zip(tests, truth):
+            yy = math_core.interp_func(xo, yo, **kw)(xx)
+            print("{} ==> {}, should be {}".format(xx, yy, zz))
+            if np.isnan(zz):
+                assert_true(np.isnan(yy))
+            else:
+                assert_almost_equal(yy, zz)
+
+        return
+
+    def test_interp_func_lin_log(self):
+        print("\n|test_interp_func_lin_log()|")
+        kw = dict(xlog=False, ylog=True, fill_value=(100.0, np.nan))
+        kw.update(self.KW)
+
+        xo = [1.0, 2.0, 3.0]
+        yo = [1.0e1, 1.0e3, 1.0e5]
+
+        tests = [1.5, 2.5, 0.5, 3.5]
+        truth = [1.0e2, 1.0e4, 100.0, np.nan]
+
+        for xx, zz in zip(tests, truth):
+            yy = math_core.interp_func(xo, yo, **kw)(xx)
+            print("{} ==> {}, should be {}".format(xx, yy, zz))
+            if np.isnan(zz):
+                assert_true(np.isnan(yy))
+            else:
+                assert_almost_equal(yy, zz)
+
+        return
+
+    def test_interp_func_log_lin(self):
+        print("\n|test_interp_func_log_lin()|")
+        kw = dict(xlog=True, ylog=False, fill_value=(100.0, np.nan))
+        kw.update(self.KW)
+
+        xo = [2.0e-5, 2.0e-3, 2.0e-1]
+        yo = [-10.0, -20.0, -30.0]
+
+        tests = [2.0e-4, 2.0e-2, 1.0e-8, 1.0e8]
+        truth = [-15.0, -25.0, 100.0, np.nan]
+
+        for xx, zz in zip(tests, truth):
+            yy = math_core.interp_func(xo, yo, **kw)(xx)
+            print("{} ==> {}, should be {}".format(xx, yy, zz))
+            if np.isnan(zz):
+                assert_true(np.isnan(yy))
+            else:
+                assert_almost_equal(yy, zz)
+
+        return
+
+    def test_interp_func_log_log(self):
+        print("\n|test_interp_func_log_log()|")
+        kw = dict(xlog=True, ylog=True, fill_value=(np.nan, 100.0))
+        kw.update(self.KW)
+
+        xo = [1.0e-1, 1.0e1, 1.0e5]
+        yo = [3.0e0, 3.0e-2, 3.0e6]
+
+        tests = [1.0, 1.0e3, 1.0e-8, 1.0e8]
+        truth = [3.0e-1, 3.0e2, np.nan, 100.0]
+
+        for xx, zz in zip(tests, truth):
+            yy = math_core.interp_func(xo, yo, **kw)(xx)
+            print("{} ==> {}, should be {}".format(xx, yy, zz))
+            if np.isnan(zz):
+                assert_true(np.isnan(yy))
+            else:
+                assert_almost_equal(yy, zz)
+
+        return
+
+
+class Test_Interp_Func_Mono(object):
+
+    KW = dict(kind='mono')
+
+    def test_interp_func(self):
+        print("\n|test_interp_func()|")
+
+        xo = [0.1, 1.0, 2.0, 3.0, 4.0, 5.0]
+        yo = [100.0, 100.0, 90.0, 0.1, 2.0, 2.0]
+        NUM = len(xo)
+
+        xn = np.linspace(xo[1], xo[-2], 1000)
+
+        def test_within(xx, yy):
+            vals = []
+            for ii in range(NUM-1):
+                xl = xo[ii]
+                xh = xo[ii+1]
+                yl = yo[ii]
+                yh = yo[ii+1]
+
+                inds = (xl <= xx) & (xx <= xh)
+                rv1 = math_core.within(yy[inds], [yl, yh], all=True, close=True)
+                rv2 = math_core.mono(yy[inds], 'ge') or math_core.mono(yy[inds], 'le')
+                rv = (rv1 and rv2)
+                vals.append(rv)
+
+            return np.all(vals)
+
+        options = [True, False]
+        for xlog in options:
+            for ylog in options:
+                func = math_core.interp_func(xo, yo, xlog=xlog, ylog=ylog, kind='mono')
+                yn = func(xn)
+                print("xlog = {}, ylog = {}".format(xlog, ylog))
+                assert_true(test_within(xn, yn))
+
+                # 'cubic' should be NON-monotonic, make sure test shows that
+                func = math_core.interp_func(xo, yo, xlog=xlog, ylog=ylog, kind='cubic')
+                yn = func(xn)
+                assert_false(test_within(xn, yn))
+
+        return
+
+
+class Test_Edges_From_Cents(object):
+
+    def test_lin_spacing(self):
+        print("\n|test_lin_spacing()|")
+
+        edges_true = [
+            np.linspace(0.0, 1.0, 20),
+            np.linspace(1.0, 0.0, 20),
+            np.linspace(-100, 100, 100)
+        ]
+
+        for true in edges_true:
+            cents = math_core.midpoints(true, log=False)
+            edges = math_core.edges_from_cents(cents, log=False)
+
+            print("truth = {}".format(math_core.str_array(true)))
+            print("recov = {}".format(math_core.str_array(edges)))
+            assert_true(np.allclose(edges, true))
+
+        return
+
+    def test_log_spacing(self):
+        print("\n|test_log_spacing()|")
+
+        true_pars = [
+            [0.0, 1.0, 20],
+            [1.0, 0.0, 20],
+            [2.0, -2.0, 100]
+        ]
+
+        for pars in true_pars:
+            true = np.logspace(*pars)
+            cents = math_core.midpoints(true, log=True)
+            edges = math_core.edges_from_cents(cents, log=True)
+            print("pars = ", pars)
+            print("truth = {}".format(math_core.str_array(true)))
+            print("recov = {}".format(math_core.str_array(edges)))
+            assert_true(np.allclose(edges, true))
+
+        return
+
+    def test_irr_spacing(self):
+        print("\n|test_irr_spacing()|")
+
+        NUM = 10
+        xx = np.arange(NUM)
+        widths = 1.5 + 0.4*xx + 0.1*(xx**2)
+
+        true = np.zeros(NUM+1)
+        true[0] = 4.0
+        for ii in range(1, NUM+1):
+            true[ii] = true[ii-1] + widths[ii-1]
+
+        cents = math_core.midpoints(true, log=False)
+        edges = math_core.edges_from_cents(cents, log=False)
+        print("truth = {}".format(math_core.str_array(true)))
+        print("recov = {}".format(math_core.str_array(edges)))
+        assert_true(np.allclose(edges, true, rtol=1e-1))
 
         return
 
