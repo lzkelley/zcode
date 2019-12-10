@@ -39,7 +39,8 @@ import numpy as np
 import scipy as sp
 import scipy.interpolate  # noqa
 
-__all__ = ['argextrema', 'argnearest', 'around', 'array_str', 'asBinEdges',
+__all__ = ['argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
+           'around', 'array_str', 'asBinEdges',
            'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
            'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
@@ -92,6 +93,31 @@ def argextrema(arr, type, filter=None):
     # Convert to index wrt the full input array
     ind = np.where(sel)[0][ind]
     return ind
+
+
+def argfirst(arr, check=True, **kwargs):
+    """Return the index of the first true element of the given array.
+    """
+    if check and not np.any(arr):
+        raise ValueError("No elements of given array are true!")
+    return np.argmax(arr, **kwargs)
+
+
+def arglast(arr, check=True):
+    """Return the index of the last true element of the given array.
+    """
+    if np.ndim(arr) != 1:
+        raise ValueError("`arglast` not yet supported for ND != 1 arrays!")
+    if check and not np.any(arr):
+        raise ValueError("No elements of given array are true!")
+    size = arr.size - 1
+    return size - np.argmax(arr[::-1])
+
+
+def argfirstlast(arr, **kwargs):
+    """Return the indices of the first and last true elements of the given array.
+    """
+    return argfirst(arr), arglast(arr)
 
 
 def argnearest(edges, vals, assume_sorted=False, side=None):

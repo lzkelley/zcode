@@ -77,6 +77,12 @@ Current
                 - New test for percentiles.
 
         - `math_core.py`
+            - `argfirst()` [NEW-FUNCTION]
+                - Return the index of the first true element of the given array.
+            - `argfirstlast()` [NEW-FUNCTION]
+                - Return the indices of the first and last true elements of the given array.
+            - `arglast()` [NEW-FUNCTION]
+                - Return the index of the last true element of the given array.
             - `array_str()` [NEW-FUNCTION]
                 - Alias of `str_array()`
             - `broadcast()` [NEW-FUNCTION]
