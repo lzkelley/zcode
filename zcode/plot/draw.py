@@ -20,11 +20,13 @@ from zcode import utils
 
 from zcode.plot import COL_CORR, LW_CONF, LW_OUTLINE
 from . plot_core import colormap
+from . import plot_core
+
 
 __all__ = [
     "conf_fill",
     "plot_bg", "plot_contiguous", "plot_hist_line", "plot_segmented_line", "plot_scatter",
-    "plot_hist_bars", "plot_conf_fill", "plot_carpet", "outline_text",
+    "plot_hist_bars", "plot_conf_fill", "plot_carpet", "outline_text", "draw_colorbar_contours",
     # Deprecated
     "plotHistLine", "plotSegmentedLine", "plotScatter", "plotHistBars", "plotConfFill"
 ]
@@ -563,6 +565,25 @@ def outline_text(art, **kwargs):
     art = np.atleast_1d(art)
     for aa in art:
         aa.set_path_effects(effects)
+
+    return
+
+
+def draw_colorbar_contours(cbar, levels, colors=None, smap=None):
+    ax = cbar.ax
+
+    if colors is None:
+        if smap is None:
+            colors = ['0.5' for ll in levels]
+        else:
+            colors = [smap.to_rgba(ll) for ll in levels]
+            colors = [plot_core.invert_color(cc) for cc in colors]
+
+    for ll, cc in zip(levels, colors):
+        ax.axvline(ll, 0.0, 1.0, color=cc,
+                   path_effects=([
+                       mpl.patheffects.Stroke(linewidth=2.0, foreground=cc, alpha=0.5),
+                       mpl.patheffects.Normal()]))
 
     return
 

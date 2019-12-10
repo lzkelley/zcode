@@ -155,6 +155,8 @@ Current
         - `plot_core.py`
             - `colormap()`
                 - New `midpoint` argument and functionality to allow colormaps's colors to be centered at particular values in either log or linear space.  Uses new classes `MidpointNormalize` and `MidpointLogNormalize`.
+            - `draw_colorbar_contours()` [NEW-FUNCTION]
+                - Add contour marks on the given colorbar.
             - `figax()`
                 - New `scale` argument to set the scale of both x and y axes.
                 - BUG: xlim and ylim were not being broadcast correctly
