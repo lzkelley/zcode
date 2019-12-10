@@ -52,6 +52,8 @@ Current
                 - Orbital velocity of both objects given mtot and mrat.
             - `rad_hill` [NEW-METHOD]
                 - Hill radius equation from Murray & Dermott
+            - `rad_isco_spin()` [NEW-FUNCTION]
+                - Return the radius of the ISCO for a BH with the given spin.
             - `rad_roche` [NEW-METHOD]
                 - Average roche-lobe radius from Eggleton-1983
             - `uniform_inclinations()`  [NEW-FUNCTION]

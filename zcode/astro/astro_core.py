@@ -14,7 +14,8 @@ __all__ = ['chirp_mass', 'distance', 'dynamical_time',
            'eddington_accretion', 'eddington_luminosity',
            'gw_hardening_rate_dadt', 'gw_strain_source_circ',
            'm1m2_from_mtmr', 'mtmr_from_m1m2', 'orbital_velocities',
-           'kepler_freq_from_sep', 'kepler_sep_from_freq', 'rad_isco', 'uniform_inclinations',
+           'kepler_freq_from_sep', 'kepler_sep_from_freq', 'rad_isco', 'rad_isco_spin',
+           'uniform_inclinations',
            'schwarzschild_radius', 'sep_to_merge_in_time', 'time_to_merge_at_sep',
            'rad_hill', 'rad_roche']
 
@@ -150,6 +151,36 @@ def rad_isco(m1, m2, factor=3.0):
     """Inner-most Stable Circular Orbit, radius at which binaries 'merge'.
     """
     return factor * schwarzschild_radius(m1+m2)
+
+
+def rad_isco_spin(mass, spin=0.0):
+    """Inner-most stable circular orbit for a spinning BH.
+
+    See:: Eq. 17-19 of Middleton-2015 - 1507.06153
+
+    Arguments
+    ---------
+    mm : arraylike scalar,
+        Mass of the blackhole in grams
+    aa : arraylike scalar,
+        Dimensionless spin of the blackhole (`a = Jc/GM^2`)
+        NOTE: this should be positive for co-rotating, and negative for counter-rotating.
+
+    Returns
+    -------
+    risco : arraylike scalar
+        Radius of the ISCO, in centimeters
+
+    """
+    risco = schwarzschild_radius(mass) / 2.0
+    if np.all(spin == 0.0):
+        return 6*risco
+
+    a2 = spin**2
+    z1 = 1 + np.power(1 - a2, 1/3) * ((1 + spin)**(1/3) + (1 - spin)**(1/3))
+    z2 = np.sqrt(3*a2 + z1**2)
+    risco *= (3 + z2 + -1 * np.sign(spin) * np.sqrt((3-z1)*(3+z1+2*z2)))
+    return risco
 
 
 def uniform_inclinations(shape):
