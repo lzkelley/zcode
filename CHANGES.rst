@@ -138,6 +138,8 @@ Current
                 - New argument, `sigmas` which is used to calculate percentiles from sigma values.
                 - `percs` <== `ci` [DEPRECATION-VARIABLE]
             - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
+            - `random_power()`  [NEW-FUNCTION]
+                - Draw random numbers from a power-law PDF, allows negative indices unlike numpy.
             - `stats_str()`  <=== moved from `inout_core.stats_str()`
                 - New argument `label` which determines whether the percentiles are listed.
             - `std()`  [NEW-METHOD]
