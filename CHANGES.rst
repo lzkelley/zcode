@@ -104,6 +104,8 @@ Current
                 - Roll an array along a target axis by varying amounts for each index.
             - `rotation_matrix_about()`  [NEW-FUNCTION]
                 - Construct a rotation matrix about the given axis (vector) by the given angle.
+            - `rpt_to_xyz()`  [NEW-FUNCTION]
+                - Convert from spherical to cartesian coordinates.
             - `spacing()`
                 - Pass along `endpoint` argument to numpy functions
             - `spacing_composite()`  [NEW-FUNCTION]
@@ -112,6 +114,8 @@ Current
                 - Use 'str_array' to print particular indices, and its neighbors, in an array.
             - `within()`
                 - Add new `close` argument to allow `np.isclose` comparisons to bin edges.
+            - `xyz_to_rpt()`  [NEW-FUNCTION]
+                - Convert from cartesian to spherical coordinates.
             - `zenumerate()` <== `zenum()` [DEPRECATION]
             - `_guess_str_format_from_range()`
                 - BUG: fix issue where exponential notation was only being used for positive-definite values

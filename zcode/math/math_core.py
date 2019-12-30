@@ -44,8 +44,8 @@ __all__ = ['argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
            'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
            'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
-           'ordered_groups', 'really1d', 'renumerate', 'roll', 'rotation_matrix_between_vectors',
-           'rotation_matrix_about',
+           'ordered_groups', 'really1d', 'renumerate', 'roll',
+           'rotation_matrix_between_vectors', 'rotation_matrix_about', 'xyz_to_rpt', 'rpt_to_xyz',
            'sliceForAxis', 'spacing', 'spacing_composite',
            'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
            'comparison_filter', '_comparison_function',
@@ -1064,17 +1064,66 @@ def rotation_matrix_about(axis, theta):
     Taken from: https://stackoverflow.com/a/6802723
 
     """
+    if np.shape(axis) != (3,):
+        raise ValueError("Shape of `axis` must be (3,)!")
+
+    scalar = True
+    if np.ndim(theta) > 1:
+        raise ValueError("Only 0 or 1 dimensional values for `theta` are supported!")
+    elif np.ndim(theta) == 1:
+        theta = np.atleast_2d(theta).T
+        scalar = False
+
     axis = np.asarray(axis)
     axis = axis / np.sqrt(np.dot(axis, axis))
-    a = np.cos(theta / 2.0)
-    b, c, d = - axis * np.sin(theta / 2.0)
+    a = np.cos(theta / 2.0).squeeze()
+    # b, c, d = - axis * np.sin(theta / 2.0)
+    temp = - axis * np.sin(theta / 2.0)
+    if not scalar:
+        temp = temp.T
+
+    b, c, d = temp
     aa, bb, cc, dd = a * a, b * b, c * c, d * d
     bc, ad, ac, ab, bd, cd = b * c, a * d, a * c, a * b, b * d, c * d
+
     rot = np.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
                     [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
                     [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
 
+    if not scalar:
+        rot = rot.T
+
     return rot
+
+
+def xyz_to_rpt(xyz):
+    """Convert from cartesian to spherical coordinates.
+
+    Spherical is defined as ``(rad, phi, theta)``, where `phi` is the azimuthal angle (xy),
+    and `theta` is the polar angle, with the +z-axis corresponding to ``theta = 0``.
+    """
+    xyz = np.asarray(xyz)
+    rpt = np.zeros_like(xyz)
+    xy = xyz[0, ...]**2 + xyz[1, ...]**2
+    rpt[0, ...] = np.sqrt(xy + xyz[2, ...]**2)
+    rpt[1, ...] = np.arctan2(xyz[1, ...], xyz[0, ...])
+    rpt[2, ...] = np.arctan2(np.sqrt(xy), xyz[2, ...])
+    return rpt
+
+
+def rpt_to_xyz(rpt):
+    """Convert from spherical to cartesian coordinates.
+
+    Spherical is defined as ``(rad, phi, theta)``, where `phi` is the azimuthal angle (xy),
+    and `theta` is the polar angle, with the +z-axis corresponding to ``theta = 0``.
+    """
+    rpt = np.asarray(rpt)
+    xyz = np.zeros_like(rpt)
+    xyz[2, ...] = rpt[0, ...] * np.cos(rpt[2, ...])
+    rxy = rpt[0, ...] * np.sin(rpt[2, ...])
+    xyz[0, ...] = rxy * np.cos(rpt[1, ...])
+    xyz[1, ...] = rxy * np.sin(rpt[1, ...])
+    return xyz
 
 
 def zenum(*arr):
