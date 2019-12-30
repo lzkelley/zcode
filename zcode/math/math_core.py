@@ -1101,8 +1101,24 @@ def xyz_to_rpt(xyz):
 
     Spherical is defined as ``(rad, phi, theta)``, where `phi` is the azimuthal angle (xy),
     and `theta` is the polar angle, with the +z-axis corresponding to ``theta = 0``.
+
+    NOTE: 3-coordinates must be the zeroth axis.
+
+    Arguments
+    ---------
+    xyz : (3, ...) array of scalar
+        Cartesian coordinate vector.
+
+    Returns
+    -------
+    rpt : (3, ...) array of scalar
+        Spherical coordinate vector, same shape as input.
+
     """
     xyz = np.asarray(xyz)
+    if (np.ndim(xyz) < 1) or (np.shape(xyz)[0] != 3):
+        raise ValueError("`xyz` ({}) must have shape (3, ...)!".format(xyz.shape))
+
     rpt = np.zeros_like(xyz)
     xy = xyz[0, ...]**2 + xyz[1, ...]**2
     rpt[0, ...] = np.sqrt(xy + xyz[2, ...]**2)
@@ -1118,6 +1134,9 @@ def rpt_to_xyz(rpt):
     and `theta` is the polar angle, with the +z-axis corresponding to ``theta = 0``.
     """
     rpt = np.asarray(rpt)
+    if (np.ndim(rpt) < 1) or (np.shape(rpt)[0] != 3):
+        raise ValueError("`rpt` ({}) must have shape (3, ...)!".format(rpt.shape))
+
     xyz = np.zeros_like(rpt)
     xyz[2, ...] = rpt[0, ...] * np.cos(rpt[2, ...])
     rxy = rpt[0, ...] * np.sin(rpt[2, ...])
