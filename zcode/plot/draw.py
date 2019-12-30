@@ -579,11 +579,20 @@ def draw_colorbar_contours(cbar, levels, colors=None, smap=None):
             colors = [smap.to_rgba(ll) for ll in levels]
             colors = [plot_core.invert_color(cc) for cc in colors]
 
+    orient = cbar.orientation
+    if orient.startswith('v'):
+        line_func = ax.axhline
+    elif orient.statswith('h'):
+        line_func = ax.axvline
+    else:
+        raise RuntimeError("UNKNOWN ORIENTATION '{}'!".format(orient))
+
     for ll, cc in zip(levels, colors):
-        ax.axvline(ll, 0.0, 1.0, color=cc,
-                   path_effects=([
-                       mpl.patheffects.Stroke(linewidth=2.0, foreground=cc, alpha=0.5),
-                       mpl.patheffects.Normal()]))
+        effects = ([
+            mpl.patheffects.Stroke(linewidth=2.0, foreground=cc, alpha=0.5),
+            mpl.patheffects.Normal()
+        ])
+        line_func(ll, 0.0, 1.0, color=cc, path_effects=effects)
 
     return
 
