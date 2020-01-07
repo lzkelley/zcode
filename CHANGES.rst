@@ -106,6 +106,8 @@ Current
                 - Construct a rotation matrix about the given axis (vector) by the given angle.
             - `rpt_to_xyz()`  [NEW-FUNCTION]
                 - Convert from spherical to cartesian coordinates.
+            - `rtp_to_xyz()`  [NEW-FUNCTION]
+                - Convert from spherical to cartesian coordinates (uses `rpt_to_xyz()`)
             - `spacing()`
                 - Pass along `endpoint` argument to numpy functions
             - `spacing_composite()`  [NEW-FUNCTION]
@@ -116,6 +118,8 @@ Current
                 - Add new `close` argument to allow `np.isclose` comparisons to bin edges.
             - `xyz_to_rpt()`  [NEW-FUNCTION]
                 - Convert from cartesian to spherical coordinates.
+            - `xyz_to_rtp()`  [NEW-FUNCTION]
+                - Convert from spherical to cartesian coordinates (uses `xyz_to_rpt()`)
             - `zenumerate()` <== `zenum()` [DEPRECATION]
             - `_guess_str_format_from_range()`
                 - BUG: fix issue where exponential notation was only being used for positive-definite values

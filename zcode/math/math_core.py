@@ -45,7 +45,10 @@ __all__ = ['argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
            'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
            'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
            'ordered_groups', 'really1d', 'renumerate', 'roll',
-           'rotation_matrix_between_vectors', 'rotation_matrix_about', 'xyz_to_rpt', 'rpt_to_xyz',
+
+           'rotation_matrix_between_vectors', 'rotation_matrix_about',
+           'xyz_to_rpt', 'rpt_to_xyz', 'xyz_to_rtp', 'rtp_to_xyz',
+
            'sliceForAxis', 'spacing', 'spacing_composite',
            'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
            'comparison_filter', '_comparison_function',
@@ -1143,6 +1146,23 @@ def rpt_to_xyz(rpt):
     xyz[0, ...] = rxy * np.cos(rpt[1, ...])
     xyz[1, ...] = rxy * np.sin(rpt[1, ...])
     return xyz
+
+
+def rtp_to_xyz(rtp):
+    rpt = np.zeros_like(rtp)
+    rpt[0, ...] = rtp[0, ...]
+    rpt[1, ...] = rtp[2, ...]
+    rpt[2, ...] = rtp[1, ...]
+    return rpt_to_xyz(rpt)
+
+
+def xyz_to_rtp(xyz):
+    rpt = xyz_to_rpt(xyz)
+    rtp = np.zeros_like(rpt)
+    rtp[0, ...] = rpt[0, ...]
+    rtp[1, ...] = rpt[2, ...]
+    rtp[2, ...] = rpt[1, ...]
+    return rtp
 
 
 def zenum(*arr):
