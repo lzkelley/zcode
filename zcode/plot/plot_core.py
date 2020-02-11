@@ -108,11 +108,11 @@ _LEGEND_COLUMN_SPACING = 1.2
 _SCATTER_POINTS = 1
 
 
-def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
+def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
           xscale='log', xlabel='', xlim=None,
           yscale='log', ylabel='', ylim=None,
           left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
-          grid=None):
+          grid=True, **kwargs):
 
     if scale is not None:
         xscale = scale
@@ -126,7 +126,7 @@ def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=
     xscale, yscale = scales
 
     fig, axes = plt.subplots(figsize=figsize, squeeze=False, ncols=ncols, nrows=nrows,
-                             sharex=sharex, sharey=sharey)
+                             sharex=sharex, sharey=sharey, **kwargs)
 
     plt.subplots_adjust(
         left=left, bottom=bottom, right=right, top=top, hspace=hspace, wspace=wspace)
@@ -1545,10 +1545,8 @@ def line_label(ax, pos, label, dir='v', loc='top', xx=None, yy=None, ha=None, va
 def get_norm(data, midpoint=None, log=False, filter=None):
     """
     """
-    if log:
+    if (filter is None) and log:
         filter = 'g'
-    else:
-        filter = None
 
     # Determine minimum and maximum
     if np.size(data) > 1:

@@ -179,6 +179,8 @@ Current
                 - Add contour marks on the given colorbar.
             - `figax()`
                 - New `scale` argument to set the scale of both x and y axes.
+                - Default to grid on.
+                - Pass along kwargs to `plt.subplots`.
                 - BUG: xlim and ylim were not being broadcast correctly
             - `get_norm()`  [NEW-METHOD]
                 - Separated out from `colormap()`, same functionality.
