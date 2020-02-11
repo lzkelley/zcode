@@ -40,6 +40,11 @@ Future / To-Do
 
 Current
 -------
+
+
+
+[0.1.1] - 2020/02/11
+--------------------
     - `utils.py`
         - `dep_warn_var()` [NEW-METHOD]
             - Standardized method for handling deprecated variables.
