@@ -23,7 +23,7 @@ from .. import utils
 
 __all__ = [
     'cumtrapz_loglog', 'even_selection', 'extend', 'monotonic_smooth', 'sample_inverse',
-    'smooth_convolve', 'spline', 'kde', 'kde_hist',
+    'smooth_convolve', 'spline', 'rk4_step',   # 'kde', 'kde_hist',
     # DEPRECATED
     'sampleInverse', 'smooth', '_smooth'
 ]
@@ -108,6 +108,81 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=T
     return spline
 
 
+def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
+    """Calculate integral, given `y = dA/dx` or `y = dA/dlogx` w/ trapezoid rule in log-log space.
+
+    We are calculating the integral `A` given sets of values for `y` and `x`.
+    To associate `yy` with `dA/dx` then `dlogx = None` [default], otherwise,
+    to associate `yy` with `dA/dlogx` then `dlogx = True` for natural-logarithm, or `dlogx = b`
+    for a logarithm of base `b`.
+
+    For each interval (x[i+1], x[i]), calculate the integral assuming that y is of the form,
+        `y = a * x^gamma`
+
+    Notes
+    -----
+    - When bounds are given that are not identical to input `xx` values, then interpolation must
+      be performed.  This can be done on the resulting cumsum'd values, or on the input integrand
+      values.  The cumsum values are *not necessarily a power-law* (for negative indices), and thus
+      the interpolation is better performed on the input `yy` values.
+
+    """
+
+    if bounds is not None:
+        if len(bounds) != 2 or np.any(~math_core.within(bounds, xx)) or (bounds[0] > bounds[1]):
+            err = "Invalid `bounds` = '{}', xx extrema = '{}'!".format(
+                bounds, math_core.minmax(xx))
+            raise ValueError(err)
+
+        if axis != -1 or np.ndim(yy) > 1:
+            newy = math_core.interp_func(xx, yy, xlog=True, ylog=True)(bounds)
+        else:
+            newy = math_core.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
+
+        # newy = math_core.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
+        ii = np.searchsorted(xx, bounds)
+        xx = np.insert(xx, ii, bounds, axis=axis)
+        yy = np.insert(yy, ii, newy, axis=axis)
+        ii = np.array([ii[0], ii[1]+1])
+        assert np.alltrue(xx[ii] == bounds), "FAILED!"
+
+    yy = np.ma.masked_values(yy, value=0.0)
+
+    if np.ndim(yy) > 1:
+        cut = [slice(None)] + [np.newaxis for ii in range(np.ndim(yy)-1)]
+        xx = xx[tuple(cut)]
+
+    log_base = np.e
+    if dlogx is not None:
+        # If `dlogx` is True, then we're using log-base-e (i.e. natural-log)
+        # Otherwise, set the log-base to the given value
+        if dlogx is not True:
+            log_base = dlogx
+
+    gamma = np.diff(np.log(yy), axis=axis) / np.diff(np.log(xx), axis=axis)
+    # A = (x1*y1 - x0*y0) / (gamma + 1)
+    if dlogx is None:
+        dz = np.diff(yy * xx, axis=axis)
+        trapz = dz / (gamma + 1)
+    # A = (y1 - y0) / gamma
+    else:
+        dy = np.diff(yy, axis=axis)
+        trapz = dy / gamma
+
+    integ = np.log(log_base) * np.cumsum(trapz, axis=axis)
+
+    if bounds is not None:
+        # NOTE: **DO NOT INTERPOLATE INTEGRAL** this works badly for negative power-laws
+        # lo, hi = math_core.interp(bounds, xx[1:], integ, xlog=True, ylog=True, valid=False)
+        # integ = hi - lo
+        integ = np.moveaxis(integ, axis, 0)
+        lo, hi = integ[ii-1, ...]
+        integ = hi - lo
+
+    return integ
+
+
+'''
 def cumtrapz_loglog(yy, xx, init=0.0, rev=False):
     """Perform a cumulative integral in log-log space.
     From Thomas Robitaille
@@ -143,6 +218,7 @@ def _trapezium_loglog(x1, y1, x2, y2):
         trap = y1 * (x2*(x2/x1)**b-x1) / (b+1.0)
 
     return trap
+'''
 
 
 def extend(arr, num=1, log=True, append=False):
@@ -377,6 +453,47 @@ def even_selection(size, select, sel_is_true=True):
     return cut
 
 
+def rk4_step(func, x0, y0, dx, check_nan=0, check_nan_max=5):
+    k1 = dx * func(x0, y0)
+    k2 = dx * func(x0 + dx/2.0, y0 + k1/2.0)
+    k3 = dx * func(x0 + dx/2.0, y0 + k2/2.0)
+    k4 = dx * func(x0 + dx, y0 + k3)
+    y1 = y0 + (1.0/6.0) * (k1 + 2*k2 + 2*k3 + k4)
+    x1 = x0 + dx
+
+    # Try recursively decreasing step-size until finite-value is reached
+    if check_nan > 0 and not np.isfinite(y1):
+        '''
+        xvals = [x0, x0 + dx/2.0, x0 + dx/2.0, x0 + dx]
+        yvals = [y0, y0 + k1/2.0, y0 + k2/2.0, y0 + k3]
+        kvals = [k1, k2, k3, k4]
+        for ii in range(4):
+            print("\t"*check_nan, ii, dx, xvals[ii], yvals[ii], kvals[ii])
+        '''
+
+        if check_nan > check_nan_max:
+            err = "Failed to find finite step!  `check_nan` = {}!".format(check_nan)
+            raise RuntimeError(err)
+        # Note that `True+1 = 2`
+        rk4_step(func, x0, y0, dx/2.0, check_nan=check_nan+1, check_nan_max=check_nan_max)
+
+    return x1, y1
+
+    # xvals = [x0, x0 + dx/2, x0 + dx/2, x0 + dx]
+    # dys = [1.0, 0.5, 0.5, 1.0]
+    # yn = y0
+    # prev = 0.0
+    # for ii, (xv, dy) in enumerate(zip(xvals, dys)):
+    #     yv = y0 + prev * dy       # [0.0, k1/2, k2/2, k3]
+    #     ki = dx * func(xv, yv)
+    #     yn += (ki / dy) / 6.0   # [k1, 2*k2, 2*k3, k4] / 6
+    #     prev = ki
+    #
+    # xn = x0 + dx
+    # return xn, yn
+
+
+'''
 def kde(vals, scale=None, log=None):
     log, scale = _log_from_scale(log, scale)
 
@@ -415,6 +532,7 @@ def kde_hist(vals, edges, scale=None, log=None, density=False):
         yy *= dx
 
     return yy
+'''
 
 
 def _log_from_scale(log, scale):

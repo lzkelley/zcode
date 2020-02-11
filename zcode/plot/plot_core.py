@@ -48,12 +48,12 @@ import zcode.math as zmath
 import zcode.inout as zio
 from zcode import utils
 
-from . layout import _loc_str_to_pars, _parse_align
-from . plot_const import _PAD
+from zcode.plot.layout import _loc_str_to_pars, _parse_align
+from zcode.plot import _PAD
 
 __all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
-           'unifyAxesLimits', 'color_cycle',
+           'unifyAxesLimits', 'color_cycle', 'get_norm',
            'colormap', 'color_set', 'set_grid',
            'skipTicks', 'saveFigure', 'scientific_notation',
            'line_style_set', 'line_label',
@@ -108,26 +108,55 @@ _LEGEND_COLUMN_SPACING = 1.2
 _SCATTER_POINTS = 1
 
 
-def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True,
+def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
           xscale='log', xlabel='', xlim=None,
           yscale='log', ylabel='', ylim=None,
           left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
-          grid=None):
+          grid=True, **kwargs):
+
+    if scale is not None:
+        xscale = scale
+        yscale = scale
+
+    scales = [xscale, yscale]
+    for ii in range(2):
+        if scales[ii].startswith('lin'):
+            scales[ii] = 'linear'
+
+    xscale, yscale = scales
 
     fig, axes = plt.subplots(figsize=figsize, squeeze=False, ncols=ncols, nrows=nrows,
-                             sharex=sharex, sharey=sharey)
+                             sharex=sharex, sharey=sharey, **kwargs)
 
     plt.subplots_adjust(
         left=left, bottom=bottom, right=right, top=top, hspace=hspace, wspace=wspace)
 
-    if nrows > 1 or ncols > 1:
-        if ylim is not None and np.shape(ylim) == (2,):
-            ylim = np.array(ylim)[:, np.newaxis]
+    if ylim is not None:
+        shape = (nrows, ncols, 2)
+        if np.shape(ylim) == (2,):
+            ylim = np.array(ylim)[np.newaxis, np.newaxis, :]
+    else:
+        shape = (nrows, ncols,)
 
-    _, xscale, xlabel, xlim = np.broadcast_arrays(axes, xscale, xlabel, xlim)
-    _, yscale, ylabel, ylim = np.broadcast_arrays(axes, yscale, ylabel, ylim)
+    ylim = np.broadcast_to(ylim, shape)
+
+    if xlim is not None:
+        shape = (nrows, ncols, 2)
+        if np.shape(xlim) == (2,):
+            xlim = np.array(xlim)[np.newaxis, np.newaxis, :]
+    else:
+        shape = (nrows, ncols)
+
+    xlim = np.broadcast_to(xlim, shape)
+
+    # _, xscale, xlabel, xlim = np.broadcast_arrays(axes, xscale, xlabel, xlim)
+    # _, yscale, ylabel, ylim = np.broadcast_arrays(axes, yscale, ylabel, ylim)
+    _, xscale, xlabel = np.broadcast_arrays(axes, xscale, xlabel)
+    _, yscale, ylabel = np.broadcast_arrays(axes, yscale, ylabel)
 
     for idx, ax in np.ndenumerate(axes):
+        # print(idx, xscale[idx], xlabel[idx], xlim[idx])
+        # print(idx, yscale[idx], ylabel[idx], ylim[idx])
         ax.set(xscale=xscale[idx], xlabel=xlabel[idx],
                yscale=yscale[idx], ylabel=ylabel[idx])
         if xlim[idx] is not None:
@@ -290,13 +319,20 @@ def twin_axis(ax, axis='x', pos=1.0, **kwargs):
     if axis == 'x':
         tw = ax.twinx()
         setax = 'y'
+        store_name = "_twinx"
     elif axis == 'y':
         tw = ax.twiny()
         setax = 'x'
+        store_name = "_twiny"
     else:
         raise RuntimeError("``axis`` must be either {`x` or `y`}!")
 
     tw = set_axis(tw, axis=setax, pos=pos, **kwargs)
+    if not hasattr(ax, store_name):
+        setattr(ax, store_name, [tw])
+    else:
+        getattr(ax, store_name).append(tw)
+
     return tw
 
 
@@ -574,6 +610,7 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     return txt
 
 
+'''
 def label_line(ax, line, label, x=None, y=None,
                color='0.5', fs=14, halign='left', scale='linear', clip_on=True,
                halign_scale=1.0, rotate=True, log=None):
@@ -659,6 +696,127 @@ def label_line(ax, line, label, x=None, y=None,
         slope_degrees = np.degrees(np.arctan2(rise, run))
         text.set_rotation_mode('anchor')
         text.set_rotation(slope_degrees)
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return text
+'''
+
+
+def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, **kwargs):
+    """Add an annotation to the given line with appropriate placement and rotation.
+
+    Based on code from:
+        [How to rotate matplotlib annotation to match a line?]
+        (http://stackoverflow.com/a/18800233/230468)
+        User: [Adam](http://stackoverflow.com/users/321772/adam)
+
+    NOTE: this doesnt work if the line's data have a non-data-unit transformation, for example
+          from a line created using `axvline` or `axhline`.
+
+    Arguments
+    ---------
+    ax : `matplotlib.axes.Axes` object
+        Axes on which the label should be added.
+    line : `matplotlib.lines.Line2D` object
+        Line which is being labeled.
+    label : str
+        Text which should be drawn as the label.
+    ...
+
+    Returns
+    -------
+    text : `matplotlib.text.Text` object
+
+    """
+    xlim = np.array(ax.get_xlim())
+    ylim = np.array(ax.get_ylim())
+
+    xdata, ydata = line.get_data()
+    x1 = xdata[0]
+    x2 = xdata[-1]
+    y1 = ydata[0]
+    y2 = ydata[-1]
+    '''
+    # Limit the edges to the plotted area
+    x1, x2 = zmath.limit([x1, x2], xlim)
+    y1, y2 = np.interp([x1, x2], xdata, ydata)
+    y1, y2 = zmath.limit([y1, y2], ylim)
+    x1, x2 = np.interp([y1, y2], ydata, xdata)
+    '''
+    xscale = ax.get_xscale()
+    yscale = ax.get_yscale()
+    xlog = xscale.startswith('log')
+    ylog = yscale.startswith('log')
+    if (x is None) and (y is None):
+        x_d = zmath.midpoints(xlim, log=xlog)
+        y_d = zmath.midpoints(ylim, log=ylog)
+    elif (y is None) and (x is not None):
+        # convert from axes to data
+        x_d, _ = ax.transAxes.transform([x, 0.0])
+        x_d, _ = ax.transData.inverted().transform([x_d, 0.0])
+        inds = np.argsort(xdata)
+        y_d = zmath.interp(x_d, xdata[inds], ydata[inds], xlog=xlog, ylog=ylog)
+    elif (x is None) and (y is not None):
+        # convert from axes to pixels
+        _, y_p = ax.transAxes.transform([0.0, y])
+        # print("axes ==> pixs  ::  y={:.4f} ==> {:.4f}".format(y, y_p))
+        # convert from pixels to data
+        _, y_d = ax.transData.inverted().transform([0.0, y_p])
+        # print("pixs ==> data  ::  y={:.4f} ==> {:.4f}".format(y_p, y_d))
+        inds = np.argsort(ydata)
+        x_d = zmath.interp(y_d, ydata[inds], xdata[inds], xlog=xlog, ylog=ylog)
+        # print("x_d = {:.4f}".format(x_d))
+
+    # print("plot_core.label_line():x_d,y_d = {}, {}".format(x_d, y_d))
+
+    if (dx is not None) and (not np.isclose(dx, 0.0)):
+        # data to pixels
+        x_p, _ = ax.transData.transform([x_d, 0.0])
+        # pixels to axes
+        x_a, _ = ax.transAxes.inverted().transform([x_p, 0.0])
+        x_a += dx
+        # axes to pixels
+        x_p, _ = ax.transAxes.transform([x_a, 0.0])
+        # pixels to data
+        x_d, _ = ax.transData.inverted().transform([x_p, 0.0])
+
+    if (dy is not None) and (not np.isclose(dy, 0.0)):
+        # data to pixels
+        _, y_p = ax.transData.transform([0.0, y_d])
+        # pixels to axes
+        _, y_a = ax.transAxes.inverted().transform([0.0, y_p])
+        y_a += dy
+        # axes to pixels
+        _, y_p = ax.transAxes.transform([0.0, y_a])
+        # pixels to data
+        _, y_d = ax.transData.inverted().transform([0.0, y_p])
+
+    # Add Annotation to Text
+    # xytext = (0, 0)
+    xy = (x_d, y_d)
+    # print("plot_core.label_line():x_d,y_d = {}, {}".format(x_d, y_d), xy)
+
+    text = ax.annotate(label, xy=xy, xycoords='data', **kwargs)
+    # horizontalalignment=halign, verticalalignment='center_baseline')
+    # xytext=xytext, textcoords='offset points',
+
+    if rotate is True:
+        # sp1 = ax.transData.transform_point((x1, y1))
+        # sp2 = ax.transData.transform_point((x2, y2))
+        sp1 = ax.transData.transform((x1, y1))
+        sp2 = ax.transData.transform((x2, y2))
+        # print(sp1, sp2)
+        # sp1 = [x1, y1]
+        # sp2 = [x2, y2]
+        rise = (sp2[1] - sp1[1])
+        run = (sp2[0] - sp1[0])
+
+        rotate = np.degrees(np.arctan2(rise, run))
+
+    if (rotate is not False) and (rotate is not None):
+        text.set_rotation_mode('anchor')
+        text.set_rotation(rotate)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
@@ -774,7 +932,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
         prev = np.atleast_1d(prev)
         for pp in prev:
             ax.add_artist(pp)
-        
+
     return leg
 
 
@@ -865,19 +1023,21 @@ def invert_color(col):
     return col
 
 
-def colormap(args=[0.0, 1.0], cmap=None, scale=None,
-             under='0.8', over='0.8', left=None, right=None):
+def colormap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
+             under='0.8', over='0.8', left=None, right=None, filter=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
     ---------
     args : scalar or array_like of scalar
         Range of valid scalar values to normalize with
-    cmap : ``matplotlib.colors.Colormap`` object
+    cmap : None, str, or ``matplotlib.colors.Colormap`` object
         Colormap to use.
     scale : str or `None`
         Scaling specification of colormap {'lin', 'log', `None`}.
         If `None`, scaling is inferred based on input `args`.
+    norm : None or `matplotlib.colors.Normalize`
+        Normalization to use.
     under : str or `None`
         Color specification for values below range.
     over : str or `None`
@@ -904,10 +1064,19 @@ def colormap(args=[0.0, 1.0], cmap=None, scale=None,
     """
     args = np.asarray(args)
 
-    if cmap is None:
-        cmap = 'jet'
-    if isinstance(cmap, six.string_types):
-        cmap = plt.get_cmap(cmap)
+    if scale is None:
+        if np.size(args) > 1 and np.all(args > 0.0):
+            scale = 'log'
+        else:
+            scale = 'lin'
+
+    log = _scale_to_log_flag(scale)
+
+    if not isinstance(cmap, mpl.colors.Colormap):
+        if cmap is None:
+            cmap = 'jet'
+        if isinstance(cmap, six.string_types):
+            cmap = plt.get_cmap(cmap)
 
     # Select a truncated subsection of the colormap
     if (left is not None) or (right is not None):
@@ -922,37 +1091,8 @@ def colormap(args=[0.0, 1.0], cmap=None, scale=None,
     if over is not None:
         cmap.set_over(over)
 
-    if scale is None:
-        if np.size(args) > 1 and np.all(args > 0.0):
-            scale = 'log'
-        else:
-            scale = 'lin'
-
-    log = _scale_to_log_flag(scale)
-    if log:
-        filter = 'g'
-    else:
-        filter = None
-
-    # Determine minimum and maximum
-    if np.size(args) > 1:
-        rv = zmath.minmax(args, filter=filter)
-        if rv is None:
-            min, max = 0.0, 0.0
-        else:
-            min, max = rv
-    elif np.size(args) == 1:
-        min, max = 0, np.int(args)-1
-    elif np.size(args) == 2:
-        min, max = args
-    else:
-        min, max = 0.0, 0.0
-
-    # Create normalization
-    if log:
-        norm = mpl.colors.LogNorm(vmin=min, vmax=max)
-    else:
-        norm = mpl.colors.Normalize(vmin=min, vmax=max)
+    if norm is None:
+        norm = get_norm(args, midpoint=midpoint, log=log, filter=filter)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -1402,6 +1542,41 @@ def line_label(ax, pos, label, dir='v', loc='top', xx=None, yy=None, ha=None, va
     return ll, txt
 
 
+def get_norm(data, midpoint=None, log=False, filter=None):
+    """
+    """
+    if (filter is None) and log:
+        filter = 'g'
+
+    # Determine minimum and maximum
+    if np.size(data) > 1:
+        rv = zmath.minmax(data, filter=filter)
+        if rv is None:
+            min, max = 0.0, 0.0
+        else:
+            min, max = rv
+    elif np.size(data) == 1:
+        min, max = 0, np.int(data) - 1
+    elif np.size(data) == 2:
+        min, max = data
+    else:
+        raise ValueError("Invalid `data` to construct norm!")
+
+    # Create normalization
+    if log:
+        if midpoint is None:
+            norm = mpl.colors.LogNorm(vmin=min, vmax=max)
+        else:
+            norm = MidpointLogNormalize(vmin=min, vmax=max, midpoint=midpoint)
+    else:
+        if midpoint is None:
+            norm = mpl.colors.Normalize(vmin=min, vmax=max)
+        else:
+            norm = MidpointNormalize(vmin=min, vmax=max, midpoint=midpoint)
+
+    return norm
+
+
 #     ==================================
 #     ====    INTERNAL FUNCTIONS    ====
 #     ==================================
@@ -1504,3 +1679,42 @@ def _color_from_kwargs(kwargs, pop=False):
         col = None
 
     return col
+
+
+class MidpointNormalize(mpl.colors.Normalize):
+    """
+    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
+
+    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
+    """
+
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        super().__init__(vmin, vmax, clip)
+        self.midpoint = midpoint
+        return
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
+
+
+class MidpointLogNormalize(mpl.colors.LogNorm):
+    """
+    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
+
+    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
+    """
+
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        super().__init__(vmin, vmax, clip)
+        self.midpoint = midpoint
+        return
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        vals = zmath.interp(value, x, y, xlog=True, ylog=False)
+        return np.ma.masked_array(vals, np.isnan(value))

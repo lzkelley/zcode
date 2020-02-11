@@ -16,22 +16,19 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import warnings
 import numpy as np
+import scipy as sp
+import scipy.stats  # noqa
 
-from . import math_core
+from zcode import utils
+from zcode.math import math_core
 
-__all__ = ['confidenceBands', 'confidence_bands', 'confidenceIntervals', 'confidence_intervals',
-           'cumstats', 'log_normal_base_10', 'percentiles', 'sigma', 'stats', 'stats_str']
-
-
-def confidenceBands(*args, **kwargs):
-    """DEPRECATED: use `confidence_bands`.
-    """
-    warnings.warn("`confidenceBands` is deprecated.  Use `confidence_bands`",
-                  DeprecationWarning, stacklevel=3)
-    return confidence_bands(*args, **kwargs)
+__all__ = ['confidence_bands', 'confidence_intervals',
+           'cumstats', 'frac_str', 'log_normal_base_10', 'mean',
+           'percentiles', 'percs_from_sigma', 'random_power', 'sigma',
+           'stats', 'stats_str', 'std']
 
 
-def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filter=None):
+def confidence_bands(xx, yy, xbins=10, xscale='lin', percs=[0.68, 0.95], filter=None):
     """Bin the given data with respect to `xx` and calculate confidence intervals in `yy`.
 
     Arguments
@@ -72,9 +69,9 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
 
     """
     squeeze = False
-    if not np.iterable(confInt):
+    if not np.iterable(percs):
         squeeze = True
-        confInt = [confInt]
+        percs = [percs]
     xx = np.asarray(xx).flatten()
     yy = np.asarray(yy).flatten()
     if xx.shape != yy.shape:
@@ -96,14 +93,14 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
     groups = math_core.groupDigitized(xx, xbins[1:], edges='right')
     # Allocate storage for results
     med = np.zeros(nbins)
-    conf = np.zeros((nbins, np.size(confInt), 2))
+    conf = np.zeros((nbins, np.size(percs), 2))
     count = np.zeros(nbins, dtype=int)
 
     # Calculate medians and confidence intervals
     for ii, gg in enumerate(groups):
         count[ii] = np.size(gg)
         if count[ii] == 0: continue
-        mm, cc = confidence_intervals(yy[gg], ci=confInt)
+        mm, cc = confidence_intervals(yy[gg], percs=percs)
         med[ii] = mm
         conf[ii, ...] = cc[...]
 
@@ -113,15 +110,10 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', confInt=[0.68, 0.95], filte
     return count, med, conf, xbins
 
 
-def confidenceIntervals(*args, **kwargs):
-    """DEPRECATED: use `confidence_intervals`.
-    """
-    warnings.warn("`confidenceIntervals` is deprecated.  Use `confidence_intervals`",
-                  DeprecationWarning, stacklevel=3)
-    return confidence_intervals(*args, **kwargs)
-
-
-def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
+def confidence_intervals(vals, sigma=None, percs=None, weights=None, axis=None,
+                         filter=None, return_ci=False,
+                         # DEPRECATED ARGUMENTS:
+                         ci=None):
     """Compute the values bounding the target confidence intervals for an array of data.
 
     Arguments
@@ -129,13 +121,18 @@ def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
     vals : array_like of scalars
         Data over which to calculate confidence intervals.
         This can be an arbitrarily shaped ndarray.
-    ci : (M,) array_like of floats
+    sigma : (M,) array_like of float
+        Confidence values as standard-deviations, converted to percentiles.
+    percs : (M,) array_like of floats
         List of desired confidence intervals as fractions (e.g. `[0.68, 0.95]`)
     axis : int or None
         Axis over which to calculate confidence intervals, or 'None' to marginalize over all axes.
     filter : str or `None`
         Filter the input array with a boolean comparison to zero.
         If no values remain after filtering, ``NaN, NaN`` is returned.
+    return_ci : bool
+        Return the confidence-interval values used (i.e. percentiles)
+    ci : DEPRECATED, use `percs` instead
 
     Returns
     -------
@@ -144,7 +141,7 @@ def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
         `None` if there are no values (e.g. after filtering).
     conf : ([L, ]M, 2) ndarray of scalar
         Bounds for each confidence interval.  Shape depends on the number of confidence intervals
-        passed in `ci`, and the input shape of `vals`.
+        passed in `percs`, and the input shape of `vals`.
         `None` if there are no values (e.g. after filtering).
         If `vals` is 1D or `axis` is 'None', then the output shape will be (M, 2).
         If `vals` has more than one-dimension, and `axis` is not 'None', then the shape `L`
@@ -152,36 +149,48 @@ def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
         For example,
             if ``vals.shape = (4,3,5)` and `axis=1`, then `L = (4,5)`
             the final output shape will be: (4,5,M,2).
+    percs : (M,) ndarray of float, optional
+        The percentile-values used for calculating confidence intervals.
+        Only returned if `return_ci` is True.
 
     """
-    if ci is None:
-        ci = [0.68, 0.95, 0.997]
-    ci = np.atleast_1d(ci)
-    assert np.all(ci >= 0.0) and np.all(ci <= 1.0), "Confidence intervals must be {0.0, 1.0}!"
+    percs = utils.dep_warn_var("ci", ci, "percs", percs)
 
-    PERC_FUNC = np.percentile
+    if percs is not None and sigma is not None:
+        raise ValueError("Only provide *either* `percs` or `sigma`!")
+
+    if percs is None:
+        if sigma is None:
+            sigma = [1.0, 2.0, 3.0]
+        percs = percs_from_sigma(sigma)
+
+    percs = np.atleast_1d(percs)
+    if np.any(percs < 0.0) or np.all(percs > 1.0):
+        raise ValueError("`percs` must be [0.0, 1.0]!   {}".format(stats_str(percs)))
+
+    # PERC_FUNC = np.percentile
+    def PERC_FUNC(xx, pp, **kwargs):
+        return percentiles(xx, pp/100.0, weights=weights, **kwargs)
 
     # Filter input values
     if filter is not None:
         # Using the filter will flatten the array, so `axis` wont work...
         kw = {}
         if (axis is not None) and np.ndim(vals) > 1:
-            # err = "`filter` ({}) and `axis` ({}) arguments may be incompatible!".format(
-            #     filter, axis)
-            # err += "  (Shape: {})".format(np.shape(vals))
-            # raise ValueError(err)
-            # warnings.warn(err)
             kw['axis'] = axis
+
+        if weights is not None:
+            raise NotImplementedError("`weights` argument does not work with `filter`!")
 
         vals = math_core.comparison_filter(vals, filter, **kw)
         vals = np.ma.filled(vals, np.nan)
-        PERC_FUNC = np.nanpercentile
+        PERC_FUNC = np.nanpercentile  # noqa
 
         if vals.size == 0:
             return np.nan, np.nan
 
     # Calculate confidence-intervals and median
-    cdf_vals = np.array([(1.0-ci)/2.0, (1.0+ci)/2.0]).T
+    cdf_vals = np.array([(1.0-percs)/2.0, (1.0+percs)/2.0]).T
     # This produces an ndarray with shape `[M, 2(, L)]`
     #    If ``axis is None`` or `np.ndim(vals) == 1` then the shape will be simply `[M, 2]`
     #    Otherwise, `L` will be the shape of `vals` without axis `axis`.
@@ -191,14 +200,14 @@ def confidence_intervals(vals, ci=None, axis=-1, filter=None, return_ci=False):
     conf = np.array(conf)
     # Reshape from `[M, 2, L]` to `[L, M, 2]`
     if (np.ndim(vals) > 1) and (axis is not None):
-        conf = np.moveaxis(conf, 2, 0)
+        conf = np.moveaxis(conf, -1, 0)
 
     med = PERC_FUNC(vals, 50.0, axis=axis)
     if len(conf) == 1:
         conf = conf[0]
 
     if return_ci:
-        return med, conf, ci
+        return med, conf, percs
 
     return med, conf
 
@@ -231,7 +240,135 @@ def cumstats(arr):
     return ave, std
 
 
-def sigma(sig, side='in', boundaries=False):
+def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
+    """Create a string of the form '{}/{} = {}' for reporting fractional values.
+    """
+    if den is None:
+        assert num.dtype == bool, "If no `den` is given, array must be boolean!"
+        den = num.size
+        num = np.count_nonzero(num)
+
+    try:
+        dec_frac = num / den
+    except ZeroDivisionError:
+        dec_frac = np.nan
+
+    if frac_fmt is None:
+        frac_exp = np.fabs(np.log10([num, den]))
+
+        if np.any(frac_exp >= 4):
+            frac_fmt = ".1e"
+        else:
+            frac_fmt = "d"
+
+    if dec_fmt is None:
+        dec_exp = np.fabs(np.log10(dec_frac))
+        if dec_exp > 3:
+            dec_fmt = ".3e"
+        else:
+            dec_fmt = ".4f"
+
+    fstr = "{num:{ff}}/{den:{ff}} = {frac:{df}}".format(
+        num=num, den=den, frac=dec_frac, ff=frac_fmt, df=dec_fmt)
+
+    return fstr
+
+
+def log_normal_base_10(mu, sigma, size=None, shift=0.0):
+    """Draw from a lognormal distribution with values in base-10 (instead of e).
+
+    Arguments
+    ---------
+    mu : (N,) scalar
+        Mean of the distribution in linear space (e.g. 1.0e8 instead of 8.0).
+    sigma : (N,) scalar
+        Variance of the distribution *in dex* (e.g. 1.0 means factor of 10.0 variance)
+    size : (M,) int
+        Desired size of sample.
+
+    Returns
+    -------
+    dist : (M,...) scalar
+        Resulting distribution of values (in linear space).
+
+    """
+    _sigma = np.log(10**sigma)
+    dist = np.random.lognormal(np.log(mu) + shift*np.log(10.0), _sigma, size)
+    return dist
+
+
+def mean(vals, weights=None, **kwargs):
+    if weights is None:
+        return np.mean(vals, **kwargs)
+
+    ave = np.sum(vals*weights, **kwargs) / np.sum(weights, **kwargs)
+    return ave
+
+
+def percentiles(values, percs=None, sigmas=None, weights=None, axis=None,
+                values_sorted=False, filter=None):
+    """Compute weighted percentiles.
+
+    Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
+
+    Arguments
+    ---------
+    values: (N,)
+        input data
+    percs: (M,) scalar [0.0, 1.0]
+        Desired percentiles of the data.
+    weights: (N,) or `None`
+        Weighted for each input data point in `values`.
+    values_sorted: bool
+        If True, then input values are assumed to already be sorted.
+
+    Returns
+    -------
+    percs : (M,) float
+        Array of percentiles of the weighted input data.
+
+    """
+    if filter is not None:
+        values = math_core.comparison_filter(values, filter)
+
+    values = np.array(values)
+    # percentiles = np.array(percentiles, dtype=values.dtype)
+    if percs is None:
+        percs = sp.stats.norm.cdf(sigmas)
+
+    if np.ndim(values) > 1:
+        if axis is None:
+            values = values.flatten()
+    else:
+        if axis is not None:
+            raise ValueError("Cannot act along axis '{}' for 1D data!".format(axis))
+
+    percs = np.array(percs)
+    if weights is None:
+        weights = np.ones_like(values)
+    weights = np.array(weights)
+    assert np.all(percs >= 0.0) and np.all(percs <= 1.0), 'percentiles should be in [0, 1]'
+
+    if not values_sorted:
+        sorter = np.argsort(values, axis=axis)
+        values = np.take_along_axis(values, sorter, axis=axis)
+        weights = np.take_along_axis(weights, sorter, axis=axis)
+
+    weighted_quantiles = np.cumsum(weights, axis=axis) - 0.5 * weights
+    weighted_quantiles /= np.sum(weights, axis=axis)[..., np.newaxis]
+    if axis is None:
+        percs = np.interp(percs, weighted_quantiles, values)
+    else:
+        values = np.moveaxis(values, axis, -1)
+        weighted_quantiles = np.moveaxis(weighted_quantiles, axis, -1)
+        percs = [np.interp(percs, weighted_quantiles[idx], values[idx])
+                 for idx in np.ndindex(values.shape[:-1])]
+        percs = np.array(percs)
+
+    return percs
+
+
+def percs_from_sigma(sigma, side='in', boundaries=False):
     """Convert from standard deviation 'sigma' to percentiles in/out-side the normal distribution.
 
     Arguments
@@ -249,9 +386,6 @@ def sigma(sig, side='in', boundaries=False):
         Percentiles corresponding to the input `sig`.
 
     """
-    import scipy as sp
-    import scipy.stats
-
     if side.startswith('in'):
         inside = True
     elif side.startswith('out'):
@@ -260,7 +394,7 @@ def sigma(sig, side='in', boundaries=False):
         raise ValueError("`side` = '{}' must be {'in', 'out'}.".format(side))
 
     # From CDF from -inf to `sig`
-    cdf = sp.stats.norm.cdf(sig)
+    cdf = sp.stats.norm.cdf(sigma)
     # Area outside of [-sig, sig]
     vals = 2.0 * (1.0 - cdf)
     # Convert to area inside [-sig, sig]
@@ -278,6 +412,46 @@ def sigma(sig, side='in', boundaries=False):
         return vlo, vhi
 
     return vals
+
+
+def random_power(extr, pdf_index, size=1, **kwargs):
+    """Draw from power-law PDF with the given extrema and index.
+
+    Arguments
+    ---------
+    extr : array_like scalar
+        The minimum and maximum value of this array are used as extrema.
+    pdf_index : scalar
+        The power-law index of the PDF distribution to be drawn from.  Any real number is valid,
+        positive or negative.
+        NOTE: the `numpy.random.power` function uses the power-law index of the CDF, i.e. `g+1`
+    size : scalar
+        The number of points to draw (cast to int).
+    **kwags : dict pairs
+        Additional arguments passed to `zcode.math_core.minmax` with `extr`.
+
+    Returns
+    -------
+    rv : (N,) scalar
+        Array of random variables with N=`size` (default, size=1).
+
+    """
+    extr = math_core.minmax(extr, filter='>', **kwargs)
+    if pdf_index == -1:
+        rv = 10**np.random.uniform(*np.log10(extr), size=int(size))
+    else:
+        rr = np.random.random(size=int(size))
+        gex = extr ** (pdf_index+1)
+        rv = (gex[0] + (gex[1] - gex[0])*rr) ** (1./(pdf_index+1))
+
+    return rv
+
+
+def sigma(*args, **kwargs):
+    # ---- DECPRECATION SECTION ----
+    utils.dep_warn("sigma", newname="percs_from_sigma")
+    # ------------------------------
+    return percs_from_sigma(*args, **kwargs)
 
 
 def stats(vals, median=False):
@@ -305,7 +479,7 @@ def stats(vals, median=False):
 
 
 def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, weights=None,
-              format=None, label=None, log=False, label_log=True, filter=None):
+              format=None, log=False, label=True, label_log=True, filter=None):
     """Return a string with the statistics of the given array.
 
     Arguments
@@ -322,6 +496,8 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
         Formatting for all numerical output, (e.g. `":.2f"`).
     log : bool
         Convert values to log10 before printing.
+    label : bool
+        Add label for which percentiles are being printed
     label_log : bool
         If `log` is also true, append a string saying these are log values.
 
@@ -378,82 +554,27 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
     if percs_flag:
         tiles = percentiles(data, percs, weights=weights).astype(data.dtype)
         out += "(" + ", ".join(form.format(tt) for tt in tiles) + ")"
-        out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"
+        if label:
+            out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"
 
     # Note if these are log-values
     if log and label_log:
         out += " (log values)"
 
-    if label is not None:
-        warnings.warn("WARNING: `label` argument is deprecated in `math_core.stats_str`",
-                      stacklevel=3)
-        out = label + ': ' + out
-
     return out
 
 
-def percentiles(values, percs, weights=None, values_sorted=False):
-    """Compute weighted percentiles.
-
-    Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
-
-    Arguments
-    ---------
-    values: (N,)
-        input data
-    percs: (M,) scalar [0.0, 1.0]
-        Desired percentiles of the data.
-    weights: (N,) or `None`
-        Weighted for each input data point in `values`.
-    values_sorted: bool
-        If True, then input values are assumed to already be sorted.
-
-    Returns
-    -------
-    percs : (M,) float
-        Array of percentiles of the weighted input data.
-
+def std(vals, weights=None, **kwargs):
     """
-    values = np.array(values).flatten()
-    # percentiles = np.array(percentiles, dtype=values.dtype)
-    percs = np.array(percs)
+
+    See: https://www.itl.nist.gov/div898/software/dataplot/refman2/ch2/weightsd.pdf
+    """
     if weights is None:
-        weights = np.ones_like(values)
-    weights = np.array(weights)
-    assert np.all(percs >= 0.0) and np.all(percs <= 1.0), \
-        'percentiles should be in [0, 1]'
+        return np.std(vals, **kwargs)
 
-    if not values_sorted:
-        sorter = np.argsort(values)
-        values = values[sorter]
-        weights = weights[sorter]
-
-    weighted_quantiles = np.cumsum(weights) - 0.5 * weights
-    weighted_quantiles /= np.sum(weights)
-    # print(percs)
-    # print(weighted_quantiles)
-    percs = np.interp(percs, weighted_quantiles, values)
-    return percs
-
-
-def log_normal_base_10(mu, sigma, size=None, shift=0.0):
-    """Draw from a lognormal distribution with values in base-10 (instead of e).
-
-    Arguments
-    ---------
-    mu : (N,) scalar
-        Mean of the distribution in linear space (e.g. 1.0e8 instead of 8.0).
-    sigma : (N,) scalar
-        Variance of the distribution *in dex* (e.g. 1.0 means factor of 10.0 variance)
-    size : (M,) int
-        Desired size of sample.
-
-    Returns
-    -------
-    dist : (M,...) scalar
-        Resulting distribution of values (in linear space).
-
-    """
-    _sigma = np.log(10**sigma)
-    dist = np.random.lognormal(np.log(mu) + shift*np.log(10.0), _sigma, size)
-    return dist
+    mm = np.count_nonzero(weights)
+    ave = mean(vals, weights=weights, **kwargs)
+    num = np.sum(weights * (vals - ave)**2)
+    den = np.sum(weights) * (mm - 1) / mm
+    std = np.sqrt(num/den)
+    return std

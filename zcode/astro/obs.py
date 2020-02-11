@@ -3,37 +3,70 @@
 
 import numpy as np
 
-from zcode.constants import PC
+from zcode.constants import PC, SPLC
 
-# http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/magsystems.pdf
+# VEGA/Johnson/Bessell: http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/magsystems.pdf
+# SDSS/AB/Fukugita: http://www.astronomy.ohio-state.edu/~martini/usefuldata.html
+
 # These wavelengths are in [cm]
 BAND_EFF_LOC = {
+    # Vega/Johnson/Bessell
     "U": {"l": 366e-7},
     "B": {"l": 438e-7},
     "V": {"l": 545e-7},
     "R": {"l": 641e-7},
-    "I": {"l": 798e-7}
+    "I": {"l": 798e-7},
+    # SDSS AB Magnitudes
+    "u": {"l": 356e-7},
+    "g": {"l": 483e-7},
+    "r": {"l": 626e-7},
+    "i": {"l": 767e-7},
+    "z": {"l": 910e-7}
 }
 BAND_REF_FLUX = {
+    # Vega/Johnson/Bessell
     "U": {"f": 1.790, "l": 417.5},
     "B": {"f": 4.063, "l": 632.0},
     "V": {"f": 2.636, "l": 363.1},
     "R": {"f": 3.064, "l": 217.7},
-    "I": {"f": 2.416, "l": 112.6}
+    "I": {"f": 2.416, "l": 112.6},
+    # SDSS AB Magnitudes
+    "u": {"f": 3.631, "l": 859.5},
+    "g": {"f": 3.631, "l": 466.9},
+    "r": {"f": 3.631, "l": 278.0},
+    "i": {"f": 3.631, "l": 185.2},
+    "z": {"f": 3.631, "l": 131.5}
 }
 BAND_ZERO_POINT = {
+    # Vega/Johnson/Bessell
     "U": {"f": +0.770, "l": -0.152},
     "B": {"f": -0.120, "l": -0.602},
     "V": {"f": +0.000, "l": +0.000},
     "R": {"f": +0.186, "l": +0.555},
-    "I": {"f": +0.444, "l": +1.271}
+    "I": {"f": +0.444, "l": +1.271},
+    # SDSS AB Magnitudes
+    "u": {"f": 0.0, "l": 0.0},
+    "g": {"f": 0.0, "l": 0.0},
+    "r": {"f": 0.0, "l": 0.0},
+    "i": {"f": 0.0, "l": 0.0},
+    "z": {"f": 0.0, "l": 0.0}
 }
 UNITS = {
     "f": 1.0e-20,  # erg/s/Hz/cm^2
     "l": 1.0e-11   # erg/s/Angstrom/cm^2
 }
 
-__all__ = ["ABmag_to_flux", "abs_mag_to_lum", "flux_to_mag", "lum_to_abs_mag", "mag_to_flux"]
+__all__ = ["ABmag_to_flux", "abs_mag_to_lum", "flux_to_mag", "lum_to_abs_mag", "mag_to_flux",
+           "fnu_to_flambda", "flambda_to_fnu"]
+
+
+# _band_name = ['u', 'b', 'v', 'r', 'i']
+# _band_wlen = [365, 445, 551, 658, 806]   # nm
+# _band_color = ['violet', 'blue', 'green', 'red', 'darkred']
+# Band = namedtuple('band', ['name', 'freq', 'wlen', 'color'])
+#
+# BANDS = {nn: Band(nn, SPLC/(ll*1e-7), ll*1e-7, cc)
+#          for nn, ll, cc in zip(_band_name, _band_wlen, _band_color)}
 
 
 def _get_units_type(type):
@@ -144,7 +177,23 @@ def lum_to_abs_mag(band, lum, type='f'):
     if band not in BAND_REF_FLUX.keys():
         raise ValueError("Unrecognized `band` = '{}'".format(band))
 
-    ref_lum = BAND_REF_FLUX[band][type] * 4.0 * np.pi * units * PC**2
+    ref_lum = BAND_REF_FLUX[band][type] * 4.0 * np.pi * units * (10*PC)**2
     mag = lum/ref_lum
     mag = -2.5 * np.log10(mag) + 5
     return mag
+
+
+def fnu_to_flambda(fnu, freq=None, wavelength=None):
+    if freq is None:
+        freq = SPLC / wavelength
+
+    flambda = fnu * freq**2 / SPLC
+    return flambda
+
+
+def flambda_to_fnu(flambda, freq=None, wavelength=None):
+    if wavelength is None:
+        wavelength = SPLC / freq
+
+    fnu = flambda * freq**2 / SPLC
+    return fnu
