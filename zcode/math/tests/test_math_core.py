@@ -500,6 +500,50 @@ class TestMathCore(object):
 
         return
 
+    def test_broadcast(self):
+        from zcode.math.math_core import broadcast
+
+        def check_in_ot(din, check):
+            dot = broadcast(*din)
+            print("input:  {}".format(din))
+            print("output: {} ({})".format(dot, check))
+            assert_true(np.all([dd == cc for dd, cc in zip(dot, check)]))
+            assert_true(np.all([np.shape(dd) == np.shape(cc) for dd, cc in zip(dot, check)]))
+            return
+
+        # Normal broadcast (1,) (2,) ==> (2,) (2,)
+        din = [[1.0], [2.0, 3.0]]
+        check = [[[1.0, 1.0]], [[2.0, 3.0]]]
+        check_in_ot(din, check)
+
+        # Scalar-only broadcast () () ==> () ()
+        din = [1.0, 2.0]
+        check = din
+        check_in_ot(din, check)
+
+        # Mixed scalar and array
+        din = [1.5, [1.0, 2.0], [1.0, 2.0, 3.0]]
+        check = [
+            [[1.5, 1.5, 1.5], [1.5, 1.5, 1.5]],
+            [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0]],
+            [[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]]
+        ]
+        check_in_ot(din, check)
+
+        din = [[1.0], [2.0, 3.0]]
+        check = [[[1.0, 1.0]], [[2.0, 3.0]]]
+        dot = broadcast(*din)
+        check_in_ot(din, check)
+
+        sh_in = np.random.randint(1, 5, 3)
+        sh_ot = [sh_in for ii in range(len(sh_in))]
+        din = [np.random.normal(size=sh) for sh in sh_in]
+        dot = broadcast(*din)
+        print("Input shapes: '{}'".format(sh_in))
+        print("Output shapes: '{}' ({})".format([dd.shape for dd in dot], sh_ot))
+        assert_true(np.all([dd.shape == sh for dd, sh in zip(dot, sh_ot)]))
+        return
+
 
 class Test_Interp(object):
 

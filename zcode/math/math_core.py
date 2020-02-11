@@ -388,10 +388,30 @@ def broadcast(*args):
     """Broadcast N, 1D arrays into N, ND arrays.
 
     e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,4,2`, `3,4,2` and `3,4,2`.
+
+    NOTE: scalar arrays will not add a dimension!
+    e.g. from array len `4` and scalar (i.e. len `0`) returns shapes: `4`, `4`
+
     """
-    # outs = broadcastable(*args)
-    # outs = np.broadcast_arrays(outs)
-    outs = np.meshgrid(*args, indexing='ij')
+    # Separate arguments into scalars and arrays
+    idx = [np.isscalar(aa) for aa in args]
+    sca_args = [aa for aa in args if np.isscalar(aa)]
+    arr_args = [aa for aa in args if not np.isscalar(aa)]
+
+    # If everything is a scalar, return them
+    if len(arr_args) == 0:
+        return args
+
+    outs = np.meshgrid(*arr_args, indexing='ij')
+    # If everything is an array, already done, return
+    if not np.any(idx):
+        return outs
+
+    # Broadcast scalars to shape of broadcasted arrays
+    sca_args = [aa * np.ones_like(outs[0]) for aa in sca_args]
+    # Insert broadcasted scalars appropriately
+    outs = np.insert(outs, np.where(idx)[0], sca_args, axis=0)
+
     return outs
 
 
@@ -774,7 +794,7 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     # If there are no elements (left), return `prev` (`None` if not provided)
     if np.size(data) == 0:
         msg = "" if filter is None else " after filtering"
-        logging.warning("Empty `data` array{}!".format(msg))
+        logging.warning("zcode.math.math_core:minmax() :: Empty `data` array{}!".format(msg))
         return prev
 
     # Find extrema
@@ -1149,6 +1169,7 @@ def rpt_to_xyz(rpt):
 
 
 def rtp_to_xyz(rtp):
+    rtp = np.asarray(rtp)
     rpt = np.zeros_like(rtp)
     rpt[0, ...] = rtp[0, ...]
     rpt[1, ...] = rtp[2, ...]
@@ -1157,6 +1178,7 @@ def rtp_to_xyz(rtp):
 
 
 def xyz_to_rtp(xyz):
+    xyz = np.asarray(xyz)
     rpt = xyz_to_rpt(xyz)
     rtp = np.zeros_like(rpt)
     rtp[0, ...] = rpt[0, ...]

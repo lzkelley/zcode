@@ -75,6 +75,7 @@ Current
                 - Fixed numerous tests.
                 - Added new tests for interpolation methods.
                 - Tests for `edges_from_cents`
+                - Tests for `broadcast`
             - `test_statistic.py`
                 - New test for percentiles.
 
@@ -89,6 +90,8 @@ Current
                 - Alias of `str_array()`
             - `broadcast()` [NEW-FUNCTION]
                 - Expand N, 1D arrays into N, ND arrays each with the same shape.
+                - Scalars do not contribute dimensions.
+                - Unit tests added.
             - `broadcastable()` [NEW-FUNCTION]
                 - Method to expand N, 1D arrays into N, ND arrays which can be broadcasted together.
             - `edges_from_cents()` [NEW-FUNCTION]
