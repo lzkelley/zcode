@@ -62,6 +62,8 @@ Current
             - Added SDSS AB ugriz magnitude to conversion tables.
             - `fnu_to_flambda()` & `flambda_to_fnu()`  [NEW-FUNCTION]
                 - Functions to convert spectral flux from wavelength to frequency and visa-versa.
+            - `lum_to_abs_mag()`
+                - BUG: standard distance is 10 pc 
 
     - `inout/`
         - `stats_str()`  ==>  moved to `math.statistic.stats_str()`

@@ -177,7 +177,7 @@ def lum_to_abs_mag(band, lum, type='f'):
     if band not in BAND_REF_FLUX.keys():
         raise ValueError("Unrecognized `band` = '{}'".format(band))
 
-    ref_lum = BAND_REF_FLUX[band][type] * 4.0 * np.pi * units * PC**2
+    ref_lum = BAND_REF_FLUX[band][type] * 4.0 * np.pi * units * (10*PC)**2
     mag = lum/ref_lum
     mag = -2.5 * np.log10(mag) + 5
     return mag
