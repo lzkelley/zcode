@@ -136,6 +136,9 @@ Current
                 - Use new functionality from `kde.py`
             - `kde_hist()`  [DEPRECATED]
                 - Use new functionality from `kde.py`
+            - `rk4_step()`  [NEW-FUNCTION]
+                - Take a Fourth-order Runge-Kutta step.
+                - Adapt time-step size to avoid nan-values.
 
         - `statistic.py`
             - `confidenceBands()` [DELETED-METHOD]

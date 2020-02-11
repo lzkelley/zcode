@@ -23,7 +23,7 @@ from .. import utils
 
 __all__ = [
     'cumtrapz_loglog', 'even_selection', 'extend', 'monotonic_smooth', 'sample_inverse',
-    'smooth_convolve', 'spline',   # 'kde', 'kde_hist',
+    'smooth_convolve', 'spline', 'rk4_step',   # 'kde', 'kde_hist',
     # DEPRECATED
     'sampleInverse', 'smooth', '_smooth'
 ]
@@ -451,6 +451,46 @@ def even_selection(size, select, sel_is_true=True):
         cut[indices] = y
 
     return cut
+
+
+def rk4_step(func, x0, y0, dx, check_nan=0, check_nan_max=5):
+    k1 = dx * func(x0, y0)
+    k2 = dx * func(x0 + dx/2.0, y0 + k1/2.0)
+    k3 = dx * func(x0 + dx/2.0, y0 + k2/2.0)
+    k4 = dx * func(x0 + dx, y0 + k3)
+    y1 = y0 + (1.0/6.0) * (k1 + 2*k2 + 2*k3 + k4)
+    x1 = x0 + dx
+
+    # Try recursively decreasing step-size until finite-value is reached
+    if check_nan > 0 and not np.isfinite(y1):
+        '''
+        xvals = [x0, x0 + dx/2.0, x0 + dx/2.0, x0 + dx]
+        yvals = [y0, y0 + k1/2.0, y0 + k2/2.0, y0 + k3]
+        kvals = [k1, k2, k3, k4]
+        for ii in range(4):
+            print("\t"*check_nan, ii, dx, xvals[ii], yvals[ii], kvals[ii])
+        '''
+
+        if check_nan > check_nan_max:
+            err = "Failed to find finite step!  `check_nan` = {}!".format(check_nan)
+            raise RuntimeError(err)
+        # Note that `True+1 = 2`
+        rk4_step(func, x0, y0, dx/2.0, check_nan=check_nan+1, check_nan_max=check_nan_max)
+
+    return x1, y1
+
+    # xvals = [x0, x0 + dx/2, x0 + dx/2, x0 + dx]
+    # dys = [1.0, 0.5, 0.5, 1.0]
+    # yn = y0
+    # prev = 0.0
+    # for ii, (xv, dy) in enumerate(zip(xvals, dys)):
+    #     yv = y0 + prev * dy       # [0.0, k1/2, k2/2, k3]
+    #     ki = dx * func(xv, yv)
+    #     yn += (ki / dy) / 6.0   # [k1, 2*k2, 2*k3, k4] / 6
+    #     prev = ki
+    #
+    # xn = x0 + dx
+    # return xn, yn
 
 
 '''
