@@ -453,13 +453,27 @@ def even_selection(size, select, sel_is_true=True):
     return cut
 
 
-def rk4_step(func, x0, y0, dx, check_nan=0, check_nan_max=5):
-    k1 = dx * func(x0, y0)
-    k2 = dx * func(x0 + dx/2.0, y0 + k1/2.0)
-    k3 = dx * func(x0 + dx/2.0, y0 + k2/2.0)
-    k4 = dx * func(x0 + dx, y0 + k3)
+def rk4_step(func, x0, y0, dx, args=None, check_nan=0, check_nan_max=5, debug=False):
+    if args is None:
+        k1 = dx * func(x0, y0)
+        k2 = dx * func(x0 + dx/2.0, y0 + k1/2.0)
+        k3 = dx * func(x0 + dx/2.0, y0 + k2/2.0)
+        k4 = dx * func(x0 + dx, y0 + k3)
+    else:
+        k1 = dx * func(x0, y0, *args)
+        k2 = dx * func(x0 + dx/2.0, y0 + k1/2.0, *args)
+        k3 = dx * func(x0 + dx/2.0, y0 + k2/2.0, *args)
+        k4 = dx * func(x0 + dx, y0 + k3, *args)
+
     y1 = y0 + (1.0/6.0) * (k1 + 2*k2 + 2*k3 + k4)
     x1 = x0 + dx
+
+    if debug:
+        xs = [x0, x0 + dx/2, x0 + dx/2, x0 + dx]
+        ys = [y0, y0 + k1/2, y0 + k2/2, y0 + k3]
+        ks = [k1, k2, k3, k4]
+        for ii, (_x, _y, _k) in enumerate(zip(xs, ys, ks)):
+            print("\t{} {:.4e} {:.4e} {:.4e}".format(ii+1, _x, _y, _k/dx))
 
     # Try recursively decreasing step-size until finite-value is reached
     if check_nan > 0 and not np.isfinite(y1):
