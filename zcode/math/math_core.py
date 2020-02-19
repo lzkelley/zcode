@@ -39,23 +39,25 @@ import numpy as np
 import scipy as sp
 import scipy.interpolate  # noqa
 
-__all__ = ['argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
-           'around', 'array_str', 'asBinEdges',
-           'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
-           'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
-           'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
-           'ordered_groups', 'really1d', 'renumerate', 'roll',
 
-           'rotation_matrix_between_vectors', 'rotation_matrix_about',
-           'xyz_to_rpt', 'rpt_to_xyz', 'xyz_to_rtp', 'rtp_to_xyz',
+__all__ = [
+    'argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
+    'around', 'array_str', 'asBinEdges',
+    'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
+    'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
+    'indsWithin', 'midpoints', 'minmax',  'mono', 'limit',
+    'ordered_groups', 'really1d', 'renumerate', 'roll',
 
-           'sliceForAxis', 'spacing', 'spacing_composite',
-           'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
-           'comparison_filter', '_comparison_function',
-           '_infer_scale', '_fracToInt',
-           # DEPRECATED
-           'zenum'
-           ]
+    'rotation_matrix_between_vectors', 'rotation_matrix_about',
+    'xyz_to_rpt', 'rpt_to_xyz', 'xyz_to_rtp', 'rtp_to_xyz',
+
+    'sliceForAxis', 'spacing', 'spacing_composite',
+    'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
+    'comparison_filter', '_comparison_function',
+    '_infer_scale', '_fracToInt',
+    # DEPRECATED
+    'zenum'
+]
 
 from zcode import utils
 
@@ -581,92 +583,6 @@ def indsWithin(vals, extr, edges=True):
         inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
 
     return inds
-
-
-def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, valid=False):
-    x1 = np.asarray(xnew)
-    x0 = np.asarray(xold)
-    y0 = np.asarray(yold)
-    if xlog:
-        x1 = np.log10(x1)
-        x0 = np.log10(x0)
-    if ylog:
-        y0 = np.log10(y0)
-        if np.isfinite(left):
-            left = np.log10(left)
-        if np.isfinite(right):
-            right = np.log10(right)
-
-    if valid:
-        inds = (~np.isnan(x0) & ~np.isinf(x0)) & (~np.isnan(y0) & ~np.isinf(y0))
-        # inds = np.where(inds)
-    else:
-        inds = slice(None)
-
-    # try:
-    y1 = np.interp(x1, x0[inds], y0[inds], left=left, right=right)
-    # except:
-    #     raise
-
-    if ylog:
-        y1 = np.power(10.0, y1)
-
-    return y1
-
-
-def interp_func(xold, yold, kind='mono', xlog=True, ylog=True, fill_value=np.nan, **kwargs):
-    """Return an interpolation/extrapolation function constructed from the given values.
-
-    Generally the returned function is a wrapper around `interp1d` from the `scipy.interpolate`
-    module, unless `kind` is either 'mono' or 'Pchip' in which case the `PchipInterpolator` is
-    used.
-
-    """
-    def in_lin(xx):
-        return xx
-
-    def in_log(xx):
-        return np.log10(xx)
-
-    def out_lin(yy):
-        return yy
-
-    def out_log(yy):
-        return np.power(10.0, yy)
-
-    if xlog:
-        xold = np.log10(xold)
-        in_func = in_log
-    else:
-        in_func = in_lin
-
-    if ylog:
-        yold = np.log10(yold)
-        out_func = out_log
-        if isinstance(fill_value, tuple):
-            fill_value = tuple([np.log10(vv) for vv in fill_value])
-        else:
-            fill_value = np.log10(fill_value)
-
-    else:
-        out_func = out_lin
-
-    if kind == 'mono' or kind.lower() == 'pchip':
-        if not np.isscalar(fill_value) or not np.isnan(fill_value):
-            raise ValueError("`PchipInterpolator` only support 'nan' fill values!")
-        lin_interp = sp.interpolate.PchipInterpolator(
-            xold, yold, extrapolate=True, **kwargs)
-    else:
-        lin_interp = sp.interpolate.interp1d(
-            xold, yold, kind=kind, fill_value=fill_value, **kwargs)
-
-    def ifunc(xx):
-        xx = in_func(xx)
-        yy = lin_interp(xx)
-        yy = out_func(yy)
-        return yy
-
-    return ifunc
 
 
 def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
@@ -1531,7 +1447,13 @@ def _str_array_1d(arr, beg, end, form, delim):
 
     # Add the first `first` elements
     if beg is not None:
-        arr_str += delim.join([form.format(vv) for vv in arr[:beg]])
+        temp = [form.format(vv) for vv in arr[:beg]]
+        # isinf = [tt in ['nan', 'inf', '-inf'] for tt in temp]
+        # if np.any(isinf) and not np.all(isinf):
+        #     size = len(temp[argfirst(~np.array(isinf))])
+        #     fmt = "{{:^{len:}}}".format(len=size)
+
+        arr_str += delim.join(temp)
 
     # Include separator unless full array is being printed
     if (beg is not None) or (end < len_arr):
@@ -1562,6 +1484,10 @@ def _str_array_get_beg_end(sides, size):
 
     return beg, end
 
+
+# def unify_shapes(*args):
+#
+#
 
 def vecmag(r1, r2=None):
     """Calculate the distance from vector(s) r1 to r2.

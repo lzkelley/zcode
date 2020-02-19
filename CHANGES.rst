@@ -40,7 +40,16 @@ Future / To-Do
 
 Current
 -------
-
+- `math/`
+    - `interpolate.py`  [NEW-FILE]
+        - New submodule for interpolation and extrapolation.
+    - `math_core.py`
+        - `interp()`       [MOVED TO `interpolate.py`]
+        - `interp_func()`  [MOVED TO `interpolate.py`]
+    - `numeric.py`
+        - `rk4_step()`
+            - Allow additional `args` to be passed to integration function.
+        
 
 
 [0.1.1] - 2020/02/11
