@@ -165,8 +165,8 @@ def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze
             ax.set_ylim(ylim[idx])
 
         if grid is not None:
-            if grid is True:
-                set_grid(ax)
+            if grid in [True, False]:
+                set_grid(ax, grid)
             else:
                 set_grid(ax, **grid)
 
