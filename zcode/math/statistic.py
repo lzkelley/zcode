@@ -436,6 +436,11 @@ def random_power(extr, pdf_index, size=1, **kwargs):
         Array of random variables with N=`size` (default, size=1).
 
     """
+    # if not np.isscalar(pdf_index):
+    #     err = "`pdf_index` (shape {}; {}) must be a scalar value!".format(
+    #         np.shape(pdf_index), pdf_index)
+    #     raise ValueError(err)
+
     extr = math_core.minmax(extr, filter='>', **kwargs)
     if pdf_index == -1:
         rv = 10**np.random.uniform(*np.log10(extr), size=int(size))
