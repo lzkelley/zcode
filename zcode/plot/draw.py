@@ -122,10 +122,8 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
     return line
 
 
-# def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0],
-#                         lw=3.0, alpha=1.0):
-def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='jet'),
-                        lw=3.0, alpha=1.0):
+def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='viridis'),
+                        lw=1.0, colors=None, **kwargs):
     """Draw a line segment by segment.
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
 
@@ -139,18 +137,15 @@ def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='jet'),
     else:
         zz = np.asarray(zz)
 
-    # # Get the minimum and maximum of ``norm``
-    # norm = zmath.minmax(zz)
-    # # conver to normalization
-    # norm = plt.Normalize(norm[0], norm[1])
+    if colors is None:
+        if isinstance(smap, dict):
+            smap = colormap(zz, **smap)
 
-    if isinstance(smap, dict):
-        smap = colormap(args=zz, **smap)
+        colors = smap.to_rgba(zz)
 
-    colors = smap.to_rgba(zz)
     segments = _make_segments(xx, yy)
-    lc = mpl.collections.LineCollection(segments, colors=colors, cmap=smap.cmap, norm=smap.norm,
-                                        linewidth=lw, alpha=alpha)
+    lc = mpl.collections.LineCollection(segments, colors=colors,  # cmap=smap.cmap, norm=smap.norm,
+                                        linewidth=lw, **kwargs)
 
     ax.add_collection(lc)
 
@@ -405,7 +400,7 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
     return line_patch, conf_patches
 
 
-def plot_contiguous(ax, xx, yy, idx, **kwargs):
+def plot_contiguous(ax, xx, yy, idx, scatter=False, **kwargs):
     """Plot values which in contiguous sections.
 
     Arguments
@@ -439,6 +434,7 @@ def plot_contiguous(ax, xx, yy, idx, **kwargs):
 
     begs.append(bb)
     ends.append(ee)
+    nons = []
 
     for ii in range(1, stops.size):
         bb = ee + 1
@@ -446,6 +442,8 @@ def plot_contiguous(ax, xx, yy, idx, **kwargs):
         if ee > bb + 1:
             begs.append(bb)
             ends.append(ee)
+        elif scatter:
+            nons.append(bb)
 
     if stops.size > 0:
         bb = stops[-1] + 1
@@ -460,6 +458,9 @@ def plot_contiguous(ax, xx, yy, idx, **kwargs):
         cut = slice(aa, bb)
         vv = ax.plot(xx[cut], yy[cut], **kwargs)
         vals.append(vv)
+
+    if scatter:
+        ax.scatter(xx[nons], yy[nons], **kwargs)
 
     return vals
 
