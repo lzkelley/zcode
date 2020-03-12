@@ -1336,6 +1336,9 @@ def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=T
 
     """
     arr = np.asarray(arr)
+    if np.ndim(arr) > 1:
+        arr = arr.flatten()
+
     if log:
         arr = np.log10(arr)
 
@@ -1533,7 +1536,23 @@ def within(vals, extr, edges=True, all=False, inv=False, close=None):
 
     """
 
-    extr_bnds = minmax(extr)
+    if np.ndim(extr) != 1:
+        raise ValueError("`extr` must be 1D!")
+
+    vals = np.asarray(vals)
+
+    nex = np.size(extr)
+    if nex < 2:
+        raise ValueError("`extr` must have at least 2 elements!")
+    elif nex == 2:
+        extr_bnds = [ex for ex in extr]
+        extr_bnds[0] = -np.inf if (extr_bnds[0] is None) else extr_bnds[0]
+        extr_bnds[1] = +np.inf if (extr_bnds[1] is None) else extr_bnds[1]
+        if np.diff(extr_bnds) <= 0.0:
+            err = "Extrema values are not ordered!  '{}' ==> '{}'".format(extr, extr_bnds)
+            raise ValueError(err)
+    else:
+        extr_bnds = minmax(extr)
 
     # Include edges for WITHIN bounds (thus not including is outside)
     if edges:
