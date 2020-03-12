@@ -59,6 +59,16 @@ Current
             - Allow power-law index to be array valued.
 
 - `plot/`
+    - `draw.py`
+        - `plot_contiguous()`
+            - Add a `scatter` argument to plot the NON-contiguous elements as scatter points.
+        - `plot_segmented_line()`
+            - Pass all additional `kwargs` to LineCollection constructor.
+            - Improve color handling.
+    - `Hist2D.py`
+        - `draw_hist2d()`
+            - Removed edges from pcolor
+            - Allow `log` argument for normalization of pcolor.
     - `plot_core.py`
         - `figax()`
             - BUG: fix error when `grid` value was `False`.
