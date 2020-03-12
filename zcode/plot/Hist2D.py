@@ -47,7 +47,7 @@ def draw_hist2d(ax, edges, hist=None, data=None, cents=None, levels=None, smooth
                 plot_scatter=None, scatter_kwargs=None, mask_dense=False,
                 plot_density=True, log_stretch=0.1, norm=None, cmap=None, mask_zero=False,
                 plot_contours=True, no_fill_contours=False, fill_contours=False,
-                contour_kwargs=None, contourf_kwargs=None, data_kwargs=None,
+                contour_kwargs=None, contourf_kwargs=None, data_kwargs=None, log_norm=False,
                 **kwargs):
     """
     Minor modifications to the `corner.hist2d` method by 'Dan Foreman-Mackey'.
@@ -86,7 +86,7 @@ def draw_hist2d(ax, edges, hist=None, data=None, cents=None, levels=None, smooth
     levels = np.atleast_1d(levels)
 
     if norm is None:
-        norm = plot_core.get_norm(hist, filter='>')
+        norm = plot_core.get_norm(hist, filter='>', log=log_norm)
 
     if cmap is None:
         cmap = mpl.colors.LinearSegmentedColormap.from_list(
@@ -190,11 +190,10 @@ def draw_hist2d(ax, edges, hist=None, data=None, cents=None, levels=None, smooth
         # levels = np.concatenate([[0], V, [hist.max()*(1+1e-4)]])
         cnf = ax.contourf(X2, Y2, H2.T, levels, alpha=alpha, **contourf_kwargs)
 
-    # Plot the density map. This can't be plotted at the same time as the
-    # contour fills.
+    # Plot the density map. This can't be plotted at the same time as the contour fills.
     elif plot_density:
         # pc = ax.pcolor(xe, ye, hist.max() - hist.T, cmap=cmap, alpha=alpha)
-        pc = ax.pcolor(xe, ye, density_hist.T, cmap=cmap, alpha=alpha, norm=norm)
+        pc = ax.pcolor(xe, ye, density_hist.T, cmap=cmap, alpha=alpha, norm=norm, edgecolor=None)
 
     # Plot the contour edge colors.
     if plot_contours:
