@@ -487,8 +487,8 @@ def plot_bg(ax, xx, yy, thicker=2.0, fainter=0.65, color_bg='0.7', **kwargs):
     """Plot a line with an added background line.
     """
     bg_skip = ['c', 'color']
-    lw_fg = kwargs.pop('lw', 1.0)
-    alpha_fg = kwargs.pop('alpha', 0.8)
+    lw_fg = kwargs.setdefault('lw', 1.0)
+    alpha_fg = kwargs.setdefault('alpha', 0.8)
     lw_bg = lw_fg * thicker
     alpha_bg = alpha_fg * fainter
 
