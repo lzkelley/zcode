@@ -40,6 +40,10 @@ Future / To-Do
 
 Current
 -------
+- `constants.py`
+  - `SIGMA_TO_FWHM`  [NEW-VARIABLE]
+    - Converting from (normal-)standard deviation to full-width at half-maximum (FWHM)
+    
 - `math/`
     - `interpolate.py`  [NEW-FILE]
         - New submodule for interpolation and extrapolation.
