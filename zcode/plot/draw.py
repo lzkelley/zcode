@@ -486,8 +486,9 @@ def _make_segments(x, y):
 def plot_bg(ax, xx, yy, thicker=2.0, fainter=0.65, color_bg='0.7', **kwargs):
     """Plot a line with an added background line.
     """
-    lw_fg = kwargs.setdefault('lw', 1.0)
-    alpha_fg = kwargs.setdefault('alpha', 0.8)
+    bg_skip = ['c', 'color']
+    lw_fg = kwargs.pop('lw', 1.0)
+    alpha_fg = kwargs.pop('alpha', 0.8)
     lw_bg = lw_fg * thicker
     alpha_bg = alpha_fg * fainter
 
@@ -504,15 +505,13 @@ def plot_bg(ax, xx, yy, thicker=2.0, fainter=0.65, color_bg='0.7', **kwargs):
             ls_fg = (-dis, (DASH, DASH))
             ls_bg = (0, (on, off))
 
-    bg_kw = {kk: vv for kk, vv in kwargs.items()}
+    bg_kw = {kk: vv for kk, vv in kwargs.items()
+             if kk not in bg_skip}
     bg_kw['lw'] = lw_bg
     bg_kw['color'] = color_bg
     bg_kw['alpha'] = alpha_bg
     kwargs['ls'] = ls_fg
     bg_kw['ls'] = ls_bg
-
-    # ax.axhline(vv, color='0.5', ls=(0, (4, 2)), lw=4.0)
-    # ax.axhline(vv, color='0.8', ls=(-1, (6, 6)), lw=2.0)
 
     lb, = ax.plot(xx, yy, **bg_kw)
     lf, = ax.plot(xx, yy, **kwargs)
