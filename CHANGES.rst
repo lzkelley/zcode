@@ -59,6 +59,8 @@ Current
         - `rk4_step()`
             - Allow additional `args` to be passed to integration function.
     - `statistic.py`
+        - `percentiles()`
+            - BUG: error in multidimensional arrays when axis=0.
         - `random_power()`
             - Allow power-law index to be array valued.
 

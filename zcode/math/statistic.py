@@ -354,17 +354,21 @@ def percentiles(values, percs=None, sigmas=None, weights=None, axis=None,
         values = np.take_along_axis(values, sorter, axis=axis)
         weights = np.take_along_axis(weights, sorter, axis=axis)
 
-    weighted_quantiles = np.cumsum(weights, axis=axis) - 0.5 * weights
-    weighted_quantiles /= np.sum(weights, axis=axis)[..., np.newaxis]
     if axis is None:
+        weighted_quantiles = np.cumsum(weights) - 0.5 * weights
+        weighted_quantiles /= np.sum(weights)
         percs = np.interp(percs, weighted_quantiles, values)
-    else:
-        values = np.moveaxis(values, axis, -1)
-        weighted_quantiles = np.moveaxis(weighted_quantiles, axis, -1)
-        percs = [np.interp(percs, weighted_quantiles[idx], values[idx])
-                 for idx in np.ndindex(values.shape[:-1])]
-        percs = np.array(percs)
+        return percs
 
+    weights = np.moveaxis(weights, axis, -1)
+    values = np.moveaxis(values, axis, -1)
+
+    weighted_quantiles = np.cumsum(weights, axis=-1) - 0.5 * weights
+    weighted_quantiles /= np.sum(weights, axis=-1)[..., np.newaxis]
+    # weighted_quantiles = np.moveaxis(weighted_quantiles, axis, -1)
+    percs = [np.interp(percs, weighted_quantiles[idx], values[idx])
+             for idx in np.ndindex(values.shape[:-1])]
+    percs = np.array(percs)
     return percs
 
 

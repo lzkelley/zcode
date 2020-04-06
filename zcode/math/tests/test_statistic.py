@@ -125,6 +125,32 @@ class TestStatistic(object):
 
         return
 
+    def test_percentiles_2d(self):
+        from zcode.math import statistic, math_core  # noqa
+
+        ndim = 2
+        shape = np.random.randint(200, 300, ndim)
+        data = np.random.uniform(0.1, 0.9, shape)
+
+        percs = np.sort(np.random.uniform(0.0, 1.0, 10))
+        for ax in [None, ] + list(range(1, ndim)):
+            chck = np.percentile(data, 100*percs, axis=ax, interpolation='linear').T
+            test = statistic.percentiles(data, percs=percs, axis=ax)
+            # print(ax, chck.shape, test.shape)
+            # print(math_core.str_array(test))
+            # print(math_core.str_array(chck))
+            goods = np.isclose(test, chck, rtol=1e-1)
+            bads = ~goods
+            if np.any(bads):
+                bads = np.where(bads)
+                print("bads = ", bads)
+                print(test[bads])
+                print(chck[bads])
+
+            assert_true(np.all(goods))
+
+        return
+
 
 # Run all methods as if with `nosetests ...`
 if __name__ == "__main__":
