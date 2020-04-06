@@ -1155,7 +1155,7 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
-def spacing(data, scale='log', num=None, dex=10, dex_plus=1,
+def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
             filter=None, integers=False, endpoint=True, **kwargs):
     """Create an evenly spaced array between extrema from the given data.
 
@@ -1169,6 +1169,9 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=1,
         Number of points to produce.
     dex : int
         Number of points per decade (order of magnitude) to produce.
+    dex_plus : int or None
+        After finding the number of bins using `dex` per decade, add this number of bins.
+        If `dex` is given and `dex_plus` is None, `dex_plus` is set to 1 if endpoint, else 0
     filter : str or `None`
         String specifying how to filter the input `data` relative to zero.
     integers : bool
@@ -1213,6 +1216,9 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=1,
 
     if (num is None) and (not integers):
         if log_flag and (not integers):
+            if dex_plus is None:
+                dex_plus = 1 if endpoint else 0
+
             num_dex = np.fabs(np.diff(np.log10(span)))
             num = np.int(np.ceil(num_dex * dex)) + dex_plus
         else:
