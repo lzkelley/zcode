@@ -717,9 +717,9 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     if percs is None:
         minmax = np.array([np.min(data), np.max(data)])
     else:
-        from zcode.math.statistic import percentiles
+        from zcode.math.statistic import quantiles
         assert np.size(percs) == 2, "Provided `percs` must be length two!"
-        minmax = percentiles(data, percs)
+        minmax = quantiles(data, percs)
 
     if type is not None:
         minmax = minmax.astype(type)

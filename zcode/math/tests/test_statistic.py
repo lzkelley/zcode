@@ -97,13 +97,13 @@ class TestStatistic(object):
         assert_true(np.allclose(outside_2, ret_outside))
         return
 
-    def test_percentiles_1d(self):
-        print("\nTestStatistic:test_percentiles_1d()")
+    def test_quantiles_1d(self):
+        print("\nTestStatistic:test_quantiles_1d()")
         from zcode.math import statistic, math_core
         aa = np.random.normal(size=100000)
         pp = np.random.uniform(0.0, 1.0, 6)
 
-        test = statistic.percentiles(aa, pp)
+        test = statistic.quantiles(aa, pp)
         true = np.percentile(aa, 100*pp)
         print("test = ", math_core.str_array(test, format=':.5e'))
         print("true = ", math_core.str_array(true, format=':.5e'))
@@ -114,9 +114,9 @@ class TestStatistic(object):
         weights = np.random.randint(1, 100, NUM)
 
         bb = np.repeat(aa, weights)
-        test = statistic.percentiles(aa, pp, weights=weights)
-        true = statistic.percentiles(bb, pp)
-        bads = statistic.percentiles(aa, pp)
+        test = statistic.quantiles(aa, pp, weights=weights)
+        true = statistic.quantiles(bb, pp)
+        bads = statistic.quantiles(aa, pp)
         print("test = ", math_core.str_array(test, format=':.5e'))
         print("true = ", math_core.str_array(true, format=':.5e'))
         print("bads = ", math_core.str_array(bads, format=':.5e'))
@@ -125,7 +125,7 @@ class TestStatistic(object):
 
         return
 
-    def test_percentiles_2d(self):
+    def test_quantiles_2d(self):
         from zcode.math import statistic, math_core  # noqa
 
         ndim = 2
@@ -135,7 +135,7 @@ class TestStatistic(object):
         percs = np.sort(np.random.uniform(0.0, 1.0, 10))
         for ax in [None, ] + list(range(1, ndim)):
             chck = np.percentile(data, 100*percs, axis=ax, interpolation='linear').T
-            test = statistic.percentiles(data, percs=percs, axis=ax)
+            test = statistic.quantiles(data, percs=percs, axis=ax)
             # print(ax, chck.shape, test.shape)
             # print(math_core.str_array(test))
             # print(math_core.str_array(chck))

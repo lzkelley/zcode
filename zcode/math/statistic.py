@@ -22,10 +22,15 @@ import scipy.stats  # noqa
 from zcode import utils
 from zcode.math import math_core
 
-__all__ = ['confidence_bands', 'confidence_intervals',
-           'cumstats', 'frac_str', 'log_normal_base_10', 'mean',
-           'percentiles', 'percs_from_sigma', 'random_power', 'sigma',
-           'stats', 'stats_str', 'std']
+
+__all__ = [
+    'confidence_bands', 'confidence_intervals',
+    'cumstats', 'frac_str', 'log_normal_base_10', 'mean',
+    'percs_from_sigma', 'quantiles', 'random_power', 'sigma',
+    'stats', 'stats_str', 'std',
+    # DEPRECATED
+    'percentiles'
+]
 
 
 def confidence_bands(xx, yy, xbins=10, xscale='lin', percs=[0.68, 0.95], filter=None):
@@ -170,7 +175,7 @@ def confidence_intervals(vals, sigma=None, percs=None, weights=None, axis=None,
 
     # PERC_FUNC = np.percentile
     def PERC_FUNC(xx, pp, **kwargs):
-        return percentiles(xx, pp/100.0, weights=weights, **kwargs)
+        return quantiles(xx, pp/100.0, weights=weights, **kwargs)
 
     # Filter input values
     if filter is not None:
@@ -305,8 +310,13 @@ def mean(vals, weights=None, **kwargs):
     return ave
 
 
-def percentiles(values, percs=None, sigmas=None, weights=None, axis=None,
-                values_sorted=False, filter=None):
+def percentiles(*args, **kwargs):
+    utils.dep_warn("percentiles", newname="quantiles")
+    return quantiles(*args, **kwargs)
+
+
+def quantiles(values, percs=None, sigmas=None, weights=None, axis=None,
+              values_sorted=False, filter=None):
     """Compute weighted percentiles.
 
     Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
@@ -561,7 +571,7 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
 
     # Add percentiles
     if percs_flag:
-        tiles = percentiles(data, percs, weights=weights).astype(data.dtype)
+        tiles = quantiles(data, percs, weights=weights).astype(data.dtype)
         out += "(" + ", ".join(form.format(tt) for tt in tiles) + ")"
         if label:
             out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"

@@ -80,7 +80,7 @@ def draw_hist2d(ax, edges, hist=None, data=None, cents=None, levels=None, smooth
     if levels is None:
         # levels = zmath.percs_from_sigma(np.arange(0.5, 2.1, 0.5))
         levels = zmath.percs_from_sigma(np.arange(1, 4))
-        # levels = zmath.percentiles(hist[hist > 0], levels, weights=hist[hist > 0])
+        # levels = zmath.quantiles(hist[hist > 0], levels, weights=hist[hist > 0])
         # print("levels = ", levels)
 
     levels = np.atleast_1d(levels)
