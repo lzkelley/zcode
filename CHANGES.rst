@@ -79,6 +79,7 @@ Current
     - `plot_core.py`
         - `figax()`
             - BUG: fix error when `grid` value was `False`.
+        - `smap()`  <===  `colormap()`  [DEPRECATION]
 
 
 [0.1.1] - 2020/02/11

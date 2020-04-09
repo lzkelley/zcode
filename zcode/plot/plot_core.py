@@ -54,11 +54,12 @@ from zcode.plot import _PAD
 __all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
            'unifyAxesLimits', 'color_cycle', 'get_norm',
-           'colormap', 'color_set', 'set_grid',
+           'smap', 'color_set', 'set_grid',
            'skipTicks', 'saveFigure', 'scientific_notation',
            'line_style_set', 'line_label',
            '_scale_to_log_flag',
            # Deprecated
+           'colormap'
            ]
 
 VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
@@ -1023,8 +1024,8 @@ def invert_color(col):
     return col
 
 
-def colormap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
-             under='0.8', over='0.8', left=None, right=None, filter=None):
+def smap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
+         under='0.8', over='0.8', left=None, right=None, filter=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
@@ -1718,3 +1719,13 @@ class MidpointLogNormalize(mpl.colors.LogNorm):
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         vals = zmath.interp(value, x, y, xlog=True, ylog=False)
         return np.ma.masked_array(vals, np.isnan(value))
+
+
+# ======================
+# ====  DEPRECATED  ====
+# ======================
+
+
+def colormap(*args, **kwargs):
+    utils.dep_warn("colormap", newname="smap")
+    return smap(*args, **kwargs)

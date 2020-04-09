@@ -19,7 +19,7 @@ from zcode import math as zmath
 from zcode import utils
 
 from zcode.plot import COL_CORR, LW_CONF, LW_OUTLINE
-from . plot_core import colormap
+# from . plot_core import colormap
 from . import plot_core
 
 
@@ -139,7 +139,7 @@ def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='viridis'),
 
     if colors is None:
         if isinstance(smap, dict):
-            smap = colormap(zz, **smap)
+            smap = plot_core.smap(zz, **smap)
 
         colors = smap.to_rgba(zz)
 
@@ -172,7 +172,7 @@ def plot_scatter(ax, xx, yy, scalex='log', scaley='log',
         res = 0.3*np.sqrt(len(xx))
         res = np.max([1, res])
 
-        smap = colormap(NUM, CMAP, scale='lin')
+        smap = plot_core.smap(NUM, CMAP, scale='lin')
         cols = [smap.to_rgba(it) for it in range(NUM)]
 
         xi = zmath.spacing(xx, scalex, num=res)

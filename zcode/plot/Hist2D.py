@@ -848,7 +848,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     extrema = _set_extrema(extrema, [hist_2d, hist_xp, hist_yp], filter=filter[2], lo=lo, hi=hi)
     # Create scalar-mappable if needed
     if smap is None:
-        smap = plot_core.colormap(extrema, cmap=cmap, scale=histScale)
+        smap = plot_core.smap(extrema, cmap=cmap, scale=histScale)
 
     # Plot Histograms and Projections
     # -------------------------------
@@ -1070,7 +1070,7 @@ def plot2DHist(ax, xvals, yvals, hist,
 
     # Create scalar-mappable if needed
     if smap is None:
-        smap = plot_core.colormap(extrema, cmap=cmap, scale=cscale)
+        smap = plot_core.smap(extrema, cmap=cmap, scale=cscale)
 
     # Plot
     pcm = ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap, linewidth=0,
