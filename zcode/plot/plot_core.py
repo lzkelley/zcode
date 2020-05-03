@@ -1358,8 +1358,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     return
 
 
-def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
-                        precman=None, precexp=None):
+def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
@@ -1383,14 +1382,6 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
         Scientific notation string using latex formatting.
 
     """
-    # Deprecation warnings for old parameters
-    if precman is not None:
-        utils.dep_warn("precman", "man", type='parameter')
-        man = precman
-    if precexp is not None:
-        utils.dep_warn("precexp", "exp", type='parameter')
-        exp = precexp
-
     if zero and val == 0.0:
         notStr = "$"*dollar + "0.0" + "$"*dollar
         return notStr
