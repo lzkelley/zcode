@@ -43,13 +43,19 @@ Current
 - `constants.py`
   - `SIGMA_TO_FWHM`  [NEW-VARIABLE]
     - Converting from (normal-)standard deviation to full-width at half-maximum (FWHM)
-    
+
+- `inout/`
+    - `notebooks.py`  [NEW-FILE]
+        - Methods specifically for jupyter notebooks
+      
 - `math/`
     - `interpolate.py`  [NEW-FILE]
         - New submodule for interpolation and extrapolation.
     - `math_core.py`
         - `interp()`       [MOVED TO `interpolate.py`]
         - `interp_func()`  [MOVED TO `interpolate.py`]
+        - `isnumeric()`  [NEW-FUNCTION]
+            - Check if a value is a numeric scalar.
         - `str_array()`
             - BUG: Flatten multi-dimensional arrays before processing.
         - `within()`

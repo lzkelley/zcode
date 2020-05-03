@@ -45,7 +45,7 @@ __all__ = [
     'around', 'array_str', 'asBinEdges',
     'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
     'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
-    'indsWithin', 'midpoints', 'minmax',  'mono', 'limit',
+    'indsWithin', 'isnumeric', 'midpoints', 'minmax',  'mono', 'limit',
     'ordered_groups', 'really1d', 'renumerate', 'roll',
 
     'rotation_matrix_between_vectors', 'rotation_matrix_about',
@@ -583,6 +583,10 @@ def indsWithin(vals, extr, edges=True):
         inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
 
     return inds
+
+
+def isnumeric(val):
+    return _is_numeric_scalar(val)
 
 
 def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
@@ -1723,3 +1727,13 @@ def _flagsToFilter(positive, nonzero, filter=None, source=None):
 def _infer_scale(args):
     if np.all(args > 0.0): return 'log'
     return 'lin'
+
+
+def _is_numeric_scalar(val):
+    if not np.isscalar(val):
+        return False
+
+    import decimal
+    rv = isinstance(val, (int, float, decimal.Decimal, np.number, np.ndarray))
+
+    return rv
