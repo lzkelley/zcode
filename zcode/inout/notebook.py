@@ -2,6 +2,7 @@
 """
 
 import os
+import logging
 
 # import numpy as np
 import astropy as ap
@@ -15,10 +16,11 @@ from IPython.display import display, Math, Markdown
 
 from zcode import plot as zplot
 from zcode import math as zmath
-from zcode import inout as zio
+# from zcode import inout as zio   # noqa
+from zcode.plot.plot_core import save_fig  # noqa
 
 
-msol = Quantity("$M_\odot$")
+msol = Quantity(r"$M_\odot$")
 SI.set_quantity_dimension(msol, mass)
 SI.set_quantity_scale_factor(msol, ap.constants.M_sun.cgs.value*g)
 
@@ -45,11 +47,32 @@ def scinot(arg, acc=2, **kwargs):
     kwargs.setdefault('man', acc-1)
     kwargs.setdefault('exp', 1)
     kwargs.setdefault('one', False)
-    return zplot.scientific_notation(arg, **kwargs)
+    try:
+        rv = zplot.scientific_notation(arg, **kwargs)
+    except Exception as error:
+        # Try to cast argument to float (e.g. if it's a sympy object wrapping a float)
+        try:
+            rv = zplot.scientific_notation(float(arg), **kwargs)
+        except:
+            # Try unpacking a sympy object with a float and then symbols (etc)
+            try:
+                args = arg.args
+                rv = zplot.scientific_notation(float(args[0]), **kwargs)
+                # rv += " ".join([str(aa) for aa in args[1:]])
+                rv = (rv,) + args[1:]
+            except Exception as new_error:
+                logging.error(repr(new_error))
+                err = ("`zcode.inout.notebook.scinot(): " +
+                       "could not salvage argument '{}'!".format(arg) +
+                       "  Raising original error.")
+                logging.error(err)
+                raise error
+
+    return rv
 
 
 def rm(arg):
-    return "\, \\textrm{" + arg + "} \,"
+    return r"\, \textrm{" + arg + r"} \,"
 
 
 def dispmath(*args):
@@ -85,22 +108,4 @@ def printm(*args, **kwargs):
     tex = [sym.latex(aa, **kwargs).strip('$') for aa in args]
     tex = "$" + "".join(tex) + "$"
     display(Markdown(tex))
-    return
-
-
-def save_fig(fig, fname, path=None, subdir=None, modify=True, **kwargs):
-    # pp = path if path is not None else PATH_OUTPUT
-    pp = path if path is not None else os.path.curdir
-    if subdir is not None:
-        pp = os.path.join(pp, subdir, "")
-
-    pp = zio.check_path(pp)
-    ff = os.path.join(pp, fname)
-    if modify:
-        ff = zio.modify_exists(ff)
-
-    ff = os.path.abspath(ff)
-    kwargs.setdefault('dpi', 400)
-    fig.savefig(ff, **kwargs)
-    print("Saved to '{}' size: {}".format(ff, zio.get_file_size(ff)))
     return
