@@ -54,7 +54,7 @@ from zcode.plot import _PAD
 __all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
            'unifyAxesLimits', 'color_cycle', 'get_norm',
-           'smap', 'color_set', 'set_grid',
+           'smap', 'color_set', 'set_grid', 'save_fig',
            'skipTicks', 'saveFigure', 'scientific_notation',
            'line_style_set', 'line_label',
            '_scale_to_log_flag',
@@ -1222,7 +1222,7 @@ def set_grid(ax, val=True, axis='both', ls='-', clear=True,
             else:
                 _col = color
             if alpha is None:
-                _alpha = 0.8
+                _alpha = 0.4
             else:
                 _alpha = alpha
             ax.grid(True, which='major', axis=axis, c=_col, ls=ls, zorder=zorder, alpha=_alpha)
@@ -1232,11 +1232,29 @@ def set_grid(ax, val=True, axis='both', ls='-', clear=True,
             else:
                 _col = color
             if alpha is None:
-                _alpha = 0.5
+                _alpha = 0.2
             else:
                 _alpha = alpha
             ax.grid(True, which='minor', axis=axis, c=_col, ls=ls, zorder=zorder, alpha=_alpha)
     return
+
+
+def save_fig(fig, fname, path=None, subdir=None, modify=True, verbose=True, **kwargs):
+    pp = path if (path is not None) else os.path.curdir
+    if subdir is not None:
+        pp = os.path.join(pp, subdir, "")
+
+    pp = zio.check_path(pp)
+    ff = os.path.join(pp, fname)
+    if modify:
+        ff = zio.modify_exists(ff)
+
+    ff = os.path.abspath(ff)
+    kwargs.setdefault('dpi', 200)
+    fig.savefig(ff, **kwargs)
+    if verbose:
+        print("Saved to '{}' size: {}".format(ff, zio.get_file_size(ff)))
+    return ff
 
 
 def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
