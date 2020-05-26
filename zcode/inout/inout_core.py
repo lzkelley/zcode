@@ -179,7 +179,7 @@ def backup_existing(fname, prepend='_', append=None, append_type=None, verbose=T
 
     if (append is None) and (append_type is not None):
         if append_type == 'date':
-            append = datetime.strftime(datetime.now(), '%Y-%m-%d')
+            append = '_' + datetime.strftime(datetime.now(), '%Y-%m-%d')
         else:
             raise ValueError("Unrecognized `append_type` = '{}'!".format(append_type))
 
