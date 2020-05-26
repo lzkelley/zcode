@@ -39,6 +39,8 @@ from datetime import datetime
 
 import os
 import sys
+import shutil
+from datetime import datetime
 import re
 import warnings
 import numpy as np
@@ -47,7 +49,8 @@ import collections
 from zcode import utils
 
 
-__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture', 'bytes_string', 'get_file_size',
+__all__ = ['Keys', 'MPI_TAGS', 'StreamCapture',
+           'backup_existing', 'bytes_string', 'get_file_size',
            'count_lines', 'environment_is_jupyter', 'estimateLines', 'modify_filename',
            'check_path', 'dictToNPZ', 'npzToDict', 'checkURL',
            'combine_files',
@@ -162,6 +165,40 @@ class StreamCapture(list):
         self.extend(self._stringio.getvalue().splitlines())
         if(self.out): sys.stdout = self._stdout
         if(self.err): sys.stderr = self._stderr
+
+
+def backup_existing(fname, prepend='_', append=None, append_type=None, verbose=True):
+    """If the given file already exists, move it to a backup named with the given components.
+    """
+    types = ['date']
+    if append_type is not None and append_type not in types:
+        raise ValueError("`append_type` must be one of '{}'!".format(append_type, types))
+
+    if not os.path.exists(fname):
+        return
+
+    if (append is None) and (append_type is not None):
+        if append_type == 'date':
+            append = datetime.strftime(datetime.now(), '%Y-%m-%d')
+        else:
+            raise ValueError("Unrecognized `append_type` = '{}'!".format(append_type))
+
+    backup = modify_filename(fname, prepend=prepend, append=append)
+    if os.path.normpath(fname.lower()) == os.path.normpath(backup.lower()):
+        raise ValueError("Input '{}' is degenerate with backup '{}'!".format(fname, backup))
+
+    if verbose:
+        print("Backing up existing evolution save to '{}'".format(backup))
+
+    if os.path.exists(backup):
+        os.remove(backup)
+
+    shutil.move(fname, backup)
+    if not os.path.exists(backup):
+        err = "Failed to move existing backup '{}' ==> '{}'!".format(fname, backup)
+        raise ValueError(err)
+
+    return backup
 
 
 def bytes_string(bytes, precision=1):

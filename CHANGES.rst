@@ -45,6 +45,9 @@ Current
     - Converting from (normal-)standard deviation to full-width at half-maximum (FWHM)
 
 - `inout/`
+    - `inout_core.py`
+        - `backup_existing()`  [NEW-METHOD]
+          - If the given filename already exists, move it to a backup file.
     - `notebooks.py`  [NEW-FILE]
         - Methods specifically for jupyter notebooks
       
