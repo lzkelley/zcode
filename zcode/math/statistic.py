@@ -25,7 +25,7 @@ from zcode.math import math_core
 
 __all__ = [
     'confidence_bands', 'confidence_intervals',
-    'cumstats', 'frac_str', 'log_normal_base_10', 'mean',
+    'cumstats', 'frac_str', 'info', 'log_normal_base_10', 'mean',
     'percs_from_sigma', 'quantiles', 'random_power', 'sigma',
     'stats', 'stats_str', 'std',
     # DEPRECATED
@@ -277,6 +277,18 @@ def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
         num=num, den=den, frac=dec_frac, ff=frac_fmt, df=dec_fmt)
 
     return fstr
+
+
+def info(array, shape=True, sample=3, stats=True):
+    rv = ""
+    if shape:
+        rv += "{} ".format(np.shape(array))
+    if (sample is not None) and (sample > 0):
+        rv += "{} ".format(math_core.str_array(array, sides=sample))
+    if stats:
+        rv += "{} ".format(stats_str(array, label=False))
+
+    return rv
 
 
 def log_normal_base_10(mu, sigma, size=None, shift=0.0):
