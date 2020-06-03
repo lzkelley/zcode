@@ -112,6 +112,7 @@ _SCATTER_POINTS = 1
 def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
           xscale='log', xlabel='', xlim=None,
           yscale='log', ylabel='', ylim=None,
+          widths=None, heights=None,
           left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
           grid=True, **kwargs):
 
@@ -125,6 +126,14 @@ def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze
             scales[ii] = 'linear'
 
     xscale, yscale = scales
+
+    if (widths is not None) or (heights is not None):
+        gridspec_kw = dict()
+        if widths is not None:
+            gridspec_kw['width_ratios'] = widths
+        if heights is not None:
+            gridspec_kw['height_ratios'] = heights
+        kwargs['gridspec_kw'] = gridspec_kw
 
     fig, axes = plt.subplots(figsize=figsize, squeeze=False, ncols=ncols, nrows=nrows,
                              sharex=sharex, sharey=sharey, **kwargs)
