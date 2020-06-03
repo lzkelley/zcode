@@ -714,7 +714,11 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     # If there are no elements (left), return `prev` (`None` if not provided)
     if np.size(data) == 0:
         msg = "" if filter is None else " after filtering"
-        logging.warning("zcode.math.math_core:minmax() :: Empty `data` array{}!".format(msg))
+        msg = "zcode.math.math_core:minmax() :: Empty `data` array{}!".format(msg)
+        # NOTE: this should be `warnings.warn` instead of `logging.warning` so that it can be
+        #       caught by internal calling funtions.  BUG: could be improved!
+        # logging.warning(msg)
+        warnings.warn(msg)
         return prev
 
     # Find extrema
