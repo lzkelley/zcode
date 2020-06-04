@@ -18,7 +18,7 @@ import scipy as sp
 import scipy.stats  # noqa
 import warnings
 
-from . import math_core
+from . import math_core, statistic
 from .. import utils
 
 __all__ = [
@@ -127,6 +127,8 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
       the interpolation is better performed on the input `yy` values.
 
     """
+    yy = np.asarray(yy)
+    xx = np.asarray(xx)
 
     if bounds is not None:
         if len(bounds) != 2 or np.any(~math_core.within(bounds, xx)) or (bounds[0] > bounds[1]):
@@ -146,9 +148,12 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
         ii = np.array([ii[0], ii[1]+1])
         assert np.alltrue(xx[ii] == bounds), "FAILED!"
 
-    yy = np.ma.masked_values(yy, value=0.0)
+    yy = np.ma.masked_values(yy, value=0.0, atol=0.0)
 
-    if np.ndim(yy) > 1:
+    # if np.ndim(yy) > 1 and np.ndim(xx) == 1:
+    if np.ndim(yy) != np.ndim(xx):
+        if np.ndim(yy) < np.ndim(xx):
+            raise ValueError("BAD SHAPES")
         cut = [slice(None)] + [np.newaxis for ii in range(np.ndim(yy)-1)]
         xx = xx[tuple(cut)]
 
@@ -159,6 +164,9 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
         if dlogx is not True:
             log_base = dlogx
 
+    # print("zcode.math.numeric.cumtrapz_loglog()")
+    # print("xx = ", xx)
+    # print("yy = ", yy)
     gamma = np.diff(np.log(yy), axis=axis) / np.diff(np.log(xx), axis=axis)
     # A = (x1*y1 - x0*y0) / (gamma + 1)
     if dlogx is None:
@@ -170,7 +178,6 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
         trapz = dy / gamma
 
     integ = np.log(log_base) * np.cumsum(trapz, axis=axis)
-
     if bounds is not None:
         # NOTE: **DO NOT INTERPOLATE INTEGRAL** this works badly for negative power-laws
         # lo, hi = math_core.interp(bounds, xx[1:], integ, xlog=True, ylog=True, valid=False)
