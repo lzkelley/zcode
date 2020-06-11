@@ -1,4 +1,8 @@
 """Gravitational Waves related functions
+
+References:
+- EN07 : [Enoki & Nagashima 2007](https://ui.adsabs.harvard.edu/abs/2007PThPh.117..241E/abstract)
+
 """
 
 
@@ -9,7 +13,7 @@ from zcode.constants import NWTG, SPLC, MPRT, SIGMA_T
 __all__ = [
     'chirp_mass',
     'gw_hardening_rate_dadt', 'gw_dedt',
-    'gw_strain', 'gw_char_strain', 'gw_freq_dist_func',
+    'gw_strain', 'gw_char_strain', 'gw_freq_dist_func', 'gw_lum_circ',
     # 'gw_strain_source_circ',
     'sep_to_merge_in_time', 'time_to_merge_at_sep',
 ]
@@ -24,6 +28,9 @@ _GW_SRC_CONST = 8 * np.power(NWTG, 5/3) * np.power(np.pi, 2/3) / np.sqrt(10) / n
 _GW_DADT_SEP_CONST = - 64 * np.power(NWTG, 3) / 5 / np.power(SPLC, 5)
 _GW_DEDT_ECC_CONST = - 304 * np.power(NWTG, 3) / 15 / np.power(SPLC, 5)
 
+# EN07, Eq.2.2
+_LUM_CONST = (32.0 / 5.0) * np.power(NWTG, 7.0/3.0) * np.power(SPLC, -5.0)
+
 from . import astro_core
 
 
@@ -33,18 +40,26 @@ def chirp_mass(m1, m2=None):
     return np.power(m1*m2, 3/5)/np.power(m1+m2, 1/5)
 
 
-def gw_hardening_rate_dadt(m1, m2, sma, ecc=None):
-    """GW Hardening rate (da/dt).
-
-    See Peters 1964, Eq. 5.6
-    http://adsabs.harvard.edu/abs/1964PhRv..136.1224P
+def gw_char_strain(hs, dur_obs, freq_gw_obs, freq_gw_rst, dfdt):
     """
-    cc = _GW_DADT_SEP_CONST
-    dadt = cc * m1 * m2 * (m1 + m2) / np.power(sma, 3)
-    if ecc is not None:
-        fe = _gw_hardening_ecc_func(ecc)
-        dadt *= fe
-    return dadt
+
+    See, e.g., Sesana+2004, Eq. 35
+               http://adsabs.harvard.edu/abs/2004ApJ...611..623S
+
+    Arguments
+    ---------
+    hs : array_like scalar
+        Strain amplitude (e.g. `gw_strain()`, sky- and polarization- averaged)
+    dur_obs : array_like scalar
+        Duration of observations, in the observer frame
+
+
+    """
+
+    ncycles = freq_gw_rst**2 / dfdt
+    ncycles = np.clip(ncycles, 0.0, dur_obs * freq_gw_obs)
+    hc = hs * np.sqrt(ncycles)
+    return hc
 
 
 def gw_dedt(m1, m2, sma, ecc):
@@ -89,26 +104,27 @@ def gw_freq_dist_func(nn, ee=0.0):
     return gg
 
 
-def gw_char_strain(hs, dur_obs, freq_gw_obs, freq_gw_rst, dfdt):
+def gw_hardening_rate_dadt(m1, m2, sma, ecc=None):
+    """GW Hardening rate (da/dt).
+
+    See Peters 1964, Eq. 5.6
+    http://adsabs.harvard.edu/abs/1964PhRv..136.1224P
+    """
+    cc = _GW_DADT_SEP_CONST
+    dadt = cc * m1 * m2 * (m1 + m2) / np.power(sma, 3)
+    if ecc is not None:
+        fe = _gw_ecc_func(ecc)
+        dadt *= fe
+    return dadt
+
+
+def gw_lum_circ(mchirp, freq_orb_rest):
     """
 
-    See, e.g., Sesana+2004, Eq. 35
-               http://adsabs.harvard.edu/abs/2004ApJ...611..623S
-
-    Arguments
-    ---------
-    hs : array_like scalar
-        Strain amplitude (e.g. `gw_strain()`, sky- and polarization- averaged)
-    dur_obs : array_like scalar
-        Duration of observations, in the observer frame
-
-
+    EN07: Eq. 2.2
     """
-
-    ncycles = freq_gw_rst**2 / dfdt
-    ncycles = np.clip(ncycles, 0.0, dur_obs * freq_gw_obs)
-    hc = hs * np.sqrt(ncycles)
-    return hc
+    lgw_circ = _LUM_CONST * np.power(2.0*np.pi*freq_orb_rest*mchirp, 10.0/3.0)
+    return lgw_circ
 
 
 def gw_strain(mchirp, dlum, freq_gw_rest):
@@ -155,10 +171,11 @@ def time_to_merge_at_sep(m1, m2, sep):
     return delta_sep/(GW_CONST*m1*m2*(m1+m2))
 
 
-def _gw_hardening_ecc_func(ecc):
+def _gw_ecc_func(ecc):
     """GW Hardening rate eccentricitiy dependence F(e).
 
     See Peters 1964, Eq. 5.6
+    EN07: Eq. 2.3
     """
     e2 = ecc*ecc
     num = 1 + (73/24)*e2 + (37/96)*e2*e2
