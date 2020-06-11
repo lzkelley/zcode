@@ -514,6 +514,44 @@ def rk4_step(func, x0, y0, dx, args=None, check_nan=0, check_nan_max=5, debug=Fa
     # return xn, yn
 
 
+def ndinterp(xx, xvals, yvals, xlog=True, ylog=True):
+    """Interpolate 2D data to an array of points.
+
+    `xvals` and `yvals` are (N, M) where the interpolation is done along the 1th (`M`)
+    axis (i.e. interpolation is done independently for each `N` row.  Should be generalizeable to
+    higher dim.
+
+    """
+    # Convert to (N, T, M)
+    #     `xx` is (T,)  `xvals` is (N, M) for N-binaries and M-steps
+    select = (xx[np.newaxis, :, np.newaxis] <= xvals[:, np.newaxis, :])
+
+    # (N, T)
+    aft = np.argmax(select, axis=-1)
+    # zero values in `aft` mean no xvals after the targets were found
+    valid = (aft > 0)
+    inval = ~valid
+    bef = np.copy(aft)
+    bef[valid] -= 1
+
+    # (2, N, T)
+    cut = [aft, bef]
+    # (2, N, T)
+    xvals = [np.take_along_axis(xvals, cc, axis=-1) for cc in cut]
+    # Find how far to interpolate between values (in log-space)
+    #     (N, T)
+    frac = (xx[np.newaxis, :] - xvals[1]) / np.subtract(*xvals)
+
+    # (2, N, T)
+    data = [np.take_along_axis(yvals, cc, axis=-1) for cc in cut]
+    # Interpolate by `frac` for each binary
+    new = data[1] + (np.subtract(*data) * frac)
+    # Set invalid binaries to nan
+    new[inval, ...] = np.nan
+    new = new
+    return new
+
+
 '''
 def kde(vals, scale=None, log=None):
     log, scale = _log_from_scale(log, scale)
