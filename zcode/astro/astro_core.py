@@ -109,15 +109,17 @@ def mtmr_from_m1m2(m1, m2=None):
 
     mtot = masses.sum(axis=-1)
     mrat = masses.min(axis=-1) / masses.max(axis=-1)
-    return mtot, mrat
+    return np.array([mtot, mrat])
 
 
 def m1m2_from_mtmr(mt, mr):
     """Convert from total-mass and mass-ratio to individual masses.
     """
+    mt = np.asarray(mt)
+    mr = np.asarray(mr)
     m1 = mt/(1.0 + mr)
     m2 = mt - m1
-    return m1, m2
+    return np.array([m1, m2])
 
 
 def orbital_velocities(mt, mr, per=None, sep=None):

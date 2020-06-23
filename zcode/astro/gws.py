@@ -2,28 +2,27 @@
 
 References:
 - EN07 : [Enoki & Nagashima 2007](https://ui.adsabs.harvard.edu/abs/2007PThPh.117..241E/abstract)
-
+- Sesana+2004 : [Sesana+2004](http://adsabs.harvard.edu/abs/2004ApJ...611..623S)
 """
 
 
 import numpy as np
 
-from zcode.constants import NWTG, SPLC, MPRT, SIGMA_T
+from zcode.constants import NWTG, SPLC
 
 __all__ = [
     'chirp_mass',
     'gw_hardening_rate_dadt', 'gw_dedt',
-    'gw_strain', 'gw_char_strain', 'gw_freq_dist_func', 'gw_lum_circ',
+    # 'gw_strain',
+    'gw_strain_source',
+    'gw_char_strain', 'gw_freq_dist_func', 'gw_lum_circ',
     # 'gw_strain_source_circ',
     'sep_to_merge_in_time', 'time_to_merge_at_sep',
 ]
 
 _SCHW_CONST = 2*NWTG/np.square(SPLC)
-# _EDD_CONST = 4.0*np.pi*SPLC*NWTG*MPRT/SIGMA_T
 
 # e.g. Sesana+2004 Eq.36
-#      http://adsabs.harvard.edu/abs/2004ApJ...611..623S
-#      NOTE: THIS IS GW-FREQUENCY, NOT ORBITAL  [2020-05-29]
 _GW_SRC_CONST = 8 * np.power(NWTG, 5/3) * np.power(np.pi, 2/3) / np.sqrt(10) / np.power(SPLC, 4)
 _GW_DADT_SEP_CONST = - 64 * np.power(NWTG, 3) / 5 / np.power(SPLC, 5)
 _GW_DEDT_ECC_CONST = - 304 * np.power(NWTG, 3) / 15 / np.power(SPLC, 5)
@@ -40,11 +39,10 @@ def chirp_mass(m1, m2=None):
     return np.power(m1*m2, 3/5)/np.power(m1+m2, 1/5)
 
 
-def gw_char_strain(hs, dur_obs, freq_gw_obs, freq_gw_rst, dfdt):
+def gw_char_strain(hs, dur_obs, freq_orb_obs, freq_orb_rst, dfdt):
     """
 
-    See, e.g., Sesana+2004, Eq. 35
-               http://adsabs.harvard.edu/abs/2004ApJ...611..623S
+    See, e.g., Sesana+2004, Eq.35
 
     Arguments
     ---------
@@ -56,8 +54,8 @@ def gw_char_strain(hs, dur_obs, freq_gw_obs, freq_gw_rst, dfdt):
 
     """
 
-    ncycles = freq_gw_rst**2 / dfdt
-    ncycles = np.clip(ncycles, 0.0, dur_obs * freq_gw_obs)
+    ncycles = freq_orb_rst**2 / dfdt
+    ncycles = np.clip(ncycles, None, dur_obs * freq_orb_obs)
     hc = hs * np.sqrt(ncycles)
     return hc
 
@@ -127,6 +125,21 @@ def gw_lum_circ(mchirp, freq_orb_rest):
     return lgw_circ
 
 
+def gw_strain_source(mchirp, dlum, freq_orb_rest):
+    """GW Strain from a single source in a circular orbit.
+
+    e.g. Sesana+2004 Eq.36
+    e.g. EN07 Eq.17
+
+    NOTE: THIS IS ORBITAL-FREQUENCY, NOT GW-OBSERVED  [2020-06-17]
+
+    """
+    #
+    hs = _GW_SRC_CONST * mchirp * np.power(2*mchirp*freq_orb_rest, 2/3) / dlum
+    return hs
+
+
+'''
 def gw_strain(mchirp, dlum, freq_gw_rest):
     """GW Strain from a single source in a circular orbit.
 
@@ -138,7 +151,7 @@ def gw_strain(mchirp, dlum, freq_gw_rest):
     cc = _GW_SRC_CONST
     hs = cc * mchirp * np.power(mchirp*freq_gw_rest, 2/3) / dlum
     return hs
-
+'''
 
 '''
 def gw_strain_source_circ(mchirp, dist_lum, freq_orb_rest):
