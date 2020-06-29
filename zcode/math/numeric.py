@@ -18,7 +18,7 @@ import scipy as sp
 import scipy.stats  # noqa
 import warnings
 
-from . import math_core, statistic
+from . import math_core, statistic, interpolate
 from .. import utils
 
 __all__ = [
@@ -137,11 +137,11 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
             raise ValueError(err)
 
         if axis != -1 or np.ndim(yy) > 1:
-            newy = math_core.interp_func(xx, yy, xlog=True, ylog=True)(bounds)
+            newy = interpolate.interp_func(xx, yy, xlog=True, ylog=True)(bounds)
         else:
-            newy = math_core.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
+            newy = interpolate.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
 
-        # newy = math_core.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
+        # newy = interpolate.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
         ii = np.searchsorted(xx, bounds)
         xx = np.insert(xx, ii, bounds, axis=axis)
         yy = np.insert(yy, ii, newy, axis=axis)
@@ -180,7 +180,7 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
     integ = np.log(log_base) * np.cumsum(trapz, axis=axis)
     if bounds is not None:
         # NOTE: **DO NOT INTERPOLATE INTEGRAL** this works badly for negative power-laws
-        # lo, hi = math_core.interp(bounds, xx[1:], integ, xlog=True, ylog=True, valid=False)
+        # lo, hi = interpolate.interp(bounds, xx[1:], integ, xlog=True, ylog=True, valid=False)
         # integ = hi - lo
         integ = np.moveaxis(integ, axis, 0)
         lo, hi = integ[ii-1, ...]

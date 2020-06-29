@@ -1,1 +1,1 @@
-nosetests --exe  --nocapture
+nosetests --exe  --nocapture -x
