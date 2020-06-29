@@ -15,7 +15,7 @@ __all__ = [
     'gw_hardening_rate_dadt', 'gw_dedt',
     # 'gw_strain',
     'gw_strain_source',
-    'gw_char_strain', 'gw_freq_dist_func', 'gw_lum_circ',
+    'gw_char_strain', 'gw_freq_dist_func', '_gw_freq_dist_func_old', 'gw_lum_circ',
     # 'gw_strain_source_circ',
     'sep_to_merge_in_time', 'time_to_merge_at_sep',
 ]
@@ -91,6 +91,42 @@ def gw_freq_dist_func(nn, ee=0.0):
     n2 = np.square(nn)
     jn_m2 = bessel(nn-2, ne)
     jn_m1 = bessel(nn-1, ne)
+
+    # jn = bessel(nn, ne)
+    # jn_p1 = bessel(nn+1, ne)
+    # jn_p2 = bessel(nn+2, ne)
+
+    # Use recursion relation:
+    jn = (2*(nn-1) / ne) * jn_m1 - jn_m2
+    jn_p1 = (2*nn / ne) * jn - jn_m1
+    jn_p2 = (2*(nn+1) / ne) * jn_p1 - jn
+
+    aa = np.square(jn_m2 - 2.0*ee*jn_m1 + (2/nn)*jn + 2*ee*jn_p1 - jn_p2)
+    bb = (1 - ee*ee)*np.square(jn_m2 - 2*ee*jn + jn_p2)
+    cc = (4.0/(3.0*n2)) * np.square(jn)
+    gg = (n2*n2/32) * (aa + bb + cc)
+    return gg
+
+
+def _gw_freq_dist_func_old(nn, ee=0.0):
+    """Frequency Distribution Function.
+
+    See [Enoki & Nagashima 2007](astro-ph/0609377) Eq. 2.4.
+    This function gives g(n,e)
+
+    FIX: use recursion relation when possible,
+        J_{n-1}(x) + J_{n+1}(x) = (2n/x) J_n(x)
+    """
+    import scipy as sp
+    import scipy.special  # noqa
+
+    # Calculate with non-zero eccentrictiy
+    bessel = sp.special.jn
+    ne = nn*ee
+    n2 = np.square(nn)
+    jn_m2 = bessel(nn-2, ne)
+    jn_m1 = bessel(nn-1, ne)
+
     jn = bessel(nn, ne)
     jn_p1 = bessel(nn+1, ne)
     jn_p2 = bessel(nn+2, ne)
