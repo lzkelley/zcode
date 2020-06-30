@@ -54,6 +54,9 @@ Current
 - `math/`
     - `interpolate.py`  [NEW-FILE]
         - New submodule for interpolation and extrapolation.
+        - `interp_axis`  [NEW-FUNCTION]
+            - Method to perform fast, array-based linear interpolation of ndarrays over a single axis.
+            - Added unittests.
     - `math_core.py`
         - `interp()`       [MOVED TO `interpolate.py`]
         - `interp_func()`  [MOVED TO `interpolate.py`]

@@ -9,7 +9,7 @@ import scipy.interpolate  # noqa
 
 __all__ = [
     "Interp2D_Uniform", "Interp2D_RegIrr",
-    'interp', 'interp_func',
+    'interp', 'interp_axis', 'interp_func',
 ]
 
 import zcode
@@ -208,6 +208,98 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
         y1 = np.power(10.0, y1)
 
     return y1
+
+
+def interp_axis(xnew, xold, yold, axis=-1, fill=np.nan, xlog=True, ylog=True, sorted=False):
+    """Linear interpolation over a particular axis.
+
+    Arguments
+    ---------
+    xnew : scalar or (T,)
+        New x-values to interpolate to.
+    xold : ndarray (A, ...)
+        Data x-coordinates.
+    yold : ndarray (A, ...)
+        Data y-values, must be the same shape as `xold`.
+
+    Returns
+    -------
+    ynew : ndarray (..., T)
+        Interpolate y-values, the same shape as `xold` and `yold`, without the `axis` dimension,
+        and with a new final dimension of length (T,) for 'T' values of `xnew`.
+        e.g. if `xnew` and `ynew` are (A, B, C,) and `axis=1` ===> then `ynew` will be (A, C, T)
+
+
+    """
+    xold = np.asarray(xold)
+    yold = np.asarray(yold)
+    if xold.shape != yold.shape:
+        raise ValueError(f"Shapes of `xold` ({xold.shape}) and `yold` ({yold.shape}) do not match!")
+
+    if np.isscalar(xnew):
+        xnew = np.array(xnew)[tuple([np.newaxis for xx in range(xold.ndim+1)])]
+    elif np.ndim(xnew) == 1:
+        xnew = np.asarray(xnew)
+        cut = [np.newaxis for xx in range(xold.ndim)] + [slice(None), ]
+        xnew = xnew[tuple(cut)]
+    else:
+        raise ValueError(f"`xnew` ({np.shape(xnew)}) must be a scalar or 1D!")
+
+    if axis != 0:
+        xold = np.moveaxis(xold, axis, 0)
+        yold = np.moveaxis(yold, axis, 0)
+
+    try:
+        xnew * xold[..., np.newaxis]
+    except ValueError:
+        raise ValueError(f"Could not broadcaast `xnew` ({xnew.shape}) with `xold` ({xold.shape})!")
+
+    if xlog:
+        xnew = np.log10(xnew)
+        xold = np.log10(xold)
+    if ylog:
+        yold = np.log10(yold)
+
+    if not sorted:
+        idx = np.argsort(xold, axis=0)
+        xold = np.take_along_axis(xold, idx, axis=0)
+        yold = np.take_along_axis(yold, idx, axis=0)
+        if not np.all(np.diff(xold, axis=0) >= 0.0):
+            raise ValueError()
+
+    select = (xold[..., np.newaxis] > xnew)
+
+    aft = np.argmax(select, axis=0)
+    # zero values in `aft` mean no xvals after the targets were found
+    valid = (aft > 0)
+    inval = ~valid
+    bef = np.copy(aft)
+    bef[valid] -= 1
+
+    #   NOTE: ordering `aft` then `bef` such that `np.subtract` gives the correct sign!
+    cut = np.array([aft, bef])
+    cut = np.moveaxis(cut, -1, 1)
+    # Get the x-values before and after the target locations  (2, N, T)
+    xx = [np.take_along_axis(xold, cc, axis=0) for cc in cut]
+    xx = np.moveaxis(xx, 1, -1)
+    # Find how far to interpolate between values (in log-space)
+    #     (N, T)
+    frac = (xnew - xx[1]) / np.subtract(*xx)
+
+    yy = [np.take_along_axis(yold, cc, axis=0) for cc in cut]
+    yy = np.moveaxis(yy, 1, -1)
+    # Interpolate by `frac` for each binary   (N, T) or (N, 2, T) for "double-data"
+    ynew = yy[1] + (np.subtract(*yy) * frac)
+    if ylog:
+        ynew = np.power(10.0, ynew)
+
+    # NOTE: this 'removes' the axis being interpolated over, so no need to `moveaxis`
+    ynew = ynew[0]
+    # Set invalid values to fill-value
+    ynew[inval] = fill
+    # Remove excess dimensions
+    ynew = np.squeeze(ynew)
+    return ynew
 
 
 def interp_func(xold, yold, kind='mono', xlog=True, ylog=True, fill_value=np.nan, **kwargs):
