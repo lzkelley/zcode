@@ -32,8 +32,9 @@ __all__ = [
 ]
 
 
-def conf_fill(ax, xx, yy, ci=None, axis=-1, filter=None, **kwargs):
-    med, conf = zmath.confidence_intervals(yy, ci=ci, axis=axis, filter=filter, return_ci=False)
+def conf_fill(ax, xx, yy, percs=None, sigma=None, axis=-1, filter=None, **kwargs):
+    med, conf = zmath.confidence_intervals(
+        yy, percs=percs, sigma=sigma, axis=axis, filter=filter, return_ci=False)
     rv = plot_conf_fill(ax, xx, med, conf, **kwargs)
     return rv
 
