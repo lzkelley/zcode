@@ -68,6 +68,8 @@ Current
             - Allow two elements to be given where a `None` value for either of them means infinity in that direction.
             - BUG: TEMPORARY: raise error if extrema bounds are non-increasing.  Not sure how this should be handled in the future.  This could be used as shorthand to do the inverse (i.e. look for things outside of bounds)?  Or should the extrema just be sorted within the function?
     - `numeric.py`
+        - `cumtrapz_loglog()`
+            - BUG: when power-law index is near -1, integral should be nat-log
         - `rk4_step()`
             - Allow additional `args` to be passed to integration function.
     - `statistic.py`
