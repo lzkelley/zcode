@@ -187,7 +187,7 @@ def confidence_intervals(vals, sigma=None, percs=None, weights=None, axis=None,
         if weights is not None:
             raise NotImplementedError("`weights` argument does not work with `filter`!")
 
-        vals = math_core.comparison_filter(vals, filter, **kw)
+        vals = math_core.comparison_filter(vals, filter, mask=True)  # , **kw)
         vals = np.ma.filled(vals, np.nan)
         PERC_FUNC = np.nanpercentile  # noqa
 
