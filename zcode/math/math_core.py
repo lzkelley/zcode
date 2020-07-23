@@ -1123,7 +1123,7 @@ def spacing_composite(comp_edges, scale, dex=None, num=None, **kwargs):
     elif np.isscalar(dex):
         dex = [dex for ii in range(nsegs)]
     elif len(dex) != nsegs:
-        raise ValueError("Length mismatch between `scale` and `dex`!")
+        raise ValueError("Length mismatch between `scale` ({}) and `dex` ({})!".format(scale, dex))
 
     if num is None:
         num = [None for ii in range(nsegs)]
