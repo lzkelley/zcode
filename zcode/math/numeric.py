@@ -14,11 +14,11 @@ Functions
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-import scipy as sp
+# import scipy as sp
 import scipy.stats  # noqa
 import warnings
 
-from . import math_core, statistic, interpolate
+from . import math_core, interpolate  # , statistic
 from .. import utils
 
 __all__ = [

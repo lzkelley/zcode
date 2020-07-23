@@ -45,7 +45,7 @@ __all__ = [
     'around', 'array_str', 'asBinEdges',
     'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
     'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
-    'indsWithin', 'isnumeric', 'midpoints', 'minmax',  'mono', 'limit',
+    'isnumeric', 'midpoints', 'minmax',  'mono',
     'ordered_groups', 'really1d', 'renumerate', 'roll',
 
     'rotation_matrix_between_vectors', 'rotation_matrix_about',
@@ -57,7 +57,9 @@ __all__ = [
     '_infer_scale', '_fracToInt',
     # DEPRECATED
     'zenum'
+    # 'limit', 'indsWithin',
 ]
+
 
 from zcode import utils
 
@@ -572,6 +574,7 @@ def groupDigitized(arr, bins, edges='right'):
     return groups
 
 
+'''
 def indsWithin(vals, extr, edges=True):
     """Find the indices of the input array which are within the given extrema.
     """
@@ -583,6 +586,7 @@ def indsWithin(vals, extr, edges=True):
         inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
 
     return inds
+'''
 
 
 def isnumeric(val):
@@ -807,6 +811,7 @@ def mono(arr, type='g', axis=-1):
     return retval
 
 
+'''
 def limit(val, arr):
     """Limit the given value(s) to given bounds.
 
@@ -831,6 +836,7 @@ def limit(val, arr):
     # Enforce upper bound
     new = np.minimum(new, extr[1])
     return new
+'''
 
 
 def ordered_groups(values, targets, inds=None, dir='above', include=False):
