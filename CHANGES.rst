@@ -78,6 +78,8 @@ Current
             - BUG: error in multidimensional arrays when axis=0.
         - `random_power()`
             - Allow power-law index to be array valued.
+        - `LH_Sampler`  [NEW-CLASS]
+            - Latin Hypercube Sampler class
 
 - `plot/`
     - `draw.py`
