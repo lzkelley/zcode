@@ -54,11 +54,12 @@ from zcode.plot import _PAD
 __all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
            'unifyAxesLimits', 'color_cycle', 'get_norm',
-           'colormap', 'color_set', 'set_grid',
+           'smap', 'color_set', 'set_grid', 'save_fig',
            'skipTicks', 'saveFigure', 'scientific_notation',
            'line_style_set', 'line_label',
            '_scale_to_log_flag',
            # Deprecated
+           'colormap'
            ]
 
 VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
@@ -108,11 +109,12 @@ _LEGEND_COLUMN_SPACING = 1.2
 _SCATTER_POINTS = 1
 
 
-def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
+def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
           xscale='log', xlabel='', xlim=None,
           yscale='log', ylabel='', ylim=None,
+          widths=None, heights=None,
           left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
-          grid=None):
+          grid=True, **kwargs):
 
     if scale is not None:
         xscale = scale
@@ -125,8 +127,16 @@ def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=
 
     xscale, yscale = scales
 
+    if (widths is not None) or (heights is not None):
+        gridspec_kw = dict()
+        if widths is not None:
+            gridspec_kw['width_ratios'] = widths
+        if heights is not None:
+            gridspec_kw['height_ratios'] = heights
+        kwargs['gridspec_kw'] = gridspec_kw
+
     fig, axes = plt.subplots(figsize=figsize, squeeze=False, ncols=ncols, nrows=nrows,
-                             sharex=sharex, sharey=sharey)
+                             sharex=sharex, sharey=sharey, **kwargs)
 
     plt.subplots_adjust(
         left=left, bottom=bottom, right=right, top=top, hspace=hspace, wspace=wspace)
@@ -165,8 +175,8 @@ def figax(figsize=[8, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=
             ax.set_ylim(ylim[idx])
 
         if grid is not None:
-            if grid is True:
-                set_grid(ax)
+            if grid in [True, False]:
+                set_grid(ax, grid)
             else:
                 set_grid(ax, **grid)
 
@@ -610,6 +620,7 @@ def text(art, pstr, loc=None, x=None, y=None, halign=None, valign=None,
     return txt
 
 
+'''
 def label_line(ax, line, label, x=None, y=None,
                color='0.5', fs=14, halign='left', scale='linear', clip_on=True,
                halign_scale=1.0, rotate=True, log=None):
@@ -695,6 +706,127 @@ def label_line(ax, line, label, x=None, y=None,
         slope_degrees = np.degrees(np.arctan2(rise, run))
         text.set_rotation_mode('anchor')
         text.set_rotation(slope_degrees)
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    return text
+'''
+
+
+def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, **kwargs):
+    """Add an annotation to the given line with appropriate placement and rotation.
+
+    Based on code from:
+        [How to rotate matplotlib annotation to match a line?]
+        (http://stackoverflow.com/a/18800233/230468)
+        User: [Adam](http://stackoverflow.com/users/321772/adam)
+
+    NOTE: this doesnt work if the line's data have a non-data-unit transformation, for example
+          from a line created using `axvline` or `axhline`.
+
+    Arguments
+    ---------
+    ax : `matplotlib.axes.Axes` object
+        Axes on which the label should be added.
+    line : `matplotlib.lines.Line2D` object
+        Line which is being labeled.
+    label : str
+        Text which should be drawn as the label.
+    ...
+
+    Returns
+    -------
+    text : `matplotlib.text.Text` object
+
+    """
+    xlim = np.array(ax.get_xlim())
+    ylim = np.array(ax.get_ylim())
+
+    xdata, ydata = line.get_data()
+    x1 = xdata[0]
+    x2 = xdata[-1]
+    y1 = ydata[0]
+    y2 = ydata[-1]
+    '''
+    # Limit the edges to the plotted area
+    x1, x2 = zmath.limit([x1, x2], xlim)
+    y1, y2 = np.interp([x1, x2], xdata, ydata)
+    y1, y2 = zmath.limit([y1, y2], ylim)
+    x1, x2 = np.interp([y1, y2], ydata, xdata)
+    '''
+    xscale = ax.get_xscale()
+    yscale = ax.get_yscale()
+    xlog = xscale.startswith('log')
+    ylog = yscale.startswith('log')
+    if (x is None) and (y is None):
+        x_d = zmath.midpoints(xlim, log=xlog)
+        y_d = zmath.midpoints(ylim, log=ylog)
+    elif (y is None) and (x is not None):
+        # convert from axes to data
+        x_d, _ = ax.transAxes.transform([x, 0.0])
+        x_d, _ = ax.transData.inverted().transform([x_d, 0.0])
+        inds = np.argsort(xdata)
+        y_d = zmath.interp(x_d, np.array(xdata)[inds], np.array(ydata)[inds], xlog=xlog, ylog=ylog)
+    elif (x is None) and (y is not None):
+        # convert from axes to pixels
+        _, y_p = ax.transAxes.transform([0.0, y])
+        # print("axes ==> pixs  ::  y={:.4f} ==> {:.4f}".format(y, y_p))
+        # convert from pixels to data
+        _, y_d = ax.transData.inverted().transform([0.0, y_p])
+        # print("pixs ==> data  ::  y={:.4f} ==> {:.4f}".format(y_p, y_d))
+        inds = np.argsort(ydata)
+        x_d = zmath.interp(y_d, ydata[inds], xdata[inds], xlog=xlog, ylog=ylog)
+        # print("x_d = {:.4f}".format(x_d))
+
+    # print("plot_core.label_line():x_d,y_d = {}, {}".format(x_d, y_d))
+
+    if (dx is not None) and (not np.isclose(dx, 0.0)):
+        # data to pixels
+        x_p, _ = ax.transData.transform([x_d, 0.0])
+        # pixels to axes
+        x_a, _ = ax.transAxes.inverted().transform([x_p, 0.0])
+        x_a += dx
+        # axes to pixels
+        x_p, _ = ax.transAxes.transform([x_a, 0.0])
+        # pixels to data
+        x_d, _ = ax.transData.inverted().transform([x_p, 0.0])
+
+    if (dy is not None) and (not np.isclose(dy, 0.0)):
+        # data to pixels
+        _, y_p = ax.transData.transform([0.0, y_d])
+        # pixels to axes
+        _, y_a = ax.transAxes.inverted().transform([0.0, y_p])
+        y_a += dy
+        # axes to pixels
+        _, y_p = ax.transAxes.transform([0.0, y_a])
+        # pixels to data
+        _, y_d = ax.transData.inverted().transform([0.0, y_p])
+
+    # Add Annotation to Text
+    # xytext = (0, 0)
+    xy = (x_d, y_d)
+    # print("plot_core.label_line():x_d,y_d = {}, {}".format(x_d, y_d), xy)
+
+    text = ax.annotate(label, xy=xy, xycoords='data', **kwargs)
+    # horizontalalignment=halign, verticalalignment='center_baseline')
+    # xytext=xytext, textcoords='offset points',
+
+    if rotate is True:
+        # sp1 = ax.transData.transform_point((x1, y1))
+        # sp2 = ax.transData.transform_point((x2, y2))
+        sp1 = ax.transData.transform((x1, y1))
+        sp2 = ax.transData.transform((x2, y2))
+        # print(sp1, sp2)
+        # sp1 = [x1, y1]
+        # sp2 = [x2, y2]
+        rise = (sp2[1] - sp1[1])
+        run = (sp2[0] - sp1[0])
+
+        rotate = np.degrees(np.arctan2(rise, run))
+
+    if (rotate is not False) and (rotate is not None):
+        text.set_rotation_mode('anchor')
+        text.set_rotation(rotate)
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
@@ -901,8 +1033,8 @@ def invert_color(col):
     return col
 
 
-def colormap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
-             under='0.8', over='0.8', left=None, right=None):
+def smap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
+         under='0.8', over='0.8', left=None, right=None, filter=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
@@ -1099,7 +1231,7 @@ def set_grid(ax, val=True, axis='both', ls='-', clear=True,
             else:
                 _col = color
             if alpha is None:
-                _alpha = 0.8
+                _alpha = 0.4
             else:
                 _alpha = alpha
             ax.grid(True, which='major', axis=axis, c=_col, ls=ls, zorder=zorder, alpha=_alpha)
@@ -1109,11 +1241,29 @@ def set_grid(ax, val=True, axis='both', ls='-', clear=True,
             else:
                 _col = color
             if alpha is None:
-                _alpha = 0.5
+                _alpha = 0.2
             else:
                 _alpha = alpha
             ax.grid(True, which='minor', axis=axis, c=_col, ls=ls, zorder=zorder, alpha=_alpha)
     return
+
+
+def save_fig(fig, fname, path=None, subdir=None, modify=True, verbose=True, **kwargs):
+    pp = path if (path is not None) else os.path.curdir
+    if subdir is not None:
+        pp = os.path.join(pp, subdir, "")
+
+    pp = zio.check_path(pp)
+    ff = os.path.join(pp, fname)
+    if modify:
+        ff = zio.modify_exists(ff)
+
+    ff = os.path.abspath(ff)
+    kwargs.setdefault('dpi', 200)
+    fig.savefig(ff, **kwargs)
+    if verbose:
+        print("Saved to '{}' size: {}".format(ff, zio.get_file_size(ff)))
+    return ff
 
 
 def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
@@ -1235,8 +1385,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     return
 
 
-def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
-                        precman=None, precexp=None):
+def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
@@ -1260,14 +1409,6 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
         Scientific notation string using latex formatting.
 
     """
-    # Deprecation warnings for old parameters
-    if precman is not None:
-        utils.dep_warn("precman", "man", type='parameter')
-        man = precman
-    if precexp is not None:
-        utils.dep_warn("precexp", "exp", type='parameter')
-        exp = precexp
-
     if zero and val == 0.0:
         notStr = "$"*dollar + "0.0" + "$"*dollar
         return notStr
@@ -1423,10 +1564,8 @@ def line_label(ax, pos, label, dir='v', loc='top', xx=None, yy=None, ha=None, va
 def get_norm(data, midpoint=None, log=False, filter=None):
     """
     """
-    if log:
+    if (filter is None) and log:
         filter = 'g'
-    else:
-        filter = None
 
     # Determine minimum and maximum
     if np.size(data) > 1:
@@ -1436,7 +1575,7 @@ def get_norm(data, midpoint=None, log=False, filter=None):
         else:
             min, max = rv
     elif np.size(data) == 1:
-        min, max = 0, np.int(data)-1
+        min, max = 0, np.int(data) - 1
     elif np.size(data) == 2:
         min, max = data
     else:
@@ -1598,3 +1737,13 @@ class MidpointLogNormalize(mpl.colors.LogNorm):
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         vals = zmath.interp(value, x, y, xlog=True, ylog=False)
         return np.ma.masked_array(vals, np.isnan(value))
+
+
+# ======================
+# ====  DEPRECATED  ====
+# ======================
+
+
+def colormap(*args, **kwargs):
+    utils.dep_warn("colormap", newname="smap")
+    return smap(*args, **kwargs)

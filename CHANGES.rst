@@ -40,18 +40,88 @@ Future / To-Do
 
 Current
 -------
+- `constants.py`
+  - `SIGMA_TO_FWHM`  [NEW-VARIABLE]
+    - Converting from (normal-)standard deviation to full-width at half-maximum (FWHM)
+
+- `inout/`
+    - `inout_core.py`
+        - `backup_existing()`  [NEW-METHOD]
+          - If the given filename already exists, move it to a backup file.
+    - `notebooks.py`  [NEW-FILE]
+        - Methods specifically for jupyter notebooks
+      
+- `math/`
+    - `interpolate.py`  [NEW-FILE]
+        - New submodule for interpolation and extrapolation.
+        - `interp_axis`  [NEW-FUNCTION]
+            - Method to perform fast, array-based linear interpolation of ndarrays over a single axis.
+            - Added unittests.
+    - `math_core.py`
+        - `interp()`       [MOVED TO `interpolate.py`]
+        - `interp_func()`  [MOVED TO `interpolate.py`]
+        - `isnumeric()`  [NEW-FUNCTION]
+            - Check if a value is a numeric scalar.
+        - `str_array()`
+            - BUG: Flatten multi-dimensional arrays before processing.
+        - `within()`
+            - Allow two elements to be given where a `None` value for either of them means infinity in that direction.
+            - BUG: TEMPORARY: raise error if extrema bounds are non-increasing.  Not sure how this should be handled in the future.  This could be used as shorthand to do the inverse (i.e. look for things outside of bounds)?  Or should the extrema just be sorted within the function?
+    - `numeric.py`
+        - `cumtrapz_loglog()`
+            - BUG: when power-law index is near -1, integral should be nat-log
+        - `rk4_step()`
+            - Allow additional `args` to be passed to integration function.
+    - `statistic.py`
+        - `percentiles()`  [DEPRECATED ==> `quantiles()`]
+        - `quantiles()`  [<== `percentiles()`]
+            - BUG: error in multidimensional arrays when axis=0.
+        - `random_power()`
+            - Allow power-law index to be array valued.
+
+- `plot/`
+    - `draw.py`
+        - `plot_contiguous()`
+            - Add a `scatter` argument to plot the NON-contiguous elements as scatter points.
+        - `plot_segmented_line()`
+            - Pass all additional `kwargs` to LineCollection constructor.
+            - Improve color handling.
+    - `Hist2D.py`
+        - `draw_hist2d()`
+            - Removed edges from pcolor
+            - Allow `log` argument for normalization of pcolor.
+    - `plot_core.py`
+        - `figax()`
+            - BUG: fix error when `grid` value was `False`.
+        - `smap()`  <===  `colormap()`  [DEPRECATION]
+
+
+[0.1.1] - 2020/02/11
+--------------------
     - `utils.py`
         - `dep_warn_var()` [NEW-METHOD]
             - Standardized method for handling deprecated variables.
-            
+
     - `astro/`
         - `astro_core.py`
             - `eddington_accretion()`
                 - BUG: 'epsilon' (radiative efficiency) factor was being double counted in accretion calculation, as it was also being used in the luminosity.
             - `orbital_velocities()` [NEW-METHOD]
                 - Orbital velocity of both objects given mtot and mrat.
+            - `rad_hill` [NEW-METHOD]
+                - Hill radius equation from Murray & Dermott
+            - `rad_isco_spin()` [NEW-FUNCTION]
+                - Return the radius of the ISCO for a BH with the given spin.
+            - `rad_roche` [NEW-METHOD]
+                - Average roche-lobe radius from Eggleton-1983
+            - `uniform_inclinations()`  [NEW-FUNCTION]
+                - New function to draw random, uniform inclination angles.
         - `obs.py`
             - Added SDSS AB ugriz magnitude to conversion tables.
+            - `fnu_to_flambda()` & `flambda_to_fnu()`  [NEW-FUNCTION]
+                - Functions to convert spectral flux from wavelength to frequency and visa-versa.
+            - `lum_to_abs_mag()`
+                - BUG: standard distance is 10 pc 
 
     - `inout/`
         - `stats_str()`  ==>  moved to `math.statistic.stats_str()`
@@ -65,13 +135,23 @@ Current
                 - Fixed numerous tests.
                 - Added new tests for interpolation methods.
                 - Tests for `edges_from_cents`
+                - Tests for `broadcast`
             - `test_statistic.py`
                 - New test for percentiles.
+
         - `math_core.py`
+            - `argfirst()` [NEW-FUNCTION]
+                - Return the index of the first true element of the given array.
+            - `argfirstlast()` [NEW-FUNCTION]
+                - Return the indices of the first and last true elements of the given array.
+            - `arglast()` [NEW-FUNCTION]
+                - Return the index of the last true element of the given array.
             - `array_str()` [NEW-FUNCTION]
                 - Alias of `str_array()`
             - `broadcast()` [NEW-FUNCTION]
                 - Expand N, 1D arrays into N, ND arrays each with the same shape.
+                - Scalars do not contribute dimensions.
+                - Unit tests added.
             - `broadcastable()` [NEW-FUNCTION]
                 - Method to expand N, 1D arrays into N, ND arrays which can be broadcasted together.
             - `edges_from_cents()` [NEW-FUNCTION]
@@ -83,6 +163,14 @@ Current
                 - Implement 'mono' option for interpolation kind to use `PchipInterpolator` which enforced monotonicity.
             - `minmax()`
                 - BUG: Jagged input arrays would fail in `comparison_filter`.  FIX: pre-flatten input data.
+            - `roll()`  [NEW-FUNCTION]
+                - Roll an array along a target axis by varying amounts for each index.
+            - `rotation_matrix_about()`  [NEW-FUNCTION]
+                - Construct a rotation matrix about the given axis (vector) by the given angle.
+            - `rpt_to_xyz()`  [NEW-FUNCTION]
+                - Convert from spherical to cartesian coordinates.
+            - `rtp_to_xyz()`  [NEW-FUNCTION]
+                - Convert from spherical to cartesian coordinates (uses `rpt_to_xyz()`)
             - `spacing()`
                 - Pass along `endpoint` argument to numpy functions
             - `spacing_composite()`  [NEW-FUNCTION]
@@ -91,9 +179,14 @@ Current
                 - Use 'str_array' to print particular indices, and its neighbors, in an array.
             - `within()`
                 - Add new `close` argument to allow `np.isclose` comparisons to bin edges.
+            - `xyz_to_rpt()`  [NEW-FUNCTION]
+                - Convert from cartesian to spherical coordinates.
+            - `xyz_to_rtp()`  [NEW-FUNCTION]
+                - Convert from spherical to cartesian coordinates (uses `xyz_to_rpt()`)
             - `zenumerate()` <== `zenum()` [DEPRECATION]
             - `_guess_str_format_from_range()`
                 - BUG: fix issue where exponential notation was only being used for positive-definite values
+
         - `numeric.py`
             - `cumtrapz_loglog()`
                 - Previous version of this function used an algorithm found online.  New version uses a similar algorithm -- which is basically the trapezoid rule in log-log space (i.e. for power-laws) -- with some minor improvements and niceties.
@@ -101,6 +194,10 @@ Current
                 - Use new functionality from `kde.py`
             - `kde_hist()`  [DEPRECATED]
                 - Use new functionality from `kde.py`
+            - `rk4_step()`  [NEW-FUNCTION]
+                - Take a Fourth-order Runge-Kutta step.
+                - Adapt time-step size to avoid nan-values.
+
         - `statistic.py`
             - `confidenceBands()` [DELETED-METHOD]
             - `confidence_intervals()`
@@ -115,6 +212,8 @@ Current
                 - New argument, `sigmas` which is used to calculate percentiles from sigma values.
                 - `percs` <== `ci` [DEPRECATION-VARIABLE]
             - `percs_from_sigma()` <== `sigma()`  [DEPRECATION]
+            - `random_power()`  [NEW-FUNCTION]
+                - Draw random numbers from a power-law PDF, allows negative indices unlike numpy.
             - `stats_str()`  <=== moved from `inout_core.stats_str()`
                 - New argument `label` which determines whether the percentiles are listed.
             - `std()`  [NEW-METHOD]
@@ -134,11 +233,16 @@ Current
         - `plot_core.py`
             - `colormap()`
                 - New `midpoint` argument and functionality to allow colormaps's colors to be centered at particular values in either log or linear space.  Uses new classes `MidpointNormalize` and `MidpointLogNormalize`.
+            - `draw_colorbar_contours()` [NEW-FUNCTION]
+                - Add contour marks on the given colorbar.
             - `figax()`
                 - New `scale` argument to set the scale of both x and y axes.
+                - Default to grid on.
+                - Pass along kwargs to `plt.subplots`.
                 - BUG: xlim and ylim were not being broadcast correctly
             - `get_norm()`  [NEW-METHOD]
                 - Separated out from `colormap()`, same functionality.
+
 
 
 
@@ -214,13 +318,13 @@ Current
 				-   Method to perform `enumerate(zip(*args))`
             -   `_guess_str_format_from_range()` [NEW-FUNCTION]
                 -   Based on the dynamical (logarithmic) range of an array, guess the appropriate string formatting (i.e. 'f' vs 'e')
-            
+
         -   `numeric.py`
             -   `kde()`  [NEW-FUNCTION]
                 -   Construct a custom KDE object, optionally in log-space.
             -   `kde_hist()`  [NEW-FUNCTION]
                 -   Construct a KDE "histogram" resampling from the KDE distribution.
-            
+
         -   `statistic.py`
             -   `confidence_intervals()`
                 -   Implement a kludge to allow percentile calculation with masked arrays.
@@ -230,7 +334,7 @@ Current
     -   `constants.py`
         -   Added electron-charge `QELC`
         -   Added Jansky unit `JY`
-                    
+
 
 [0.0.12] - 2018/06/20
 ---------------------
@@ -277,7 +381,7 @@ Current
                 -   Return 'True' if the current environment is a jupyter notebook.
             -   `python_environment()` [NEW-FUNCTION]
                 -   Determine the current python environment (e.g. 'jupyter') and return string.
-                
+
     -   math/
         +   math_core.py
             -   `argnearest`
@@ -297,7 +401,7 @@ Current
                 -   BUG: `scipy.stats` wasnt being imported
             -   `stats_str()`
                 -   Improve default formatting choice based on extrema of input values.
-                
+
     -   plot/
         -   `draw.py`
             -   `conf_fill()` [NEW-FUNCTION]
@@ -321,7 +425,7 @@ Current
                 -   [BUG] Error when `color` was `None`, set to black as default
             -   `text()
                 -   [BUG] Transform argument was getting lost in kwargs.
-            
+
             -   `_color_from_kwargs()`
                 -   Add option to pop (remove) color argument from dictionary.
             -   `_setAxis_scale()`
@@ -441,7 +545,7 @@ Current
                 -   Also change from `precman` and `precexp` to just `man` and `exp`.
             -   `line_style_set()` [new-function]
                 -   Retrieve a list of line-style specifications to be used with `Line2D.set_dashes`.
-                
+
     -   `math/`
         -   `statistic.py`
             -   `stats_str`
@@ -469,7 +573,7 @@ Current
 
     -   `requirements.txt` [new-file]
         -   Started to add requirements file, nearly empty at the moment.
-        
+
 
 [0.0.9] - 2017/03/07
 --------------------
@@ -501,7 +605,7 @@ Current
             -   `argnearest` [new-function]
                 +   Find the arguments in one array closest to those in another.
             -   `limit` [new-function]
-                +   Limit the given value(s) to the given extrema. 
+                +   Limit the given value(s) to the given extrema.
             -   `str_array` <== `strArray`
         +   statistic.py
             -   `confidence_intervals`
@@ -524,7 +628,7 @@ Current
                 +   BUG: contour lines were using a different grid for some reason (unknown), was messing up edges and spacings.
                 +   BUG: default `fs=None` to not change the preset font size.
             -   `plot2DHistProj`
-                +   BUG: errors when x and y projection axes were turned off. 
+                +   BUG: errors when x and y projection axes were turned off.
         +   plot_core.py
             -   `colormap`
                 -   ENH: added `left` and `right` parameters to allow truncation of colormaps.

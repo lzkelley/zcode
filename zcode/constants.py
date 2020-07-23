@@ -40,6 +40,11 @@ OMEGA_DM = cosmo.Odm0
 RHO_CRIT = cosmo.critical_density0.cgs.value
 
 
+# Numerical / Convenience Constants
+# ---------------------------------
+SIGMA_TO_FWHM = 2*np.sqrt(2*np.log(2.0))
+
+
 # Higher order constants
 # ----------------------
 # Thomson-Scattering (Electron-Scattering) cross-section

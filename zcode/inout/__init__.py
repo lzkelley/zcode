@@ -9,6 +9,8 @@ from .log import *
 from . import timer
 from .timer import *
 
+from . import notebook
+
 __all__ = []
 __all__.extend(inout_core.__all__)
 __all__.extend(log.__all__)

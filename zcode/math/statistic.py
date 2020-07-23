@@ -22,10 +22,15 @@ import scipy.stats  # noqa
 from zcode import utils
 from zcode.math import math_core
 
-__all__ = ['confidence_bands', 'confidence_intervals',
-           'cumstats', 'frac_str', 'log_normal_base_10', 'mean',
-           'percentiles', 'percs_from_sigma', 'sigma',
-           'stats', 'stats_str', 'std']
+
+__all__ = [
+    'confidence_bands', 'confidence_intervals',
+    'cumstats', 'frac_str', 'info', 'log_normal_base_10', 'mean',
+    'percs_from_sigma', 'quantiles', 'random_power', 'sigma',
+    'stats', 'stats_str', 'std',
+    # DEPRECATED
+    'percentiles'
+]
 
 
 def confidence_bands(xx, yy, xbins=10, xscale='lin', percs=[0.68, 0.95], filter=None):
@@ -170,7 +175,7 @@ def confidence_intervals(vals, sigma=None, percs=None, weights=None, axis=None,
 
     # PERC_FUNC = np.percentile
     def PERC_FUNC(xx, pp, **kwargs):
-        return percentiles(xx, pp/100.0, weights=weights, **kwargs)
+        return quantiles(xx, pp/100.0, weights=weights, **kwargs)
 
     # Filter input values
     if filter is not None:
@@ -182,7 +187,7 @@ def confidence_intervals(vals, sigma=None, percs=None, weights=None, axis=None,
         if weights is not None:
             raise NotImplementedError("`weights` argument does not work with `filter`!")
 
-        vals = math_core.comparison_filter(vals, filter, **kw)
+        vals = math_core.comparison_filter(vals, filter, mask=True)  # , **kw)
         vals = np.ma.filled(vals, np.nan)
         PERC_FUNC = np.nanpercentile  # noqa
 
@@ -274,6 +279,18 @@ def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
     return fstr
 
 
+def info(array, shape=True, sample=3, stats=True):
+    rv = ""
+    if shape:
+        rv += "{} ".format(np.shape(array))
+    if (sample is not None) and (sample > 0):
+        rv += "{} ".format(math_core.str_array(array, sides=sample))
+    if stats:
+        rv += "{} ".format(stats_str(array, label=False))
+
+    return rv
+
+
 def log_normal_base_10(mu, sigma, size=None, shift=0.0):
     """Draw from a lognormal distribution with values in base-10 (instead of e).
 
@@ -305,8 +322,13 @@ def mean(vals, weights=None, **kwargs):
     return ave
 
 
-def percentiles(values, percs=None, sigmas=None, weights=None, axis=None,
-                values_sorted=False, filter=None):
+def percentiles(*args, **kwargs):
+    utils.dep_warn("percentiles", newname="quantiles")
+    return quantiles(*args, **kwargs)
+
+
+def quantiles(values, percs=None, sigmas=None, weights=None, axis=None,
+              values_sorted=False, filter=None):
     """Compute weighted percentiles.
 
     Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
@@ -354,17 +376,21 @@ def percentiles(values, percs=None, sigmas=None, weights=None, axis=None,
         values = np.take_along_axis(values, sorter, axis=axis)
         weights = np.take_along_axis(weights, sorter, axis=axis)
 
-    weighted_quantiles = np.cumsum(weights, axis=axis) - 0.5 * weights
-    weighted_quantiles /= np.sum(weights, axis=axis)[..., np.newaxis]
     if axis is None:
+        weighted_quantiles = np.cumsum(weights) - 0.5 * weights
+        weighted_quantiles /= np.sum(weights)
         percs = np.interp(percs, weighted_quantiles, values)
-    else:
-        values = np.moveaxis(values, axis, -1)
-        weighted_quantiles = np.moveaxis(weighted_quantiles, axis, -1)
-        percs = [np.interp(percs, weighted_quantiles[idx], values[idx])
-                 for idx in np.ndindex(values.shape[:-1])]
-        percs = np.array(percs)
+        return percs
 
+    weights = np.moveaxis(weights, axis, -1)
+    values = np.moveaxis(values, axis, -1)
+
+    weighted_quantiles = np.cumsum(weights, axis=-1) - 0.5 * weights
+    weighted_quantiles /= np.sum(weights, axis=-1)[..., np.newaxis]
+    # weighted_quantiles = np.moveaxis(weighted_quantiles, axis, -1)
+    percs = [np.interp(percs, weighted_quantiles[idx], values[idx])
+             for idx in np.ndindex(values.shape[:-1])]
+    percs = np.array(percs)
     return percs
 
 
@@ -412,6 +438,44 @@ def percs_from_sigma(sigma, side='in', boundaries=False):
         return vlo, vhi
 
     return vals
+
+
+def random_power(extr, pdf_index, size=1, **kwargs):
+    """Draw from power-law PDF with the given extrema and index.
+
+    Arguments
+    ---------
+    extr : array_like scalar
+        The minimum and maximum value of this array are used as extrema.
+    pdf_index : scalar
+        The power-law index of the PDF distribution to be drawn from.  Any real number is valid,
+        positive or negative.
+        NOTE: the `numpy.random.power` function uses the power-law index of the CDF, i.e. `g+1`
+    size : scalar
+        The number of points to draw (cast to int).
+    **kwags : dict pairs
+        Additional arguments passed to `zcode.math_core.minmax` with `extr`.
+
+    Returns
+    -------
+    rv : (N,) scalar
+        Array of random variables with N=`size` (default, size=1).
+
+    """
+    # if not np.isscalar(pdf_index):
+    #     err = "`pdf_index` (shape {}; {}) must be a scalar value!".format(
+    #         np.shape(pdf_index), pdf_index)
+    #     raise ValueError(err)
+
+    extr = math_core.minmax(extr, filter='>', **kwargs)
+    if pdf_index == -1:
+        rv = 10**np.random.uniform(*np.log10(extr), size=int(size))
+    else:
+        rr = np.random.random(size=int(size))
+        gex = extr ** (pdf_index+1)
+        rv = (gex[0] + (gex[1] - gex[0])*rr) ** (1./(pdf_index+1))
+
+    return rv
 
 
 def sigma(*args, **kwargs):
@@ -519,7 +583,7 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
 
     # Add percentiles
     if percs_flag:
-        tiles = percentiles(data, percs, weights=weights).astype(data.dtype)
+        tiles = quantiles(data, percs, weights=weights).astype(data.dtype)
         out += "(" + ", ".join(form.format(tt) for tt in tiles) + ")"
         if label:
             out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"

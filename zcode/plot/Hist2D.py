@@ -47,7 +47,7 @@ def draw_hist2d(ax, edges, hist=None, data=None, cents=None, levels=None, smooth
                 plot_scatter=None, scatter_kwargs=None, mask_dense=False,
                 plot_density=True, log_stretch=0.1, norm=None, cmap=None, mask_zero=False,
                 plot_contours=True, no_fill_contours=False, fill_contours=False,
-                contour_kwargs=None, contourf_kwargs=None, data_kwargs=None,
+                contour_kwargs=None, contourf_kwargs=None, data_kwargs=None, log_norm=False,
                 **kwargs):
     """
     Minor modifications to the `corner.hist2d` method by 'Dan Foreman-Mackey'.
@@ -80,13 +80,13 @@ def draw_hist2d(ax, edges, hist=None, data=None, cents=None, levels=None, smooth
     if levels is None:
         # levels = zmath.percs_from_sigma(np.arange(0.5, 2.1, 0.5))
         levels = zmath.percs_from_sigma(np.arange(1, 4))
-        # levels = zmath.percentiles(hist[hist > 0], levels, weights=hist[hist > 0])
+        # levels = zmath.quantiles(hist[hist > 0], levels, weights=hist[hist > 0])
         # print("levels = ", levels)
 
     levels = np.atleast_1d(levels)
 
     if norm is None:
-        norm = plot_core.get_norm(hist, filter='>')
+        norm = plot_core.get_norm(hist, filter='>', log=log_norm)
 
     if cmap is None:
         cmap = mpl.colors.LinearSegmentedColormap.from_list(
@@ -190,11 +190,10 @@ def draw_hist2d(ax, edges, hist=None, data=None, cents=None, levels=None, smooth
         # levels = np.concatenate([[0], V, [hist.max()*(1+1e-4)]])
         cnf = ax.contourf(X2, Y2, H2.T, levels, alpha=alpha, **contourf_kwargs)
 
-    # Plot the density map. This can't be plotted at the same time as the
-    # contour fills.
+    # Plot the density map. This can't be plotted at the same time as the contour fills.
     elif plot_density:
         # pc = ax.pcolor(xe, ye, hist.max() - hist.T, cmap=cmap, alpha=alpha)
-        pc = ax.pcolor(xe, ye, density_hist.T, cmap=cmap, alpha=alpha, norm=norm)
+        pc = ax.pcolor(xe, ye, density_hist.T, cmap=cmap, alpha=alpha, norm=norm, edgecolor=None)
 
     # Plot the contour edge colors.
     if plot_contours:
@@ -849,7 +848,7 @@ def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=N
     extrema = _set_extrema(extrema, [hist_2d, hist_xp, hist_yp], filter=filter[2], lo=lo, hi=hi)
     # Create scalar-mappable if needed
     if smap is None:
-        smap = plot_core.colormap(extrema, cmap=cmap, scale=histScale)
+        smap = plot_core.smap(extrema, cmap=cmap, scale=histScale)
 
     # Plot Histograms and Projections
     # -------------------------------
@@ -1071,7 +1070,7 @@ def plot2DHist(ax, xvals, yvals, hist,
 
     # Create scalar-mappable if needed
     if smap is None:
-        smap = plot_core.colormap(extrema, cmap=cmap, scale=cscale)
+        smap = plot_core.smap(extrema, cmap=cmap, scale=cscale)
 
     # Plot
     pcm = ax.pcolormesh(xgrid, ygrid, hist.T, norm=smap.norm, cmap=smap.cmap, linewidth=0,
