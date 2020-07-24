@@ -40,7 +40,7 @@ def conf_fill(ax, xx, yy, percs=None, sigma=None, axis=-1, filter=None, **kwargs
 
 
 def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None,
-                   fill=None, invert=False, **kwargs):
+                   fill=None, invert=False, bg=False, **kwargs):
     """Given bin edges and histogram-like values, plot a histogram.
 
     Arguments
@@ -98,7 +98,10 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
         yval = temp
 
     # Plot Histogram
-    line, = ax.plot(xval, yval, **kwargs)
+    if bg:
+        line = plot_bg(ax, xval, yval, **kwargs)
+    else:
+        line, = ax.plot(xval, yval, **kwargs)
 
     # Add yerror-bars
     if yerr is not None:
