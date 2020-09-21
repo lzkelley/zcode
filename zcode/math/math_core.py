@@ -1565,9 +1565,10 @@ def within(vals, extr, edges=True, all=False, inv=False, close=None):
     if nex < 2:
         raise ValueError("`extr` must have at least 2 elements!")
     elif nex == 2:
-        extr_bnds = np.sort([ex for ex in extr])
+        extr_bnds = [ex for ex in extr]
         extr_bnds[0] = -np.inf if (extr_bnds[0] is None) else extr_bnds[0]
         extr_bnds[1] = +np.inf if (extr_bnds[1] is None) else extr_bnds[1]
+        extr_bnds = np.sort([ex for ex in extr_bnds])
         if np.diff(extr_bnds) < 0.0:
             err = "Extrema values are not ordered!  '{}' ==> '{}'".format(extr, extr_bnds)
             raise ValueError(err)
