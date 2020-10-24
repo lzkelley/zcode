@@ -7,4 +7,4 @@ future
 nose
 matplotlib
 seaborn
-skimage
+scikit-image
