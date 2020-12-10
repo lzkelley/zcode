@@ -2,9 +2,10 @@ python-dateutil
 numpy
 astropy
 scipy
+sympy
 six
 future
 nose
 matplotlib
 seaborn
-skimage
+scikit-image
