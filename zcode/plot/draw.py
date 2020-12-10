@@ -89,8 +89,12 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
 
     # Select positive values
     if positive:
-        xval = np.ma.masked_where(yval < 0.0, xval)
-        yval = np.ma.masked_where(yval < 0.0, yval)
+        # xval = np.ma.masked_where(yval <= 0.0, xval)
+        # yval = np.ma.masked_where(yval <= 0.0, yval)
+        idx = (yval > 0.0)
+        xval = xval[idx]
+        yval = yval[idx]
+        print("hello")
 
     if invert:
         temp = np.array(xval)
