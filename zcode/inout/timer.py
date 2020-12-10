@@ -8,7 +8,39 @@ import warnings
 
 from . import inout_core
 
-__all__ = ['Timer', 'Timings']
+__all__ = ['Timer', 'Timings', 'TimeIt']
+
+
+class TimeIt:
+
+    def __init__(self, name="", simple=True, timeonly=False):
+        self.name = name
+        self.simple = simple
+        self.timeonly = timeonly
+        return
+
+    def __enter__(self):
+        self.beg = datetime.now()
+        return
+
+    def __exit__(self, type, value, traceback):
+        end = datetime.now()
+        beg = self.beg
+        dur = end - beg
+        name = self.name
+        if len(name) > 0:
+            name += " "
+
+        msg = "{}done after {}".format(name, dur)
+        if not self.simple:
+            if self.timeonly:
+                beg = beg.time()
+                end = end.time()
+
+            msg += " ({} ==> {})".format(beg, end)
+
+        print(msg)
+        return
 
 
 class Timer(object):
