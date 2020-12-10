@@ -14,11 +14,11 @@ Functions
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-import scipy as sp
+# import scipy as sp
 import scipy.stats  # noqa
 import warnings
 
-from . import math_core, statistic
+from . import math_core, interpolate  # , statistic
 from .. import utils
 
 __all__ = [
@@ -108,7 +108,7 @@ def spline(xx, yy, order=3, log=True, mono=False, extrap=True, pos=False, sort=T
     return spline
 
 
-def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
+def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None, lntol=1e-2):
     """Calculate integral, given `y = dA/dx` or `y = dA/dlogx` w/ trapezoid rule in log-log space.
 
     We are calculating the integral `A` given sets of values for `y` and `x`.
@@ -137,11 +137,11 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
             raise ValueError(err)
 
         if axis != -1 or np.ndim(yy) > 1:
-            newy = math_core.interp_func(xx, yy, xlog=True, ylog=True)(bounds)
+            newy = interpolate.interp_func(xx, yy, xlog=True, ylog=True)(bounds)
         else:
-            newy = math_core.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
+            newy = interpolate.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
 
-        # newy = math_core.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
+        # newy = interpolate.interp(bounds, xx, yy, xlog=True, ylog=True, valid=False)
         ii = np.searchsorted(xx, bounds)
         xx = np.insert(xx, ii, bounds, axis=axis)
         yy = np.insert(yy, ii, newy, axis=axis)
@@ -164,23 +164,37 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None):
         if dlogx is not True:
             log_base = dlogx
 
-    # print("zcode.math.numeric.cumtrapz_loglog()")
-    # print("xx = ", xx)
-    # print("yy = ", yy)
-    gamma = np.diff(np.log(yy), axis=axis) / np.diff(np.log(xx), axis=axis)
+    # Numerically calculate the local power-law index
+    delta_logx = np.diff(np.log(xx), axis=axis)
+    gamma = np.diff(np.log(yy), axis=axis) / delta_logx
+    xx = np.moveaxis(xx, axis, 0)
+    yy = np.moveaxis(yy, axis, 0)
+    aa = np.mean([xx[:-1] * yy[:-1], xx[1:] * yy[1:]], axis=0)
+    aa = np.moveaxis(aa, 0, axis)
+    xx = np.moveaxis(xx, 0, axis)
+    yy = np.moveaxis(yy, 0, axis)
+    # Integrate dA/dx
     # A = (x1*y1 - x0*y0) / (gamma + 1)
     if dlogx is None:
         dz = np.diff(yy * xx, axis=axis)
         trapz = dz / (gamma + 1)
+        # when the power-law is (near) '-1' then, `A = a * log(x1/x0)`
+        idx = np.isclose(gamma, -1.0, atol=lntol, rtol=lntol)
+
+    # Integrate dA/dlogx
     # A = (y1 - y0) / gamma
     else:
         dy = np.diff(yy, axis=axis)
         trapz = dy / gamma
+        # when the power-law is (near) '-1' then, `A = a * log(x1/x0)`
+        idx = np.isclose(gamma, 0.0, atol=lntol, rtol=lntol)
+
+    trapz[idx] = aa[idx] * delta_logx[idx]
 
     integ = np.log(log_base) * np.cumsum(trapz, axis=axis)
     if bounds is not None:
         # NOTE: **DO NOT INTERPOLATE INTEGRAL** this works badly for negative power-laws
-        # lo, hi = math_core.interp(bounds, xx[1:], integ, xlog=True, ylog=True, valid=False)
+        # lo, hi = interpolate.interp(bounds, xx[1:], integ, xlog=True, ylog=True, valid=False)
         # integ = hi - lo
         integ = np.moveaxis(integ, axis, 0)
         lo, hi = integ[ii-1, ...]

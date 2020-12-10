@@ -517,11 +517,12 @@ def modify_filename(fname, prepend='', append=''):
 
     """
     is_dir = fname.endswith('/')
-    if is_dir:
-        o_path, o_name = _path_fname_split(fname)
-    else:
-        o_path, o_name = os.path.split(fname)
-
+    fname = fname.rstrip('/')
+    # if is_dir:
+    #     o_path, o_name = _path_fname_split(fname)
+    # else:
+    #     o_path, o_name = os.path.split(fname)
+    o_path, o_name = os.path.split(fname)
     new_name = prepend + o_name
     if len(append) > 0:
         o_split = new_name.split('.')
@@ -906,9 +907,6 @@ def combine_files(inFilenames, outFilename, verbose=False):
     # nums = len(inFilenames)
 
     # Open output file for writing
-    if verbose:
-        warnings.warn("`progress` is deprecated!")
-        # pbar = getProgressBar(nums)
     with open(outFilename, 'w') as outfil:
 
         # Iterate over input files
