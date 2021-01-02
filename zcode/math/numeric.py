@@ -19,13 +19,12 @@ import scipy.stats  # noqa
 import warnings
 
 from . import math_core, interpolate  # , statistic
-from .. import utils
 
 __all__ = [
     'cumtrapz_loglog', 'even_selection', 'extend', 'monotonic_smooth', 'sample_inverse',
     'smooth_convolve', 'spline', 'rk4_step',   # 'kde', 'kde_hist',
     # DEPRECATED
-    'sampleInverse', 'smooth', '_smooth'
+    'smooth', '_smooth'
 ]
 
 
@@ -271,11 +270,6 @@ def extend(arr, num=1, log=True, append=False):
 
     if(append): return np.hstack([left, arr, rigt])
     return [left, rigt]
-
-
-def sampleInverse(*args, **kwargs):
-    utils.dep_warn("sampleInverse", newname="sample_inverse")
-    return sample_inverse(*args, **kwargs)
 
 
 def sample_inverse(xx, yy, num=100, log=True, sort=False):
@@ -564,48 +558,6 @@ def ndinterp(xx, xvals, yvals, xlog=True, ylog=True):
     new[inval, ...] = np.nan
     new = new
     return new
-
-
-'''
-def kde(vals, scale=None, log=None):
-    log, scale = _log_from_scale(log, scale)
-
-    vals = np.asarray(vals)[:]
-
-    func = np.log10 if log else (lambda xx: xx)
-    func_inv = (lambda xx: np.power(10, xx)) if log else (lambda xx: xx)
-    my_kde = sp.stats.gaussian_kde(func(vals))
-
-    class Use_KDE:
-
-        def __init__(self, kde):
-            self._kde = kde
-
-        def __call__(self, xx):
-            return self._kde(func(xx))
-
-        def resample(self, *args, **kwargs):
-            return func_inv(self._kde.resample(*args, **kwargs))
-
-    return Use_KDE(my_kde)
-
-
-def kde_hist(vals, edges, scale=None, log=None, density=False):
-    log, scale = _log_from_scale(log, scale)
-
-    use_kde = kde(vals, scale=scale, log=log)
-
-    cents = math_core.midpoints(edges, scale=scale)
-
-    yy = use_kde(cents)
-
-    # Convert from density to probability per bin
-    if not density:
-        dx = np.diff(edges)
-        yy *= dx
-
-    return yy
-'''
 
 
 def _log_from_scale(log, scale):
