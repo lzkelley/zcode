@@ -39,23 +39,27 @@ import numpy as np
 import scipy as sp
 import scipy.interpolate  # noqa
 
-__all__ = ['argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
-           'around', 'array_str', 'asBinEdges',
-           'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
-           'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
-           'indsWithin', 'interp', 'interp_func', 'midpoints', 'minmax',  'mono', 'limit',
-           'ordered_groups', 'really1d', 'renumerate', 'roll',
 
-           'rotation_matrix_between_vectors', 'rotation_matrix_about',
-           'xyz_to_rpt', 'rpt_to_xyz', 'xyz_to_rtp', 'rtp_to_xyz',
+__all__ = [
+    'argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
+    'around', 'array_str', 'asBinEdges',
+    'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
+    'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
+    'isnumeric', 'midpoints', 'minmax',  'mono',
+    'ordered_groups', 'really1d', 'renumerate', 'roll',
 
-           'sliceForAxis', 'spacing', 'spacing_composite',
-           'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
-           'comparison_filter', '_comparison_function',
-           '_infer_scale', '_fracToInt',
-           # DEPRECATED
-           'zenum'
-           ]
+    'rotation_matrix_between_vectors', 'rotation_matrix_about',
+    'xyz_to_rpt', 'rpt_to_xyz', 'xyz_to_rtp', 'rtp_to_xyz',
+
+    'sliceForAxis', 'spacing', 'spacing_composite',
+    'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
+    'comparison_filter', '_comparison_function',
+    '_infer_scale', '_fracToInt',
+    # DEPRECATED
+    'zenum'
+    # 'limit', 'indsWithin',
+]
+
 
 from zcode import utils
 
@@ -570,6 +574,7 @@ def groupDigitized(arr, bins, edges='right'):
     return groups
 
 
+'''
 def indsWithin(vals, extr, edges=True):
     """Find the indices of the input array which are within the given extrema.
     """
@@ -581,92 +586,11 @@ def indsWithin(vals, extr, edges=True):
         inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
 
     return inds
+'''
 
 
-def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, valid=False):
-    x1 = np.asarray(xnew)
-    x0 = np.asarray(xold)
-    y0 = np.asarray(yold)
-    if xlog:
-        x1 = np.log10(x1)
-        x0 = np.log10(x0)
-    if ylog:
-        y0 = np.log10(y0)
-        if np.isfinite(left):
-            left = np.log10(left)
-        if np.isfinite(right):
-            right = np.log10(right)
-
-    if valid:
-        inds = (~np.isnan(x0) & ~np.isinf(x0)) & (~np.isnan(y0) & ~np.isinf(y0))
-        # inds = np.where(inds)
-    else:
-        inds = slice(None)
-
-    # try:
-    y1 = np.interp(x1, x0[inds], y0[inds], left=left, right=right)
-    # except:
-    #     raise
-
-    if ylog:
-        y1 = np.power(10.0, y1)
-
-    return y1
-
-
-def interp_func(xold, yold, kind='mono', xlog=True, ylog=True, fill_value=np.nan, **kwargs):
-    """Return an interpolation/extrapolation function constructed from the given values.
-
-    Generally the returned function is a wrapper around `interp1d` from the `scipy.interpolate`
-    module, unless `kind` is either 'mono' or 'Pchip' in which case the `PchipInterpolator` is
-    used.
-
-    """
-    def in_lin(xx):
-        return xx
-
-    def in_log(xx):
-        return np.log10(xx)
-
-    def out_lin(yy):
-        return yy
-
-    def out_log(yy):
-        return np.power(10.0, yy)
-
-    if xlog:
-        xold = np.log10(xold)
-        in_func = in_log
-    else:
-        in_func = in_lin
-
-    if ylog:
-        yold = np.log10(yold)
-        out_func = out_log
-        if isinstance(fill_value, tuple):
-            fill_value = tuple([np.log10(vv) for vv in fill_value])
-        else:
-            fill_value = np.log10(fill_value)
-
-    else:
-        out_func = out_lin
-
-    if kind == 'mono' or kind.lower() == 'pchip':
-        if not np.isscalar(fill_value) or not np.isnan(fill_value):
-            raise ValueError("`PchipInterpolator` only support 'nan' fill values!")
-        lin_interp = sp.interpolate.PchipInterpolator(
-            xold, yold, extrapolate=True, **kwargs)
-    else:
-        lin_interp = sp.interpolate.interp1d(
-            xold, yold, kind=kind, fill_value=fill_value, **kwargs)
-
-    def ifunc(xx):
-        xx = in_func(xx)
-        yy = lin_interp(xx)
-        yy = out_func(yy)
-        return yy
-
-    return ifunc
+def isnumeric(val):
+    return _is_numeric_scalar(val)
 
 
 def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
@@ -794,16 +718,20 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     # If there are no elements (left), return `prev` (`None` if not provided)
     if np.size(data) == 0:
         msg = "" if filter is None else " after filtering"
-        logging.warning("zcode.math.math_core:minmax() :: Empty `data` array{}!".format(msg))
+        msg = "zcode.math.math_core:minmax() :: Empty `data` array{}!".format(msg)
+        # NOTE: this should be `warnings.warn` instead of `logging.warning` so that it can be
+        #       caught by internal calling funtions.  BUG: could be improved!
+        # logging.warning(msg)
+        warnings.warn(msg)
         return prev
 
     # Find extrema
     if percs is None:
         minmax = np.array([np.min(data), np.max(data)])
     else:
-        from zcode.math.statistic import percentiles
+        from zcode.math.statistic import quantiles
         assert np.size(percs) == 2, "Provided `percs` must be length two!"
-        minmax = percentiles(data, percs)
+        minmax = quantiles(data, percs)
 
     if type is not None:
         minmax = minmax.astype(type)
@@ -883,6 +811,7 @@ def mono(arr, type='g', axis=-1):
     return retval
 
 
+'''
 def limit(val, arr):
     """Limit the given value(s) to given bounds.
 
@@ -907,6 +836,7 @@ def limit(val, arr):
     # Enforce upper bound
     new = np.minimum(new, extr[1])
     return new
+'''
 
 
 def ordered_groups(values, targets, inds=None, dir='above', include=False):
@@ -1239,7 +1169,7 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
-def spacing(data, scale='log', num=None, dex=10, dex_plus=1,
+def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
             filter=None, integers=False, endpoint=True, **kwargs):
     """Create an evenly spaced array between extrema from the given data.
 
@@ -1253,6 +1183,9 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=1,
         Number of points to produce.
     dex : int
         Number of points per decade (order of magnitude) to produce.
+    dex_plus : int or None
+        After finding the number of bins using `dex` per decade, add this number of bins.
+        If `dex` is given and `dex_plus` is None, `dex_plus` is set to 1 if endpoint, else 0
     filter : str or `None`
         String specifying how to filter the input `data` relative to zero.
     integers : bool
@@ -1297,6 +1230,9 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=1,
 
     if (num is None) and (not integers):
         if log_flag and (not integers):
+            if dex_plus is None:
+                dex_plus = 1 if endpoint else 0
+
             num_dex = np.fabs(np.diff(np.log10(span)))
             num = np.int(np.ceil(num_dex * dex)) + dex_plus
         else:
@@ -1361,7 +1297,7 @@ def spacing_composite(comp_edges, scale, dex=None, num=None, **kwargs):
     elif np.isscalar(dex):
         dex = [dex for ii in range(nsegs)]
     elif len(dex) != nsegs:
-        raise ValueError("Length mismatch between `scale` and `dex`!")
+        raise ValueError("Length mismatch between `scale` ({}) and `dex` ({})!".format(scale, dex))
 
     if num is None:
         num = [None for ii in range(nsegs)]
@@ -1420,6 +1356,9 @@ def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=T
 
     """
     arr = np.asarray(arr)
+    if np.ndim(arr) > 1:
+        arr = arr.flatten()
+
     if log:
         arr = np.log10(arr)
 
@@ -1531,7 +1470,13 @@ def _str_array_1d(arr, beg, end, form, delim):
 
     # Add the first `first` elements
     if beg is not None:
-        arr_str += delim.join([form.format(vv) for vv in arr[:beg]])
+        temp = [form.format(vv) for vv in arr[:beg]]
+        # isinf = [tt in ['nan', 'inf', '-inf'] for tt in temp]
+        # if np.any(isinf) and not np.all(isinf):
+        #     size = len(temp[argfirst(~np.array(isinf))])
+        #     fmt = "{{:^{len:}}}".format(len=size)
+
+        arr_str += delim.join(temp)
 
     # Include separator unless full array is being printed
     if (beg is not None) or (end < len_arr):
@@ -1562,6 +1507,10 @@ def _str_array_get_beg_end(sides, size):
 
     return beg, end
 
+
+# def unify_shapes(*args):
+#
+#
 
 def vecmag(r1, r2=None):
     """Calculate the distance from vector(s) r1 to r2.
@@ -1607,7 +1556,24 @@ def within(vals, extr, edges=True, all=False, inv=False, close=None):
 
     """
 
-    extr_bnds = minmax(extr)
+    if np.ndim(extr) != 1:
+        raise ValueError("`extr` must be 1D!")
+
+    vals = np.asarray(vals)
+
+    nex = np.size(extr)
+    if nex < 2:
+        raise ValueError("`extr` must have at least 2 elements!")
+    elif nex == 2:
+        extr_bnds = [ex for ex in extr]
+        extr_bnds[0] = -np.inf if (extr_bnds[0] is None) else extr_bnds[0]
+        extr_bnds[1] = +np.inf if (extr_bnds[1] is None) else extr_bnds[1]
+        extr_bnds = np.sort([ex for ex in extr_bnds])
+        if np.diff(extr_bnds) < 0.0:
+            err = "Extrema values are not ordered!  '{}' ==> '{}'".format(extr, extr_bnds)
+            raise ValueError(err)
+    else:
+        extr_bnds = minmax(extr)
 
     # Include edges for WITHIN bounds (thus not including is outside)
     if edges:
@@ -1772,3 +1738,13 @@ def _flagsToFilter(positive, nonzero, filter=None, source=None):
 def _infer_scale(args):
     if np.all(args > 0.0): return 'log'
     return 'lin'
+
+
+def _is_numeric_scalar(val):
+    if not np.isscalar(val):
+        return False
+
+    import decimal
+    rv = isinstance(val, (int, float, decimal.Decimal, np.number, np.ndarray))
+
+    return rv

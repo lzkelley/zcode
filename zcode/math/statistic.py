@@ -22,10 +22,16 @@ import scipy.stats  # noqa
 from zcode import utils
 from zcode.math import math_core
 
-__all__ = ['confidence_bands', 'confidence_intervals',
-           'cumstats', 'frac_str', 'log_normal_base_10', 'mean',
-           'percentiles', 'percs_from_sigma', 'random_power', 'sigma',
-           'stats', 'stats_str', 'std']
+
+__all__ = [
+    'confidence_bands', 'confidence_intervals',
+    'cumstats', 'frac_str', 'info', 'log_normal_base_10', 'mean',
+    'percs_from_sigma', 'quantiles', 'random_power', 'sigma',
+    'stats', 'stats_str', 'std',
+    'LH_Sampler',
+    # DEPRECATED
+    'percentiles'
+]
 
 
 def confidence_bands(xx, yy, xbins=10, xscale='lin', percs=[0.68, 0.95], filter=None):
@@ -170,7 +176,7 @@ def confidence_intervals(vals, sigma=None, percs=None, weights=None, axis=None,
 
     # PERC_FUNC = np.percentile
     def PERC_FUNC(xx, pp, **kwargs):
-        return percentiles(xx, pp/100.0, weights=weights, **kwargs)
+        return quantiles(xx, pp/100.0, weights=weights, **kwargs)
 
     # Filter input values
     if filter is not None:
@@ -182,9 +188,9 @@ def confidence_intervals(vals, sigma=None, percs=None, weights=None, axis=None,
         if weights is not None:
             raise NotImplementedError("`weights` argument does not work with `filter`!")
 
-        vals = math_core.comparison_filter(vals, filter, **kw)
-        vals = np.ma.filled(vals, np.nan)
-        PERC_FUNC = np.nanpercentile  # noqa
+        vals = math_core.comparison_filter(vals, filter, mask=True)  # , **kw)
+        # vals = np.ma.filled(vals, np.nan)
+        # PERC_FUNC = np.nanpercentile  # noqa
 
         if vals.size == 0:
             return np.nan, np.nan
@@ -274,6 +280,18 @@ def frac_str(num, den=None, frac_fmt=None, dec_fmt=None):
     return fstr
 
 
+def info(array, shape=True, sample=3, stats=True):
+    rv = ""
+    if shape:
+        rv += "{} ".format(np.shape(array))
+    if (sample is not None) and (sample > 0):
+        rv += "{} ".format(math_core.str_array(array, sides=sample))
+    if stats:
+        rv += "{} ".format(stats_str(array, label=False))
+
+    return rv
+
+
 def log_normal_base_10(mu, sigma, size=None, shift=0.0):
     """Draw from a lognormal distribution with values in base-10 (instead of e).
 
@@ -305,11 +323,17 @@ def mean(vals, weights=None, **kwargs):
     return ave
 
 
-def percentiles(values, percs=None, sigmas=None, weights=None, axis=None,
-                values_sorted=False, filter=None):
+def percentiles(*args, **kwargs):
+    utils.dep_warn("percentiles", newname="quantiles")
+    return quantiles(*args, **kwargs)
+
+
+def quantiles(values, percs=None, sigmas=None, weights=None, axis=None,
+              values_sorted=False, filter=None):
     """Compute weighted percentiles.
 
     Copied from @Alleo answer: http://stackoverflow.com/a/29677616/230468
+    NOTE: if `values` is a masked array, then only unmasked values are used!
 
     Arguments
     ---------
@@ -331,8 +355,9 @@ def percentiles(values, percs=None, sigmas=None, weights=None, axis=None,
     if filter is not None:
         values = math_core.comparison_filter(values, filter)
 
-    values = np.array(values)
-    # percentiles = np.array(percentiles, dtype=values.dtype)
+    if not isinstance(values, np.ma.MaskedArray):
+        values = np.asarray(values)
+
     if percs is None:
         percs = sp.stats.norm.cdf(sigmas)
 
@@ -347,6 +372,11 @@ def percentiles(values, percs=None, sigmas=None, weights=None, axis=None,
     if weights is None:
         weights = np.ones_like(values)
     weights = np.array(weights)
+    try:
+        weights = np.ma.masked_array(weights, mask=values.mask)
+    except AttributeError:
+        pass
+
     assert np.all(percs >= 0.0) and np.all(percs <= 1.0), 'percentiles should be in [0, 1]'
 
     if not values_sorted:
@@ -354,17 +384,21 @@ def percentiles(values, percs=None, sigmas=None, weights=None, axis=None,
         values = np.take_along_axis(values, sorter, axis=axis)
         weights = np.take_along_axis(weights, sorter, axis=axis)
 
-    weighted_quantiles = np.cumsum(weights, axis=axis) - 0.5 * weights
-    weighted_quantiles /= np.sum(weights, axis=axis)[..., np.newaxis]
     if axis is None:
+        weighted_quantiles = np.cumsum(weights) - 0.5 * weights
+        weighted_quantiles /= np.sum(weights)
         percs = np.interp(percs, weighted_quantiles, values)
-    else:
-        values = np.moveaxis(values, axis, -1)
-        weighted_quantiles = np.moveaxis(weighted_quantiles, axis, -1)
-        percs = [np.interp(percs, weighted_quantiles[idx], values[idx])
-                 for idx in np.ndindex(values.shape[:-1])]
-        percs = np.array(percs)
+        return percs
 
+    weights = np.moveaxis(weights, axis, -1)
+    values = np.moveaxis(values, axis, -1)
+
+    weighted_quantiles = np.cumsum(weights, axis=-1) - 0.5 * weights
+    weighted_quantiles /= np.sum(weights, axis=-1)[..., np.newaxis]
+    # weighted_quantiles = np.moveaxis(weighted_quantiles, axis, -1)
+    percs = [np.interp(percs, weighted_quantiles[idx], values[idx])
+             for idx in np.ndindex(values.shape[:-1])]
+    percs = np.array(percs)
     return percs
 
 
@@ -436,6 +470,11 @@ def random_power(extr, pdf_index, size=1, **kwargs):
         Array of random variables with N=`size` (default, size=1).
 
     """
+    # if not np.isscalar(pdf_index):
+    #     err = "`pdf_index` (shape {}; {}) must be a scalar value!".format(
+    #         np.shape(pdf_index), pdf_index)
+    #     raise ValueError(err)
+
     extr = math_core.minmax(extr, filter='>', **kwargs)
     if pdf_index == -1:
         rv = 10**np.random.uniform(*np.log10(extr), size=int(size))
@@ -552,7 +591,7 @@ def stats_str(data, percs=[0.0, 0.16, 0.50, 0.84, 1.00], ave=False, std=False, w
 
     # Add percentiles
     if percs_flag:
-        tiles = percentiles(data, percs, weights=weights).astype(data.dtype)
+        tiles = quantiles(data, percs, weights=weights).astype(data.dtype)
         out += "(" + ", ".join(form.format(tt) for tt in tiles) + ")"
         if label:
             out += ", for (" + ", ".join("{:.0f}%".format(100*pp) for pp in percs) + ")"
@@ -578,3 +617,158 @@ def std(vals, weights=None, **kwargs):
     den = np.sum(weights) * (mm - 1) / mm
     std = np.sqrt(num/den)
     return std
+
+
+class LH_Sampler:
+    """
+
+    Much of this code was taken from the pyDOE project:
+        - https://github.com/tisimst/pyDOE
+
+    This code was originally published by the following individuals for use with
+    Scilab:
+        Copyright (C) 2012 - 2013 - Michael Baudin
+        Copyright (C) 2012 - Maria Christopoulou
+        Copyright (C) 2010 - 2011 - INRIA - Michael Baudin
+        Copyright (C) 2009 - Yann Collette
+        Copyright (C) 2009 - CEA - Jean-Marc Martinez
+
+        website: forge.scilab.org/index.php/p/scidoe/sourcetree/master/macros
+    Much thanks goes to these individuals. It has been converted to Python by
+    Abraham Lee.
+    """
+
+    '''
+    @classmethod
+    def oversample(cls, npar, nsamp, oversamp, **kwargs):
+        if not isinstance(oversamp, int) or oversamp < 1:
+            raise ValueError(f"`oversamp` argument '{oversamp}' must be an integer!")
+
+        samples = None
+        for ii in range(oversamp):
+            ss = cls.sample(npar, nsamp=nsamp, **kwargs)
+            if samples is None:
+                samples = ss
+            else:
+                samples = np.append(samples, ss, axis=-1)
+
+        return samples
+    '''
+
+    @classmethod
+    def sample(cls, vals, nsamp=None, **kwargs):
+        if isinstance(vals, int):
+            return cls.sample_unit(vals, nsamp=nsamp, **kwargs)
+
+        return cls.sample_vals(vals, nsamp=nsamp, **kwargs)
+
+    @classmethod
+    def sample_vals(cls, vals, nsamp=None, log=False, **kwargs):
+        vals = np.asarray(vals)
+        try:
+            npar, check = np.shape(vals)
+            if (check != 2) or (npar < 2):
+                raise ValueError
+        except ValueError:
+            print(f"vals = {vals}")
+            raise ValueError(f"Shape of `vals` ({np.shape(vals)}) must be (N,2)!")
+
+        if np.isscalar(log):
+            log = [log] * npar
+
+        if np.any([ll not in [True, False] for ll in log]):
+            raise ValueError(f"`log` value(s) must be 'True' or 'False'!")
+
+        # Draw samples in [0.0, 1.0]
+        samps = cls.sample_unit(npar, nsamp=nsamp, **kwargs)
+        # Map samples to the given ranges in log or linear space
+        for ii, vv in enumerate(vals):
+            if log[ii]:
+                vv = np.log10(vv)
+
+            # temp = np.copy(samps[ii, :])
+            # samps[ii, :] *= (vv.max() - vv.min())
+            # samps[ii, :] += vv.min()
+            samps[ii, :] = (vv.max() - vv.min()) * samps[ii, :] + vv.min()
+
+            if log[ii]:
+                samps[ii, :] = 10.0 ** samps[ii, :]
+                vv = 10.0 ** vv
+
+            # if np.any((samps[ii] < vv.min()) | (samps[ii] > vv.max())):
+            #     print(f"temp = {temp}")
+            #     print(f"vv = {vv}")
+            #     err = (
+            #         f"Samples ({stats_str(samps[ii])}) exceeded "
+            #         f"values ({math_core.minmax(vv)})"
+            #     )
+            #     raise ValueError(err)
+
+        return samps
+
+    @classmethod
+    def sample_unit(cls, npar, nsamp=None, center=False, optimize=None, iterations=10):
+        if nsamp is None:
+            nsamp = npar
+
+        # Construct optimization variables/functions
+        optimize = None if (optimize is None) else optimize.lower()
+        if optimize is not None:
+            if optimize.startswith('dist'):
+                extr = 0.0
+                mask = np.ones((nsamp, nsamp), dtype=bool)
+                comp = np.less
+
+                # Minimum euclidean distance between points
+                def metric(xx):
+                    dist = (xx[:, np.newaxis, :] - xx[:, :, np.newaxis])**2
+                    dist = np.sum(dist, axis=0)
+                    return np.min(dist[mask])
+
+            elif optimize.startswith('corr'):
+                extr = np.inf
+                mask = np.ones((npar, npar), dtype=bool)
+                comp = np.greater
+
+                # Maximum correlation
+                metric = lambda xx: np.max(np.abs(np.corrcoef(xx)[mask]))
+
+            np.fill_diagonal(mask, False)
+
+        # iterate over randomizations
+        for ii in range(iterations):
+            cand = cls._sample(npar, nsamp, center=center)
+            if optimize is None:
+                samples = cand
+                break
+
+            # -- Optimize
+            # Calculate the metric being optimized
+            met = metric(cand)
+            # Compare the metric to the previous extrema and store new values if better
+            if comp(extr, met):
+                extr = met
+                samples = cand
+
+        return samples
+
+    @classmethod
+    def _sample(cls, npar, nsamp, center=False):
+        # Generate the intervals
+        cut = np.linspace(0, 1, nsamp + 1)
+        lo = cut[:-1]
+        hi = cut[1:]
+
+        # Fill points uniformly in each interval
+        shape = (npar, nsamp)  # , nreals)
+        if center:
+            points = np.zeros(shape)
+            points[...] = 0.5 * (lo + hi)[np.newaxis, :]
+        else:
+            points = np.random.uniform(size=shape)
+            points = points * (hi - lo)[np.newaxis, :] + lo[np.newaxis, :]
+
+        for j in range(npar):
+            points[j, :] = np.random.permutation(points[j, :])
+
+        return points

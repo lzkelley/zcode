@@ -19,7 +19,7 @@ from zcode import math as zmath
 from zcode import utils
 
 from zcode.plot import COL_CORR, LW_CONF, LW_OUTLINE
-from . plot_core import colormap
+# from . plot_core import colormap
 from . import plot_core
 
 
@@ -32,14 +32,15 @@ __all__ = [
 ]
 
 
-def conf_fill(ax, xx, yy, ci=None, axis=-1, filter=None, **kwargs):
-    med, conf = zmath.confidence_intervals(yy, ci=ci, axis=axis, filter=filter, return_ci=False)
+def conf_fill(ax, xx, yy, percs=None, sigma=None, axis=-1, filter=None, **kwargs):
+    med, conf = zmath.confidence_intervals(
+        yy, percs=percs, sigma=sigma, axis=axis, filter=filter, return_ci=False)
     rv = plot_conf_fill(ax, xx, med, conf, **kwargs)
     return rv
 
 
 def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None,
-                   fill=None, invert=False, **kwargs):
+                   fill=None, invert=False, bg=False, **kwargs):
     """Given bin edges and histogram-like values, plot a histogram.
 
     Arguments
@@ -88,8 +89,12 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
 
     # Select positive values
     if positive:
-        xval = np.ma.masked_where(yval < 0.0, xval)
-        yval = np.ma.masked_where(yval < 0.0, yval)
+        # xval = np.ma.masked_where(yval <= 0.0, xval)
+        # yval = np.ma.masked_where(yval <= 0.0, yval)
+        idx = (yval > 0.0)
+        xval = xval[idx]
+        yval = yval[idx]
+        print("hello")
 
     if invert:
         temp = np.array(xval)
@@ -97,7 +102,10 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
         yval = temp
 
     # Plot Histogram
-    line, = ax.plot(xval, yval, **kwargs)
+    if bg:
+        line = plot_bg(ax, xval, yval, **kwargs)
+    else:
+        line, = ax.plot(xval, yval, **kwargs)
 
     # Add yerror-bars
     if yerr is not None:
@@ -122,10 +130,8 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
     return line
 
 
-# def plot_segmented_line(ax, xx, yy, zz=None, cmap=plt.cm.jet, norm=[0.0, 1.0],
-#                         lw=3.0, alpha=1.0):
-def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='jet'),
-                        lw=3.0, alpha=1.0):
+def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='viridis'),
+                        lw=1.0, colors=None, **kwargs):
     """Draw a line segment by segment.
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
 
@@ -139,18 +145,15 @@ def plot_segmented_line(ax, xx, yy, zz=None, smap=dict(cmap='jet'),
     else:
         zz = np.asarray(zz)
 
-    # # Get the minimum and maximum of ``norm``
-    # norm = zmath.minmax(zz)
-    # # conver to normalization
-    # norm = plt.Normalize(norm[0], norm[1])
+    if colors is None:
+        if isinstance(smap, dict):
+            smap = plot_core.smap(zz, **smap)
 
-    if isinstance(smap, dict):
-        smap = colormap(args=zz, **smap)
+        colors = smap.to_rgba(zz)
 
-    colors = smap.to_rgba(zz)
     segments = _make_segments(xx, yy)
-    lc = mpl.collections.LineCollection(segments, colors=colors, cmap=smap.cmap, norm=smap.norm,
-                                        linewidth=lw, alpha=alpha)
+    lc = mpl.collections.LineCollection(segments, colors=colors,  # cmap=smap.cmap, norm=smap.norm,
+                                        linewidth=lw, **kwargs)
 
     ax.add_collection(lc)
 
@@ -177,7 +180,7 @@ def plot_scatter(ax, xx, yy, scalex='log', scaley='log',
         res = 0.3*np.sqrt(len(xx))
         res = np.max([1, res])
 
-        smap = colormap(NUM, CMAP, scale='lin')
+        smap = plot_core.smap(NUM, CMAP, scale='lin')
         cols = [smap.to_rgba(it) for it in range(NUM)]
 
         xi = zmath.spacing(xx, scalex, num=res)
@@ -405,7 +408,7 @@ def plot_conf_fill(ax, rads, med, conf, color='firebrick', fillalpha=0.5, lw=1.0
     return line_patch, conf_patches
 
 
-def plot_contiguous(ax, xx, yy, idx, **kwargs):
+def plot_contiguous(ax, xx, yy, idx, scatter=False, **kwargs):
     """Plot values which in contiguous sections.
 
     Arguments
@@ -439,6 +442,7 @@ def plot_contiguous(ax, xx, yy, idx, **kwargs):
 
     begs.append(bb)
     ends.append(ee)
+    nons = []
 
     for ii in range(1, stops.size):
         bb = ee + 1
@@ -446,6 +450,8 @@ def plot_contiguous(ax, xx, yy, idx, **kwargs):
         if ee > bb + 1:
             begs.append(bb)
             ends.append(ee)
+        elif scatter:
+            nons.append(bb)
 
     if stops.size > 0:
         bb = stops[-1] + 1
@@ -460,6 +466,9 @@ def plot_contiguous(ax, xx, yy, idx, **kwargs):
         cut = slice(aa, bb)
         vv = ax.plot(xx[cut], yy[cut], **kwargs)
         vals.append(vv)
+
+    if scatter:
+        ax.scatter(xx[nons], yy[nons], **kwargs)
 
     return vals
 
@@ -485,6 +494,7 @@ def _make_segments(x, y):
 def plot_bg(ax, xx, yy, thicker=2.0, fainter=0.65, color_bg='0.7', **kwargs):
     """Plot a line with an added background line.
     """
+    bg_skip = ['c', 'color']
     lw_fg = kwargs.setdefault('lw', 1.0)
     alpha_fg = kwargs.setdefault('alpha', 0.8)
     lw_bg = lw_fg * thicker
@@ -503,15 +513,13 @@ def plot_bg(ax, xx, yy, thicker=2.0, fainter=0.65, color_bg='0.7', **kwargs):
             ls_fg = (-dis, (DASH, DASH))
             ls_bg = (0, (on, off))
 
-    bg_kw = {kk: vv for kk, vv in kwargs.items()}
+    bg_kw = {kk: vv for kk, vv in kwargs.items()
+             if kk not in bg_skip}
     bg_kw['lw'] = lw_bg
     bg_kw['color'] = color_bg
     bg_kw['alpha'] = alpha_bg
     kwargs['ls'] = ls_fg
     bg_kw['ls'] = ls_bg
-
-    # ax.axhline(vv, color='0.5', ls=(0, (4, 2)), lw=4.0)
-    # ax.axhline(vv, color='0.8', ls=(-1, (6, 6)), lw=2.0)
 
     lb, = ax.plot(xx, yy, **bg_kw)
     lf, = ax.plot(xx, yy, **kwargs)

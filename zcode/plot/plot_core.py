@@ -54,11 +54,12 @@ from zcode.plot import _PAD
 __all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
            'unifyAxesLimits', 'color_cycle', 'get_norm',
-           'colormap', 'color_set', 'set_grid',
+           'smap', 'color_set', 'set_grid', 'save_fig',
            'skipTicks', 'saveFigure', 'scientific_notation',
            'line_style_set', 'line_label',
            '_scale_to_log_flag',
            # Deprecated
+           'colormap'
            ]
 
 VALID_SIDES = [None, 'left', 'right', 'top', 'bottom']
@@ -111,6 +112,7 @@ _SCATTER_POINTS = 1
 def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
           xscale='log', xlabel='', xlim=None,
           yscale='log', ylabel='', ylim=None,
+          widths=None, heights=None,
           left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
           grid=True, **kwargs):
 
@@ -124,6 +126,14 @@ def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze
             scales[ii] = 'linear'
 
     xscale, yscale = scales
+
+    if (widths is not None) or (heights is not None):
+        gridspec_kw = dict()
+        if widths is not None:
+            gridspec_kw['width_ratios'] = widths
+        if heights is not None:
+            gridspec_kw['height_ratios'] = heights
+        kwargs['gridspec_kw'] = gridspec_kw
 
     fig, axes = plt.subplots(figsize=figsize, squeeze=False, ncols=ncols, nrows=nrows,
                              sharex=sharex, sharey=sharey, **kwargs)
@@ -165,8 +175,8 @@ def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze
             ax.set_ylim(ylim[idx])
 
         if grid is not None:
-            if grid is True:
-                set_grid(ax)
+            if grid in [True, False]:
+                set_grid(ax, grid)
             else:
                 set_grid(ax, **grid)
 
@@ -756,7 +766,7 @@ def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, **k
         x_d, _ = ax.transAxes.transform([x, 0.0])
         x_d, _ = ax.transData.inverted().transform([x_d, 0.0])
         inds = np.argsort(xdata)
-        y_d = zmath.interp(x_d, xdata[inds], ydata[inds], xlog=xlog, ylog=ylog)
+        y_d = zmath.interp(x_d, np.array(xdata)[inds], np.array(ydata)[inds], xlog=xlog, ylog=ylog)
     elif (x is None) and (y is not None):
         # convert from axes to pixels
         _, y_p = ax.transAxes.transform([0.0, y])
@@ -1023,8 +1033,8 @@ def invert_color(col):
     return col
 
 
-def colormap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
-             under='0.8', over='0.8', left=None, right=None, filter=None):
+def smap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
+         under='0.8', over='0.8', left=None, right=None, filter=None):
     """Create a colormap from a scalar range to a set of colors.
 
     Arguments
@@ -1221,7 +1231,7 @@ def set_grid(ax, val=True, axis='both', ls='-', clear=True,
             else:
                 _col = color
             if alpha is None:
-                _alpha = 0.8
+                _alpha = 0.4
             else:
                 _alpha = alpha
             ax.grid(True, which='major', axis=axis, c=_col, ls=ls, zorder=zorder, alpha=_alpha)
@@ -1231,11 +1241,29 @@ def set_grid(ax, val=True, axis='both', ls='-', clear=True,
             else:
                 _col = color
             if alpha is None:
-                _alpha = 0.5
+                _alpha = 0.2
             else:
                 _alpha = alpha
             ax.grid(True, which='minor', axis=axis, c=_col, ls=ls, zorder=zorder, alpha=_alpha)
     return
+
+
+def save_fig(fig, fname, path=None, subdir=None, modify=True, verbose=True, **kwargs):
+    pp = path if (path is not None) else os.path.curdir
+    if subdir is not None:
+        pp = os.path.join(pp, subdir, "")
+
+    pp = zio.check_path(pp)
+    ff = os.path.join(pp, fname)
+    if modify:
+        ff = zio.modify_exists(ff)
+
+    ff = os.path.abspath(ff)
+    kwargs.setdefault('dpi', 200)
+    fig.savefig(ff, **kwargs)
+    if verbose:
+        print("Saved to '{}' size: {}".format(ff, zio.get_file_size(ff)))
+    return ff
 
 
 def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
@@ -1357,8 +1385,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     return
 
 
-def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
-                        precman=None, precexp=None):
+def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
@@ -1382,14 +1409,6 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False,
         Scientific notation string using latex formatting.
 
     """
-    # Deprecation warnings for old parameters
-    if precman is not None:
-        utils.dep_warn("precman", "man", type='parameter')
-        man = precman
-    if precexp is not None:
-        utils.dep_warn("precexp", "exp", type='parameter')
-        exp = precexp
-
     if zero and val == 0.0:
         notStr = "$"*dollar + "0.0" + "$"*dollar
         return notStr
@@ -1718,3 +1737,13 @@ class MidpointLogNormalize(mpl.colors.LogNorm):
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         vals = zmath.interp(value, x, y, xlog=True, ylog=False)
         return np.ma.masked_array(vals, np.isnan(value))
+
+
+# ======================
+# ====  DEPRECATED  ====
+# ======================
+
+
+def colormap(*args, **kwargs):
+    utils.dep_warn("colormap", newname="smap")
+    return smap(*args, **kwargs)

@@ -14,7 +14,7 @@ import scipy as sp
 import scipy.stats  # noqa
 from nose.tools import assert_true, assert_false, assert_equal, assert_raises, assert_almost_equal
 
-from zcode.math import math_core
+from zcode.math import math_core, interpolate
 
 
 class TestMathCore(object):
@@ -558,7 +558,7 @@ class Test_Interp(object):
         truth = [15.0, 25.0, np.nan, 100.0]
 
         for xx, zz in zip(tests, truth):
-            yy = math_core.interp(xx, xo, yo, **kw)
+            yy = interpolate.interp(xx, xo, yo, **kw)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
                 assert_true(np.isnan(yy))
@@ -578,7 +578,7 @@ class Test_Interp(object):
         truth = [1.0e2, 1.0e4, 100.0, np.nan]
 
         for xx, zz in zip(tests, truth):
-            yy = math_core.interp(xx, xo, yo, **kw)
+            yy = interpolate.interp(xx, xo, yo, **kw)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
                 assert_true(np.isnan(yy))
@@ -598,7 +598,7 @@ class Test_Interp(object):
         truth = [-15.0, -25.0, 100.0, np.nan]
 
         for xx, zz in zip(tests, truth):
-            yy = math_core.interp(xx, xo, yo, **kw)
+            yy = interpolate.interp(xx, xo, yo, **kw)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
                 assert_true(np.isnan(yy))
@@ -618,7 +618,7 @@ class Test_Interp(object):
         truth = [3.0e-1, 3.0e2, np.nan, 100.0]
 
         for xx, zz in zip(tests, truth):
-            yy = math_core.interp(xx, xo, yo, **kw)
+            yy = interpolate.interp(xx, xo, yo, **kw)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
                 assert_true(np.isnan(yy))
@@ -658,8 +658,8 @@ class Test_Interp_Func_Linear(object):
                     if ylog:
                         yo = np.power(10.0, yo)
 
-                    y1 = math_core.interp(xx, xo, yo, valid=False, **kw)
-                    y2 = math_core.interp_func(xo, yo, kind='linear', bounds_error=False, **kw)(xx)
+                    y1 = interpolate.interp(xx, xo, yo, valid=False, **kw)
+                    y2 = interpolate.interp_func(xo, yo, kind='linear', bounds_error=False, **kw)(xx)
                     assert_true(np.allclose(y1, y2))
 
         return
@@ -676,7 +676,7 @@ class Test_Interp_Func_Linear(object):
         truth = [15.0, 25.0, np.nan, 100.0]
 
         for xx, zz in zip(tests, truth):
-            yy = math_core.interp_func(xo, yo, **kw)(xx)
+            yy = interpolate.interp_func(xo, yo, **kw)(xx)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
                 assert_true(np.isnan(yy))
@@ -697,7 +697,7 @@ class Test_Interp_Func_Linear(object):
         truth = [1.0e2, 1.0e4, 100.0, np.nan]
 
         for xx, zz in zip(tests, truth):
-            yy = math_core.interp_func(xo, yo, **kw)(xx)
+            yy = interpolate.interp_func(xo, yo, **kw)(xx)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
                 assert_true(np.isnan(yy))
@@ -718,7 +718,7 @@ class Test_Interp_Func_Linear(object):
         truth = [-15.0, -25.0, 100.0, np.nan]
 
         for xx, zz in zip(tests, truth):
-            yy = math_core.interp_func(xo, yo, **kw)(xx)
+            yy = interpolate.interp_func(xo, yo, **kw)(xx)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
                 assert_true(np.isnan(yy))
@@ -739,7 +739,7 @@ class Test_Interp_Func_Linear(object):
         truth = [3.0e-1, 3.0e2, np.nan, 100.0]
 
         for xx, zz in zip(tests, truth):
-            yy = math_core.interp_func(xo, yo, **kw)(xx)
+            yy = interpolate.interp_func(xo, yo, **kw)(xx)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
                 assert_true(np.isnan(yy))
@@ -781,13 +781,13 @@ class Test_Interp_Func_Mono(object):
         options = [True, False]
         for xlog in options:
             for ylog in options:
-                func = math_core.interp_func(xo, yo, xlog=xlog, ylog=ylog, kind='mono')
+                func = interpolate.interp_func(xo, yo, xlog=xlog, ylog=ylog, kind='mono')
                 yn = func(xn)
                 print("xlog = {}, ylog = {}".format(xlog, ylog))
                 assert_true(test_within(xn, yn))
 
                 # 'cubic' should be NON-monotonic, make sure test shows that
-                func = math_core.interp_func(xo, yo, xlog=xlog, ylog=ylog, kind='cubic')
+                func = interpolate.interp_func(xo, yo, xlog=xlog, ylog=ylog, kind='cubic')
                 yn = func(xn)
                 assert_false(test_within(xn, yn))
 

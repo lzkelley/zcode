@@ -3,6 +3,7 @@
 import warnings
 
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
 import six
 
@@ -74,6 +75,8 @@ def full_extent(ax, pad=0.0, invert=None):
         bbox = _set_extents(use_items, union=True, pad=0.0, renderer=rend)
     elif isinstance(ax, mpl.legend.Legend):
         bbox = ax.get_frame().get_bbox()
+    elif isinstance(ax, mpl.text.Text):
+        bbox = ax.get_tightbbox(plt.gcf().canvas.get_renderer())
     else:
         err_str = "Unrecognized type of `ax` = '{}'.  Currently support axes and legends.".format(
             type(ax))
