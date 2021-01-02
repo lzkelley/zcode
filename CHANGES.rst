@@ -41,6 +41,11 @@ Future / To-Do
 Current
 -------
 
+
+
+[0.1.2] - 2021/01/02
+--------------------
+
 - Moved `notebooks` from inside internal `zcode/` to root directory.
 - `notebooks/`
   - `math_numeric.ipynb`  [NEW-FILE]
