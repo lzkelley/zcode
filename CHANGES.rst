@@ -40,6 +40,13 @@ Future / To-Do
 
 Current
 -------
+
+- Moved `notebooks` from inside internal `zcode/` to root directory.
+- `notebooks/`
+  - `math_numeric.ipynb`  [NEW-FILE]
+    - New notebook for testing `math/numeric.py` functions.
+    - Added tests for `regress()`.
+
 - `constants.py`
   - `SIGMA_TO_FWHM`  [NEW-VARIABLE]
     - Converting from (normal-)standard deviation to full-width at half-maximum (FWHM)
@@ -70,6 +77,9 @@ Current
     - `numeric.py`
         - `cumtrapz_loglog()`
             - BUG: when power-law index is near -1, integral should be nat-log
+        - `regress()` [NEW-FUNCTION]
+            - Perform linear regression on ND data.
+            - Tests added to `math_numeric.ipynb`.
         - `rk4_step()`
             - Allow additional `args` to be passed to integration function.
     - `statistic.py`
