@@ -122,7 +122,7 @@ def arglast(arr, check=True):
 def argfirstlast(arr, **kwargs):
     """Return the indices of the first and last true elements of the given array.
     """
-    return argfirst(arr), arglast(arr)
+    return argfirst(arr, **kwargs), arglast(arr, **kwargs)
 
 
 def argnearest(edges, vals, assume_sorted=False, side=None):
