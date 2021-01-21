@@ -32,14 +32,15 @@ __all__ = [
 ]
 
 
-def conf_fill(ax, xx, yy, ci=None, axis=-1, filter=None, **kwargs):
-    med, conf = zmath.confidence_intervals(yy, ci=ci, axis=axis, filter=filter, return_ci=False)
+def conf_fill(ax, xx, yy, percs=None, sigma=None, axis=-1, filter=None, **kwargs):
+    med, conf = zmath.confidence_intervals(
+        yy, percs=percs, sigma=sigma, axis=axis, filter=filter, return_ci=False)
     rv = plot_conf_fill(ax, xx, med, conf, **kwargs)
     return rv
 
 
 def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, extend=None,
-                   fill=None, invert=False, **kwargs):
+                   fill=None, invert=False, bg=False, **kwargs):
     """Given bin edges and histogram-like values, plot a histogram.
 
     Arguments
@@ -88,8 +89,12 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
 
     # Select positive values
     if positive:
-        xval = np.ma.masked_where(yval < 0.0, xval)
-        yval = np.ma.masked_where(yval < 0.0, yval)
+        # xval = np.ma.masked_where(yval <= 0.0, xval)
+        # yval = np.ma.masked_where(yval <= 0.0, yval)
+        idx = (yval > 0.0)
+        xval = xval[idx]
+        yval = yval[idx]
+        print("hello")
 
     if invert:
         temp = np.array(xval)
@@ -97,7 +102,10 @@ def plot_hist_line(ax, edges, hist, yerr=None, nonzero=False, positive=False, ex
         yval = temp
 
     # Plot Histogram
-    line, = ax.plot(xval, yval, **kwargs)
+    if bg:
+        line = plot_bg(ax, xval, yval, **kwargs)
+    else:
+        line, = ax.plot(xval, yval, **kwargs)
 
     # Add yerror-bars
     if yerr is not None:

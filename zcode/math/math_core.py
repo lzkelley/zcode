@@ -45,7 +45,7 @@ __all__ = [
     'around', 'array_str', 'asBinEdges',
     'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
     'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
-    'indsWithin', 'isnumeric', 'midpoints', 'minmax',  'mono', 'limit',
+    'isnumeric', 'midpoints', 'minmax',  'mono',
     'ordered_groups', 'really1d', 'renumerate', 'roll',
 
     'rotation_matrix_between_vectors', 'rotation_matrix_about',
@@ -57,7 +57,9 @@ __all__ = [
     '_infer_scale', '_fracToInt',
     # DEPRECATED
     'zenum'
+    # 'limit', 'indsWithin',
 ]
+
 
 from zcode import utils
 
@@ -572,6 +574,7 @@ def groupDigitized(arr, bins, edges='right'):
     return groups
 
 
+'''
 def indsWithin(vals, extr, edges=True):
     """Find the indices of the input array which are within the given extrema.
     """
@@ -583,6 +586,7 @@ def indsWithin(vals, extr, edges=True):
         inds = np.where((vals > bnds[0]) & (vals < bnds[1]))[0]
 
     return inds
+'''
 
 
 def isnumeric(val):
@@ -714,7 +718,11 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     # If there are no elements (left), return `prev` (`None` if not provided)
     if np.size(data) == 0:
         msg = "" if filter is None else " after filtering"
-        logging.warning("zcode.math.math_core:minmax() :: Empty `data` array{}!".format(msg))
+        msg = "zcode.math.math_core:minmax() :: Empty `data` array{}!".format(msg)
+        # NOTE: this should be `warnings.warn` instead of `logging.warning` so that it can be
+        #       caught by internal calling funtions.  BUG: could be improved!
+        # logging.warning(msg)
+        warnings.warn(msg)
         return prev
 
     # Find extrema
@@ -803,6 +811,7 @@ def mono(arr, type='g', axis=-1):
     return retval
 
 
+'''
 def limit(val, arr):
     """Limit the given value(s) to given bounds.
 
@@ -827,6 +836,7 @@ def limit(val, arr):
     # Enforce upper bound
     new = np.minimum(new, extr[1])
     return new
+'''
 
 
 def ordered_groups(values, targets, inds=None, dir='above', include=False):
@@ -1287,7 +1297,7 @@ def spacing_composite(comp_edges, scale, dex=None, num=None, **kwargs):
     elif np.isscalar(dex):
         dex = [dex for ii in range(nsegs)]
     elif len(dex) != nsegs:
-        raise ValueError("Length mismatch between `scale` and `dex`!")
+        raise ValueError("Length mismatch between `scale` ({}) and `dex` ({})!".format(scale, dex))
 
     if num is None:
         num = [None for ii in range(nsegs)]
@@ -1558,7 +1568,8 @@ def within(vals, extr, edges=True, all=False, inv=False, close=None):
         extr_bnds = [ex for ex in extr]
         extr_bnds[0] = -np.inf if (extr_bnds[0] is None) else extr_bnds[0]
         extr_bnds[1] = +np.inf if (extr_bnds[1] is None) else extr_bnds[1]
-        if np.diff(extr_bnds) <= 0.0:
+        extr_bnds = np.sort([ex for ex in extr_bnds])
+        if np.diff(extr_bnds) < 0.0:
             err = "Extrema values are not ordered!  '{}' ==> '{}'".format(extr, extr_bnds)
             raise ValueError(err)
     else:

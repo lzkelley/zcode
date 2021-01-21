@@ -112,6 +112,7 @@ _SCATTER_POINTS = 1
 def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
           xscale='log', xlabel='', xlim=None,
           yscale='log', ylabel='', ylim=None,
+          widths=None, heights=None,
           left=None, bottom=None, right=None, top=None, hspace=None, wspace=None,
           grid=True, **kwargs):
 
@@ -125,6 +126,14 @@ def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze
             scales[ii] = 'linear'
 
     xscale, yscale = scales
+
+    if (widths is not None) or (heights is not None):
+        gridspec_kw = dict()
+        if widths is not None:
+            gridspec_kw['width_ratios'] = widths
+        if heights is not None:
+            gridspec_kw['height_ratios'] = heights
+        kwargs['gridspec_kw'] = gridspec_kw
 
     fig, axes = plt.subplots(figsize=figsize, squeeze=False, ncols=ncols, nrows=nrows,
                              sharex=sharex, sharey=sharey, **kwargs)
@@ -757,7 +766,7 @@ def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, **k
         x_d, _ = ax.transAxes.transform([x, 0.0])
         x_d, _ = ax.transData.inverted().transform([x_d, 0.0])
         inds = np.argsort(xdata)
-        y_d = zmath.interp(x_d, xdata[inds], ydata[inds], xlog=xlog, ylog=ylog)
+        y_d = zmath.interp(x_d, np.array(xdata)[inds], np.array(ydata)[inds], xlog=xlog, ylog=ylog)
     elif (x is None) and (y is not None):
         # convert from axes to pixels
         _, y_p = ax.transAxes.transform([0.0, y])
