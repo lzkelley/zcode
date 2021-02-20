@@ -102,23 +102,29 @@ def argextrema(arr, type, filter=None):
     return ind
 
 
-def argfirst(arr, check=True, **kwargs):
+def argfirst(arr, convert=True, check=True, **kwargs):
     """Return the index of the first true element of the given array.
     """
-    if check and not np.any(arr):
-        raise ValueError("No elements of given array are true!")
-    return np.argmax(arr, **kwargs)
+    if convert:
+        arr = np.asarray(arr).astype(bool)
+    sel = np.argmax(arr, **kwargs)
+    if check and (not arr[sel]):
+        return None
+    return sel
 
 
-def arglast(arr, check=True):
+def arglast(arr, convert=True, check=True):
     """Return the index of the last true element of the given array.
     """
+    if convert:
+        arr = np.asarray(arr).astype(bool)
     if np.ndim(arr) != 1:
         raise ValueError("`arglast` not yet supported for ND != 1 arrays!")
-    if check and not np.any(arr):
-        raise ValueError("No elements of given array are true!")
-    size = arr.size - 1
-    return size - np.argmax(arr[::-1])
+    sel = arr.size - 1
+    sel = sel - np.argmax(arr[::-1])
+    if check and (not arr[sel]):
+        return None
+    return sel
 
 
 def argfirstlast(arr, **kwargs):
