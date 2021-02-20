@@ -36,6 +36,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import six
 
 import os
+import copy
 import logging
 import warnings
 
@@ -1086,7 +1087,7 @@ def smap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
         if cmap is None:
             cmap = 'jet'
         if isinstance(cmap, six.string_types):
-            cmap = plt.get_cmap(cmap)
+            cmap = copy.copy(plt.get_cmap(cmap))
 
     # Select a truncated subsection of the colormap
     if (left is not None) or (right is not None):
