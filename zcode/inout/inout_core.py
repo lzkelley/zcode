@@ -945,7 +945,8 @@ def frac_str(*args, **kwargs):
 
 def tqdm(*args, **kwargs):
     import tqdm
-    tqdm_method = tqdm.tqdm_notebook if environment_is_jupyter() else tqdm.tqdm
+    import tqdm.notebook
+    tqdm_method = tqdm.notebook.tqdm if environment_is_jupyter() else tqdm.tqdm
     return tqdm_method(*args, **kwargs)
 
 
