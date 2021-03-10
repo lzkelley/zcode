@@ -43,7 +43,8 @@ import scipy.interpolate  # noqa
 __all__ = [
     'argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
     'around', 'array_str', 'asBinEdges',
-    'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
+    'broadcast', 'broadcastable', 'broadcast_1d', 'contiguousInds', 'edges_from_cents',
+    'expand_broadcastable',
     'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
     'isnumeric', 'midpoints', 'minmax',  'mono',
     'ordered_groups', 'really1d', 'renumerate', 'roll',
@@ -102,29 +103,35 @@ def argextrema(arr, type, filter=None):
     return ind
 
 
-def argfirst(arr, check=True, **kwargs):
+def argfirst(arr, convert=True, check=True, **kwargs):
     """Return the index of the first true element of the given array.
     """
-    if check and not np.any(arr):
-        raise ValueError("No elements of given array are true!")
-    return np.argmax(arr, **kwargs)
+    if convert:
+        arr = np.asarray(arr).astype(bool)
+    sel = np.argmax(arr, **kwargs)
+    if check and (not arr[sel]):
+        return None
+    return sel
 
 
-def arglast(arr, check=True):
+def arglast(arr, convert=True, check=True):
     """Return the index of the last true element of the given array.
     """
+    if convert:
+        arr = np.asarray(arr).astype(bool)
     if np.ndim(arr) != 1:
         raise ValueError("`arglast` not yet supported for ND != 1 arrays!")
-    if check and not np.any(arr):
-        raise ValueError("No elements of given array are true!")
-    size = arr.size - 1
-    return size - np.argmax(arr[::-1])
+    sel = arr.size - 1
+    sel = sel - np.argmax(arr[::-1])
+    if check and (not arr[sel]):
+        return None
+    return sel
 
 
 def argfirstlast(arr, **kwargs):
     """Return the indices of the first and last true elements of the given array.
     """
-    return argfirst(arr), arglast(arr)
+    return argfirst(arr, **kwargs), arglast(arr, **kwargs)
 
 
 def argnearest(edges, vals, assume_sorted=False, side=None):
@@ -388,6 +395,27 @@ def broadcastable(*args):
     return outs
 
 
+def expand_broadcastable(*args):
+    shapes = [np.array(np.shape(aa)) for aa in args]
+    # make sure each shape is an array of the same size
+    try:
+        # use ``dtype=object`` to avoid deprecation (warning), but it should still have the same effect
+        np.array(shapes, dtype=object) * 2.0
+    except:
+        raise ValueError("could not broadcast together shapes: {}!".format(shapes))
+
+    ndim = len(shapes[0])
+    new_shape = np.ones(ndim, dtype=int)
+    for sh in shapes:
+        test = (sh == new_shape) | (sh == 1) | (new_shape == 1)
+        if not np.all(test):
+            raise ValueError("Incompatible shapes!  {}".format(shapes))
+        new_shape = np.max([new_shape, sh], axis=0)
+
+    outs = [aa * np.ones(new_shape, dtype=np.asarray(aa).dtype) for aa in args]
+    return outs
+
+
 def broadcast(*args):
     """Broadcast N, 1D arrays into N, ND arrays.
 
@@ -416,6 +444,22 @@ def broadcast(*args):
     # Insert broadcasted scalars appropriately
     outs = np.insert(outs, np.where(idx)[0], sca_args, axis=0)
 
+    return outs
+
+
+def broadcast_1d(*args):
+    if np.any([np.ndim(aa) not in [0, 1] for aa in args]):
+        raise ValueError("All arguments must be scalar or 1D!")
+    size = [np.shape(aa)[0] for aa in args if np.ndim(aa) > 0]
+    if len(size) == 0:
+        return args
+    else:
+        if not np.all(np.array(size) == size[0]):
+            raise ValueError("All 1D arrays must be the same size!")
+        size = size[0]
+        
+    outs = [np.asarray(aa) for aa in args]
+    outs = [dd * np.ones(size, dd.dtype) for dd in outs]
     return outs
 
 
