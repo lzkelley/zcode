@@ -51,7 +51,7 @@ from zcode import utils
 from zcode.plot.layout import _loc_str_to_pars, _parse_align
 from zcode.plot import _PAD
 
-__all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
+__all__ = ['axis_next_color', 'figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
            'unifyAxesLimits', 'color_cycle', 'get_norm',
            'smap', 'color_set', 'set_grid', 'save_fig',
@@ -107,6 +107,12 @@ _HANDLE_LENGTH = 2.5
 _HANDLE_PAD = 0.6
 _LEGEND_COLUMN_SPACING = 1.2
 _SCATTER_POINTS = 1
+
+
+def axis_next_color(ax=None):
+    if ax is None:
+        ax = plt.gca()
+    return ax._get_lines.get_next_color()
 
 
 def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
@@ -1086,7 +1092,8 @@ def smap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
         if cmap is None:
             cmap = 'jet'
         if isinstance(cmap, six.string_types):
-            cmap = plt.get_cmap(cmap)
+            import copy
+            cmap = copy.copy(plt.get_cmap(cmap))
 
     # Select a truncated subsection of the colormap
     if (left is not None) or (right is not None):
@@ -1385,7 +1392,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     return
 
 
-def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
+def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False, sign=False):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
@@ -1402,6 +1409,8 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
         Include the mantissa even if it is '1[.0...]'.
     zero : bool
         If the value is uniformly '0.0', write it as such (instead of 10^-inf).
+    sign : bool
+        Include the sign (i.e. '+') on the mantissa even when positive.
 
     Returns
     -------
@@ -1424,7 +1433,8 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
     # Construct Mantissa String
     # --------------------------------
     if use_man:
-        str_man = "{0:.{1:d}f}".format(val_man, man)
+        _sign = '+' if sign else ''
+        str_man = "{0:{2}.{1:d}f}".format(val_man, man, _sign)
     else:
         str_man = ""
     # If the mantissa is '1' (or '1.0' or '1.00' etc), dont write it
