@@ -3,6 +3,7 @@ numpy
 astropy
 scipy
 sympy
+tqdm
 six
 future
 nose
