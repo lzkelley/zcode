@@ -286,14 +286,14 @@ def around(val, decimals=0, scale='log', dir='near'):
         useval = np.around(useval, decimals)
     # Round up
     elif dir_int == +1:
-        useval *= dpow
+        useval = useval * dpow
         useval = np.ceil(useval)
-        useval /= dpow
+        useval = useval / dpow
     # Round down
     elif dir_int == -1:
-        useval *= dpow
+        useval = useval * dpow
         useval = np.floor(useval)
-        useval /= dpow
+        useval = useval / dpow
 
     rnd = useval * np.power(10.0, exp)
     return rnd
@@ -1369,7 +1369,7 @@ def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=T
         format = _guess_str_format_from_range(arr)
 
     # Create the style specification
-    form = "{{{}}}".format(format)
+    form = "{{:{}}}".format(format.strip(":"))
 
     arr_str = _str_array_1d(arr, beg, end, form, delim)
     if log and label_log:
