@@ -43,7 +43,8 @@ import scipy.interpolate  # noqa
 __all__ = [
     'argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
     'around', 'array_str', 'asBinEdges',
-    'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
+    'broadcast', 'broadcastable', 'broadcast_1d', 'contiguousInds', 'edges_from_cents',
+    'expand_broadcastable',
     'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
     'isnumeric', 'midpoints', 'minmax',  'mono',
     'ordered_groups', 'really1d', 'renumerate', 'roll',
@@ -394,6 +395,27 @@ def broadcastable(*args):
     return outs
 
 
+def expand_broadcastable(*args):
+    shapes = [np.array(np.shape(aa)) for aa in args]
+    # make sure each shape is an array of the same size
+    try:
+        # use ``dtype=object`` to avoid deprecation (warning), but it should still have the same effect
+        np.array(shapes, dtype=object) * 2.0
+    except:
+        raise ValueError("could not broadcast together shapes: {}!".format(shapes))
+
+    ndim = len(shapes[0])
+    new_shape = np.ones(ndim, dtype=int)
+    for sh in shapes:
+        test = (sh == new_shape) | (sh == 1) | (new_shape == 1)
+        if not np.all(test):
+            raise ValueError("Incompatible shapes!  {}".format(shapes))
+        new_shape = np.max([new_shape, sh], axis=0)
+
+    outs = [aa * np.ones(new_shape, dtype=np.asarray(aa).dtype) for aa in args]
+    return outs
+
+
 def broadcast(*args):
     """Broadcast N, 1D arrays into N, ND arrays.
 
@@ -422,6 +444,22 @@ def broadcast(*args):
     # Insert broadcasted scalars appropriately
     outs = np.insert(outs, np.where(idx)[0], sca_args, axis=0)
 
+    return outs
+
+
+def broadcast_1d(*args):
+    if np.any([np.ndim(aa) not in [0, 1] for aa in args]):
+        raise ValueError("All arguments must be scalar or 1D!")
+    size = [np.shape(aa)[0] for aa in args if np.ndim(aa) > 0]
+    if len(size) == 0:
+        return args
+    else:
+        if not np.all(np.array(size) == size[0]):
+            raise ValueError("All 1D arrays must be the same size!")
+        size = size[0]
+        
+    outs = [np.asarray(aa) for aa in args]
+    outs = [dd * np.ones(size, dd.dtype) for dd in outs]
     return outs
 
 
