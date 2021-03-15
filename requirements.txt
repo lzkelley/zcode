@@ -10,3 +10,4 @@ nose
 matplotlib
 seaborn
 scikit-image
+click

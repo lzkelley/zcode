@@ -3,8 +3,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from datetime import datetime
-import numpy as np
 import warnings
+
+import numpy as np
+
+import click
 
 from . import inout_core
 
@@ -31,15 +34,21 @@ class TimeIt:
         if len(name) > 0:
             name += " "
 
-        msg = "{}done after {}".format(name, dur)
+        msg = "{}{} {}".format(
+            click.style(name, fg='magenta'),
+            click.style("done after", fg='black'),
+            click.style(str(dur), fg='red')
+        )
+
         if not self.simple:
             if self.timeonly:
                 beg = beg.time()
                 end = end.time()
 
-            msg += " ({} ==> {})".format(beg, end)
+            msg += click.style(" ({} ==> {})".format(beg, end), fs='black')
 
-        print(msg)
+        # print(msg)
+        click.echo(msg)
         return
 
 
