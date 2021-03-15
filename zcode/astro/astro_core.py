@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np
 
 from zcode.constants import NWTG, SPLC, MPRT, SIGMA_T
+from zcode import utils
 
 __all__ = [
     'dfdt_from_dadt', 'distance', 'dynamical_time',
@@ -210,11 +211,16 @@ def schwarzschild_radius(mass):
     return rs
 
 
-def uniform_inclinations(shape):
+def inclinations_uniform(shape):
     """Generate inclinations (0,pi) uniformly in sin(theta), i.e. spherically.
     """
     inclins = np.arccos(1 - np.random.uniform(0.0, 1.0, shape))
     return inclins
+
+
+def uniform_inclinations(*args, **kwargs):
+    utils.dep_warn("astro_core.uniform_inclinations", newname="astro_core.inclinations_uniform")
+    return inclinations_uniform(*args, **kwargs)
 
 
 def _get_sep_per(mt, sep, per):
