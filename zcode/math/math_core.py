@@ -221,7 +221,7 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
     return idx
 
 
-def around(val, decimals=0, scale='log', dir='near'):
+def around(val, decimals=0, sigfigs=True, dir='near', scale=None):
     """Round the given value to arbitrary decimal points, in any direction.
 
     Perhaps rename `scale` to `sigfigs` or something?  Not really in 'log' scaling...
@@ -232,17 +232,20 @@ def around(val, decimals=0, scale='log', dir='near'):
         Value to be rounded.
     decimals : int
         Number of decimal places at which to round.
-        If `scale` is 'log' and `decimals` is negative, then the nearest order of magnitude
+        If `sigfigs` is 'log' and `decimals` is negative, then the nearest order of magnitude
         is returned, in the direction of `dir`.  NOTE: this rounding is done in log-space.
-    scale : str, {'log', 'lin'}
+    sigfigs : bool
         How to interpret the number of decimals/precision at which to round.
-        +   'log': round to `decimals` number of significant figures.
-        +   'lin': round to `decimals` number of decimal points.
+        +   True : round to `decimals` number of significant figures.
+        +   False: round to `decimals` number of decimal points.
     dir : str, {'near', 'ceil', 'floor'}
         Direction in which to round.
         +   'nearest': use `np.around` to round the nearest 'even' value.
         +   'ceil': use `np.ceil` to round to higher (more positive) values.
         +   'floor': use `np.floor` to round to lower (more negative) values.
+
+    DEPRECATED:
+    scale :
 
     Returns
     -------
@@ -250,10 +253,12 @@ def around(val, decimals=0, scale='log', dir='near'):
         Rounded version of the input `val`.
 
     """
-    from zcode.plot import plot_core
-    islog = plot_core._scale_to_log_flag(scale)
-    if np.size(val) > 1:
-        raise ValueError("Arrays are not yet supported.")
+
+    if scale is not None:
+        warnings.warn("WARNING: `scale` argument is deprecated, use `sigfigs` instead!")
+        # `log` ==> True,  `lin` ==> False
+        import zcode.plot as zplot
+        sigfigs = zplot._scale_to_log_flag(scale)
 
     # Round to nearest ('n'earest)
     if dir.startswith('n'):
@@ -267,11 +272,12 @@ def around(val, decimals=0, scale='log', dir='near'):
     else:
         raise ValueError("Given `dir` = '{}' not supported.".format(dir))
 
-    if islog:
+    if sigfigs:
         useval, exp = frexp10(val)
-        # If `decimals` is negative and ``scale == 'log'``, round to order of magnitude
+        decimals = decimals - 1
+        # If `decimals` is negative and ``sigfigs == 'log'``, round to order of magnitude
         # NOTE: this is done in log-space, i.e. 4.0e-4 rounds to nearest as 1e-4 (not 1e-3)
-        if decimals < 0:
+        if decimals <= 0:
             useval = np.log10(val)
             # Round base-ten power in target direction
             if dir_int == 0:
@@ -457,7 +463,7 @@ def broadcast_1d(*args):
         if not np.all(np.array(size) == size[0]):
             raise ValueError("All 1D arrays must be the same size!")
         size = size[0]
-        
+
     outs = [np.asarray(aa) for aa in args]
     outs = [dd * np.ones(size, dd.dtype) for dd in outs]
     return outs
@@ -1263,10 +1269,17 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
     if filter is None and log_flag:
         filter = '>'
 
+    if (integers is False) or (integers is None):
+        integers = None
+    elif integers is True:
+        integers = 1
+    elif (not _is_integer_scalar(integers)) or (integers == 0):
+        raise ValueError(f"Invalid {integers=} :: Must be `True`, `False` or integer!")
+
     # Find extrema of values
     round = None
     # If only 'integers' (whole numbers) are desired, round extrema to *outside*
-    if integers:
+    if integers is not None:
         round = 0
     span = minmax(data, filter=filter, round=round, round_scale=scale, **kwargs)
     if span is None:
@@ -1283,9 +1296,11 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
             num = DEF_NUM_LIN
 
     # If only 'integers', use 'arange'
-    if integers:
+    if integers is not None:
         if num is not None:
             raise ValueError("`num` does not apply when using `integers` scaling!")
+
+        span = span * integers
 
         # Log-spacing : create each decade manually
         if log_flag:
@@ -1312,6 +1327,8 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
         # Linear spacing
         else:
             spaced = np.arange(span[0], span[1]+1)
+
+        spaced = spaced / integers
 
     # Create spacing between min/max values exactly
     else:
@@ -1792,3 +1809,7 @@ def _is_numeric_scalar(val):
     rv = isinstance(val, (int, float, decimal.Decimal, np.number, np.ndarray))
 
     return rv
+
+
+def _is_integer_scalar(val):
+    return np.issubdtype(type(val), np.integer)

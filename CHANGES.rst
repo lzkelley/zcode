@@ -40,6 +40,15 @@ Future / To-Do
 
 Current
 -------
+- 'math/'
+  - `math_core.py`
+    - `around()`
+      - Enabled for array values.
+      - Deprecate argument `sigfigs` [bool] <== `scale` [str]
+      - Use `decimals` argument to correctly refer to number of significant figures (when using `sigfigs=True`)
+    - `spacing()`
+      - When creating 'intergers' spacings, allow integers to be subdivided some number of times, specified by an integer value to the `intergers` argument.
+        
 
 
 
