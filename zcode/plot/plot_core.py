@@ -36,7 +36,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import six
 
 import os
-import copy
 import logging
 import warnings
 
@@ -54,10 +53,10 @@ from zcode.plot import _PAD
 
 __all__ = ['axis_next_color', 'figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
-           'unifyAxesLimits', 'color_cycle', 'get_norm',
+           'color_cycle', 'get_norm',
            'smap', 'color_set', 'set_grid', 'save_fig',
            'skipTicks', 'saveFigure', 'scientific_notation',
-           'line_style_set', 'line_label',
+           'line_style_set', 'line_label', 'unify_axes_limits',
            '_scale_to_log_flag',
            # Deprecated
            'colormap'
@@ -953,7 +952,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     return leg
 
 
-def unifyAxesLimits(axes, axis='y'):
+def unify_axes_limits(axes, axis='y'):
     """Given a list of axes, set all limits to match global extrema.
     """
 
@@ -1753,6 +1752,11 @@ class MidpointLogNormalize(mpl.colors.LogNorm):
 # ======================
 # ====  DEPRECATED  ====
 # ======================
+
+
+def unifyAxesLimits(*args, **kwargs):
+    utils.dep_warn("unifyAxesLimits", newname="unify_axes_limits")
+    return smap(*args, **kwargs)
 
 
 def colormap(*args, **kwargs):
