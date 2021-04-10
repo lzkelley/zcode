@@ -12,23 +12,26 @@ from zcode.constants import NWTG, SPLC, MPRT, SIGMA_T
 from zcode import utils
 
 __all__ = [
+    'binary_circular_vels',
     'dfdt_from_dadt', 'distance', 'dynamical_time',
     'eddington_accretion', 'eddington_luminosity',
     'kepler_freq_from_sep', 'kepler_sep_from_freq',
     'mtmr_from_m1m2', 'm1m2_from_mtmr', 'orbital_velocities',
     'rad_hill', 'rad_isco', 'rad_isco_spin', 'rad_roche',
-    'uniform_inclinations', 'schwarzschild_radius',
+    'schwarzschild_radius', 'inclinations_uniform',
+    # DEPRECATED ----
+    'uniform_inclinations',
 ]
 
 _SCHW_CONST = 2*NWTG/np.square(SPLC)
 _EDD_CONST = 4.0*np.pi*SPLC*NWTG*MPRT/SIGMA_T
 
-# e.g. Sesana+2004 Eq.36
-#      http://adsabs.harvard.edu/abs/2004ApJ...611..623S
-#      NOTE: THIS IS GW-FREQUENCY, NOT ORBITAL  [2020-05-29]
-# _GW_SRC_CONST = 8 * np.power(NWTG, 5/3) * np.power(np.pi, 2/3) / np.sqrt(10) / np.power(SPLC, 4)
-# _GW_DADT_SEP_CONST = - 64 * np.power(NWTG, 3) / 5 / np.power(SPLC, 5)
-# _GW_DEDT_ECC_CONST = - 304 * np.power(NWTG, 3) / 15 / np.power(SPLC, 5)
+
+def binary_circular_vels(mtot, mrat, prst):
+    vel = kepler_vel_from_freq(mtot, 1/prst)
+    v2 = vel / (1.0 + mrat)
+    v1 = v2 * mrat
+    return np.array([v1, v2])
 
 
 def dfdt_from_dadt(dadt, sma, mtot=None, freq_orb=None):
@@ -60,7 +63,7 @@ def dynamical_time(mass, rad):
 
 
 def eddington_accretion(mass, eps=0.1):
-    """Eddington Accretion rate, $\dot{M}_{Edd} = L_{Edd}/\epsilon c^2$.^
+    """Eddington Accretion rate, $\\dot{M}_{Edd} = L_{Edd}/\\epsilon c^2$.^
 
     Arguments
     ---------
@@ -82,7 +85,11 @@ def eddington_accretion(mass, eps=0.1):
 
 
 def eddington_luminosity(mass, eps=0.1):
+    squeeze = np.isscalar(mass)
+    mass = np.atleast_1d(mass)
     ledd = _EDD_CONST * mass / eps
+    if squeeze:
+        ledd = ledd.squeeze()
     return ledd
 
 
@@ -207,7 +214,11 @@ def rad_roche(sep, mfrac, ecc=0.0):
 
 
 def schwarzschild_radius(mass):
+    squeeze = np.isscalar(mass)
+    mass = np.atleast_1d(mass)
     rs = _SCHW_CONST * mass
+    if squeeze:
+        rs = rs.squeeze()
     return rs
 
 

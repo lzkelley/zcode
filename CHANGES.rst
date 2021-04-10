@@ -40,6 +40,12 @@ Future / To-Do
 
 Current
 -------
+- 'astro/'
+  - `astro_core.py`
+    - `binary_circular_vels()`  [NEW-FUNCTION]
+    - `inclinations_uniform()` <== `uniform_inclinations()`  [DEPRECATION]
+    - Convert args to arrays as needed in `eddington_luminosity()` and `schwarzschild_radius()`
+
 - 'math/'
   - `math_core.py`
     - `around()`
@@ -49,6 +55,10 @@ Current
     - `spacing()`
       - When creating 'intergers' spacings, allow integers to be subdivided some number of times, specified by an integer value to the `intergers` argument.
         
+- 'plot/'
+  - 'plot_core.py'
+    - `unify_axes_limits()` <== `unifyAxesLimits()`  [DEPRECATION]
+    
 
 
 
