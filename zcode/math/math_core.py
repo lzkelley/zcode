@@ -548,6 +548,7 @@ def frexp10(vals):
     ---------
     vals : (N,) array_like of float
         Values to be converted.
+        Zero values give `man=0.0` and `exp=nan`
 
     Returns
     -------
@@ -555,11 +556,22 @@ def frexp10(vals):
         Mantissa.
     exp : (N,) array_like of float
         Exponent
+        
     """
+    squeeze = np.isscalar(vals)
+    vals = np.atleast_1d(vals)
+    zeros = (vals == 0.0)
     # Find exponent of absolute value
-    exp = np.floor(np.log10(np.fabs(vals)))
-    # Positive/negative is still included here
-    man = vals / np.power(10.0, exp)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        exp = np.floor(np.log10(np.fabs(vals)))
+        # Positive/negative is still included here
+        man = vals / np.power(10.0, exp)
+    man[zeros] = 0.0
+    exp[zeros] = np.nan
+    if squeeze:
+        man = man.squeeze()
+        exp = exp.squeeze()
     return man, exp
 
 
