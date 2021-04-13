@@ -47,7 +47,7 @@ __all__ = [
     'expand_broadcastable',
     'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
     'isnumeric', 'midpoints', 'minmax',  'mono',
-    'ordered_groups', 'really1d', 'renumerate', 'roll',
+    'ordered_groups', 'really1d', 'renumerate', 'rescale', 'roll',
 
     'rotation_matrix_between_vectors', 'rotation_matrix_about',
     'xyz_to_rpt', 'rpt_to_xyz', 'xyz_to_rtp', 'rtp_to_xyz',
@@ -274,6 +274,9 @@ def around(val, decimals=0, sigfigs=True, dir='near', scale=None):
 
     if sigfigs:
         useval, exp = frexp10(val)
+        # when `val=0.0` ==>  useval=0.0 and exp=nan, set exp to zero instead
+        exp = np.nan_to_num(exp)
+
         decimals = decimals - 1
         # If `decimals` is negative and ``sigfigs == 'log'``, round to order of magnitude
         # NOTE: this is done in log-space, i.e. 4.0e-4 rounds to nearest as 1e-4 (not 1e-3)
@@ -556,7 +559,7 @@ def frexp10(vals):
         Mantissa.
     exp : (N,) array_like of float
         Exponent
-        
+
     """
     squeeze = np.isscalar(vals)
     vals = np.atleast_1d(vals)
@@ -1005,6 +1008,40 @@ def renumerate(arr):
     Same as ``enumerate`` but in reverse order.  Uses iterators, no copies made.
     """
     return zip(reversed(range(len(arr))), reversed(arr))
+
+
+def rescale(arr, span=None, log=False):
+    """Rescale the given values to a new span.
+
+    Arguments
+    ---------
+    arr : array_like (N,)
+    span : None or (2,)
+        New span of output values.
+        If `None`, the new span is [0.0, 1.0]
+    log : bool,
+        Use the log10 of the input values.
+
+    Returns
+    -------
+    out : array_like (N,)
+        rescaled values spanning the range `span`.
+
+    """
+    assert (np.size(span) == 2) or (span is None)
+    assert (len(arr) > 0)
+
+    # rescale to [0.0, 1.0]
+    if log:
+        out = np.log10(arr)
+    else:
+        out = np.asarray(out)
+    out = out - out.min()
+    out = out / out.max()
+    # rescale to new span
+    if span is not None:
+        out = span[0] + out * (span[1] - span[0])
+    return out
 
 
 def roll(a, r, cat=None, axis=-1):

@@ -54,6 +54,8 @@ Current
       - Use `decimals` argument to correctly refer to number of significant figures (when using `sigfigs=True`)
     - `frexp10()`
       - Handle the case of `0.0` values.  Set mantissa to 0.0 and exp to np.nan.
+    - `rescale()`  [NEW-FUNCTION]
+      - Rescale given array range to new span.
     - `spacing()`
       - When creating 'intergers' spacings, allow integers to be subdivided some number of times, specified by an integer value to the `intergers` argument.
         
