@@ -30,6 +30,8 @@ Future / To-Do
         +   statistic.py
             -   `percentiles()`
                 -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
+            - `random_power()`
+              - BUG: negative extrema values break ``pdf_index=-1``
     -   plot/
         +   Hist2D.py
             -   Add ability to plot central axes as scatter plot, with projected histograms
@@ -54,6 +56,8 @@ Current
       - Use `decimals` argument to correctly refer to number of significant figures (when using `sigfigs=True`)
     - `frexp10()`
       - Handle the case of `0.0` values.  Set mantissa to 0.0 and exp to np.nan.
+    - `minmax()`
+      - Add `fraction` argument to set one extrema to a fraction of the other.
     - `rescale()`  [NEW-FUNCTION]
       - Rescale given array range to new span.
     - `spacing()`

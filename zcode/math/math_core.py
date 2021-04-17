@@ -718,7 +718,7 @@ def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
 
 
 def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=None,
-           round=None, round_scale='log', type=None, percs=None):
+           round=None, round_scale='log', type=None, percs=None, fraction=None):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
@@ -746,6 +746,13 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
         The number of significant figures to which to round the min and max values.
     round_scale : str, {'lin', 'log'}
         In which scaling to round in.
+    type :
+    percs :
+    fraction : (2,) of scalar and `None`,
+        Set one of the extrema to a given fraction of the other.
+        One value must be None, and the other value the desired fraction.
+        ``[lo, None]`` sets the minimum to be ``lo * maximum``
+        ``[None, hi]`` sets the maximum to be ``hi * minimum``
 
     Returns
     -------
@@ -762,6 +769,10 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
         assert len(prev) == 2, "`prev` must have length 2."
     if limit is not None:
         assert len(limit) == 2, "`limit` must have length 2."
+    if fraction is not None:
+        assert len(fraction) == 2, "`fraction` must have length 2!"
+        if np.count_nonzero([ff is None for ff in fraction]) != 1:
+            raise ValueError("`fraction` must have one non-`None` value!")
 
     # Pre-flatten the input data (NOTE: `comparison_filter` fails for jagged arrays!)
     try:
@@ -843,6 +854,14 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
     if round is not None:
         minmax[0] = around(minmax[0], round, round_scale, 'floor')
         minmax[1] = around(minmax[1], round, round_scale, 'ceil')
+
+    # Set one of the extrema to a given fraction of the other
+    if fraction is not None:
+        lo, hi = fraction
+        if lo is not None:
+            minmax[0] = lo * minmax[1]
+        if hi is not None:
+            minmax[1] = hi * minmax[0]
 
     return minmax
 
@@ -1010,7 +1029,7 @@ def renumerate(arr):
     return zip(reversed(range(len(arr))), reversed(arr))
 
 
-def rescale(arr, span=None, log=False):
+def rescale(arr, span=None, log=False, qrange=None, clip=False):
     """Rescale the given values to a new span.
 
     Arguments
@@ -1030,17 +1049,36 @@ def rescale(arr, span=None, log=False):
     """
     assert (np.size(span) == 2) or (span is None)
     assert (len(arr) > 0)
+    from zcode.math.statistic import quantiles
 
-    # rescale to [0.0, 1.0]
     if log:
         out = np.log10(arr)
     else:
-        out = np.asarray(out)
-    out = out - out.min()
-    out = out / out.max()
+        out = np.asarray(arr)
+
+    if qrange is None:
+        qrange = [0.0, 1.0]
+    elif np.isscalar(qrange):
+        assert 0.0 < qrange < 1.0
+        qrange = (1.0 - qrange)/2.0
+        qrange = [qrange, 1 - qrange]
+    elif len(qrange) != 2:
+        raise ValueError()
+
+    extr = quantiles(out, qrange)
+
+    # rescale to [0.0, 1.0]
+    out = (out - extr[0]) / (extr[1] - extr[0])
     # rescale to new span
     if span is not None:
         out = span[0] + out * (span[1] - span[0])
+
+    if clip is True:
+        out = np.clip(out, *np.sort(span))
+    elif clip is not False:
+        assert len(clip) == 2
+        out = np.clip(out, *np.sort(clip))
+
     return out
 
 
@@ -1304,6 +1342,11 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
         otherwise `N` is how many whole numbers there are between the given extrema (see `integers`)
         argument above.
 
+    Notes
+    -----
+    * To get even spacing from zero (i.e. x[1] - x[0] = x[0] - 0), the lower-bound must be:
+      lo = hi / (2**n)  for `n` points
+
     """
     DEF_NUM_LIN = 20
 
@@ -1430,6 +1473,24 @@ def spacing_composite(comp_edges, scale, dex=None, num=None, **kwargs):
     edges = np.concatenate(edges)
 
     return edges
+
+
+'''
+def spacing_proportional(extr, num, zoom=2.0):
+    num = num + num%2   # make sure number is even
+    xx = np.linspace(-1, 1, num)
+    # This is the function the spacing is (inversely) proportional to (triangle)
+    xx = (zoom - 1.0)*(1.0 - np.fabs(xx)) + 1.0
+    # frequency of points proportional to function (so invert)
+    xx = 1.0 / xx
+    xx = np.cumsum(xx)
+    # add zero to make symmetric
+    xx = np.concatenate([[0.0], xx])
+    xx = zmath.rescale(xx, [-extr, extr])
+    # make center points at pi/2
+    xx = np.pi/2.0 - xx
+    return xx
+'''
 
 
 def array_str(*args, **kwargs):
