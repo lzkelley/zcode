@@ -65,6 +65,12 @@ Current
         
 - 'plot/'
   - 'plot_core.py'
+    - `color_lightness()`  [NEW-FUNCTION]
+      - Adjust the lightness (in HLS sense) of the given color.
+    - `scientific_notation()`
+      - BUG: fix boolean logic for determining when to include exponent and mantissa
+    - `smap()`
+      - New default cmap is 'Spectral'
     - `unify_axes_limits()` <== `unifyAxesLimits()`  [DEPRECATION]
     
 
