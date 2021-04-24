@@ -852,8 +852,12 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
 
     # Round the min/max results to given number of sig-figs
     if round is not None:
-        minmax[0] = around(minmax[0], round, round_scale, 'floor')
-        minmax[1] = around(minmax[1], round, round_scale, 'ceil')
+        if round_scale.startswith('log'):
+            sigfigs = True
+        else:
+            sigfigs = False
+        minmax[0] = around(minmax[0], decimals=round, sigfigs=sigfigs, dir='floor')
+        minmax[1] = around(minmax[1], decimals=round, sigfigs=sigfigs, dir='ceil')
 
     # Set one of the extrema to a given fraction of the other
     if fraction is not None:
