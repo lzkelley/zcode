@@ -42,7 +42,7 @@ import scipy.interpolate  # noqa
 
 __all__ = [
     'argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
-    'around', 'array_str', 'asBinEdges',
+    'around', 'around_str', 'array_str', 'asBinEdges',
     'broadcast', 'broadcastable', 'broadcast_1d', 'contiguousInds', 'edges_from_cents',
     'expand_broadcastable',
     'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
@@ -221,7 +221,7 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
     return idx
 
 
-def around(val, decimals=0, sigfigs=True, dir='near', scale=None):
+def around(val, decimals=2, sigfigs=True, dir='near', scale=None):
     """Round the given value to arbitrary decimal points, in any direction.
 
     Perhaps rename `scale` to `sigfigs` or something?  Not really in 'log' scaling...
@@ -280,7 +280,7 @@ def around(val, decimals=0, sigfigs=True, dir='near', scale=None):
         decimals = decimals - 1
         # If `decimals` is negative and ``sigfigs == 'log'``, round to order of magnitude
         # NOTE: this is done in log-space, i.e. 4.0e-4 rounds to nearest as 1e-4 (not 1e-3)
-        if decimals <= 0:
+        if decimals < 0:
             useval = np.log10(val)
             # Round base-ten power in target direction
             if dir_int == 0:
@@ -313,6 +313,53 @@ def around(val, decimals=0, sigfigs=True, dir='near', scale=None):
 
     rnd = useval * np.power(10.0, exp)
     return rnd
+
+
+def around_str(vals, decimals=2, sigfigs=True, scientific=[-3, 3], **kwargs):
+    """Round the given values and return them as a string with that precision included.
+    """
+    squeeze = np.isscalar(vals)
+    vals = np.atleast_1d(vals)
+    vals = around(vals, decimals=decimals, sigfigs=sigfigs, **kwargs)
+    strs = []
+    if scientific is True:
+        scientific = [0, 0]
+    elif np.isscalar(scientific):
+        scientific = np.fabs(scientific)
+        scientific = [-scientific, scientific]
+    elif len(scientific) != 2:
+        raise ValueError()
+
+    # Rounding based on significant figures
+    if sigfigs:
+        for vv in vals:
+            # Determine order-of-magnitude
+            order = np.floor(np.log10(vv)).astype(int)
+            if (order < scientific[0]) or (order > scientific[1]):
+                order = np.clip(decimals - 1, 0, None)
+                form = f"{{:.{order}e}}"
+            else:
+                # If more digits than desired accuracy, no decimal values
+                if order > decimals:
+                    form = "{:.0f}"
+                # Number of decimals based on::  accuracy = order + decimals + 1
+                #    Note the `+1` is because order=0 is a single digit
+                else:
+                    order = decimals - 1 - order
+                    order = np.clip(order, 0, None)
+                    form = f"{{:.{order}f}}"
+
+            ss = form.format(vv)
+            strs.append(ss)
+
+    # Rounding based on decimal points
+    else:
+        strs = [f"{{:.{decimals}f}}".format(vv) for vv in vals]
+
+    if squeeze:
+        strs = strs[0]
+
+    return strs
 
 
 def asBinEdges(bins, data, scale='lin'):

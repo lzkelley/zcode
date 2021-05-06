@@ -54,6 +54,8 @@ Current
       - Enabled for array values.
       - Deprecate argument `sigfigs` [bool] <== `scale` [str]
       - Use `decimals` argument to correctly refer to number of significant figures (when using `sigfigs=True`)
+    - `around_str()`  [NEW-FUNCTION]
+      - Perform rounding and also format as appropriate type of string value
     - `frexp10()`
       - Handle the case of `0.0` values.  Set mantissa to 0.0 and exp to np.nan.
     - `minmax()`
