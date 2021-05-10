@@ -72,7 +72,7 @@ __all__ = ["ABmag_to_flux", "abs_mag_to_lum", "flux_to_mag", "lum_to_abs_mag", "
 def _get_units_type(type):
     try:
         units = UNITS[type]
-    except Exception as err:
+    except Exception:
         raise ValueError("Unrecognized `type` = '{}'".format(type))
 
     return units, type
@@ -192,8 +192,8 @@ def fnu_to_flambda(fnu, freq=None, wavelength=None):
 
 
 def flambda_to_fnu(flambda, freq=None, wavelength=None):
-    if wavelength is None:
-        wavelength = SPLC / freq
+    if freq is None:
+        freq = SPLC / wavelength
 
-    fnu = flambda * freq**2 / SPLC
+    fnu = flambda * SPLC / freq**2
     return fnu
