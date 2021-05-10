@@ -315,7 +315,7 @@ def around(val, decimals=2, sigfigs=True, dir='near', scale=None):
     return rnd
 
 
-def around_str(vals, decimals=2, sigfigs=True, scientific=[-3, 3], **kwargs):
+def around_str(vals, decimals=2, sigfigs=True, scientific=[-3, 3], sign=False, reference=None, **kwargs):
     """Round the given values and return them as a string with that precision included.
     """
     squeeze = np.isscalar(vals)
@@ -330,31 +330,43 @@ def around_str(vals, decimals=2, sigfigs=True, scientific=[-3, 3], **kwargs):
     elif len(scientific) != 2:
         raise ValueError()
 
-    # Rounding based on significant figures
-    if sigfigs:
-        for vv in vals:
-            # Determine order-of-magnitude
-            order = np.floor(np.log10(vv)).astype(int)
-            if (order < scientific[0]) or (order > scientific[1]):
-                order = np.clip(decimals - 1, 0, None)
-                form = f"{{:.{order}e}}"
+    sign = '+' if sign else ''
+    use_ref = (reference is not None) and (reference != 0.0)
+    if use_ref:
+        order = np.floor(np.log10(np.fabs(reference))).astype(int)
+        sci_flag = (order < scientific[0]) or (order > scientific[1])
+
+    for vv in vals:
+        # Determine order-of-magnitude
+        if not use_ref:
+            order = np.floor(np.log10(np.fabs(vv))).astype(int) if reference != 0.0 else 0
+            sci_flag = (order < scientific[0]) or (order > scientific[1])
+
+        # Rounding based on significant figures
+        if sigfigs:
+            if sci_flag:
+                prec = np.clip(decimals - 1, 0, None)
+                form = f"{{:{sign}.{prec}e}}"
             else:
                 # If more digits than desired accuracy, no decimal values
                 if order > decimals:
-                    form = "{:.0f}"
+                    form = f"{{:{sign}.0f}}"
                 # Number of decimals based on::  accuracy = order + decimals + 1
                 #    Note the `+1` is because order=0 is a single digit
                 else:
-                    order = decimals - 1 - order
-                    order = np.clip(order, 0, None)
-                    form = f"{{:.{order}f}}"
+                    prec = decimals - 1 - order
+                    prec = np.clip(prec, 0, None)
+                    form = f"{{:{sign}.{prec}f}}"
 
-            ss = form.format(vv)
-            strs.append(ss)
+        # Rounding based on decimal points
+        else:
+            if sci_flag:
+                form = f"{{:{sign}.{decimals}e}}"
+            else:
+                form = f"{{:{sign}.{decimals}f}}"
 
-    # Rounding based on decimal points
-    else:
-        strs = [f"{{:.{decimals}f}}".format(vv) for vv in vals]
+        ss = form.format(vv)
+        strs.append(ss)
 
     if squeeze:
         strs = strs[0]
