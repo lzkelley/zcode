@@ -13,7 +13,7 @@ Functions
 -   spacing                  - Create an even spacing between extrema from given data.
 -   asBinEdges               - Create bin-edges if the given `bins` do not already give them.
 -   str_array                 - Create a string representation of a numerical array.
--   sliceForAxis             - Array slicing object which slices only the target axis.
+-   slice_for_axis             - Array slicing object which slices only the target axis.
 -   midpoints                - Return the midpoints between values in the given array.
 -   vecmag                   - find the magnitude/distance of/between vectors.
 -   renumerate               - construct a reverse enumeration iterator.
@@ -33,7 +33,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import warnings
 import numbers
 import logging
-# import six
 
 import numpy as np
 import scipy as sp
@@ -52,12 +51,12 @@ __all__ = [
     'rotation_matrix_between_vectors', 'rotation_matrix_about',
     'xyz_to_rpt', 'rpt_to_xyz', 'xyz_to_rtp', 'rtp_to_xyz',
 
-    'sliceForAxis', 'spacing', 'spacing_composite',
+    'slice_for_axis', 'spacing', 'spacing_composite',
     'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
     'comparison_filter', '_comparison_function',
     '_infer_scale', '_fracToInt',
     # DEPRECATED
-    'zenum'
+    'sliceForAxis', 'zenum'
     # 'limit', 'indsWithin',
 ]
 
@@ -114,6 +113,12 @@ def argfirst(arr, convert=True, check=True, **kwargs):
     return sel
 
 
+def argfirstlast(arr, **kwargs):
+    """Return the indices of the first and last true elements of the given array.
+    """
+    return argfirst(arr, **kwargs), arglast(arr, **kwargs)
+
+
 def arglast(arr, convert=True, check=True):
     """Return the index of the last true element of the given array.
     """
@@ -126,12 +131,6 @@ def arglast(arr, convert=True, check=True):
     if check and (not arr[sel]):
         return None
     return sel
-
-
-def argfirstlast(arr, **kwargs):
-    """Return the indices of the first and last true elements of the given array.
-    """
-    return argfirst(arr, **kwargs), arglast(arr, **kwargs)
 
 
 def argnearest(edges, vals, assume_sorted=False, side=None):
@@ -449,41 +448,6 @@ def asBinEdges(bins, data, scale='lin'):
     return edges
 
 
-def broadcastable(*args):
-    """Expand N, 1D arrays be able to be broadcasted into N, ND arrays.
-
-    e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,1,1`, `1,4,1` and `1,1,2`.
-    """
-    ndim = len(args)
-    assert np.all([1 == np.ndim(aa) for aa in args]), "Each array in `args` must be 1D!"
-
-    cut_ref = [slice(None)] + [np.newaxis for ii in range(ndim-1)]
-    cuts = [np.roll(cut_ref, ii).tolist() for ii in range(ndim)]
-    outs = [aa[tuple(cc)] for aa, cc in zip(args, cuts)]
-    return outs
-
-
-def expand_broadcastable(*args):
-    shapes = [np.array(np.shape(aa)) for aa in args]
-    # make sure each shape is an array of the same size
-    try:
-        # use ``dtype=object`` to avoid deprecation (warning), but it should still have the same effect
-        np.array(shapes, dtype=object) * 2.0
-    except:
-        raise ValueError("could not broadcast together shapes: {}!".format(shapes))
-
-    ndim = len(shapes[0])
-    new_shape = np.ones(ndim, dtype=int)
-    for sh in shapes:
-        test = (sh == new_shape) | (sh == 1) | (new_shape == 1)
-        if not np.all(test):
-            raise ValueError("Incompatible shapes!  {}".format(shapes))
-        new_shape = np.max([new_shape, sh], axis=0)
-
-    outs = [aa * np.ones(new_shape, dtype=np.asarray(aa).dtype) for aa in args]
-    return outs
-
-
 def broadcast(*args):
     """Broadcast N, 1D arrays into N, ND arrays.
 
@@ -531,6 +495,43 @@ def broadcast_1d(*args):
     return outs
 
 
+def broadcastable(*args):
+    """Expand N, 1D arrays be able to be broadcasted into N, ND arrays.
+
+    e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,1,1`, `1,4,1` and `1,1,2`.
+    """
+    ndim = len(args)
+    assert np.all([1 == np.ndim(aa) for aa in args]), "Each array in `args` must be 1D!"
+
+    cut_ref = [slice(None)] + [np.newaxis for ii in range(ndim-1)]
+    cuts = [np.roll(cut_ref, ii).tolist() for ii in range(ndim)]
+    outs = [aa[tuple(cc)] for aa, cc in zip(args, cuts)]
+    return outs
+
+
+def comparison_filter(data, filter, inds=False, value=0.0, finite=True, mask=False, **kwargs):
+    """
+    """
+    if filter is None:
+        return data
+    if not callable(filter):
+        filter = _comparison_function(filter, value=value, **kwargs)
+
+    # Include is-finite check
+    if finite:
+        sel = filter(data) & np.isfinite(data)
+    else:
+        sel = filter(data)
+
+    if inds:
+        return sel
+    else:
+        if mask:
+            return np.ma.masked_where(~sel, data)
+        else:
+            return np.asarray(data)[sel]
+
+
 def contiguousInds(args):
     """Find the longest contiguous segment of positive values in the array.
     """
@@ -562,6 +563,27 @@ def contiguousInds(args):
     return inds
 
 
+def expand_broadcastable(*args):
+    shapes = [np.array(np.shape(aa)) for aa in args]
+    # make sure each shape is an array of the same size
+    try:
+        # use ``dtype=object`` to avoid deprecation (warning), but it should still have the same effect
+        np.array(shapes, dtype=object) * 2.0
+    except:
+        raise ValueError("could not broadcast together shapes: {}!".format(shapes))
+
+    ndim = len(shapes[0])
+    new_shape = np.ones(ndim, dtype=int)
+    for sh in shapes:
+        test = (sh == new_shape) | (sh == 1) | (new_shape == 1)
+        if not np.all(test):
+            raise ValueError("Incompatible shapes!  {}".format(shapes))
+        new_shape = np.max([new_shape, sh], axis=0)
+
+    outs = [aa * np.ones(new_shape, dtype=np.asarray(aa).dtype) for aa in args]
+    return outs
+
+
 def edges_from_cents(cents, scale='lin', log=None):
     if not any([scale.lower().startswith(sc) for sc in ['lin', 'log']]):
         raise ValueError("`scale` must be 'lin' or 'log'!")
@@ -584,23 +606,6 @@ def edges_from_cents(cents, scale='lin', log=None):
         edges = np.power(10.0, edges)
 
     return edges
-
-
-def slice_with_inds_for_axis(arr, inds, axis):
-    """Use an N-1 dimensional array with indices along a particular axis of an N dimensional array
-
-    See: https://stackoverflow.com/a/46103129/230468
-    """
-    if axis < 0:
-        axis += np.ndim(arr)
-
-    new_shape = list(arr.shape)
-    del new_shape[axis]
-
-    grid = np.ogrid[tuple(map(slice, new_shape))]
-    grid.insert(axis, inds)
-
-    return arr[tuple(grid)]
 
 
 def frexp10(vals):
@@ -717,33 +722,41 @@ def isnumeric(val):
     return _is_numeric_scalar(val)
 
 
-def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
+def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=False):
     """Return the midpoints between values in the given array.
 
     If the given array is N-dimensional, midpoints are calculated from the last dimension.
 
     Arguments
     ---------
-        arr : ndarray of scalars,
-            Input array.
-        log : bool,
-            Find midpoints in log-space.
-        frac : float,
-            Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
-        axis : int,
-            Which axis about which to find the midpoints.
+    arr : ndarray of scalars,
+        Input array.
+    scale : str or None,
+        Specify 'lin'[ear] or 'log'[arithmic] midpoints (use either `scale` OR `log` not both).
+        One of ['lin', 'log'].
+        If neither `scale` nor `log` is given, default is `log=True`
+    log : bool or None,
+        Find midpoints in log-space (use either `scale` OR `log` not both)
+        If neither `scale` nor `log` is given, default is `log=True`
+    frac : float,
+        Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
+    axis : int, sequence, or `None`,
+        The axis about which to find the midpoints.  If `None`, find the midpoints along all axes.
+        If a sequence (tuple, list, or array), take the midpoints along each specified axis.
 
     Returns
     -------
-        mids : ndarray of floats,
-            The midpoints of the input array.
-            The resulting shape will be the same as the input array `arr`, except that
-            `mids.shape[axis] == arr.shape[axis]-1`.
+    mids : ndarray of floats,
+        The midpoints of the input array.
+        The resulting shape will be the same as the input array `arr`, except that
+        `mids.shape[axis] == arr.shape[axis]-1`.
 
     """
 
-    if (np.shape(arr)[axis] < 2):
-        raise RuntimeError("Input ``arr`` does not have a valid shape!")
+    if axis is None:
+        axis = [ii for ii in range(np.ndim(arr))]
+    else:
+        axis = np.atleast_1d(axis)
 
     if log is not None:
         if scale is not None:
@@ -757,21 +770,57 @@ def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
 
     # Convert to log-space
     if log_flag:
-        user = np.log10(arr)
+        mids = np.log10(arr)
     else:
-        user = np.array(arr)
+        mids = np.array(arr)
 
-    diff = np.diff(user, axis=axis)
-
-    #     skip the last element, or the last axis
-    cut = sliceForAxis(user, axis=axis, stop=-1)
-    start = user[cut]
-    mids = start + frac*diff
+    # Take the midpoints along each of the desired axes
+    for ax in axis:
+        mids = _midpoints_1d(mids, frac=frac, axis=ax)
 
     if log_flag:
         mids = np.power(10.0, mids)
     if squeeze:
         mids = mids.squeeze()
+
+    return mids
+
+
+def _midpoints_1d(arr, frac=0.5, axis=-1):
+    """Return the midpoints between values in the given array.
+
+    If the given array is N-dimensional, midpoints are calculated from the last dimension.
+
+    Arguments
+    ---------
+    arr : ndarray of scalars,
+        Input array.
+    frac : float,
+        Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
+    axis : int,
+        Which axis about which to find the midpoints.
+
+    Returns
+    -------
+    mids : ndarray of floats,
+        The midpoints of the input array.
+        The resulting shape will be the same as the input array `arr`, except that
+        `mids.shape[axis] == arr.shape[axis]-1`.
+
+    """
+
+    if not np.isscalar(axis):
+        raise ValueError("Input `axis` argument must be an integer less than ndim={np.ndim(arr)}!")
+
+    if (np.shape(arr)[axis] < 2):
+        raise RuntimeError("Input ``arr`` does not have a valid shape!")
+
+    diff = np.diff(arr, axis=axis)
+
+    # skip the last element, or the last axis
+    cut = slice_for_axis(arr, axis=axis, stop=-1)
+    start = arr[cut]
+    mids = start + frac*diff
 
     return mids
 
@@ -1202,14 +1251,6 @@ def roll(a, r, cat=None, axis=-1):
     return res
 
 
-def rotation_matrix_between_vectors(aa, bb):
-    """Construct a rotation matrix that rotates vector `aa` to vector `bb`.
-    """
-    ab = np.matrix(aa + bb)
-    rot = 2*((ab*ab.T) / (ab.T*ab)) - np.eye(3)
-    return rot
-
-
 def rotation_matrix_about(axis, theta):
     """Return the rotation matrix associated with counterclockwise rotation about
     the given axis by theta radians.
@@ -1249,35 +1290,12 @@ def rotation_matrix_about(axis, theta):
     return rot
 
 
-def xyz_to_rpt(xyz):
-    """Convert from cartesian to spherical coordinates.
-
-    Spherical is defined as ``(rad, phi, theta)``, where `phi` is the azimuthal angle (xy),
-    and `theta` is the polar angle, with the +z-axis corresponding to ``theta = 0``.
-
-    NOTE: 3-coordinates must be the zeroth axis.
-
-    Arguments
-    ---------
-    xyz : (3, ...) array of scalar
-        Cartesian coordinate vector.
-
-    Returns
-    -------
-    rpt : (3, ...) array of scalar
-        Spherical coordinate vector, same shape as input.
-
+def rotation_matrix_between_vectors(aa, bb):
+    """Construct a rotation matrix that rotates vector `aa` to vector `bb`.
     """
-    xyz = np.asarray(xyz)
-    if (np.ndim(xyz) < 1) or (np.shape(xyz)[0] != 3):
-        raise ValueError("`xyz` ({}) must have shape (3, ...)!".format(xyz.shape))
-
-    rpt = np.zeros_like(xyz)
-    xy = xyz[0, ...]**2 + xyz[1, ...]**2
-    rpt[0, ...] = np.sqrt(xy + xyz[2, ...]**2)
-    rpt[1, ...] = np.arctan2(xyz[1, ...], xyz[0, ...])
-    rpt[2, ...] = np.arctan2(np.sqrt(xy), xyz[2, ...])
-    return rpt
+    ab = np.matrix(aa + bb)
+    rot = 2*((ab*ab.T) / (ab.T*ab)) - np.eye(3)
+    return rot
 
 
 def rpt_to_xyz(rpt):
@@ -1307,27 +1325,7 @@ def rtp_to_xyz(rtp):
     return rpt_to_xyz(rpt)
 
 
-def xyz_to_rtp(xyz):
-    xyz = np.asarray(xyz)
-    rpt = xyz_to_rpt(xyz)
-    rtp = np.zeros_like(rpt)
-    rtp[0, ...] = rpt[0, ...]
-    rtp[1, ...] = rpt[2, ...]
-    rtp[2, ...] = rpt[1, ...]
-    return rtp
-
-
-def zenum(*arr):
-    utils.dep_warn("zenum", newname="zenumerate")
-    return zenumerate(*arr)
-
-
-def zenumerate(*arr):
-    zipped = zip(*arr)
-    return enumerate(zipped)
-
-
-def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
+def slice_for_axis(arr, axis=-1, start=None, stop=None, step=None):
     """
     Creates an array slicing object which slices only the target axis.
 
@@ -1367,6 +1365,23 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
         cut = slice(start, stop, step)
 
     return cut
+
+
+def slice_with_inds_for_axis(arr, inds, axis):
+    """Use an N-1 dimensional array with indices along a particular axis of an N dimensional array
+
+    See: https://stackoverflow.com/a/46103129/230468
+    """
+    if axis < 0:
+        axis += np.ndim(arr)
+
+    new_shape = list(arr.shape)
+    del new_shape[axis]
+
+    grid = np.ogrid[tuple(map(slice, new_shape))]
+    grid.insert(axis, inds)
+
+    return arr[tuple(grid)]
 
 
 def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
@@ -1630,31 +1645,6 @@ def str_array_neighbors(arr, inds, num=1, **kwargs):
     return rv
 
 
-def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
-    """
-    """
-
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            extr = np.log10(np.fabs(minmax(arr, filter='ne')))
-
-    # string values will raise a `TypeError` exception
-    except (TypeError, AttributeError):
-        return ":"
-
-    if any(extr < -log_limit) or any(extr > log_limit):
-        form = ":.{precision:d}e"
-    elif np.issubdtype(arr.dtype, np.integer) and allow_int:
-        form = ":d"
-    else:
-        form = ":.{precision:d}f"
-
-    form = form.format(precision=prec)
-
-    return form
-
-
 def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
     arr = np.asarray(arr)
     assert np.ndim(arr) == 2, "Only supported for dim 2 arrays!"
@@ -1697,54 +1687,6 @@ def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_lo
 
     return arr_str
 
-
-def _str_array_1d(arr, beg, end, form, delim):
-    arr_str = "["
-    len_arr = arr.size
-
-    # Add the first `first` elements
-    if beg is not None:
-        temp = [form.format(vv) for vv in arr[:beg]]
-        # isinf = [tt in ['nan', 'inf', '-inf'] for tt in temp]
-        # if np.any(isinf) and not np.all(isinf):
-        #     size = len(temp[argfirst(~np.array(isinf))])
-        #     fmt = "{{:^{len:}}}".format(len=size)
-
-        arr_str += delim.join(temp)
-
-    # Include separator unless full array is being printed
-    if (beg is not None) or (end < len_arr):
-        arr_str += "... "
-
-    # Add the last `last` elements
-    if end is not None:
-        arr_str += delim.join([form.format(vv) for vv in arr[-end:]])
-
-    arr_str += "]"
-    return arr_str
-
-
-def _str_array_get_beg_end(sides, size):
-    if sides is None:
-        beg = None
-        end = size
-    elif np.iterable(sides):
-        beg, end = sides
-    else:
-        beg = end = sides
-
-    _beg = 0 if beg is None else beg
-    _end = 0 if end is None else end
-    if _beg + _end >= size:
-        beg = None
-        end = size
-
-    return beg, end
-
-
-# def unify_shapes(*args):
-#
-#
 
 def vecmag(r1, r2=None):
     """Calculate the distance from vector(s) r1 to r2.
@@ -1836,6 +1778,124 @@ def within(vals, extr, edges=True, all=False, inv=False, close=None):
     return retval
 
 
+def xyz_to_rpt(xyz):
+    """Convert from cartesian to spherical coordinates.
+
+    Spherical is defined as ``(rad, phi, theta)``, where `phi` is the azimuthal angle (xy),
+    and `theta` is the polar angle, with the +z-axis corresponding to ``theta = 0``.
+
+    NOTE: 3-coordinates must be the zeroth axis.
+
+    Arguments
+    ---------
+    xyz : (3, ...) array of scalar
+        Cartesian coordinate vector.
+
+    Returns
+    -------
+    rpt : (3, ...) array of scalar
+        Spherical coordinate vector, same shape as input.
+
+    """
+    xyz = np.asarray(xyz)
+    if (np.ndim(xyz) < 1) or (np.shape(xyz)[0] != 3):
+        raise ValueError("`xyz` ({}) must have shape (3, ...)!".format(xyz.shape))
+
+    rpt = np.zeros_like(xyz)
+    xy = xyz[0, ...]**2 + xyz[1, ...]**2
+    rpt[0, ...] = np.sqrt(xy + xyz[2, ...]**2)
+    rpt[1, ...] = np.arctan2(xyz[1, ...], xyz[0, ...])
+    rpt[2, ...] = np.arctan2(np.sqrt(xy), xyz[2, ...])
+    return rpt
+
+
+def xyz_to_rtp(xyz):
+    xyz = np.asarray(xyz)
+    rpt = xyz_to_rpt(xyz)
+    rtp = np.zeros_like(rpt)
+    rtp[0, ...] = rpt[0, ...]
+    rtp[1, ...] = rpt[2, ...]
+    rtp[2, ...] = rpt[1, ...]
+    return rtp
+
+
+def zenumerate(*arr):
+    zipped = zip(*arr)
+    return enumerate(zipped)
+
+
+# ==== Utility Methods ====
+
+
+def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
+    """
+    """
+
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            extr = np.log10(np.fabs(minmax(arr, filter='ne')))
+
+    # string values will raise a `TypeError` exception
+    except (TypeError, AttributeError):
+        return ":"
+
+    if any(extr < -log_limit) or any(extr > log_limit):
+        form = ":.{precision:d}e"
+    elif np.issubdtype(arr.dtype, np.integer) and allow_int:
+        form = ":d"
+    else:
+        form = ":.{precision:d}f"
+
+    form = form.format(precision=prec)
+
+    return form
+
+
+def _str_array_1d(arr, beg, end, form, delim):
+    arr_str = "["
+    len_arr = arr.size
+
+    # Add the first `first` elements
+    if beg is not None:
+        temp = [form.format(vv) for vv in arr[:beg]]
+        # isinf = [tt in ['nan', 'inf', '-inf'] for tt in temp]
+        # if np.any(isinf) and not np.all(isinf):
+        #     size = len(temp[argfirst(~np.array(isinf))])
+        #     fmt = "{{:^{len:}}}".format(len=size)
+
+        arr_str += delim.join(temp)
+
+    # Include separator unless full array is being printed
+    if (beg is not None) or (end < len_arr):
+        arr_str += "... "
+
+    # Add the last `last` elements
+    if end is not None:
+        arr_str += delim.join([form.format(vv) for vv in arr[-end:]])
+
+    arr_str += "]"
+    return arr_str
+
+
+def _str_array_get_beg_end(sides, size):
+    if sides is None:
+        beg = None
+        end = size
+    elif np.iterable(sides):
+        beg, end = sides
+    else:
+        beg = end = sides
+
+    _beg = 0 if beg is None else beg
+    _end = 0 if end is None else end
+    if _beg + _end >= size:
+        beg = None
+        end = size
+
+    return beg, end
+
+
 def _comparison_function(comp, value=0.0, **kwargs):
     """Retrieve the comparison function matching the input expression.
 
@@ -1872,29 +1932,6 @@ def _comparison_function(comp, value=0.0, **kwargs):
         return func(xx, value, **kwargs)
 
     return comp_func
-
-
-def comparison_filter(data, filter, inds=False, value=0.0, finite=True, mask=False, **kwargs):
-    """
-    """
-    if filter is None:
-        return data
-    if not callable(filter):
-        filter = _comparison_function(filter, value=value, **kwargs)
-
-    # Include is-finite check
-    if finite:
-        sel = filter(data) & np.isfinite(data)
-    else:
-        sel = filter(data)
-
-    if inds:
-        return sel
-    else:
-        if mask:
-            return np.ma.masked_where(~sel, data)
-        else:
-            return np.asarray(data)[sel]
 
 
 def _fracToInt(frac, size, within=None, round='floor'):
@@ -1986,3 +2023,16 @@ def _is_numeric_scalar(val):
 
 def _is_integer_scalar(val):
     return np.issubdtype(type(val), np.integer)
+
+
+# ==== Deprecations ====
+
+
+def sliceForAxis(*args, **kwargs):
+    utils.dep_warn("math_core.sliceForAxis", newname="math_core.slice_for_axis")
+    return slice_for_axis(*args, **kwargs)
+
+
+def zenum(*arr):
+    utils.dep_warn("zenum", newname="zenumerate")
+    return zenumerate(*arr)

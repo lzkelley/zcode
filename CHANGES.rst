@@ -49,6 +49,7 @@ Current
     - Convert args to arrays as needed in `eddington_luminosity()` and `schwarzschild_radius()`
 
 - 'math/'
+  - reordered functions by broad-category (API, utils, deprecated), and alphabetically.
   - `math_core.py`
     - `around()`
       - Enabled for array values.
@@ -58,10 +59,14 @@ Current
       - Perform rounding and also format as appropriate type of string value
     - `frexp10()`
       - Handle the case of `0.0` values.  Set mantissa to 0.0 and exp to np.nan.
+    - `midpoints()`
+      - Allow sequences to be given to specify multiple axes.  Also `axis=None` means midpoints along all axes.
+      - Separated core functionality to new `_midpoints_1d()` function.
     - `minmax()`
       - Add `fraction` argument to set one extrema to a fraction of the other.
     - `rescale()`  [NEW-FUNCTION]
       - Rescale given array range to new span.
+    - `slice_for_axis()` <=== `sliceForAxis`  [DEPRECATION]
     - `spacing()`
       - When creating 'intergers' spacings, allow integers to be subdivided some number of times, specified by an integer value to the `intergers` argument.
         
