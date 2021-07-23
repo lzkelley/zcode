@@ -3,7 +3,9 @@
 
 import numpy as np
 
-from zcode.constants import PC, SPLC
+from zcode.constants import PC, SPLC, JY
+
+# LOTS OF REFERENCE FLUXES: https://coolwiki.ipac.caltech.edu/index.php/Central_wavelengths_and_zero_points
 
 # VEGA/Johnson/Bessell: http://web.ipac.caltech.edu/staff/fmasci/home/astro_refs/magsystems.pdf
 # SDSS/AB/Fukugita: http://www.astronomy.ohio-state.edu/~martini/usefuldata.html
@@ -56,7 +58,7 @@ UNITS = {
     "l": 1.0e-11   # erg/s/Angstrom/cm^2
 }
 
-__all__ = ["ABmag_to_flux", "abs_mag_to_lum", "flux_to_mag", "lum_to_abs_mag", "mag_to_flux",
+__all__ = ["ABmag_to_flux", "abs_mag_to_lum", "flux_to_mag", "mag_to_flux_zero", "lum_to_abs_mag", "mag_to_flux",
            "fnu_to_flambda", "flambda_to_fnu"]
 
 
@@ -72,7 +74,7 @@ __all__ = ["ABmag_to_flux", "abs_mag_to_lum", "flux_to_mag", "lum_to_abs_mag", "
 def _get_units_type(type):
     try:
         units = UNITS[type]
-    except Exception as err:
+    except Exception:
         raise ValueError("Unrecognized `type` = '{}'".format(type))
 
     return units, type
@@ -91,6 +93,15 @@ def ABmag_to_flux(mag):
     """
     fnu = np.power(10.0, (mag + 48.6)/-2.5)
     return fnu
+
+
+def mag_to_flux_zero(mag, zero_jansky=None):
+    if zero_jansky is None:
+        raise
+
+    zero_point = zero_jansky * JY
+    flux = np.power(10.0, mag / -2.5) * zero_point
+    return flux
 
 
 def mag_to_flux(band, mag, type='f'):
@@ -192,8 +203,8 @@ def fnu_to_flambda(fnu, freq=None, wavelength=None):
 
 
 def flambda_to_fnu(flambda, freq=None, wavelength=None):
-    if wavelength is None:
-        wavelength = SPLC / freq
+    if freq is None:
+        freq = SPLC / wavelength
 
-    fnu = flambda * freq**2 / SPLC
+    fnu = flambda * SPLC / freq**2
     return fnu

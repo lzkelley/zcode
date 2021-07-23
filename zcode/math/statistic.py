@@ -451,6 +451,8 @@ def percs_from_sigma(sigma, side='in', boundaries=False):
 def random_power(extr, pdf_index, size=1, **kwargs):
     """Draw from power-law PDF with the given extrema and index.
 
+    FIX/BUG : negative `extr` values break `pdf_index=-1` !!
+
     Arguments
     ---------
     extr : array_like scalar
@@ -475,7 +477,7 @@ def random_power(extr, pdf_index, size=1, **kwargs):
     #         np.shape(pdf_index), pdf_index)
     #     raise ValueError(err)
 
-    extr = math_core.minmax(extr, filter='>', **kwargs)
+    extr = math_core.minmax(extr, **kwargs)
     if pdf_index == -1:
         rv = 10**np.random.uniform(*np.log10(extr), size=int(size))
     else:

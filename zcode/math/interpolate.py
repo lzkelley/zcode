@@ -134,7 +134,7 @@ class Interp2D_RegIrr:
         dx = np.diff(xx)
         if not np.allclose(dx, dx[0], atol=0.0, rtol=1e-8):
             raise ValueError("Spacing between `xx` values is not uniform!  dx = {}".format(
-                nn, zcode.math.stats_str(dx)))
+                zcode.math.stats_str(dx)))
 
         if not np.all(np.diff(yy, axis=-1) > 0.0):
             raise ValueError("All `yy` values must be ascending in the 1th dimension!")
@@ -188,9 +188,9 @@ def interp(xnew, xold, yold, left=np.nan, right=np.nan, xlog=True, ylog=True, va
         x0 = np.log10(x0)
     if ylog:
         y0 = np.log10(y0)
-        if np.isfinite(left):
+        if (left is not None) and np.isfinite(left):
             left = np.log10(left)
-        if np.isfinite(right):
+        if (right is not None) and np.isfinite(right):
             right = np.log10(right)
 
     if valid:

@@ -1,6 +1,7 @@
 CHANGES
 =======
 
+
 Future / To-Do
 --------------
     -   General
@@ -30,6 +31,8 @@ Future / To-Do
         +   statistic.py
             -   `percentiles()`
                 -   BUG: method failed when multidimensional arrays were used.  Now it flattens the data before calculation.
+            - `random_power()`
+              - BUG: negative extrema values break ``pdf_index=-1``
     -   plot/
         +   Hist2D.py
             -   Add ability to plot central axes as scatter plot, with projected histograms
@@ -38,79 +41,125 @@ Future / To-Do
             -   Finish 'set_ticks' method.
 
 
+
 Current
 -------
+
+
+[0.1.3] - 2021/07/23
+--------------------
+  - 'astro/'
+    - `astro_core.py`
+      - `binary_circular_vels()`  [NEW-FUNCTION]
+      - `inclinations_uniform()` <== `uniform_inclinations()`  [DEPRECATION]
+      - Convert args to arrays as needed in `eddington_luminosity()` and `schwarzschild_radius()`
+    - 'obs.py'
+      - `mag_to_flux_zero()`  [NEW-FUNCTION]
+        - Calculate flux based on magnitude and given zero-point in Jansky
+      
+  - 'math/'
+    - reordered functions by broad-category (API, utils, deprecated), and alphabetically.
+    - `math_core.py`
+      - `around()`
+        - Enabled for array values.
+        - Deprecate argument `sigfigs` [bool] <== `scale` [str]
+        - Use `decimals` argument to correctly refer to number of significant figures (when using `sigfigs=True`)
+      - `around_str()`  [NEW-FUNCTION]
+        - Perform rounding and also format as appropriate type of string value
+      - `frexp10()`
+        - Handle the case of `0.0` values.  Set mantissa to 0.0 and exp to np.nan.
+      - `midpoints()`
+        - Allow sequences to be given to specify multiple axes.  Also `axis=None` means midpoints along all axes.
+        - Separated core functionality to new `_midpoints_1d()` function.
+      - `minmax()`
+        - Add `fraction` argument to set one extrema to a fraction of the other.
+      - `rescale()`  [NEW-FUNCTION]
+        - Rescale given array range to new span.
+      - `slice_for_axis()` <=== `sliceForAxis`  [DEPRECATION]
+      - `spacing()`
+        - When creating 'intergers' spacings, allow integers to be subdivided some number of times, specified by an integer value to the `intergers` argument.
+          
+  - 'plot/'
+    - 'plot_core.py'
+      - `color_lightness()`  [NEW-FUNCTION]
+        - Adjust the lightness (in HLS sense) of the given color.
+      - `scientific_notation()`
+        - BUG: fix boolean logic for determining when to include exponent and mantissa
+      - `smap()`
+        - New default cmap is 'Spectral'
+      - `unify_axes_limits()` <== `unifyAxesLimits()`  [DEPRECATION]
+      
+
 
 
 
 [0.1.2] - 2021/01/02
 --------------------
+  - Moved `notebooks` from inside internal `zcode/` to root directory.
+  - `notebooks/`
+    - `math_numeric.ipynb`  [NEW-FILE]
+      - New notebook for testing `math/numeric.py` functions.
+      - Added tests for `regress()`.
 
-- Moved `notebooks` from inside internal `zcode/` to root directory.
-- `notebooks/`
-  - `math_numeric.ipynb`  [NEW-FILE]
-    - New notebook for testing `math/numeric.py` functions.
-    - Added tests for `regress()`.
+  - `constants.py`
+    - `SIGMA_TO_FWHM`  [NEW-VARIABLE]
+      - Converting from (normal-)standard deviation to full-width at half-maximum (FWHM)
 
-- `constants.py`
-  - `SIGMA_TO_FWHM`  [NEW-VARIABLE]
-    - Converting from (normal-)standard deviation to full-width at half-maximum (FWHM)
+  - `inout/`
+      - `inout_core.py`
+          - `backup_existing()`  [NEW-METHOD]
+            - If the given filename already exists, move it to a backup file.
+      - `notebooks.py`  [NEW-FILE]
+          - Methods specifically for jupyter notebooks
+        
+  - `math/`
+      - `interpolate.py`  [NEW-FILE]
+          - New submodule for interpolation and extrapolation.
+          - `interp_axis`  [NEW-FUNCTION]
+              - Method to perform fast, array-based linear interpolation of ndarrays over a single axis.
+              - Added unittests.
+      - `math_core.py`
+          - `interp()`       [MOVED TO `interpolate.py`]
+          - `interp_func()`  [MOVED TO `interpolate.py`]
+          - `isnumeric()`  [NEW-FUNCTION]
+              - Check if a value is a numeric scalar.
+          - `str_array()`
+              - BUG: Flatten multi-dimensional arrays before processing.
+          - `within()`
+              - Allow two elements to be given where a `None` value for either of them means infinity in that direction.
+              - BUG: TEMPORARY: raise error if extrema bounds are non-increasing.  Not sure how this should be handled in the future.  This could be used as shorthand to do the inverse (i.e. look for things outside of bounds)?  Or should the extrema just be sorted within the function?
+      - `numeric.py`
+          - `cumtrapz_loglog()`
+              - BUG: when power-law index is near -1, integral should be nat-log
+          - `regress()` [NEW-FUNCTION]
+              - Perform linear regression on ND data.
+              - Tests added to `math_numeric.ipynb`.
+          - `rk4_step()`
+              - Allow additional `args` to be passed to integration function.
+      - `statistic.py`
+          - `percentiles()`  [DEPRECATED ==> `quantiles()`]
+          - `quantiles()`  [<== `percentiles()`]
+              - BUG: error in multidimensional arrays when axis=0.
+          - `random_power()`
+              - Allow power-law index to be array valued.
+          - `LH_Sampler`  [NEW-CLASS]
+              - Latin Hypercube Sampler class
 
-- `inout/`
-    - `inout_core.py`
-        - `backup_existing()`  [NEW-METHOD]
-          - If the given filename already exists, move it to a backup file.
-    - `notebooks.py`  [NEW-FILE]
-        - Methods specifically for jupyter notebooks
-      
-- `math/`
-    - `interpolate.py`  [NEW-FILE]
-        - New submodule for interpolation and extrapolation.
-        - `interp_axis`  [NEW-FUNCTION]
-            - Method to perform fast, array-based linear interpolation of ndarrays over a single axis.
-            - Added unittests.
-    - `math_core.py`
-        - `interp()`       [MOVED TO `interpolate.py`]
-        - `interp_func()`  [MOVED TO `interpolate.py`]
-        - `isnumeric()`  [NEW-FUNCTION]
-            - Check if a value is a numeric scalar.
-        - `str_array()`
-            - BUG: Flatten multi-dimensional arrays before processing.
-        - `within()`
-            - Allow two elements to be given where a `None` value for either of them means infinity in that direction.
-            - BUG: TEMPORARY: raise error if extrema bounds are non-increasing.  Not sure how this should be handled in the future.  This could be used as shorthand to do the inverse (i.e. look for things outside of bounds)?  Or should the extrema just be sorted within the function?
-    - `numeric.py`
-        - `cumtrapz_loglog()`
-            - BUG: when power-law index is near -1, integral should be nat-log
-        - `regress()` [NEW-FUNCTION]
-            - Perform linear regression on ND data.
-            - Tests added to `math_numeric.ipynb`.
-        - `rk4_step()`
-            - Allow additional `args` to be passed to integration function.
-    - `statistic.py`
-        - `percentiles()`  [DEPRECATED ==> `quantiles()`]
-        - `quantiles()`  [<== `percentiles()`]
-            - BUG: error in multidimensional arrays when axis=0.
-        - `random_power()`
-            - Allow power-law index to be array valued.
-        - `LH_Sampler`  [NEW-CLASS]
-            - Latin Hypercube Sampler class
-
-- `plot/`
-    - `draw.py`
-        - `plot_contiguous()`
-            - Add a `scatter` argument to plot the NON-contiguous elements as scatter points.
-        - `plot_segmented_line()`
-            - Pass all additional `kwargs` to LineCollection constructor.
-            - Improve color handling.
-    - `Hist2D.py`
-        - `draw_hist2d()`
-            - Removed edges from pcolor
-            - Allow `log` argument for normalization of pcolor.
-    - `plot_core.py`
-        - `figax()`
-            - BUG: fix error when `grid` value was `False`.
-        - `smap()`  <===  `colormap()`  [DEPRECATION]
+  - `plot/`
+      - `draw.py`
+          - `plot_contiguous()`
+              - Add a `scatter` argument to plot the NON-contiguous elements as scatter points.
+          - `plot_segmented_line()`
+              - Pass all additional `kwargs` to LineCollection constructor.
+              - Improve color handling.
+      - `Hist2D.py`
+          - `draw_hist2d()`
+              - Removed edges from pcolor
+              - Allow `log` argument for normalization of pcolor.
+      - `plot_core.py`
+          - `figax()`
+              - BUG: fix error when `grid` value was `False`.
+          - `smap()`  <===  `colormap()`  [DEPRECATION]
 
 
 [0.1.1] - 2020/02/11
@@ -259,8 +308,6 @@ Current
                 - BUG: xlim and ylim were not being broadcast correctly
             - `get_norm()`  [NEW-METHOD]
                 - Separated out from `colormap()`, same functionality.
-
-
 
 
 [0.1] - 2019/03/18

@@ -51,12 +51,13 @@ from zcode import utils
 from zcode.plot.layout import _loc_str_to_pars, _parse_align
 from zcode.plot import _PAD
 
-__all__ = ['figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
+__all__ = ['axis_next_color', 'color_lightness',
+           'figax', 'set_axis', 'twin_axis', 'set_lim', 'set_ticks', 'zoom',
            'stretchAxes', 'text', 'label_line', 'legend', 'invert_color',
-           'unifyAxesLimits', 'color_cycle', 'get_norm',
+           'color_cycle', 'get_norm',
            'smap', 'color_set', 'set_grid', 'save_fig',
            'skipTicks', 'saveFigure', 'scientific_notation',
-           'line_style_set', 'line_label',
+           'line_style_set', 'line_label', 'unify_axes_limits',
            '_scale_to_log_flag',
            # Deprecated
            'colormap'
@@ -107,6 +108,38 @@ _HANDLE_LENGTH = 2.5
 _HANDLE_PAD = 0.6
 _LEGEND_COLUMN_SPACING = 1.2
 _SCATTER_POINTS = 1
+
+
+def axis_next_color(ax=None):
+    if ax is None:
+        ax = plt.gca()
+    return ax._get_lines.get_next_color()
+
+
+def color_lightness(color, scale=None, reset=None):
+    """Adjust the 'lightness' (of HLS) of a color.
+
+    From: https://stackoverflow.com/a/49601444/230468
+    """
+    import colorsys
+    try:
+        col = mpl.colors.cnames[color]
+    except:
+        col = color
+    col = colorsys.rgb_to_hls(*mpl.colors.to_rgb(col))
+    if (scale is None) and (reset is None):
+        raise ValueError("either `scale` or `reset` must be given!")
+    elif (scale is not None) and (reset is not None):
+        raise ValueError("only one of `scale` or `reset` may be given!")
+
+    if scale is not None:
+        val = scale * col[1]
+    else:
+        val = reset
+
+    val = np.clip(val, 0.0, 1.0)
+    col = colorsys.hls_to_rgb(col[0], val, col[2])
+    return col
 
 
 def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze=True, scale=None,
@@ -888,6 +921,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
         if trans is None:
             trans = ax.transAxes
     else:
+        ax = art
         warnings.warn("Unexpected `art` object '{}' (type: {})".format(art, type(art)))
 
     kwargs.setdefault('handlelength', _HANDLE_LENGTH)
@@ -946,7 +980,7 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     return leg
 
 
-def unifyAxesLimits(axes, axis='y'):
+def unify_axes_limits(axes, axis='y'):
     """Given a list of axes, set all limits to match global extrema.
     """
 
@@ -1084,9 +1118,11 @@ def smap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
 
     if not isinstance(cmap, mpl.colors.Colormap):
         if cmap is None:
-            cmap = 'jet'
+            # cmap = 'viridis'
+            cmap = 'Spectral'
         if isinstance(cmap, six.string_types):
-            cmap = plt.get_cmap(cmap)
+            import copy
+            cmap = copy.copy(plt.get_cmap(cmap))
 
     # Select a truncated subsection of the colormap
     if (left is not None) or (right is not None):
@@ -1385,7 +1421,7 @@ def saveFigure(fig, fname, verbose=True, log=None, level=logging.WARNING, close=
     return
 
 
-def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
+def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False, sign=False):
     """Convert a scalar into a string with scientific notation (latex formatted).
 
     Arguments
@@ -1402,6 +1438,8 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
         Include the mantissa even if it is '1[.0...]'.
     zero : bool
         If the value is uniformly '0.0', write it as such (instead of 10^-inf).
+    sign : bool
+        Include the sign (i.e. '+') on the mantissa even when positive.
 
     Returns
     -------
@@ -1414,7 +1452,7 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
         return notStr
 
     val_man, val_exp = zmath.frexp10(val)
-    use_man = (man is not None and np.isfinite(val_exp))
+    use_man = (man is not None or not np.isfinite(val_exp))
 
     val_man = np.around(val_man, man)
     if val_man >= 10.0:
@@ -1424,7 +1462,8 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
     # Construct Mantissa String
     # --------------------------------
     if use_man:
-        str_man = "{0:.{1:d}f}".format(val_man, man)
+        _sign = '+' if sign else ''
+        str_man = "{0:{2}.{1:d}f}".format(val_man, man, _sign)
     else:
         str_man = ""
     # If the mantissa is '1' (or '1.0' or '1.00' etc), dont write it
@@ -1433,7 +1472,7 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False):
 
     # Construct Exponent String
     # --------------------------------
-    if exp is not None:
+    if (exp is not None) and np.isfinite(val_exp):
         # Try to convert `val_exp` to integer, fails if 'inf' or 'nan'
         try:
             val_exp = np.int(val_exp)
@@ -1742,6 +1781,11 @@ class MidpointLogNormalize(mpl.colors.LogNorm):
 # ======================
 # ====  DEPRECATED  ====
 # ======================
+
+
+def unifyAxesLimits(*args, **kwargs):
+    utils.dep_warn("unifyAxesLimits", newname="unify_axes_limits")
+    return smap(*args, **kwargs)
 
 
 def colormap(*args, **kwargs):

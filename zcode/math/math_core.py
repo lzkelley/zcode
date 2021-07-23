@@ -13,7 +13,7 @@ Functions
 -   spacing                  - Create an even spacing between extrema from given data.
 -   asBinEdges               - Create bin-edges if the given `bins` do not already give them.
 -   str_array                 - Create a string representation of a numerical array.
--   sliceForAxis             - Array slicing object which slices only the target axis.
+-   slice_for_axis             - Array slicing object which slices only the target axis.
 -   midpoints                - Return the midpoints between values in the given array.
 -   vecmag                   - find the magnitude/distance of/between vectors.
 -   renumerate               - construct a reverse enumeration iterator.
@@ -33,7 +33,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import warnings
 import numbers
 import logging
-# import six
 
 import numpy as np
 import scipy as sp
@@ -42,21 +41,22 @@ import scipy.interpolate  # noqa
 
 __all__ = [
     'argextrema', 'argfirst', 'argfirstlast', 'arglast', 'argnearest',
-    'around', 'array_str', 'asBinEdges',
-    'broadcast', 'broadcastable', 'contiguousInds', 'edges_from_cents',
+    'around', 'around_str', 'array_str', 'asBinEdges',
+    'broadcast', 'broadcastable', 'broadcast_1d', 'contiguousInds', 'edges_from_cents',
+    'expand_broadcastable',
     'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
     'isnumeric', 'midpoints', 'minmax',  'mono',
-    'ordered_groups', 'really1d', 'renumerate', 'roll',
+    'ordered_groups', 'really1d', 'renumerate', 'rescale', 'roll',
 
     'rotation_matrix_between_vectors', 'rotation_matrix_about',
     'xyz_to_rpt', 'rpt_to_xyz', 'xyz_to_rtp', 'rtp_to_xyz',
 
-    'sliceForAxis', 'spacing', 'spacing_composite',
+    'slice_for_axis', 'spacing', 'spacing_composite',
     'str_array', 'str_array_neighbors', 'str_array_2d', 'vecmag', 'within', 'zenumerate',
     'comparison_filter', '_comparison_function',
     '_infer_scale', '_fracToInt',
     # DEPRECATED
-    'zenum'
+    'sliceForAxis', 'zenum'
     # 'limit', 'indsWithin',
 ]
 
@@ -102,29 +102,35 @@ def argextrema(arr, type, filter=None):
     return ind
 
 
-def argfirst(arr, check=True, **kwargs):
+def argfirst(arr, convert=True, check=True, **kwargs):
     """Return the index of the first true element of the given array.
     """
-    if check and not np.any(arr):
-        raise ValueError("No elements of given array are true!")
-    return np.argmax(arr, **kwargs)
-
-
-def arglast(arr, check=True):
-    """Return the index of the last true element of the given array.
-    """
-    if np.ndim(arr) != 1:
-        raise ValueError("`arglast` not yet supported for ND != 1 arrays!")
-    if check and not np.any(arr):
-        raise ValueError("No elements of given array are true!")
-    size = arr.size - 1
-    return size - np.argmax(arr[::-1])
+    if convert:
+        arr = np.asarray(arr).astype(bool)
+    sel = np.argmax(arr, **kwargs)
+    if check and (not arr[sel]):
+        return None
+    return sel
 
 
 def argfirstlast(arr, **kwargs):
     """Return the indices of the first and last true elements of the given array.
     """
-    return argfirst(arr), arglast(arr)
+    return argfirst(arr, **kwargs), arglast(arr, **kwargs)
+
+
+def arglast(arr, convert=True, check=True):
+    """Return the index of the last true element of the given array.
+    """
+    if convert:
+        arr = np.asarray(arr).astype(bool)
+    if np.ndim(arr) != 1:
+        raise ValueError("`arglast` not yet supported for ND != 1 arrays!")
+    sel = arr.size - 1
+    sel = sel - np.argmax(arr[::-1])
+    if check and (not arr[sel]):
+        return None
+    return sel
 
 
 def argnearest(edges, vals, assume_sorted=False, side=None):
@@ -214,7 +220,7 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
     return idx
 
 
-def around(val, decimals=0, scale='log', dir='near'):
+def around(val, decimals=2, sigfigs=True, dir='near', scale=None):
     """Round the given value to arbitrary decimal points, in any direction.
 
     Perhaps rename `scale` to `sigfigs` or something?  Not really in 'log' scaling...
@@ -225,17 +231,20 @@ def around(val, decimals=0, scale='log', dir='near'):
         Value to be rounded.
     decimals : int
         Number of decimal places at which to round.
-        If `scale` is 'log' and `decimals` is negative, then the nearest order of magnitude
+        If `sigfigs` is 'log' and `decimals` is negative, then the nearest order of magnitude
         is returned, in the direction of `dir`.  NOTE: this rounding is done in log-space.
-    scale : str, {'log', 'lin'}
+    sigfigs : bool
         How to interpret the number of decimals/precision at which to round.
-        +   'log': round to `decimals` number of significant figures.
-        +   'lin': round to `decimals` number of decimal points.
+        +   True : round to `decimals` number of significant figures.
+        +   False: round to `decimals` number of decimal points.
     dir : str, {'near', 'ceil', 'floor'}
         Direction in which to round.
         +   'nearest': use `np.around` to round the nearest 'even' value.
         +   'ceil': use `np.ceil` to round to higher (more positive) values.
         +   'floor': use `np.floor` to round to lower (more negative) values.
+
+    DEPRECATED:
+    scale :
 
     Returns
     -------
@@ -243,10 +252,12 @@ def around(val, decimals=0, scale='log', dir='near'):
         Rounded version of the input `val`.
 
     """
-    from zcode.plot import plot_core
-    islog = plot_core._scale_to_log_flag(scale)
-    if np.size(val) > 1:
-        raise ValueError("Arrays are not yet supported.")
+
+    if scale is not None:
+        warnings.warn("WARNING: `scale` argument is deprecated, use `sigfigs` instead!")
+        # `log` ==> True,  `lin` ==> False
+        import zcode.plot as zplot
+        sigfigs = zplot._scale_to_log_flag(scale)
 
     # Round to nearest ('n'earest)
     if dir.startswith('n'):
@@ -260,9 +271,13 @@ def around(val, decimals=0, scale='log', dir='near'):
     else:
         raise ValueError("Given `dir` = '{}' not supported.".format(dir))
 
-    if islog:
+    if sigfigs:
         useval, exp = frexp10(val)
-        # If `decimals` is negative and ``scale == 'log'``, round to order of magnitude
+        # when `val=0.0` ==>  useval=0.0 and exp=nan, set exp to zero instead
+        exp = np.nan_to_num(exp)
+
+        decimals = decimals - 1
+        # If `decimals` is negative and ``sigfigs == 'log'``, round to order of magnitude
         # NOTE: this is done in log-space, i.e. 4.0e-4 rounds to nearest as 1e-4 (not 1e-3)
         if decimals < 0:
             useval = np.log10(val)
@@ -286,17 +301,76 @@ def around(val, decimals=0, scale='log', dir='near'):
         useval = np.around(useval, decimals)
     # Round up
     elif dir_int == +1:
-        useval *= dpow
+        useval = useval * dpow
         useval = np.ceil(useval)
-        useval /= dpow
+        useval = useval / dpow
     # Round down
     elif dir_int == -1:
-        useval *= dpow
+        useval = useval * dpow
         useval = np.floor(useval)
-        useval /= dpow
+        useval = useval / dpow
 
     rnd = useval * np.power(10.0, exp)
     return rnd
+
+
+def around_str(vals, decimals=2, sigfigs=True, scientific=[-3, 3], sign=False, reference=None, **kwargs):
+    """Round the given values and return them as a string with that precision included.
+    """
+    squeeze = np.isscalar(vals)
+    vals = np.atleast_1d(vals)
+    vals = around(vals, decimals=decimals, sigfigs=sigfigs, **kwargs)
+    strs = []
+    if scientific is True:
+        scientific = [0, 0]
+    elif np.isscalar(scientific):
+        scientific = np.fabs(scientific)
+        scientific = [-scientific, scientific]
+    elif len(scientific) != 2:
+        raise ValueError()
+
+    sign = '+' if sign else ''
+    use_ref = (reference is not None) and (reference != 0.0)
+    if use_ref:
+        order = np.floor(np.log10(np.fabs(reference))).astype(int)
+        sci_flag = (order < scientific[0]) or (order > scientific[1])
+
+    for vv in vals:
+        # Determine order-of-magnitude
+        if not use_ref:
+            order = np.floor(np.log10(np.fabs(vv))).astype(int) if reference != 0.0 else 0
+            sci_flag = (order < scientific[0]) or (order > scientific[1])
+
+        # Rounding based on significant figures
+        if sigfigs:
+            if sci_flag:
+                prec = np.clip(decimals - 1, 0, None)
+                form = f"{{:{sign}.{prec}e}}"
+            else:
+                # If more digits than desired accuracy, no decimal values
+                if order > decimals:
+                    form = f"{{:{sign}.0f}}"
+                # Number of decimals based on::  accuracy = order + decimals + 1
+                #    Note the `+1` is because order=0 is a single digit
+                else:
+                    prec = decimals - 1 - order
+                    prec = np.clip(prec, 0, None)
+                    form = f"{{:{sign}.{prec}f}}"
+
+        # Rounding based on decimal points
+        else:
+            if sci_flag:
+                form = f"{{:{sign}.{decimals}e}}"
+            else:
+                form = f"{{:{sign}.{decimals}f}}"
+
+        ss = form.format(vv)
+        strs.append(ss)
+
+    if squeeze:
+        strs = strs[0]
+
+    return strs
 
 
 def asBinEdges(bins, data, scale='lin'):
@@ -374,20 +448,6 @@ def asBinEdges(bins, data, scale='lin'):
     return edges
 
 
-def broadcastable(*args):
-    """Expand N, 1D arrays be able to be broadcasted into N, ND arrays.
-
-    e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,1,1`, `1,4,1` and `1,1,2`.
-    """
-    ndim = len(args)
-    assert np.all([1 == np.ndim(aa) for aa in args]), "Each array in `args` must be 1D!"
-
-    cut_ref = [slice(None)] + [np.newaxis for ii in range(ndim-1)]
-    cuts = [np.roll(cut_ref, ii).tolist() for ii in range(ndim)]
-    outs = [aa[tuple(cc)] for aa, cc in zip(args, cuts)]
-    return outs
-
-
 def broadcast(*args):
     """Broadcast N, 1D arrays into N, ND arrays.
 
@@ -417,6 +477,59 @@ def broadcast(*args):
     outs = np.insert(outs, np.where(idx)[0], sca_args, axis=0)
 
     return outs
+
+
+def broadcast_1d(*args):
+    if np.any([np.ndim(aa) not in [0, 1] for aa in args]):
+        raise ValueError("All arguments must be scalar or 1D!")
+    size = [np.shape(aa)[0] for aa in args if np.ndim(aa) > 0]
+    if len(size) == 0:
+        return args
+    else:
+        if not np.all(np.array(size) == size[0]):
+            raise ValueError("All 1D arrays must be the same size!")
+        size = size[0]
+
+    outs = [np.asarray(aa) for aa in args]
+    outs = [dd * np.ones(size, dd.dtype) for dd in outs]
+    return outs
+
+
+def broadcastable(*args):
+    """Expand N, 1D arrays be able to be broadcasted into N, ND arrays.
+
+    e.g. from arrays of len `3`,`4`,`2`, returns arrays with shapes: `3,1,1`, `1,4,1` and `1,1,2`.
+    """
+    ndim = len(args)
+    assert np.all([1 == np.ndim(aa) for aa in args]), "Each array in `args` must be 1D!"
+
+    cut_ref = [slice(None)] + [np.newaxis for ii in range(ndim-1)]
+    cuts = [np.roll(cut_ref, ii).tolist() for ii in range(ndim)]
+    outs = [aa[tuple(cc)] for aa, cc in zip(args, cuts)]
+    return outs
+
+
+def comparison_filter(data, filter, inds=False, value=0.0, finite=True, mask=False, **kwargs):
+    """
+    """
+    if filter is None:
+        return data
+    if not callable(filter):
+        filter = _comparison_function(filter, value=value, **kwargs)
+
+    # Include is-finite check
+    if finite:
+        sel = filter(data) & np.isfinite(data)
+    else:
+        sel = filter(data)
+
+    if inds:
+        return sel
+    else:
+        if mask:
+            return np.ma.masked_where(~sel, data)
+        else:
+            return np.asarray(data)[sel]
 
 
 def contiguousInds(args):
@@ -450,6 +563,27 @@ def contiguousInds(args):
     return inds
 
 
+def expand_broadcastable(*args):
+    shapes = [np.array(np.shape(aa)) for aa in args]
+    # make sure each shape is an array of the same size
+    try:
+        # use ``dtype=object`` to avoid deprecation (warning), but it should still have the same effect
+        np.array(shapes, dtype=object) * 2.0
+    except:
+        raise ValueError("could not broadcast together shapes: {}!".format(shapes))
+
+    ndim = len(shapes[0])
+    new_shape = np.ones(ndim, dtype=int)
+    for sh in shapes:
+        test = (sh == new_shape) | (sh == 1) | (new_shape == 1)
+        if not np.all(test):
+            raise ValueError("Incompatible shapes!  {}".format(shapes))
+        new_shape = np.max([new_shape, sh], axis=0)
+
+    outs = [aa * np.ones(new_shape, dtype=np.asarray(aa).dtype) for aa in args]
+    return outs
+
+
 def edges_from_cents(cents, scale='lin', log=None):
     if not any([scale.lower().startswith(sc) for sc in ['lin', 'log']]):
         raise ValueError("`scale` must be 'lin' or 'log'!")
@@ -474,23 +608,6 @@ def edges_from_cents(cents, scale='lin', log=None):
     return edges
 
 
-def slice_with_inds_for_axis(arr, inds, axis):
-    """Use an N-1 dimensional array with indices along a particular axis of an N dimensional array
-
-    See: https://stackoverflow.com/a/46103129/230468
-    """
-    if axis < 0:
-        axis += np.ndim(arr)
-
-    new_shape = list(arr.shape)
-    del new_shape[axis]
-
-    grid = np.ogrid[tuple(map(slice, new_shape))]
-    grid.insert(axis, inds)
-
-    return arr[tuple(grid)]
-
-
 def frexp10(vals):
     """Return the mantissa and exponent in base 10.
 
@@ -498,6 +615,7 @@ def frexp10(vals):
     ---------
     vals : (N,) array_like of float
         Values to be converted.
+        Zero values give `man=0.0` and `exp=nan`
 
     Returns
     -------
@@ -505,11 +623,22 @@ def frexp10(vals):
         Mantissa.
     exp : (N,) array_like of float
         Exponent
+
     """
+    squeeze = np.isscalar(vals)
+    vals = np.atleast_1d(vals)
+    zeros = (vals == 0.0)
     # Find exponent of absolute value
-    exp = np.floor(np.log10(np.fabs(vals)))
-    # Positive/negative is still included here
-    man = vals / np.power(10.0, exp)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        exp = np.floor(np.log10(np.fabs(vals)))
+        # Positive/negative is still included here
+        man = vals / np.power(10.0, exp)
+    man[zeros] = 0.0
+    exp[zeros] = np.nan
+    if squeeze:
+        man = man.squeeze()
+        exp = exp.squeeze()
     return man, exp
 
 
@@ -593,33 +722,41 @@ def isnumeric(val):
     return _is_numeric_scalar(val)
 
 
-def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
+def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=False):
     """Return the midpoints between values in the given array.
 
     If the given array is N-dimensional, midpoints are calculated from the last dimension.
 
     Arguments
     ---------
-        arr : ndarray of scalars,
-            Input array.
-        log : bool,
-            Find midpoints in log-space.
-        frac : float,
-            Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
-        axis : int,
-            Which axis about which to find the midpoints.
+    arr : ndarray of scalars,
+        Input array.
+    scale : str or None,
+        Specify 'lin'[ear] or 'log'[arithmic] midpoints (use either `scale` OR `log` not both).
+        One of ['lin', 'log'].
+        If neither `scale` nor `log` is given, default is `log=True`
+    log : bool or None,
+        Find midpoints in log-space (use either `scale` OR `log` not both)
+        If neither `scale` nor `log` is given, default is `log=True`
+    frac : float,
+        Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
+    axis : int, sequence, or `None`,
+        The axis about which to find the midpoints.  If `None`, find the midpoints along all axes.
+        If a sequence (tuple, list, or array), take the midpoints along each specified axis.
 
     Returns
     -------
-        mids : ndarray of floats,
-            The midpoints of the input array.
-            The resulting shape will be the same as the input array `arr`, except that
-            `mids.shape[axis] == arr.shape[axis]-1`.
+    mids : ndarray of floats,
+        The midpoints of the input array.
+        The resulting shape will be the same as the input array `arr`, except that
+        `mids.shape[axis] == arr.shape[axis]-1`.
 
     """
 
-    if (np.shape(arr)[axis] < 2):
-        raise RuntimeError("Input ``arr`` does not have a valid shape!")
+    if axis is None:
+        axis = [ii for ii in range(np.ndim(arr))]
+    else:
+        axis = np.atleast_1d(axis)
 
     if log is not None:
         if scale is not None:
@@ -633,16 +770,13 @@ def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
 
     # Convert to log-space
     if log_flag:
-        user = np.log10(arr)
+        mids = np.log10(arr)
     else:
-        user = np.array(arr)
+        mids = np.array(arr)
 
-    diff = np.diff(user, axis=axis)
-
-    #     skip the last element, or the last axis
-    cut = sliceForAxis(user, axis=axis, stop=-1)
-    start = user[cut]
-    mids = start + frac*diff
+    # Take the midpoints along each of the desired axes
+    for ax in axis:
+        mids = _midpoints_1d(mids, frac=frac, axis=ax)
 
     if log_flag:
         mids = np.power(10.0, mids)
@@ -652,8 +786,47 @@ def midpoints(arr, scale=None, log=None, frac=0.5, axis=-1, squeeze=True):
     return mids
 
 
+def _midpoints_1d(arr, frac=0.5, axis=-1):
+    """Return the midpoints between values in the given array.
+
+    If the given array is N-dimensional, midpoints are calculated from the last dimension.
+
+    Arguments
+    ---------
+    arr : ndarray of scalars,
+        Input array.
+    frac : float,
+        Fraction of the way between intervals (e.g. `0.5` for half-way midpoints).
+    axis : int,
+        Which axis about which to find the midpoints.
+
+    Returns
+    -------
+    mids : ndarray of floats,
+        The midpoints of the input array.
+        The resulting shape will be the same as the input array `arr`, except that
+        `mids.shape[axis] == arr.shape[axis]-1`.
+
+    """
+
+    if not np.isscalar(axis):
+        raise ValueError("Input `axis` argument must be an integer less than ndim={np.ndim(arr)}!")
+
+    if (np.shape(arr)[axis] < 2):
+        raise RuntimeError("Input ``arr`` does not have a valid shape!")
+
+    diff = np.diff(arr, axis=axis)
+
+    # skip the last element, or the last axis
+    cut = slice_for_axis(arr, axis=axis, stop=-1)
+    start = arr[cut]
+    mids = start + frac*diff
+
+    return mids
+
+
 def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=None,
-           round=None, round_scale='log', type=None, percs=None):
+           round=None, round_scale='log', type=None, percs=None, fraction=None):
     """Find minimum and maximum of given data, return as numpy array.
 
     If ``prev`` is provided, the returned minmax values will also be compared to it.
@@ -681,6 +854,13 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
         The number of significant figures to which to round the min and max values.
     round_scale : str, {'lin', 'log'}
         In which scaling to round in.
+    type :
+    percs :
+    fraction : (2,) of scalar and `None`,
+        Set one of the extrema to a given fraction of the other.
+        One value must be None, and the other value the desired fraction.
+        ``[lo, None]`` sets the minimum to be ``lo * maximum``
+        ``[None, hi]`` sets the maximum to be ``hi * minimum``
 
     Returns
     -------
@@ -697,6 +877,10 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
         assert len(prev) == 2, "`prev` must have length 2."
     if limit is not None:
         assert len(limit) == 2, "`limit` must have length 2."
+    if fraction is not None:
+        assert len(fraction) == 2, "`fraction` must have length 2!"
+        if np.count_nonzero([ff is None for ff in fraction]) != 1:
+            raise ValueError("`fraction` must have one non-`None` value!")
 
     # Pre-flatten the input data (NOTE: `comparison_filter` fails for jagged arrays!)
     try:
@@ -776,8 +960,20 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
 
     # Round the min/max results to given number of sig-figs
     if round is not None:
-        minmax[0] = around(minmax[0], round, round_scale, 'floor')
-        minmax[1] = around(minmax[1], round, round_scale, 'ceil')
+        if round_scale.startswith('log'):
+            sigfigs = True
+        else:
+            sigfigs = False
+        minmax[0] = around(minmax[0], decimals=round, sigfigs=sigfigs, dir='floor')
+        minmax[1] = around(minmax[1], decimals=round, sigfigs=sigfigs, dir='ceil')
+
+    # Set one of the extrema to a given fraction of the other
+    if fraction is not None:
+        lo, hi = fraction
+        if lo is not None:
+            minmax[0] = lo * minmax[1]
+        if hi is not None:
+            minmax[1] = hi * minmax[0]
 
     return minmax
 
@@ -945,6 +1141,59 @@ def renumerate(arr):
     return zip(reversed(range(len(arr))), reversed(arr))
 
 
+def rescale(arr, span=None, log=False, qrange=None, clip=False):
+    """Rescale the given values to a new span.
+
+    Arguments
+    ---------
+    arr : array_like (N,)
+    span : None or (2,)
+        New span of output values.
+        If `None`, the new span is [0.0, 1.0]
+    log : bool,
+        Use the log10 of the input values.
+
+    Returns
+    -------
+    out : array_like (N,)
+        rescaled values spanning the range `span`.
+
+    """
+    assert (np.size(span) == 2) or (span is None)
+    assert (len(arr) > 0)
+    from zcode.math.statistic import quantiles
+
+    if log:
+        out = np.log10(arr)
+    else:
+        out = np.asarray(arr)
+
+    if qrange is None:
+        qrange = [0.0, 1.0]
+    elif np.isscalar(qrange):
+        assert 0.0 < qrange < 1.0
+        qrange = (1.0 - qrange)/2.0
+        qrange = [qrange, 1 - qrange]
+    elif len(qrange) != 2:
+        raise ValueError()
+
+    extr = quantiles(out, qrange)
+
+    # rescale to [0.0, 1.0]
+    out = (out - extr[0]) / (extr[1] - extr[0])
+    # rescale to new span
+    if span is not None:
+        out = span[0] + out * (span[1] - span[0])
+
+    if clip is True:
+        out = np.clip(out, *np.sort(span))
+    elif clip is not False:
+        assert len(clip) == 2
+        out = np.clip(out, *np.sort(clip))
+
+    return out
+
+
 def roll(a, r, cat=None, axis=-1):
     """Roll an array along a target axis by a varying amount.
 
@@ -1002,14 +1251,6 @@ def roll(a, r, cat=None, axis=-1):
     return res
 
 
-def rotation_matrix_between_vectors(aa, bb):
-    """Construct a rotation matrix that rotates vector `aa` to vector `bb`.
-    """
-    ab = np.matrix(aa + bb)
-    rot = 2*((ab*ab.T) / (ab.T*ab)) - np.eye(3)
-    return rot
-
-
 def rotation_matrix_about(axis, theta):
     """Return the rotation matrix associated with counterclockwise rotation about
     the given axis by theta radians.
@@ -1049,35 +1290,12 @@ def rotation_matrix_about(axis, theta):
     return rot
 
 
-def xyz_to_rpt(xyz):
-    """Convert from cartesian to spherical coordinates.
-
-    Spherical is defined as ``(rad, phi, theta)``, where `phi` is the azimuthal angle (xy),
-    and `theta` is the polar angle, with the +z-axis corresponding to ``theta = 0``.
-
-    NOTE: 3-coordinates must be the zeroth axis.
-
-    Arguments
-    ---------
-    xyz : (3, ...) array of scalar
-        Cartesian coordinate vector.
-
-    Returns
-    -------
-    rpt : (3, ...) array of scalar
-        Spherical coordinate vector, same shape as input.
-
+def rotation_matrix_between_vectors(aa, bb):
+    """Construct a rotation matrix that rotates vector `aa` to vector `bb`.
     """
-    xyz = np.asarray(xyz)
-    if (np.ndim(xyz) < 1) or (np.shape(xyz)[0] != 3):
-        raise ValueError("`xyz` ({}) must have shape (3, ...)!".format(xyz.shape))
-
-    rpt = np.zeros_like(xyz)
-    xy = xyz[0, ...]**2 + xyz[1, ...]**2
-    rpt[0, ...] = np.sqrt(xy + xyz[2, ...]**2)
-    rpt[1, ...] = np.arctan2(xyz[1, ...], xyz[0, ...])
-    rpt[2, ...] = np.arctan2(np.sqrt(xy), xyz[2, ...])
-    return rpt
+    ab = np.matrix(aa + bb)
+    rot = 2*((ab*ab.T) / (ab.T*ab)) - np.eye(3)
+    return rot
 
 
 def rpt_to_xyz(rpt):
@@ -1107,27 +1325,7 @@ def rtp_to_xyz(rtp):
     return rpt_to_xyz(rpt)
 
 
-def xyz_to_rtp(xyz):
-    xyz = np.asarray(xyz)
-    rpt = xyz_to_rpt(xyz)
-    rtp = np.zeros_like(rpt)
-    rtp[0, ...] = rpt[0, ...]
-    rtp[1, ...] = rpt[2, ...]
-    rtp[2, ...] = rpt[1, ...]
-    return rtp
-
-
-def zenum(*arr):
-    utils.dep_warn("zenum", newname="zenumerate")
-    return zenumerate(*arr)
-
-
-def zenumerate(*arr):
-    zipped = zip(*arr)
-    return enumerate(zipped)
-
-
-def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
+def slice_for_axis(arr, axis=-1, start=None, stop=None, step=None):
     """
     Creates an array slicing object which slices only the target axis.
 
@@ -1169,6 +1367,23 @@ def sliceForAxis(arr, axis=-1, start=None, stop=None, step=None):
     return cut
 
 
+def slice_with_inds_for_axis(arr, inds, axis):
+    """Use an N-1 dimensional array with indices along a particular axis of an N dimensional array
+
+    See: https://stackoverflow.com/a/46103129/230468
+    """
+    if axis < 0:
+        axis += np.ndim(arr)
+
+    new_shape = list(arr.shape)
+    del new_shape[axis]
+
+    grid = np.ogrid[tuple(map(slice, new_shape))]
+    grid.insert(axis, inds)
+
+    return arr[tuple(grid)]
+
+
 def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
             filter=None, integers=False, endpoint=True, **kwargs):
     """Create an evenly spaced array between extrema from the given data.
@@ -1205,6 +1420,11 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
         otherwise `N` is how many whole numbers there are between the given extrema (see `integers`)
         argument above.
 
+    Notes
+    -----
+    * To get even spacing from zero (i.e. x[1] - x[0] = x[0] - 0), the lower-bound must be:
+      lo = hi / (2**n)  for `n` points
+
     """
     DEF_NUM_LIN = 20
 
@@ -1219,10 +1439,17 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
     if filter is None and log_flag:
         filter = '>'
 
+    if (integers is False) or (integers is None):
+        integers = None
+    elif integers is True:
+        integers = 1
+    elif (not _is_integer_scalar(integers)) or (integers == 0):
+        raise ValueError(f"Invalid {integers=} :: Must be `True`, `False` or integer!")
+
     # Find extrema of values
     round = None
     # If only 'integers' (whole numbers) are desired, round extrema to *outside*
-    if integers:
+    if integers is not None:
         round = 0
     span = minmax(data, filter=filter, round=round, round_scale=scale, **kwargs)
     if span is None:
@@ -1239,9 +1466,11 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
             num = DEF_NUM_LIN
 
     # If only 'integers', use 'arange'
-    if integers:
+    if integers is not None:
         if num is not None:
             raise ValueError("`num` does not apply when using `integers` scaling!")
+
+        span = span * integers
 
         # Log-spacing : create each decade manually
         if log_flag:
@@ -1268,6 +1497,8 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
         # Linear spacing
         else:
             spaced = np.arange(span[0], span[1]+1)
+
+        spaced = spaced / integers
 
     # Create spacing between min/max values exactly
     else:
@@ -1322,6 +1553,24 @@ def spacing_composite(comp_edges, scale, dex=None, num=None, **kwargs):
     return edges
 
 
+'''
+def spacing_proportional(extr, num, zoom=2.0):
+    num = num + num%2   # make sure number is even
+    xx = np.linspace(-1, 1, num)
+    # This is the function the spacing is (inversely) proportional to (triangle)
+    xx = (zoom - 1.0)*(1.0 - np.fabs(xx)) + 1.0
+    # frequency of points proportional to function (so invert)
+    xx = 1.0 / xx
+    xx = np.cumsum(xx)
+    # add zero to make symmetric
+    xx = np.concatenate([[0.0], xx])
+    xx = zmath.rescale(xx, [-extr, extr])
+    # make center points at pi/2
+    xx = np.pi/2.0 - xx
+    return xx
+'''
+
+
 def array_str(*args, **kwargs):
     return str_array(*args, **kwargs)
 
@@ -1369,7 +1618,7 @@ def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=T
         format = _guess_str_format_from_range(arr)
 
     # Create the style specification
-    form = "{{{}}}".format(format)
+    form = "{{:{}}}".format(format.strip(":"))
 
     arr_str = _str_array_1d(arr, beg, end, form, delim)
     if log and label_log:
@@ -1394,31 +1643,6 @@ def str_array_neighbors(arr, inds, num=1, **kwargs):
 
     rv = "...".join(vals)
     return rv
-
-
-def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
-    """
-    """
-
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            extr = np.log10(np.fabs(minmax(arr, filter='ne')))
-
-    # string values will raise a `TypeError` exception
-    except (TypeError, AttributeError):
-        return ":"
-
-    if any(extr < -log_limit) or any(extr > log_limit):
-        form = ":.{precision:d}e"
-    elif np.issubdtype(arr.dtype, np.integer) and allow_int:
-        form = ":d"
-    else:
-        form = ":.{precision:d}f"
-
-    form = form.format(precision=prec)
-
-    return form
 
 
 def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=True):
@@ -1463,54 +1687,6 @@ def str_array_2d(arr, sides=(3, 3), delim=", ", format=None, log=False, label_lo
 
     return arr_str
 
-
-def _str_array_1d(arr, beg, end, form, delim):
-    arr_str = "["
-    len_arr = arr.size
-
-    # Add the first `first` elements
-    if beg is not None:
-        temp = [form.format(vv) for vv in arr[:beg]]
-        # isinf = [tt in ['nan', 'inf', '-inf'] for tt in temp]
-        # if np.any(isinf) and not np.all(isinf):
-        #     size = len(temp[argfirst(~np.array(isinf))])
-        #     fmt = "{{:^{len:}}}".format(len=size)
-
-        arr_str += delim.join(temp)
-
-    # Include separator unless full array is being printed
-    if (beg is not None) or (end < len_arr):
-        arr_str += "... "
-
-    # Add the last `last` elements
-    if end is not None:
-        arr_str += delim.join([form.format(vv) for vv in arr[-end:]])
-
-    arr_str += "]"
-    return arr_str
-
-
-def _str_array_get_beg_end(sides, size):
-    if sides is None:
-        beg = None
-        end = size
-    elif np.iterable(sides):
-        beg, end = sides
-    else:
-        beg = end = sides
-
-    _beg = 0 if beg is None else beg
-    _end = 0 if end is None else end
-    if _beg + _end >= size:
-        beg = None
-        end = size
-
-    return beg, end
-
-
-# def unify_shapes(*args):
-#
-#
 
 def vecmag(r1, r2=None):
     """Calculate the distance from vector(s) r1 to r2.
@@ -1602,6 +1778,124 @@ def within(vals, extr, edges=True, all=False, inv=False, close=None):
     return retval
 
 
+def xyz_to_rpt(xyz):
+    """Convert from cartesian to spherical coordinates.
+
+    Spherical is defined as ``(rad, phi, theta)``, where `phi` is the azimuthal angle (xy),
+    and `theta` is the polar angle, with the +z-axis corresponding to ``theta = 0``.
+
+    NOTE: 3-coordinates must be the zeroth axis.
+
+    Arguments
+    ---------
+    xyz : (3, ...) array of scalar
+        Cartesian coordinate vector.
+
+    Returns
+    -------
+    rpt : (3, ...) array of scalar
+        Spherical coordinate vector, same shape as input.
+
+    """
+    xyz = np.asarray(xyz)
+    if (np.ndim(xyz) < 1) or (np.shape(xyz)[0] != 3):
+        raise ValueError("`xyz` ({}) must have shape (3, ...)!".format(xyz.shape))
+
+    rpt = np.zeros_like(xyz)
+    xy = xyz[0, ...]**2 + xyz[1, ...]**2
+    rpt[0, ...] = np.sqrt(xy + xyz[2, ...]**2)
+    rpt[1, ...] = np.arctan2(xyz[1, ...], xyz[0, ...])
+    rpt[2, ...] = np.arctan2(np.sqrt(xy), xyz[2, ...])
+    return rpt
+
+
+def xyz_to_rtp(xyz):
+    xyz = np.asarray(xyz)
+    rpt = xyz_to_rpt(xyz)
+    rtp = np.zeros_like(rpt)
+    rtp[0, ...] = rpt[0, ...]
+    rtp[1, ...] = rpt[2, ...]
+    rtp[2, ...] = rpt[1, ...]
+    return rtp
+
+
+def zenumerate(*arr):
+    zipped = zip(*arr)
+    return enumerate(zipped)
+
+
+# ==== Utility Methods ====
+
+
+def _guess_str_format_from_range(arr, prec=2, log_limit=2, allow_int=True):
+    """
+    """
+
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            extr = np.log10(np.fabs(minmax(arr, filter='ne')))
+
+    # string values will raise a `TypeError` exception
+    except (TypeError, AttributeError):
+        return ":"
+
+    if any(extr < -log_limit) or any(extr > log_limit):
+        form = ":.{precision:d}e"
+    elif np.issubdtype(arr.dtype, np.integer) and allow_int:
+        form = ":d"
+    else:
+        form = ":.{precision:d}f"
+
+    form = form.format(precision=prec)
+
+    return form
+
+
+def _str_array_1d(arr, beg, end, form, delim):
+    arr_str = "["
+    len_arr = arr.size
+
+    # Add the first `first` elements
+    if beg is not None:
+        temp = [form.format(vv) for vv in arr[:beg]]
+        # isinf = [tt in ['nan', 'inf', '-inf'] for tt in temp]
+        # if np.any(isinf) and not np.all(isinf):
+        #     size = len(temp[argfirst(~np.array(isinf))])
+        #     fmt = "{{:^{len:}}}".format(len=size)
+
+        arr_str += delim.join(temp)
+
+    # Include separator unless full array is being printed
+    if (beg is not None) or (end < len_arr):
+        arr_str += "... "
+
+    # Add the last `last` elements
+    if end is not None:
+        arr_str += delim.join([form.format(vv) for vv in arr[-end:]])
+
+    arr_str += "]"
+    return arr_str
+
+
+def _str_array_get_beg_end(sides, size):
+    if sides is None:
+        beg = None
+        end = size
+    elif np.iterable(sides):
+        beg, end = sides
+    else:
+        beg = end = sides
+
+    _beg = 0 if beg is None else beg
+    _end = 0 if end is None else end
+    if _beg + _end >= size:
+        beg = None
+        end = size
+
+    return beg, end
+
+
 def _comparison_function(comp, value=0.0, **kwargs):
     """Retrieve the comparison function matching the input expression.
 
@@ -1638,29 +1932,6 @@ def _comparison_function(comp, value=0.0, **kwargs):
         return func(xx, value, **kwargs)
 
     return comp_func
-
-
-def comparison_filter(data, filter, inds=False, value=0.0, finite=True, mask=False, **kwargs):
-    """
-    """
-    if filter is None:
-        return data
-    if not callable(filter):
-        filter = _comparison_function(filter, value=value, **kwargs)
-
-    # Include is-finite check
-    if finite:
-        sel = filter(data) & np.isfinite(data)
-    else:
-        sel = filter(data)
-
-    if inds:
-        return sel
-    else:
-        if mask:
-            return np.ma.masked_where(~sel, data)
-        else:
-            return np.asarray(data)[sel]
 
 
 def _fracToInt(frac, size, within=None, round='floor'):
@@ -1748,3 +2019,20 @@ def _is_numeric_scalar(val):
     rv = isinstance(val, (int, float, decimal.Decimal, np.number, np.ndarray))
 
     return rv
+
+
+def _is_integer_scalar(val):
+    return np.issubdtype(type(val), np.integer)
+
+
+# ==== Deprecations ====
+
+
+def sliceForAxis(*args, **kwargs):
+    utils.dep_warn("math_core.sliceForAxis", newname="math_core.slice_for_axis")
+    return slice_for_axis(*args, **kwargs)
+
+
+def zenum(*arr):
+    utils.dep_warn("zenum", newname="zenumerate")
+    return zenumerate(*arr)

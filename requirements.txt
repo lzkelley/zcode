@@ -3,9 +3,11 @@ numpy
 astropy
 scipy
 sympy
+tqdm
 six
 future
 nose
 matplotlib
 seaborn
 scikit-image
+click
