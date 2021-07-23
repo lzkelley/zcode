@@ -47,7 +47,10 @@ Current
     - `binary_circular_vels()`  [NEW-FUNCTION]
     - `inclinations_uniform()` <== `uniform_inclinations()`  [DEPRECATION]
     - Convert args to arrays as needed in `eddington_luminosity()` and `schwarzschild_radius()`
-
+  - 'obs.py'
+    - `mag_to_flux_zero()`  [NEW-FUNCTION]
+      - Calculate flux based on magnitude and given zero-point in Jansky
+    
 - 'math/'
   - reordered functions by broad-category (API, utils, deprecated), and alphabetically.
   - `math_core.py`
