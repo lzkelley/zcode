@@ -1108,14 +1108,6 @@ def smap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
     """
     args = np.asarray(args)
 
-    if scale is None:
-        if np.size(args) > 1 and np.all(args > 0.0):
-            scale = 'log'
-        else:
-            scale = 'lin'
-
-    log = _scale_to_log_flag(scale)
-
     if not isinstance(cmap, mpl.colors.Colormap):
         if cmap is None:
             # cmap = 'viridis'
@@ -1138,7 +1130,16 @@ def smap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
         cmap.set_over(over)
 
     if norm is None:
+        if scale is None:
+            if np.size(args) > 1 and np.all(args > 0.0):
+                scale = 'log'
+            else:
+                scale = 'lin'
+
+        log = _scale_to_log_flag(scale)
         norm = get_norm(args, midpoint=midpoint, log=log, filter=filter)
+    else:
+        log = isinstance(norm, mpl.colors.LogNorm)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
