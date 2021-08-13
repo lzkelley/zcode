@@ -425,7 +425,7 @@ def percs_from_sigma(sigma, side='in', boundaries=False):
     elif side.startswith('out'):
         inside = False
     else:
-        raise ValueError("`side` = '{}' must be {'in', 'out'}.".format(side))
+        raise ValueError("`side` = '{}' must be ['in', 'out'].".format(side))
 
     # From CDF from -inf to `sig`
     cdf = sp.stats.norm.cdf(sigma)
@@ -679,7 +679,7 @@ class LH_Sampler:
             log = [log] * npar
 
         if np.any([ll not in [True, False] for ll in log]):
-            raise ValueError(f"`log` value(s) must be 'True' or 'False'!")
+            raise ValueError("`log` value(s) must be 'True' or 'False'!")
 
         # Draw samples in [0.0, 1.0]
         samps = cls.sample_unit(npar, nsamp=nsamp, **kwargs)
