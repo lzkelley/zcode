@@ -1181,8 +1181,10 @@ def rescale(arr, span=None, log=False, qrange=None, clip=False):
 
     # rescale to [0.0, 1.0]
     out = (out - extr[0]) / (extr[1] - extr[0])
-    # rescale to new span
-    if span is not None:
+    if span is None:
+        span = [0.0, 1.0]
+    # rescale to new span (not needed if [0.0, 1.0])
+    else:
         out = span[0] + out * (span[1] - span[0])
 
     if clip is True:
