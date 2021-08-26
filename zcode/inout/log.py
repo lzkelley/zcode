@@ -2,7 +2,7 @@
 
 Classes
 -------
--   IndentFormatter          - Sets the log-message indentation level based on the stack depth.
+-   Indent_Formatter          - Sets the log-message indentation level based on the stack depth.
 
 Functions
 ---------
@@ -21,14 +21,11 @@ import inspect
 import numpy as np
 
 from . import inout_core
-from .. import utils
 
-__all__ = ['IndentFormatter', 'get_logger', 'default_logger', 'log_memory',
-           # DEPRECATED:
-           'getLogger', 'defaultLogger']
+__all__ = ['Indent_Formatter', 'get_logger', 'default_logger', 'log_memory']
 
 
-class IndentFormatter(logging.Formatter):
+class Indent_Formatter(logging.Formatter):
     """Logging formatter where the depth of the stack sets the message indentation level.
     """
 
@@ -53,7 +50,7 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
                tofile=None, tostr=sys.stdout, info_file=True):
     """Create a standard logger object which logs to file and or stdout stream.
 
-    If logging to output stream (stdout) is enabled, an `IndentFormatter` object is used.
+    If logging to output stream (stdout) is enabled, an `Indent_Formatter` object is used.
 
     Arguments
     ---------
@@ -110,7 +107,7 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
             format_file = "%(asctime)s %(levelname)8.8s [%(filename)20.20s:"
             format_file += "%(funcName)-20.20s]%(indent)s%(message)s"
 
-        fileFormatter = IndentFormatter(format_file, format_date=format_date)
+        fileFormatter = Indent_Formatter(format_file, format_date=format_date)
         fileHandler = logging.FileHandler(tofile, 'w')
         fileHandler.setFormatter(fileFormatter)
         fileHandler.setLevel(level_file)
@@ -122,7 +119,7 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         if info_file:
             level_info = logging.INFO
             tofile_info = inout_core.modify_filename(tofile, append='_info')
-            file_form = IndentFormatter(format_file, format_date=format_date)
+            file_form = Indent_Formatter(format_file, format_date=format_date)
             file_hand = logging.FileHandler(tofile_info, 'w')
             file_hand.setFormatter(file_form)
             file_hand.setLevel(level_info)
@@ -135,7 +132,7 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
         if format_stream is None:
             format_stream = "%(indent)s%(message)s"
 
-        strFormatter = IndentFormatter(format_stream, format_date=format_date)
+        strFormatter = Indent_Formatter(format_stream, format_date=format_date)
         strHandler = logging.StreamHandler(tostr)
         strHandler.setFormatter(strFormatter)
         strHandler.setLevel(level_stream)
@@ -192,8 +189,6 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
     # Not entirely sure why this works, but it seems to
     logger.copy = _copy.__get__(logger)
 
-    # Add a `raise_error` method to both log an error and raise one
-    # -------------------------------------------------------------
     logger._frac_lvl = logging.INFO
 
     def _frac(self, num, den, prep=None, post=None, lvl=None):
@@ -213,8 +208,6 @@ def get_logger(name, format_stream=None, format_file=None, format_date=None,
     logger.frac = _frac.__get__(logger)
 
     def _clear_files(self):
-        """Log information about a fraction, "[{prep} ]{}/{} = {}[ {post}]".
-        """
         for fn in self._filenames:
             with open(fn, 'w') as out:  # noqa
                 pass
@@ -304,16 +297,3 @@ def log_memory(log, pref=None, lvl=logging.DEBUG):
         log.debug("psutil.Process failed.  '{}'".format(str(err)))
 
     return
-
-
-# ==== DEPRECATIONS ====
-
-
-def defaultLogger(*args, **kwargs):
-    utils.dep_warn("defaultLogger", newname="default_logger")
-    return default_logger(*args, **kwargs)
-
-
-def getLogger(*args, **kwargs):
-    utils.dep_warn("getLogger", newname="get_logger")
-    return get_logger(*args, **kwargs)
