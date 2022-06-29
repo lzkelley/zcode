@@ -295,12 +295,14 @@ def info(array, shape=True, sample=3, stats=True):
 def log_normal_base_10(mu, sigma, size=None, shift=0.0):
     """Draw from a lognormal distribution with values in base-10 (instead of e).
 
+    PDF = (log10(e) * ln(10) / [x * s * sqrt(2*pi)]) * exp( -[ln(x) - ln(mm)]^2 / [2 ln(10^s)^2])
+
     Arguments
     ---------
     mu : (N,) scalar
         Mean of the distribution in linear space (e.g. 1.0e8 instead of 8.0).
     sigma : (N,) scalar
-        Variance of the distribution *in dex* (e.g. 1.0 means factor of 10.0 variance)
+        Standard-deviaiton of the distribution *in dex* (e.g. 1.0 means factor of 10.0 stdev)
     size : (M,) int
         Desired size of sample.
 
