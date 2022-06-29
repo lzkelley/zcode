@@ -13,7 +13,7 @@ setup(
     name="zcode",
     version=version,
     author="Luke Zoltan Kelley",
-    author_email="lkelley@cfa.harvard.edu",
+    author_email="lzkelley@gmail.com",
     description=("General, commonly used functions for other projects."),
     license="MIT",
     keywords="",
