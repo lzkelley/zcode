@@ -123,11 +123,27 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None, lntol=1e-2):
     return integ
 
 
-def even_selection(size, select, sel_is_true=True):
+def even_selection(size, select, sel_is_true=True, return_indices=False):
     """Create a boolean indexing array of length `size` with `select`, evenly spaced elements.
 
-    If `sel_is_true == True`  then there are `select` True  elements and the rest are False.
-    If `sel_is_true == False` then there are `select` False elements and the rest are True.
+    Arguments
+    ---------
+    size : int,
+        Total size of array.
+    select : int,
+        Number of entries to select.
+    sel_is_true : bool,
+        Whether the 'selected' elements should be designated as `True` or `False`.
+        * `sel_is_true == True`  then there are `select` True  elements and the rest are False.
+        * `sel_is_true == False` then there are `select` False elements and the rest are True.
+    return_indices : bool,
+        Return array index numbers instead of a boolean array.  Uses `numpy.where` and may be slow.
+        * True : return array index numbers (with `select` elements)
+        * False : return boolean array (with `size` elements)
+
+    Returns
+    -------
+    cut : array
 
     """
     y = True if sel_is_true else False
@@ -141,13 +157,16 @@ def even_selection(size, select, sel_is_true=True):
     elif select > size/2:
         cut = np.ones(size, dtype=bool) * y
         q, r = divmod(size, size-select)
-        indices = [q*i + min(i, r) for i in range(size-select)]
-        cut[indices] = n
+        idx = [q*i + min(i, r) for i in range(size-select)]
+        cut[idx] = n
     else:
         cut = np.ones(size, dtype=bool) * n
         q, r = divmod(size, select)
-        indices = [q*i + min(i, r) for i in range(select)]
-        cut[indices] = y
+        idx = [q*i + min(i, r) for i in range(select)]
+        cut[idx] = y
+
+    if return_indices:
+        cut = np.where(cut)[0]
 
     return cut
 
