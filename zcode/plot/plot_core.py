@@ -224,27 +224,26 @@ def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze
 def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=None,
              thresh=None, side=None, grid=True, lim=None, invert=False, ticks=True, stretch=1.0,
              **kwargs):
-    """
-    Configure a particular axis of the given axes object.
+    """Configure a particular axis of the given axes object.
 
     Arguments
     ---------
-       ax     : <matplotlib.axes.Axes>, base axes object to modify
-       axis   : <str>, which axis to target {``x`` or ``y``}
-       color      : <str>, color for the axis (see ``matplotlib.colors``)
-       fs     : <int>, font size for labels
-       pos    : <float>, position of axis-label/lines relative to the axes object
-       trans  : <str>, transformation type for the axes
-       label  : <str>, axes label (``None`` means blank)
-       scale  : <str>, axis scale, e.g. 'log', (``None`` means default)
-       thresh : <float>, for 'symlog' scaling, the threshold for the linear segment
-       side   : <str>, where to place the markings, {``left``, ``right``, ``top``, ``bottom``}
-       ts     : <int>, tick-size (for the major ticks only)
-       grid   : <bool>, whether grid lines should be enabled
-       lim    : <float>[2], limits for the axis range
-       invert : <bool>, whether to invert this axis direction (i.e. high to low)
-       ticks
-       stretch : <flt>,
+    ax     : <matplotlib.axes.Axes>, base axes object to modify
+    axis   : <str>, which axis to target {``x`` or ``y``}
+    color      : <str>, color for the axis (see ``matplotlib.colors``)
+    fs     : <int>, font size for labels
+    pos    : <float>, position of axis-label/lines relative to the axes object
+    trans  : <str>, transformation type for the axes
+    label  : <str>, axes label (``None`` means blank)
+    scale  : <str>, axis scale, e.g. 'log', (``None`` means default)
+    thresh : <float>, for 'symlog' scaling, the threshold for the linear segment
+    side   : <str>, where to place the markings, {``left``, ``right``, ``top``, ``bottom``}
+    ts     : <int>, tick-size (for the major ticks only)
+    grid   : <bool>, whether grid lines should be enabled
+    lim    : <float>[2], limits for the axis range
+    invert : <bool>, whether to invert this axis direction (i.e. high to low)
+    ticks
+    stretch : <flt>,
 
     """
 
@@ -430,11 +429,11 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
     if range:
         if lo is not None:
             if at == AT_EXACTLY:
-                lims[0] = lims[1]/lo
+                lims[0] = lims[1]*lo
             elif at == AT_LEAST:
-                lims[0] = np.max([lims[0], lims[0]/lo])
+                lims[0] = np.max([lims[0], lims[0]*lo])
             elif at == AT_MOST:
-                lims[0] = np.min([lims[0], lims[0]/lo])
+                lims[0] = np.min([lims[0], lims[0]*lo])
         elif hi is not None:
             if at == AT_EXACTLY:
                 lims[1] = lims[1]*hi
@@ -473,6 +472,7 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 
     # Actually set the axes limits
     set_lim(lims)
+
     if invert:
         if axis == 'x':
             ax.invert_xaxis()
@@ -485,8 +485,10 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 def set_ticks(ax, axis='y', every=2, log=True):
     """DEV
     """
-    if axis != 'y': raise ValueError("Only 'y' axis currently supported.")
-    if not log: raise ValueError("Only `log` scaling currently supported.")
+    if axis != 'y':
+        raise ValueError("Only 'y' axis currently supported.")
+    if not log:
+        raise ValueError("Only `log` scaling currently supported.")
 
     ylims = np.array(ax.get_ylim())
     man, exp = zmath.frexp10(ylims[0])
