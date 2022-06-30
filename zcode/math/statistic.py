@@ -326,18 +326,44 @@ def sample_log_normal_base_10(mean, sigma_dex, size=None, shift=0.0):
     return dist
 
 
-def func_log_normal_base_10(xx, mean, sigma_dex):
+def func_log_normal_base_10(xx, mean, sigma_dex, dlog10x=False):
     """Log Normal function specified by mean of log-normal and stdev in dex (i.e. log10).
 
     NOTE: the input `mean` is the mean of the full log-normal distribution, not the underlying
           normal distribution (which is the standard convention).
 
     PDF = (log10(e) * ln(10) / [x * s * sqrt(2*pi)]) * exp( -[ln(x) - ln(mm)]^2 / [2 ln(10^s)^2])
+
+    Arguments
+    ---------
+    xx : (N,) array_like
+        Locations at which to evaluate the function.
+    mean : float,
+        Mean value of the log-normal distribution.
+        i.e. the average of the returned values will equal this number.
+    sigma_dex : float
+        Standard deviation in dex, i.e. in log10(x).
+    dlog10x : bool
+        Whether the function is dn/dx or dn/dlog10(x).
+        True:  integral[pdf dlog10(x)] = 1
+        False: integral[pdf dx] = 1
+
+    Returns
+    -------
+    yy : (N,)
+        Log normal function evaluated at the given locations.
+
     """
     ss = np.log(10.0 ** sigma_dex)
     # convert to mean of log-normal distribution
     mu = mean / np.exp(-(ss**2)/2)
-    norm = np.sqrt(2 * np.pi) * xx * ss
+    # norm = np.sqrt(2 * np.pi) * xx * ss     # this applies to dn/dx specifically
+    norm = np.sqrt(2 * np.pi) * ss * xx
+
+    # convert from [dn/dx] to [dn/dlog10(x)]
+    if dlog10x:
+        norm *= np.log10(np.e) / xx
+
     xx = np.log(xx)
     yy = np.square((xx - np.log(mu)) / ss) / 2.0
     yy = np.exp(-yy) / norm
