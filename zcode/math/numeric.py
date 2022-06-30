@@ -187,18 +187,19 @@ def extend(arr, num=1, log=True, append=False):
 
     """
 
-    if(log): useArr = np.log10(arr)
-    else:      useArr = np.array(arr)
+    useArr = np.log10(arr) if log else np.asarray(arr)
 
     steps = np.arange(1, num+1)
     left = useArr[0] + (useArr[0] - useArr[1])*steps[::-1].squeeze()
     rigt = useArr[-1] + (useArr[-1] - useArr[-2])*steps.squeeze()
 
-    if(log):
+    if log:
         left = np.power(10.0, left)
         rigt = np.power(10.0, rigt)
 
-    if(append): return np.hstack([left, arr, rigt])
+    if append:
+        return np.hstack([left, arr, rigt])
+
     return [left, rigt]
 
 
@@ -477,7 +478,9 @@ def smooth_convolve(vals, window_size=10, window='hanning'):
     scipy.signal.lfilter
 
     TODO: the window parameter could be the window itself if an array instead of a string
-    NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+    NOTE: length(output) != length(input), to correct this:
+          return y[(window_len/2-1):-(window_len/2)] instead of just y.
+
     """
     _valid_windows = ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']
 

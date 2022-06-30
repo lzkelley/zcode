@@ -45,7 +45,7 @@ __all__ = [
     'broadcast', 'broadcastable', 'broadcast_1d', 'contiguousInds', 'edges_from_cents',
     'expand_broadcastable',
     'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
-    'isnumeric', 'midpoints', 'minmax',  'mono',
+    'isnumeric', 'midpoints', 'minmax', 'mono',
     'ordered_groups', 'really1d', 'renumerate', 'rescale', 'roll',
 
     'rotation_matrix_between_vectors', 'rotation_matrix_about',
@@ -146,6 +146,9 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
         Assume the input array of `edges` is sorted.
         (Note: `vals` can be unsorted regardless)
     side : str or `None`
+        Find the nearest element on a given 'side' of the target value(s).
+        `left`  (anything starting with 'l'): find  lesser-than values
+        `right` (anything starting with 'r'): find greater-than values
 
     Returns
     -------
@@ -545,10 +548,12 @@ def contiguousInds(args):
     idx += 1
 
     # If the start is True prepend a 0
-    if condition[0]:  idx = np.r_[0, idx]
+    if condition[0]:
+        idx = np.r_[0, idx]
 
     # If the end is True, append the length of the array
-    if condition[-1]: idx = np.r_[idx, condition.size]
+    if condition[-1]:
+        idx = np.r_[idx, condition.size]
 
     # Reshape the result into two columns
     idx.shape = (-1, 2)
@@ -683,14 +688,18 @@ def groupDigitized(arr, bins, edges='right'):
 
     """
     edges = edges.lower()
-    if edges.startswith('r'): right = True
-    elif edges.startswith('l'): right = False
-    else: RuntimeError("``edges`` must be 'right' or 'left'!")
+    if edges.startswith('r'):
+        right = True
+    elif edges.startswith('l'):
+        right = False
+    else:
+        RuntimeError("``edges`` must be 'right' or 'left'!")
 
     # `numpy.digitize` always assumes `bins` are right-edges (in effect)
     shift = 0
     # If we want 'left' bin edges, such shift each bin leftwards
-    if not right: shift = -1
+    if not right:
+        shift = -1
 
     # Find in which bin each element of arr belongs
     pos = np.digitize(arr, bins, right=right) + shift
@@ -1077,12 +1086,10 @@ def ordered_groups(values, targets, inds=None, dir='above', include=False):
     targets = np.atleast_1d(targets)
     if dir.startswith('a'):
         above = True
-        if include: side = 'left'
-        else: side = 'right'
+        side = 'left' if include else 'right'
     elif dir.startswith('b'):
         above = False
-        if include: side = 'right'
-        else: side = 'left'
+        side = 'right' if include else 'left'
     else:
         raise ValueError("`dir` = '{}' must be either 'a'bove or 'b'elow.".format(dir))
 
@@ -1707,9 +1714,10 @@ def vecmag(r1, r2=None):
 
     """
 
-    if(r2 is None): r2 = np.zeros(np.shape(r1))
+    if (r2 is None):
+        r2 = np.zeros(np.shape(r1))
 
-    if(len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1):
+    if (len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1):
         dist = np.sqrt(np.sum(np.square(r1 - r2), axis=1))
     else:
         dist = np.sqrt(np.sum(np.square(r1 - r2)))
@@ -2009,7 +2017,8 @@ def _flagsToFilter(positive, nonzero, filter=None, source=None):
 
 
 def _infer_scale(args):
-    if np.all(args > 0.0): return 'log'
+    if np.all(args > 0.0):
+        return 'log'
     return 'lin'
 
 
