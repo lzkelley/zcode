@@ -70,12 +70,27 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None, lntol=1e-2):
 
     yy = np.ma.masked_values(yy, value=0.0, atol=0.0)
 
+    ''' NOTE: this doesn't work if `xx` is expanded, but `axis != 0`
     # if np.ndim(yy) > 1 and np.ndim(xx) == 1:
     if np.ndim(yy) != np.ndim(xx):
         if np.ndim(yy) < np.ndim(xx):
             raise ValueError("BAD SHAPES")
         cut = [slice(None)] + [np.newaxis for ii in range(np.ndim(yy)-1)]
         xx = xx[tuple(cut)]
+    '''
+
+    if np.ndim(yy) != np.ndim(xx):
+        if np.ndim(yy) > 1 and np.ndim(xx) > 1:
+            raise ValueError(f"{np.ndim(yy)=}, {np.ndim(xx)=} || provide either a 1D `xx` or the correct shape!")
+        if np.ndim(yy) < np.ndim(xx):
+            raise ValueError("BAD SHAPES")
+        # This only works if `ndim(xx) == 1`
+        cut = [slice(None)] + [np.newaxis for ii in range(np.ndim(yy)-1)]
+        xx = xx[tuple(cut)]
+        xx = np.moveaxis(xx, 0, axis)
+
+    if np.shape(xx)[axis] != np.shape(yy)[axis]:
+        raise ValueError(f"Shape mismatch!  {np.shape(xx)=} {np.shape(yy)=} | {axis=}")
 
     log_base = np.e
     if dlogx is not None:
