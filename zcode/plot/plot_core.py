@@ -1749,36 +1749,39 @@ class MidpointNormalize(mpl.colors.Normalize):
     e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
     """
 
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+    def __init__(self, vmin=None, vmax=None, midpoint=0.0, clip=False):
         super().__init__(vmin, vmax, clip)
         self.midpoint = midpoint
         return
 
     def __call__(self, value, clip=None):
-        # I'm ignoring masked values and all kinds of edge cases to make a
-        # simple example...
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
+
+    def inverse(self, value):
+        # x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        y, x = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
 
 class MidpointLogNormalize(mpl.colors.LogNorm):
-    """
-    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
 
-    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
-    """
-
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+    def __init__(self, vmin=None, vmax=None, midpoint=0.0, clip=False):
         super().__init__(vmin, vmax, clip)
         self.midpoint = midpoint
         return
 
     def __call__(self, value, clip=None):
-        # I'm ignoring masked values and all kinds of edge cases to make a
-        # simple example...
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         vals = zmath.interp(value, x, y, xlog=True, ylog=False)
-        return np.ma.masked_array(vals, np.isnan(value))
+        # return np.ma.masked_array(vals, np.isnan(value))
+        return vals
+
+    def inverse(self, value):
+        y, x = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        vals = zmath.interp(value, x, y, xlog=False, ylog=True)
+        # return np.ma.masked_array(vals, np.isnan(value))
+        return vals
 
 
 # ======================
