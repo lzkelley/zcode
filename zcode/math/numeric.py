@@ -70,12 +70,27 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None, lntol=1e-2):
 
     yy = np.ma.masked_values(yy, value=0.0, atol=0.0)
 
+    ''' NOTE: this doesn't work if `xx` is expanded, but `axis != 0`
     # if np.ndim(yy) > 1 and np.ndim(xx) == 1:
     if np.ndim(yy) != np.ndim(xx):
         if np.ndim(yy) < np.ndim(xx):
             raise ValueError("BAD SHAPES")
         cut = [slice(None)] + [np.newaxis for ii in range(np.ndim(yy)-1)]
         xx = xx[tuple(cut)]
+    '''
+
+    if np.ndim(yy) != np.ndim(xx):
+        if np.ndim(yy) > 1 and np.ndim(xx) > 1:
+            raise ValueError(f"{np.ndim(yy)=}, {np.ndim(xx)=} || provide either a 1D `xx` or the correct shape!")
+        if np.ndim(yy) < np.ndim(xx):
+            raise ValueError("BAD SHAPES")
+        # This only works if `ndim(xx) == 1`
+        cut = [slice(None)] + [np.newaxis for ii in range(np.ndim(yy)-1)]
+        xx = xx[tuple(cut)]
+        xx = np.moveaxis(xx, 0, axis)
+
+    if np.shape(xx)[axis] != np.shape(yy)[axis]:
+        raise ValueError(f"Shape mismatch!  {np.shape(xx)=} {np.shape(yy)=} | {axis=}")
 
     log_base = np.e
     if dlogx is not None:
@@ -123,11 +138,27 @@ def cumtrapz_loglog(yy, xx, bounds=None, axis=-1, dlogx=None, lntol=1e-2):
     return integ
 
 
-def even_selection(size, select, sel_is_true=True):
+def even_selection(size, select, sel_is_true=True, return_indices=False):
     """Create a boolean indexing array of length `size` with `select`, evenly spaced elements.
 
-    If `sel_is_true == True`  then there are `select` True  elements and the rest are False.
-    If `sel_is_true == False` then there are `select` False elements and the rest are True.
+    Arguments
+    ---------
+    size : int,
+        Total size of array.
+    select : int,
+        Number of entries to select.
+    sel_is_true : bool,
+        Whether the 'selected' elements should be designated as `True` or `False`.
+        * `sel_is_true == True`  then there are `select` True  elements and the rest are False.
+        * `sel_is_true == False` then there are `select` False elements and the rest are True.
+    return_indices : bool,
+        Return array index numbers instead of a boolean array.  Uses `numpy.where` and may be slow.
+        * True : return array index numbers (with `select` elements)
+        * False : return boolean array (with `size` elements)
+
+    Returns
+    -------
+    cut : array
 
     """
     y = True if sel_is_true else False
@@ -141,13 +172,16 @@ def even_selection(size, select, sel_is_true=True):
     elif select > size/2:
         cut = np.ones(size, dtype=bool) * y
         q, r = divmod(size, size-select)
-        indices = [q*i + min(i, r) for i in range(size-select)]
-        cut[indices] = n
+        idx = [q*i + min(i, r) for i in range(size-select)]
+        cut[idx] = n
     else:
         cut = np.ones(size, dtype=bool) * n
         q, r = divmod(size, select)
-        indices = [q*i + min(i, r) for i in range(select)]
-        cut[indices] = y
+        idx = [q*i + min(i, r) for i in range(select)]
+        cut[idx] = y
+
+    if return_indices:
+        cut = np.where(cut)[0]
 
     return cut
 
@@ -168,18 +202,19 @@ def extend(arr, num=1, log=True, append=False):
 
     """
 
-    if(log): useArr = np.log10(arr)
-    else:      useArr = np.array(arr)
+    useArr = np.log10(arr) if log else np.asarray(arr)
 
     steps = np.arange(1, num+1)
     left = useArr[0] + (useArr[0] - useArr[1])*steps[::-1].squeeze()
     rigt = useArr[-1] + (useArr[-1] - useArr[-2])*steps.squeeze()
 
-    if(log):
+    if log:
         left = np.power(10.0, left)
         rigt = np.power(10.0, rigt)
 
-    if(append): return np.hstack([left, arr, rigt])
+    if append:
+        return np.hstack([left, arr, rigt])
+
     return [left, rigt]
 
 
@@ -458,7 +493,9 @@ def smooth_convolve(vals, window_size=10, window='hanning'):
     scipy.signal.lfilter
 
     TODO: the window parameter could be the window itself if an array instead of a string
-    NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+    NOTE: length(output) != length(input), to correct this:
+          return y[(window_len/2-1):-(window_len/2)] instead of just y.
+
     """
     _valid_windows = ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']
 

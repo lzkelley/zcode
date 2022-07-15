@@ -1,2 +1,4 @@
 zcode.egg-info/
 __*
+.tox/
+figures/

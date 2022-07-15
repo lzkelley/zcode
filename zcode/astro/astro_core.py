@@ -17,7 +17,7 @@ __all__ = [
     'eddington_accretion', 'eddington_luminosity',
     'kepler_freq_from_sep', 'kepler_sep_from_freq',
     'mtmr_from_m1m2', 'm1m2_from_mtmr', 'orbital_velocities',
-    'rad_hill', 'rad_isco', 'rad_isco_spin', 'rad_roche',
+    'rad_hill', 'rad_isco', 'rad_isco_spin', 'freq_isco', 'rad_roche',
     'schwarzschild_radius', 'inclinations_uniform',
     # DEPRECATED ----
     'uniform_inclinations',
@@ -153,6 +153,11 @@ def rad_isco(m1, m2, factor=3.0):
     """Inner-most Stable Circular Orbit, radius at which binaries 'merge'.
     """
     return factor * schwarzschild_radius(m1+m2)
+
+
+def freq_isco(m1, m2, **kwargs):
+    rad = rad_isco(m1, m2, **kwargs)
+    return kepler_freq_from_sep(m1+m2, rad)
 
 
 def rad_isco_spin(mass, spin=0.0):

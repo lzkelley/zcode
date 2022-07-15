@@ -16,7 +16,7 @@ with open(fname_version) as inn:
 
 __author__ = "Luke Zoltan Kelley"
 __version__ = version
-__email__ = "lkelley@cfa.harvard.edu"
+__email__ = "lzkelley@gmail.com"
 __status__ = "Development"
 
 from . constants import *

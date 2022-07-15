@@ -1,5 +1,7 @@
 include MANIFEST.in
-include *.txt *.rst
-include setup.sh
-
+include *.txt *.rst *.md
+include setup.py
+include pyproject.toml
 global-exclude *.pyc
+
+graft zcode

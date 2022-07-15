@@ -163,6 +163,9 @@ class Interp2D_RegIrr:
             newy = self._yy[ai, :] * dal + self._yy[ai+1, :] * dah
             newy /= self._dx
 
+        raise
+        yi = None    # BUG: WHAT is `yi` supposed to be?!?!?
+
         ylo = yi * self._dy + self._y0
         yhi = (yi + 1) * self._dy + self._y0
         dy_lo = vv - ylo
@@ -342,8 +345,9 @@ def interp_func(xold, yold, kind='mono', xlog=True, ylog=True, fill_value=np.nan
     if kind == 'mono' or kind.lower() == 'pchip':
         if not np.isscalar(fill_value) or not np.isnan(fill_value):
             raise ValueError("`PchipInterpolator` only support 'nan' fill values!")
+        kwargs.setdefault('extrapolate', True)
         lin_interp = sp.interpolate.PchipInterpolator(
-            xold, yold, extrapolate=True, **kwargs)
+            xold, yold, **kwargs)
     else:
         lin_interp = sp.interpolate.interp1d(
             xold, yold, kind=kind, fill_value=fill_value, **kwargs)

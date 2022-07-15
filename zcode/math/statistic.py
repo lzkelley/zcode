@@ -105,7 +105,8 @@ def confidence_bands(xx, yy, xbins=10, xscale='lin', percs=[0.68, 0.95], filter=
     # Calculate medians and confidence intervals
     for ii, gg in enumerate(groups):
         count[ii] = np.size(gg)
-        if count[ii] == 0: continue
+        if count[ii] == 0:
+            continue
         mm, cc = confidence_intervals(yy[gg], percs=percs)
         med[ii] = mm
         conf[ii, ...] = cc[...]
@@ -292,15 +293,20 @@ def info(array, shape=True, sample=3, stats=True):
     return rv
 
 
-def log_normal_base_10(mu, sigma, size=None, shift=0.0):
+def sample_log_normal_base_10(mean, sigma_dex, size=None, shift=0.0):
     """Draw from a lognormal distribution with values in base-10 (instead of e).
+
+    PDF = (log10(e) * ln(10) / [x * s * sqrt(2*pi)]) * exp( -[ln(x) - ln(mm)]^2 / [2 ln(10^s)^2])
+
+    NOTE: `mean` is the mean of the resulting values, NOT the mean of `log10(values)`!
+          `sigma_dex` is the stdev of the log10(values), not the values themselves!
 
     Arguments
     ---------
     mu : (N,) scalar
         Mean of the distribution in linear space (e.g. 1.0e8 instead of 8.0).
     sigma : (N,) scalar
-        Variance of the distribution *in dex* (e.g. 1.0 means factor of 10.0 variance)
+        Standard-deviaiton of the distribution *in dex* (e.g. 1.0 means factor of 10.0 stdev)
     size : (M,) int
         Desired size of sample.
 
@@ -310,9 +316,58 @@ def log_normal_base_10(mu, sigma, size=None, shift=0.0):
         Resulting distribution of values (in linear space).
 
     """
-    _sigma = np.log(10**sigma)
-    dist = np.random.lognormal(np.log(mu) + shift*np.log(10.0), _sigma, size)
+    ss = np.log(10.0 ** sigma_dex)
+    # convert to mean of log-normal distribution
+    # mu = mean / np.exp(-(ss**2)/2)
+    mu = np.log(mean) - ss**2 / 2
+
+    # dist = np.random.lognormal(np.log(mu) + shift*np.log(10.0), ss, int(size))
+    dist = np.random.lognormal(mu + shift*np.log(10.0), ss, int(size))
     return dist
+
+
+def func_log_normal_base_10(xx, mean, sigma_dex, dlog10x=False):
+    """Log Normal function specified by mean of log-normal and stdev in dex (i.e. log10).
+
+    NOTE: the input `mean` is the mean of the full log-normal distribution, not the underlying
+          normal distribution (which is the standard convention).
+
+    PDF = (log10(e) * ln(10) / [x * s * sqrt(2*pi)]) * exp( -[ln(x) - ln(mm)]^2 / [2 ln(10^s)^2])
+
+    Arguments
+    ---------
+    xx : (N,) array_like
+        Locations at which to evaluate the function.
+    mean : float,
+        Mean value of the log-normal distribution.
+        i.e. the average of the returned values will equal this number.
+    sigma_dex : float
+        Standard deviation in dex, i.e. in log10(x).
+    dlog10x : bool
+        Whether the function is dn/dx or dn/dlog10(x).
+        True:  integral[pdf dlog10(x)] = 1
+        False: integral[pdf dx] = 1
+
+    Returns
+    -------
+    yy : (N,)
+        Log normal function evaluated at the given locations.
+
+    """
+    ss = np.log(10.0 ** sigma_dex)
+    # convert to mean of log-normal distribution
+    mu = mean / np.exp(-(ss**2)/2)
+    # norm = np.sqrt(2 * np.pi) * xx * ss     # this applies to dn/dx specifically
+    norm = np.sqrt(2 * np.pi) * ss * xx
+
+    # convert from [dn/dx] to [dn/dlog10(x)]
+    if dlog10x:
+        norm *= np.log10(np.e) / xx
+
+    xx = np.log(xx)
+    yy = np.square((xx - np.log(mu)) / ss) / 2.0
+    yy = np.exp(-yy) / norm
+    return yy
 
 
 def mean(vals, weights=None, **kwargs):
@@ -425,7 +480,7 @@ def percs_from_sigma(sigma, side='in', boundaries=False):
     elif side.startswith('out'):
         inside = False
     else:
-        raise ValueError("`side` = '{}' must be {'in', 'out'}.".format(side))
+        raise ValueError("`side` = '{}' must be ['in', 'out'].".format(side))
 
     # From CDF from -inf to `sig`
     cdf = sp.stats.norm.cdf(sigma)
@@ -679,7 +734,7 @@ class LH_Sampler:
             log = [log] * npar
 
         if np.any([ll not in [True, False] for ll in log]):
-            raise ValueError(f"`log` value(s) must be 'True' or 'False'!")
+            raise ValueError("`log` value(s) must be 'True' or 'False'!")
 
         # Draw samples in [0.0, 1.0]
         samps = cls.sample_unit(npar, nsamp=nsamp, **kwargs)
@@ -774,3 +829,44 @@ class LH_Sampler:
             points[j, :] = np.random.permutation(points[j, :])
 
         return points
+
+
+# ============================
+# ====    Deprecations    ====
+# ============================
+
+
+'''
+def log_normal_base_10(mu, sigma, size=None, shift=0.0):
+    """Draw from a lognormal distribution with values in base-10 (instead of e).
+
+    PDF = (log10(e) * ln(10) / [x * s * sqrt(2*pi)]) * exp( -[ln(x) - ln(mm)]^2 / [2 ln(10^s)^2])
+
+    NOTE: the mean value is not `mu`, it's mu*exp(ss^2/2)
+          where ss = ln(10^sigma)
+
+    Arguments
+    ---------
+    mu : (N,) scalar
+        Mean of the distribution in linear space (e.g. 1.0e8 instead of 8.0).
+    sigma : (N,) scalar
+        Standard-deviaiton of the distribution *in dex* (e.g. 1.0 means factor of 10.0 stdev)
+    size : (M,) int
+        Desired size of sample.
+
+    Returns
+    -------
+    dist : (M,...) scalar
+        Resulting distribution of values (in linear space).
+
+    """
+    _sigma = np.log(10**sigma)
+    dist = np.random.lognormal(np.log(mu) + shift*np.log(10.0), _sigma, int(size))
+    return dist
+'''
+
+
+def log_normal_base_10(*args, **kwargs):
+    utils.dep_warn("log_normal_base_10", newname="sample_log_normal_base_10")
+    raise
+    # return sample_log_normal_base_10(*args, **kwargs)

@@ -44,6 +44,9 @@ Future / To-Do
 
 Current
 -------
+  - 'astro/'
+    - 'gws.py'
+      - `gw_hardening_timescale()`  [NEW-FUNCTION]
 
 
 [0.1.3] - 2021/07/23

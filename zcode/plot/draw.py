@@ -577,27 +577,30 @@ def outline_text(art, **kwargs):
     return
 
 
-def draw_colorbar_contours(cbar, levels, colors=None, smap=None):
+def draw_colorbar_contours(cbar, levels, colors=None, smap=None, lw=2.0, alpha=0.75):
     ax = cbar.ax
+
+    if isinstance(levels, mpl.contour.QuadContourSet):
+        levels = levels.levels
 
     if colors is None:
         if smap is None:
-            colors = ['0.5' for ll in levels]
-        else:
-            colors = [smap.to_rgba(ll) for ll in levels]
-            colors = [plot_core.invert_color(cc) for cc in colors]
+            smap = mpl.cm.ScalarMappable(norm=cbar.norm, cmap=cbar.cmap)
+
+        colors = [smap.to_rgba(ll) for ll in levels]
+        colors = [plot_core.invert_color(cc) for cc in colors]
 
     orient = cbar.orientation
     if orient.startswith('v'):
         line_func = ax.axhline
-    elif orient.statswith('h'):
+    elif orient.startswith('h'):
         line_func = ax.axvline
     else:
         raise RuntimeError("UNKNOWN ORIENTATION '{}'!".format(orient))
 
     for ll, cc in zip(levels, colors):
         effects = ([
-            mpl.patheffects.Stroke(linewidth=2.0, foreground=cc, alpha=0.5),
+            mpl.patheffects.Stroke(linewidth=lw, foreground=cc, alpha=alpha),
             mpl.patheffects.Normal()
         ])
         line_func(ll, 0.0, 1.0, color=cc, path_effects=effects)

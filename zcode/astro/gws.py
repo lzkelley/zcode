@@ -152,6 +152,15 @@ def gw_hardening_rate_dadt(m1, m2, sma, ecc=None):
     return dadt
 
 
+def gw_hardening_timescale(mchirp, frst):
+    """tau = f_r / (df_r / dt)
+
+    e.g. Enoki & Nagashima 2007 Eq.2.9
+    """
+    tau = (5.0 / 96.0) * np.power(NWTG*mchirp/SPLC**3, -5.0/3.0) * np.power(2*np.pi*frst, -8.0/3.0)
+    return tau
+
+
 def gw_lum_circ(mchirp, freq_orb_rest):
     """
 

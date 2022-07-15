@@ -224,27 +224,26 @@ def figax(figsize=[12, 6], ncols=1, nrows=1, sharex=False, sharey=False, squeeze
 def set_axis(ax, axis='x', pos=None, trans='axes', label=None, scale=None, fs=None,
              thresh=None, side=None, grid=True, lim=None, invert=False, ticks=True, stretch=1.0,
              **kwargs):
-    """
-    Configure a particular axis of the given axes object.
+    """Configure a particular axis of the given axes object.
 
     Arguments
     ---------
-       ax     : <matplotlib.axes.Axes>, base axes object to modify
-       axis   : <str>, which axis to target {``x`` or ``y``}
-       color      : <str>, color for the axis (see ``matplotlib.colors``)
-       fs     : <int>, font size for labels
-       pos    : <float>, position of axis-label/lines relative to the axes object
-       trans  : <str>, transformation type for the axes
-       label  : <str>, axes label (``None`` means blank)
-       scale  : <str>, axis scale, e.g. 'log', (``None`` means default)
-       thresh : <float>, for 'symlog' scaling, the threshold for the linear segment
-       side   : <str>, where to place the markings, {``left``, ``right``, ``top``, ``bottom``}
-       ts     : <int>, tick-size (for the major ticks only)
-       grid   : <bool>, whether grid lines should be enabled
-       lim    : <float>[2], limits for the axis range
-       invert : <bool>, whether to invert this axis direction (i.e. high to low)
-       ticks
-       stretch : <flt>,
+    ax     : <matplotlib.axes.Axes>, base axes object to modify
+    axis   : <str>, which axis to target {``x`` or ``y``}
+    color      : <str>, color for the axis (see ``matplotlib.colors``)
+    fs     : <int>, font size for labels
+    pos    : <float>, position of axis-label/lines relative to the axes object
+    trans  : <str>, transformation type for the axes
+    label  : <str>, axes label (``None`` means blank)
+    scale  : <str>, axis scale, e.g. 'log', (``None`` means default)
+    thresh : <float>, for 'symlog' scaling, the threshold for the linear segment
+    side   : <str>, where to place the markings, {``left``, ``right``, ``top``, ``bottom``}
+    ts     : <int>, tick-size (for the major ticks only)
+    grid   : <bool>, whether grid lines should be enabled
+    lim    : <float>[2], limits for the axis range
+    invert : <bool>, whether to invert this axis direction (i.e. high to low)
+    ticks
+    stretch : <flt>,
 
     """
 
@@ -430,11 +429,11 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
     if range:
         if lo is not None:
             if at == AT_EXACTLY:
-                lims[0] = lims[1]/lo
+                lims[0] = lims[1]*lo
             elif at == AT_LEAST:
-                lims[0] = np.max([lims[0], lims[0]/lo])
+                lims[0] = np.max([lims[0], lims[0]*lo])
             elif at == AT_MOST:
-                lims[0] = np.min([lims[0], lims[0]/lo])
+                lims[0] = np.min([lims[0], lims[0]*lo])
         elif hi is not None:
             if at == AT_EXACTLY:
                 lims[1] = lims[1]*hi
@@ -473,6 +472,7 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 
     # Actually set the axes limits
     set_lim(lims)
+
     if invert:
         if axis == 'x':
             ax.invert_xaxis()
@@ -485,8 +485,10 @@ def set_lim(ax, axis='y', lo=None, hi=None, data=None, range=False, at='exactly'
 def set_ticks(ax, axis='y', every=2, log=True):
     """DEV
     """
-    if axis != 'y': raise ValueError("Only 'y' axis currently supported.")
-    if not log: raise ValueError("Only `log` scaling currently supported.")
+    if axis != 'y':
+        raise ValueError("Only 'y' axis currently supported.")
+    if not log:
+        raise ValueError("Only `log` scaling currently supported.")
 
     ylims = np.array(ax.get_ylim())
     man, exp = zmath.frexp10(ylims[0])
@@ -866,7 +868,7 @@ def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, **k
     return text
 
 
-def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
+def legend(art, keys=None, names=None, x=None, y=None, halign='right', valign='center',
            fs=None, trans=None, prev=None,
            fs_title=None, loc=None, mono=False, zorder=None, align_title=None, **kwargs):
     """Add a legend to the given figure.
@@ -923,6 +925,11 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     else:
         ax = art
         warnings.warn("Unexpected `art` object '{}' (type: {})".format(art, type(art)))
+
+    if (keys is None) or (names is None):
+        kk, nn = ax.get_legend_handles_labels()
+        keys = kk if (keys is None) else keys
+        names = nn if (names is None) else names
 
     kwargs.setdefault('handlelength', _HANDLE_LENGTH)
     kwargs.setdefault('handletextpad', _HANDLE_PAD)
@@ -1108,14 +1115,6 @@ def smap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
     """
     args = np.asarray(args)
 
-    if scale is None:
-        if np.size(args) > 1 and np.all(args > 0.0):
-            scale = 'log'
-        else:
-            scale = 'lin'
-
-    log = _scale_to_log_flag(scale)
-
     if not isinstance(cmap, mpl.colors.Colormap):
         if cmap is None:
             # cmap = 'viridis'
@@ -1138,7 +1137,16 @@ def smap(args=[0.0, 1.0], cmap=None, scale=None, norm=None, midpoint=None,
         cmap.set_over(over)
 
     if norm is None:
+        if scale is None:
+            if np.size(args) > 1 and np.all(args > 0.0):
+                scale = 'log'
+            else:
+                scale = 'lin'
+
+        log = _scale_to_log_flag(scale)
         norm = get_norm(args, midpoint=midpoint, log=log, filter=filter)
+    else:
+        log = isinstance(norm, mpl.colors.LogNorm)
 
     # Create scalar-mappable
     smap = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -1746,36 +1754,39 @@ class MidpointNormalize(mpl.colors.Normalize):
     e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
     """
 
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+    def __init__(self, vmin=None, vmax=None, midpoint=0.0, clip=False):
         super().__init__(vmin, vmax, clip)
         self.midpoint = midpoint
         return
 
     def __call__(self, value, clip=None):
-        # I'm ignoring masked values and all kinds of edge cases to make a
-        # simple example...
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
+
+    def inverse(self, value):
+        # x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        y, x = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
 
 class MidpointLogNormalize(mpl.colors.LogNorm):
-    """
-    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
 
-    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
-    """
-
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+    def __init__(self, vmin=None, vmax=None, midpoint=0.0, clip=False):
         super().__init__(vmin, vmax, clip)
         self.midpoint = midpoint
         return
 
     def __call__(self, value, clip=None):
-        # I'm ignoring masked values and all kinds of edge cases to make a
-        # simple example...
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         vals = zmath.interp(value, x, y, xlog=True, ylog=False)
-        return np.ma.masked_array(vals, np.isnan(value))
+        # return np.ma.masked_array(vals, np.isnan(value))
+        return vals
+
+    def inverse(self, value):
+        y, x = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        vals = zmath.interp(value, x, y, xlog=False, ylog=True)
+        # return np.ma.masked_array(vals, np.isnan(value))
+        return vals
 
 
 # ======================

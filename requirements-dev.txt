@@ -1,0 +1,8 @@
+-r requirements.txt
+flake8
+jupyter
+nbconvert
+pytest
+pytest-cov
+tox
+nose

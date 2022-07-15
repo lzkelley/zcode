@@ -45,7 +45,7 @@ __all__ = [
     'broadcast', 'broadcastable', 'broadcast_1d', 'contiguousInds', 'edges_from_cents',
     'expand_broadcastable',
     'frexp10', 'groupDigitized', 'slice_with_inds_for_axis',
-    'isnumeric', 'midpoints', 'minmax',  'mono',
+    'isnumeric', 'midpoints', 'minmax', 'mono',
     'ordered_groups', 'really1d', 'renumerate', 'rescale', 'roll',
 
     'rotation_matrix_between_vectors', 'rotation_matrix_about',
@@ -146,6 +146,9 @@ def argnearest(edges, vals, assume_sorted=False, side=None):
         Assume the input array of `edges` is sorted.
         (Note: `vals` can be unsorted regardless)
     side : str or `None`
+        Find the nearest element on a given 'side' of the target value(s).
+        `left`  (anything starting with 'l'): find  lesser-than values
+        `right` (anything starting with 'r'): find greater-than values
 
     Returns
     -------
@@ -545,10 +548,12 @@ def contiguousInds(args):
     idx += 1
 
     # If the start is True prepend a 0
-    if condition[0]:  idx = np.r_[0, idx]
+    if condition[0]:
+        idx = np.r_[0, idx]
 
     # If the end is True, append the length of the array
-    if condition[-1]: idx = np.r_[idx, condition.size]
+    if condition[-1]:
+        idx = np.r_[idx, condition.size]
 
     # Reshape the result into two columns
     idx.shape = (-1, 2)
@@ -683,14 +688,18 @@ def groupDigitized(arr, bins, edges='right'):
 
     """
     edges = edges.lower()
-    if edges.startswith('r'): right = True
-    elif edges.startswith('l'): right = False
-    else: RuntimeError("``edges`` must be 'right' or 'left'!")
+    if edges.startswith('r'):
+        right = True
+    elif edges.startswith('l'):
+        right = False
+    else:
+        RuntimeError("``edges`` must be 'right' or 'left'!")
 
     # `numpy.digitize` always assumes `bins` are right-edges (in effect)
     shift = 0
     # If we want 'left' bin edges, such shift each bin leftwards
-    if not right: shift = -1
+    if not right:
+        shift = -1
 
     # Find in which bin each element of arr belongs
     pos = np.digitize(arr, bins, right=right) + shift
@@ -874,7 +883,10 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
 
     """
     if prev is not None:
-        assert len(prev) == 2, "`prev` must have length 2."
+        # assert len(prev) == 2, "`prev` must have length 2."
+        if len(prev) != 2:
+            prev = minmax(prev, stretch=stretch, log_stretch=log_stretch, filter=filter, limit=limit)
+
     if limit is not None:
         assert len(limit) == 2, "`limit` must have length 2."
     if fraction is not None:
@@ -911,14 +923,14 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
 
     # Find extrema
     if percs is None:
-        minmax = np.array([np.min(data), np.max(data)])
+        extr = np.array([np.min(data), np.max(data)])
     else:
         from zcode.math.statistic import quantiles
         assert np.size(percs) == 2, "Provided `percs` must be length two!"
-        minmax = quantiles(data, percs)
+        extr = quantiles(data, percs)
 
     if type is not None:
-        minmax = minmax.astype(type)
+        extr = extr.astype(type)
 
     # Add stretch (relative to center point)
     if (stretch is not None) or (log_stretch is not None):
@@ -936,27 +948,27 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
             raise ValueError("`log_stretch` and `stretch` must be None, scalar or (2,)!")
 
         # Use log-values as needed (stretching in log-space)
-        _minmax = np.log10(minmax) if (log_stretch is not None) else minmax
+        extr_temp = np.log10(extr) if (log_stretch is not None) else extr
         # Find the center, and stretch relative to that
-        cent = np.average(_minmax)
-        _minmax[0] = cent - (1.0 + fact[0])*(cent - _minmax[0])
-        _minmax[1] = cent + (1.0 + fact[1])*(_minmax[1] - cent)
+        cent = np.average(extr_temp)
+        extr_temp[0] = cent - (1.0 + fact[0])*(cent - extr_temp[0])
+        extr_temp[1] = cent + (1.0 + fact[1])*(extr_temp[1] - cent)
         # Convert back to normal-space as needed
-        minmax = np.power(10.0, _minmax) if (log_stretch is not None) else _minmax
+        extr = np.power(10.0, extr_temp) if (log_stretch is not None) else extr_temp
 
     # Compare to previous extrema, if given
     if prev is not None:
         if prev[0] is not None:
-            minmax[0] = np.min([minmax[0], prev[0]])
+            extr[0] = np.min([extr[0], prev[0]])
         if prev[1] is not None:
-            minmax[1] = np.max([minmax[1], prev[1]])
+            extr[1] = np.max([extr[1], prev[1]])
 
     # Compare to limits, if given
     if limit is not None:
         if limit[0] is not None:
-            minmax[0] = np.max([minmax[0], limit[0]]) if not np.isnan(minmax[0]) else limit[0]
+            extr[0] = np.max([extr[0], limit[0]]) if not np.isnan(extr[0]) else limit[0]
         if limit[1] is not None:
-            minmax[1] = np.min([minmax[1], limit[1]]) if not np.isnan(minmax[1]) else limit[1]
+            extr[1] = np.min([extr[1], limit[1]]) if not np.isnan(extr[1]) else limit[1]
 
     # Round the min/max results to given number of sig-figs
     if round is not None:
@@ -964,18 +976,18 @@ def minmax(data, prev=None, stretch=None, log_stretch=None, filter=None, limit=N
             sigfigs = True
         else:
             sigfigs = False
-        minmax[0] = around(minmax[0], decimals=round, sigfigs=sigfigs, dir='floor')
-        minmax[1] = around(minmax[1], decimals=round, sigfigs=sigfigs, dir='ceil')
+        extr[0] = around(extr[0], decimals=round, sigfigs=sigfigs, dir='floor')
+        extr[1] = around(extr[1], decimals=round, sigfigs=sigfigs, dir='ceil')
 
     # Set one of the extrema to a given fraction of the other
     if fraction is not None:
         lo, hi = fraction
         if lo is not None:
-            minmax[0] = lo * minmax[1]
+            extr[0] = lo * extr[1]
         if hi is not None:
-            minmax[1] = hi * minmax[0]
+            extr[1] = hi * extr[0]
 
-    return minmax
+    return extr
 
 
 def mono(arr, type='g', axis=-1):
@@ -1077,12 +1089,10 @@ def ordered_groups(values, targets, inds=None, dir='above', include=False):
     targets = np.atleast_1d(targets)
     if dir.startswith('a'):
         above = True
-        if include: side = 'left'
-        else: side = 'right'
+        side = 'left' if include else 'right'
     elif dir.startswith('b'):
         above = False
-        if include: side = 'right'
-        else: side = 'left'
+        side = 'right' if include else 'left'
     else:
         raise ValueError("`dir` = '{}' must be either 'a'bove or 'b'elow.".format(dir))
 
@@ -1181,8 +1191,10 @@ def rescale(arr, span=None, log=False, qrange=None, clip=False):
 
     # rescale to [0.0, 1.0]
     out = (out - extr[0]) / (extr[1] - extr[0])
-    # rescale to new span
-    if span is not None:
+    if span is None:
+        span = [0.0, 1.0]
+    # rescale to new span (not needed if [0.0, 1.0])
+    else:
         out = span[0] + out * (span[1] - span[0])
 
     if clip is True:
@@ -1705,9 +1717,10 @@ def vecmag(r1, r2=None):
 
     """
 
-    if(r2 is None): r2 = np.zeros(np.shape(r1))
+    if (r2 is None):
+        r2 = np.zeros(np.shape(r1))
 
-    if(len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1):
+    if (len(np.shape(r1)) > 1 or len(np.shape(r2)) > 1):
         dist = np.sqrt(np.sum(np.square(r1 - r2), axis=1))
     else:
         dist = np.sqrt(np.sum(np.square(r1 - r2)))
@@ -2007,7 +2020,8 @@ def _flagsToFilter(positive, nonzero, filter=None, source=None):
 
 
 def _infer_scale(args):
-    if np.all(args > 0.0): return 'log'
+    if np.all(args > 0.0):
+        return 'log'
     return 'lin'
 
 
