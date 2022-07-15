@@ -868,7 +868,7 @@ def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, **k
     return text
 
 
-def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
+def legend(art, keys=None, names=None, x=None, y=None, halign='right', valign='center',
            fs=None, trans=None, prev=None,
            fs_title=None, loc=None, mono=False, zorder=None, align_title=None, **kwargs):
     """Add a legend to the given figure.
@@ -925,6 +925,11 @@ def legend(art, keys, names, x=None, y=None, halign='right', valign='center',
     else:
         ax = art
         warnings.warn("Unexpected `art` object '{}' (type: {})".format(art, type(art)))
+
+    if (keys is None) or (names is None):
+        kk, nn = ax.get_legend_handles_labels()
+        keys = kk if (keys is None) else keys
+        names = nn if (names is None) else names
 
     kwargs.setdefault('handlelength', _HANDLE_LENGTH)
     kwargs.setdefault('handletextpad', _HANDLE_PAD)
