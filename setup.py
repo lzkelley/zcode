@@ -30,10 +30,10 @@ setup(
     # Handled automatically by setuptools. Use 'exclude' to prevent some specific
     # subpackage(s) from being added, if needed
     packages=find_packages(),
-    include_package_data=True,
     # Optional include package data to ship with your package
     # Customize MANIFEST.in if the general case does not suit your needs
     # Comment out this line to prevent the files from being packaged with your software
     include_package_data=True,
-    python_requires=">=3.9",          # Python version restrictions
+    # Python version restrictions
+    python_requires=">=3.9",
 )
