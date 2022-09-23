@@ -11,7 +11,7 @@ from zcode.plot import _PAD
 
 
 __all__ = ["autoscale", "backdrop", "extent", "full_extent", "position_to_extent", "rect_for_inset",
-           "transform"]
+           "transform", "zoom_effect"]
 
 
 def autoscale(ax=None, axis='y', margin=0.1):
@@ -227,6 +227,109 @@ def transform(ax, trans, fig=None):
         transform = mpl.transforms.blended_transform_factory(forms[0], forms[1])
 
     return transform
+
+
+def zoom_effect(ax_main, ax_zoom, lines=[['tl', 'tl'], ['bl', 'bl']], **kwargs):
+    """Add connection lines between two axes creating a zoom effect.
+
+    Arguments
+    ---------
+    ax_main : the base/main axes instance
+    ax_zoom : the zoomed-in axes instance
+    lines : (2, 2), str or int
+        Specification for which corners to connect for the two lines,
+        The format is [[line1-axis1, line1-axis2], [line2-axis1, line2-axis2]]
+        Each element should be one of ['tl', 'tr', 'bl', 'br']
+
+    """
+
+    tt = ax_zoom.transScale + (ax_zoom.transLimits + ax_main.transAxes)
+    # This zooms into just the x-axis (and uses full y-axis range):
+    # trans = mpl.transforms.blended_transform_factory(ax_main.transData, tt)
+    # This zooms into both x and y axes:
+    trans = ax_main.transData
+
+    bbox_zoom = ax_zoom.bbox
+    bbox = mpl.transforms.TransformedBbox(ax_zoom.viewLim, trans)
+
+    kwargs.setdefault('color', 'red')
+    kwargs.setdefault('lw', 0.5)
+    kwargs.setdefault('alpha', 0.25)
+    prop_patches = kwargs.copy()
+    prop_patches["ec"] = kwargs['color']
+    prop_patches["fc"] = "none"
+    prop_patches["lw"] = 0.5
+    prop_patches["alpha"] = 0.2
+
+    l1a1, l1a2 = lines[0]
+    l2a1, l2a2 = lines[1]
+
+    c1, c2, bbox_patch1, bbox_patch2, p = _connect_bbox(
+        bbox_zoom, bbox, l1a1, l1a2, l2a1, l2a2,
+        prop_lines=kwargs, prop_patches=prop_patches)
+
+    # ax_zoom.add_patch(bbox_patch1)
+    ax_main.add_patch(bbox_patch2)
+    ax_main.add_patch(c1)
+    ax_main.add_patch(c2)
+    # ax_main.add_patch(p)
+
+    return c1, c2, bbox_patch1, bbox_patch2, p
+
+
+def _connect_bbox(bbox1, bbox2, l1a1, l1a2, l2a1, l2a2, prop_lines, prop_patches=None):
+    """Add connectors between two bbox's.
+
+    l1a1 : line-1 axis-1  (connects from here to l1a2)
+    l1a2 : line-1 axis-2
+    l2a1 : line-2 axis-1  (connects from here to l2a2)
+    l2a2 : line-2 axis-2
+
+    """
+
+    def _corner_trans(arg):
+        if isinstance(arg, int):
+            return arg
+        if not isinstance(arg, str):
+            err = (
+                f"This function translates from a 'str' specification to an 'int'; "
+                f"recieved {type(arg)}!"
+            )
+            raise ValueError(err)
+        arg = arg.lower()
+        if (arg == 'll') or (arg == 'bl'):
+            return 3
+        elif (arg == 'lr') or (arg == 'br'):
+            return 4
+        elif (arg == 'tl') or (arg == 'ul'):
+            return 2
+        elif (arg == 'tr') or (arg == 'ur'):
+            return 1
+        else:
+            raise ValueError(f"Unrecognized position specification '{arg}'!")
+
+    from mpl_toolkits.axes_grid1.inset_locator import BboxPatch, BboxConnector, BboxConnectorPatch
+
+    if prop_patches is None:
+        prop_patches = prop_lines.copy()
+        prop_patches["alpha"] = prop_patches.get("alpha", 1)*0.2
+
+    # Convert from str specifications to integers as needed
+    l1a1, l1a2, l2a1, l2a2 = [_corner_trans(aa) for aa in [l1a1, l1a2, l2a1, l2a2]]
+
+    c1 = BboxConnector(bbox2, bbox1, loc1=l1a1, loc2=l1a2, **prop_lines)
+    c1.set_clip_on(False)
+    c2 = BboxConnector(bbox2, bbox1, loc1=l2a1, loc2=l2a2, **prop_lines)
+    c2.set_clip_on(False)
+
+    bbox_patch1 = BboxPatch(bbox1, **prop_patches)
+    bbox_patch2 = BboxPatch(bbox2, **prop_patches)
+
+    p = BboxConnectorPatch(
+        bbox1, bbox2, loc1a=l1a1, loc2a=l1a2, loc1b=l2a1, loc2b=l2a2, **prop_patches)
+    p.set_clip_on(False)
+
+    return c1, c2, bbox_patch1, bbox_patch2, p
 
 
 def _loc_str_to_pars(loc, x=None, y=None, halign=None, valign=None, pad=_PAD):
