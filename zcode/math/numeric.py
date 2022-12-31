@@ -359,19 +359,36 @@ def regress(xx, yy):
     return coeff, zz
 
 
-def rk4_step(func, x0, y0, dx, args=None, check_nan=0, check_nan_max=5, debug=False):
-    if args is None:
-        k1 = dx * func(x0, y0)
-        k2 = dx * func(x0 + dx/2.0, y0 + k1/2.0)
-        k3 = dx * func(x0 + dx/2.0, y0 + k2/2.0)
-        k4 = dx * func(x0 + dx, y0 + k3)
-    else:
-        k1 = dx * func(x0, y0, *args)
-        k2 = dx * func(x0 + dx/2.0, y0 + k1/2.0, *args)
-        k3 = dx * func(x0 + dx/2.0, y0 + k2/2.0, *args)
-        k4 = dx * func(x0 + dx, y0 + k3, *args)
+def rk4_step(func, x0, y0, dx, check_nan=0, check_nan_max=5, debug=False):
+    """Perform a single 4th-order Runge-Kutter integration step.
 
-    y1 = y0 + (1.0/6.0) * (k1 + 2*k2 + 2*k3 + k4)
+    #! FIX: don't exactly remember what was going on with the `check_nan` stuff....
+
+    Parameters
+    ----------
+    func : callable,
+        The function used to evalute the derivative dy/dx.  The signature must be `func(x, y)`.
+    x0 : array_like,
+        The independent variable, i.e. 'x', at the beginning of the current step.
+    y0 : array_like,
+        The dependent variable, i.e. 'y', at the beginning of the current step.
+    dx : array_like,
+        The step size in the independent variable.
+
+    Returns
+    -------
+    x1 : array_like,
+        The new independent variable at the end of the current step: `x1 = x0 + dx`.
+    y1 : array_like,
+        The new dependent variable at the end of the current step.
+
+    """
+    k1 = func(x0, y0)
+    k2 = func(x0 + dx/2.0, y0 + k1/2.0)
+    k3 = func(x0 + dx/2.0, y0 + k2/2.0)
+    k4 = func(x0 + dx, y0 + k3)
+
+    y1 = y0 + (1.0/6.0) * dx * (k1 + 2*k2 + 2*k3 + k4)
     x1 = x0 + dx
 
     if debug:
