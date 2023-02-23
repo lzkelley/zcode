@@ -291,10 +291,21 @@ def ndinterp(xx, xvals, yvals, xlog=True, ylog=True):
 
     Returns
     -------
-    xnew : (N, T) ndarray
+    ynew : (N, T) ndarray
         Interpolated function values, for each of N functions and T evaluation points.
 
     """
+    assert np.ndim(xx) == 1
+    assert np.ndim(xvals) == 2
+    assert np.shape(xvals) == np.shape(yvals)
+
+    if xlog:
+        xx = np.log10(xx)
+        xvals = np.log10(xx)
+
+    if ylog:
+        yvals = np.log10(yvals)
+
     # Convert to (N, T, M)
     #     `xx` is (T,)  `xvals` is (N, M) for N-binaries and M-steps
     select = (xx[np.newaxis, :, np.newaxis] <= xvals[:, np.newaxis, :])
@@ -319,10 +330,14 @@ def ndinterp(xx, xvals, yvals, xlog=True, ylog=True):
     # (2, N, T)
     data = [np.take_along_axis(yvals, cc, axis=-1) for cc in cut]
     # Interpolate by `frac` for each binary
-    xnew = data[1] + (np.subtract(*data) * frac)
+    ynew = data[1] + (np.subtract(*data) * frac)
     # Set invalid binaries to nan
-    xnew[inval, ...] = np.nan
-    return xnew
+    ynew[inval, ...] = np.nan
+
+    if ylog:
+        ynew = 10.0 ** ynew
+
+    return ynew
 
 
 def regress(xx, yy):
