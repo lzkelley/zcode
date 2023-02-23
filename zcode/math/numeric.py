@@ -278,6 +278,22 @@ def ndinterp(xx, xvals, yvals, xlog=True, ylog=True):
     axis (i.e. interpolation is done independently for each `N` row.  Should be generalizeable to
     higher dim.
 
+    Parameters
+    ----------
+    xx : (T,) ndarray
+        Target x-values to interpolate to.
+    xvals : (N, M) ndarray
+        Evaluation points (x-values) of the functions to be interpolated.
+        Interpolation is performed over the 1th (last) axis.
+    yvals : (N, M) ndarray
+        Function values (y-values) of the function to be interpolated.
+        Interpolation is performed over the 1th (last) axis.
+
+    Returns
+    -------
+    xnew : (N, T) ndarray
+        Interpolated function values, for each of N functions and T evaluation points.
+
     """
     # Convert to (N, T, M)
     #     `xx` is (T,)  `xvals` is (N, M) for N-binaries and M-steps
@@ -286,6 +302,7 @@ def ndinterp(xx, xvals, yvals, xlog=True, ylog=True):
     # (N, T)
     aft = np.argmax(select, axis=-1)
     # zero values in `aft` mean no xvals after the targets were found
+    #!  IS THIS GENERALLY TRUE?!  #!
     valid = (aft > 0)
     inval = ~valid
     bef = np.copy(aft)
@@ -302,11 +319,10 @@ def ndinterp(xx, xvals, yvals, xlog=True, ylog=True):
     # (2, N, T)
     data = [np.take_along_axis(yvals, cc, axis=-1) for cc in cut]
     # Interpolate by `frac` for each binary
-    new = data[1] + (np.subtract(*data) * frac)
+    xnew = data[1] + (np.subtract(*data) * frac)
     # Set invalid binaries to nan
-    new[inval, ...] = np.nan
-    new = new
-    return new
+    xnew[inval, ...] = np.nan
+    return xnew
 
 
 def regress(xx, yy):
@@ -359,15 +375,15 @@ def regress(xx, yy):
     return coeff, zz
 
 
-def rk4_step(func, x0, y0, dx, check_nan=0, check_nan_max=5, debug=False):
+def rk4_step(dydx_func, x0, y0, dx, check_nan=0, check_nan_max=5, debug=False):
     """Perform a single 4th-order Runge-Kutter integration step.
 
     #! FIX: don't exactly remember what was going on with the `check_nan` stuff....
 
     Parameters
     ----------
-    func : callable,
-        The function used to evalute the derivative dy/dx.  The signature must be `func(x, y)`.
+    dydx_func : callable,
+        The callable function used to evalute the derivative dy/dx.  The signature must be `func(x, y)`.
     x0 : array_like,
         The independent variable, i.e. 'x', at the beginning of the current step.
     y0 : array_like,
@@ -383,12 +399,13 @@ def rk4_step(func, x0, y0, dx, check_nan=0, check_nan_max=5, debug=False):
         The new dependent variable at the end of the current step.
 
     """
-    k1 = func(x0, y0)
-    k2 = func(x0 + dx/2.0, y0 + k1/2.0)
-    k3 = func(x0 + dx/2.0, y0 + k2/2.0)
-    k4 = func(x0 + dx, y0 + k3)
+    k1 = dydx_func(x0, y0)
+    k2 = dydx_func(x0 + dx/2.0, y0 + k1/2.0)
+    k3 = dydx_func(x0 + dx/2.0, y0 + k2/2.0)
+    k4 = dydx_func(x0 + dx, y0 + k3)
 
-    y1 = y0 + (1.0/6.0) * dx * (k1 + 2*k2 + 2*k3 + k4)
+    keff = (k1 + 2*k2 + 2*k3 + k4)
+    y1 = y0 + (1.0/6.0) * dx * keff
     x1 = x0 + dx
 
     if debug:
@@ -396,7 +413,9 @@ def rk4_step(func, x0, y0, dx, check_nan=0, check_nan_max=5, debug=False):
         ys = [y0, y0 + k1/2, y0 + k2/2, y0 + k3]
         ks = [k1, k2, k3, k4]
         for ii, (_x, _y, _k) in enumerate(zip(xs, ys, ks)):
-            print("\t{} {:.4e} {:.4e} {:.4e}".format(ii+1, _x, _y, _k/dx))
+            print(f"\t{ii+1=} x={_x:.4e} y={_y:.4e} k{ii+1}={_k:.4e}")
+
+        print(f"\t{keff=}, {dx*keff=}, {y0=}, {y1=}")
 
     # Try recursively decreasing step-size until finite-value is reached
     if check_nan > 0 and not np.isfinite(y1):
@@ -412,7 +431,7 @@ def rk4_step(func, x0, y0, dx, check_nan=0, check_nan_max=5, debug=False):
             err = "Failed to find finite step!  `check_nan` = {}!".format(check_nan)
             raise RuntimeError(err)
         # Note that `True+1 = 2`
-        rk4_step(func, x0, y0, dx/2.0, check_nan=check_nan+1, check_nan_max=check_nan_max)
+        rk4_step(dydx_func, x0, y0, dx/2.0, check_nan=check_nan+1, check_nan_max=check_nan_max)
 
     # xvals = [x0, x0 + dx/2, x0 + dx/2, x0 + dx]
     # dys = [1.0, 0.5, 0.5, 1.0]
@@ -420,7 +439,7 @@ def rk4_step(func, x0, y0, dx, check_nan=0, check_nan_max=5, debug=False):
     # prev = 0.0
     # for ii, (xv, dy) in enumerate(zip(xvals, dys)):
     #     yv = y0 + prev * dy       # [0.0, k1/2, k2/2, k3]
-    #     ki = dx * func(xv, yv)
+    #     ki = dx * dydx_func(xv, yv)
     #     yn += (ki / dy) / 6.0   # [k1, 2*k2, 2*k3, k4] / 6
     #     prev = ki
     #
