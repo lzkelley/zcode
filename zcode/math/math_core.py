@@ -1616,7 +1616,7 @@ def str_array(arr, sides=(3, 3), delim=", ", format=None, log=False, label_log=T
         Stringified version of input array.
 
     """
-    arr = np.asarray(arr)
+    arr = np.atleast_1d(arr)
     if np.ndim(arr) > 1:
         arr = arr.flatten()
 
