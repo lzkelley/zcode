@@ -748,7 +748,7 @@ def label_line(ax, line, label, x=None, y=None,
 '''
 
 
-def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, **kwargs):
+def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, flip_rotation=False, **kwargs):
     """Add an annotation to the given line with appropriate placement and rotation.
 
     Based on code from:
@@ -767,13 +767,25 @@ def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, **k
         Line which is being labeled.
     label : str
         Text which should be drawn as the label.
-    ...
+    x : None or float
+        x coordinate of label location, in Axes units [0.0, 1.0]
+    y : None or float
+        y coordinate of label location, in Axes units [0.0, 1.0]
+    rotate : bool
+        Whether the label should be rotated to match the local line slope
+    flip_rotation : bool
+        Flip the side of the line that the text is oriented against for its rotation.
+        e.g. set this to True if the label is upside down below the line, instead of above it.
+        NOTE: Only applies if `rotate==True`.
 
     Returns
     -------
     text : `matplotlib.text.Text` object
 
     """
+
+    # --- initialize
+
     xlim = np.array(ax.get_xlim())
     ylim = np.array(ax.get_ylim())
 
@@ -782,38 +794,39 @@ def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, **k
     x2 = xdata[-1]
     y1 = ydata[0]
     y2 = ydata[-1]
-    '''
-    # Limit the edges to the plotted area
-    x1, x2 = zmath.limit([x1, x2], xlim)
-    y1, y2 = np.interp([x1, x2], xdata, ydata)
-    y1, y2 = zmath.limit([y1, y2], ylim)
-    x1, x2 = np.interp([y1, y2], ydata, xdata)
-    '''
     xscale = ax.get_xscale()
     yscale = ax.get_yscale()
     xlog = xscale.startswith('log')
     ylog = yscale.startswith('log')
+
+    # ---- Determine x & y positions
+
+    # If neither x nor y is given, choose them both as midpoints of extrema values
     if (x is None) and (y is None):
         x_d = zmath.midpoints(xlim, log=xlog)
         y_d = zmath.midpoints(ylim, log=ylog)
+    # Use the given x position, and find the y position of the line at that x-coordinate
     elif (y is None) and (x is not None):
         # convert from axes to data
+        #     convert from axes to pixels
         x_d, _ = ax.transAxes.transform([x, 0.0])
+        #     convert from pixels to data
         x_d, _ = ax.transData.inverted().transform([x_d, 0.0])
+        # interpolate to find the corresponding y position
         inds = np.argsort(xdata)
         y_d = zmath.interp(x_d, np.array(xdata)[inds], np.array(ydata)[inds], xlog=xlog, ylog=ylog)
+    # Use the given y position, and find the x position of the line at that y-coordinate
     elif (x is None) and (y is not None):
-        # convert from axes to pixels
+        # convert from axes to data
+        #    convert from axes to pixels
         _, y_p = ax.transAxes.transform([0.0, y])
-        # print("axes ==> pixs  ::  y={:.4f} ==> {:.4f}".format(y, y_p))
-        # convert from pixels to data
+        #    convert from pixels to data
         _, y_d = ax.transData.inverted().transform([0.0, y_p])
-        # print("pixs ==> data  ::  y={:.4f} ==> {:.4f}".format(y_p, y_d))
+        # interpolate to find the corresponding x position
         inds = np.argsort(ydata)
         x_d = zmath.interp(y_d, ydata[inds], xdata[inds], xlog=xlog, ylog=ylog)
-        # print("x_d = {:.4f}".format(x_d))
 
-    # print("plot_core.label_line():x_d,y_d = {}, {}".format(x_d, y_d))
+    # ---- Add an offset to the x & y positions
 
     if (dx is not None) and (not np.isclose(dx, 0.0)):
         # data to pixels
@@ -837,25 +850,21 @@ def label_line(ax, line, label, x=None, y=None, dx=0.0, dy=0.0, rotate=True, **k
         # pixels to data
         _, y_d = ax.transData.inverted().transform([0.0, y_p])
 
-    # Add Annotation to Text
-    # xytext = (0, 0)
-    xy = (x_d, y_d)
-    # print("plot_core.label_line():x_d,y_d = {}, {}".format(x_d, y_d), xy)
+    # ---- Add Annotation to axes
 
+    xy = (x_d, y_d)
     text = ax.annotate(label, xy=xy, xycoords='data', **kwargs)
-    # horizontalalignment=halign, verticalalignment='center_baseline')
-    # xytext=xytext, textcoords='offset points',
+
+    # ---- Add rotation
 
     if rotate is True:
-        # sp1 = ax.transData.transform_point((x1, y1))
-        # sp2 = ax.transData.transform_point((x2, y2))
         sp1 = ax.transData.transform((x1, y1))
         sp2 = ax.transData.transform((x2, y2))
-        # print(sp1, sp2)
-        # sp1 = [x1, y1]
-        # sp2 = [x2, y2]
         rise = (sp2[1] - sp1[1])
         run = (sp2[0] - sp1[0])
+        if flip_rotation:
+            rise *= -1
+            run *= -1
 
         rotate = np.degrees(np.arctan2(rise, run))
 
