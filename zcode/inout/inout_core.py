@@ -811,10 +811,19 @@ def str_format_dict(jdict, **kwargs):
         Nicely formatted string.
 
     """
+
+    import json
+
+    class NumpyEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return json.JSONEncoder.default(self, obj)
+
     kwargs.setdefault('sort_keys', True)
     kwargs.setdefault('indent', 4)
-    import json
-    jstr = json.dumps(jdict, separators=(',', ': '), **kwargs)
+
+    jstr = json.dumps(jdict, separators=(',', ': '), cls=NumpyEncoder, **kwargs)
     return jstr
 
 
