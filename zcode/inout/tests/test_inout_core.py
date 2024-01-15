@@ -9,9 +9,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 import warnings
 import shutil
-from numpy.testing import run_module_suite
+
 import numpy as np
-from nose.tools import assert_true, assert_false, assert_equal
 
 
 class TestInoutCore(object):
@@ -184,8 +183,3 @@ class TestInoutCore(object):
             shutil.rmtree(fdir)
 
         return
-
-
-# Run all methods as if with `nosetests ...`
-if __name__ == "__main__":
-    run_module_suite()

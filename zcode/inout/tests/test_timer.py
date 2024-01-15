@@ -4,12 +4,8 @@ Can be run with:
     $ nosetests inout/tests/test_timer.py
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-from six.moves import xrange
 
-from numpy.testing import run_module_suite
 import numpy as np
-# from nose.tools import assert_true, assert_false, assert_equal
 
 
 class TestTimer(object):
@@ -68,7 +64,3 @@ class TestTimer(object):
 
         times.report()
 
-
-# Run all methods as if with `nosetests ...`
-if __name__ == "__main__":
-    run_module_suite()

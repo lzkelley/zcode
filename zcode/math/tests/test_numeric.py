@@ -4,11 +4,8 @@ Can be run with:
     $ nosetests math/tests/test_math_core.py
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-from numpy.testing import run_module_suite
-from nose.tools import assert_true
 
 # import zcodes
 # import zcode.plot
@@ -60,8 +57,3 @@ class Test_Numeric(object):
                 assert_true(np.fabs(error) < 1e-6)
 
         return
-
-
-# Run all methods as if with `nosetests ...`
-if __name__ == "__main__":
-    run_module_suite()

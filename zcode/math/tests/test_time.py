@@ -11,9 +11,6 @@ import astropy as ap
 import astropy.time
 import datetime
 
-from numpy.testing import run_module_suite
-from nose.tools import assert_true
-
 import zcode
 import zcode.math.time
 
@@ -62,7 +59,3 @@ class TestTime(object):
 
         return
 
-
-# Run all methods as if with `nosetests ...`
-if __name__ == "__main__":
-    run_module_suite()
