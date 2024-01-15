@@ -1473,7 +1473,7 @@ def spacing(data, scale='log', num=None, dex=10, dex_plus=None,
                 dex_plus = 1 if endpoint else 0
 
             num_dex = np.fabs(np.diff(np.log10(span)))
-            num = np.int(np.ceil(num_dex * dex)) + dex_plus
+            num = int(np.ceil(num_dex * dex)) + dex_plus
         else:
             num = DEF_NUM_LIN
 
@@ -1979,7 +1979,7 @@ def _fracToInt(frac, size, within=None, round='floor'):
     if (within is not None):
         assert frac >= 0.0 and frac <= within, "``frac`` must be between [0.0,%s]!" % (str(within))
 
-    loc = np.int(roundFunc(frac*size))
+    loc = int(roundFunc(frac*size))
 
     return loc
 

@@ -43,7 +43,7 @@ class TestTimer(object):
             mm = 3
             while mm <= mroot:
                 if ss[ii]:
-                    jj = np.int((mm * mm - 3)/2)
+                    jj = int((mm * mm - 3)/2)
                     ss[jj] = 0
                     while jj < half:
                         ss[jj] = 0

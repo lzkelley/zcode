@@ -139,12 +139,13 @@ class TestMathCore(object):
         # Only integral (whole number) values
         # log spacing
         vals = [2.34, 365.23]
-        res = np.array([2., 3., 4., 5., 6., 7., 8., 9., 10.,
+        res = np.array([1.0, 2., 3., 4., 5., 6., 7., 8., 9., 10.,
                         20., 30., 40., 50., 60., 70., 80., 90., 100.,
-                        200., 300., 400.])
+                        200., 300., 400., 500., 600., 700., 800., 900., 1000.])
         retvals = spacing(vals, 'log', integers=True)
-        print("integers, log\n", vals, "\n\t", res, "\n\t", retvals)
-        print(retvals)
+        # print("integers, log\n", vals, "\n\t", res, "\n\t", retvals)
+        print(f"integers, log-scaled:\n\tbounds={vals}\n\tvalues={retvals}\n\ttruth={res}")
+        # print(retvals)
         print(np.allclose(retvals, res))
         assert_true(np.allclose(retvals, res))
 
