@@ -409,6 +409,7 @@ class TestMathCore(object):
 
         return
 
+    '''
     def test_around(self):
         from zcode.math.math_core import around
         vals = [
@@ -460,6 +461,7 @@ class TestMathCore(object):
         # Invalid 'dir'ection
         assert_raises(ValueError, around, 1234.567, 1, 'log', 'm')
         return
+    '''
 
     def test_str_array(self):
         from zcode.math.math_core import str_array

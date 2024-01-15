@@ -1134,8 +1134,13 @@ def really1d(arr):
         Whether `arr` is purely 1D.
 
     """
-    if np.ndim(arr) != 1:
+    try:
+        if np.ndim(arr) != 1:
+            return False
+    # ``ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions.``
+    except ValueError:
         return False
+
     # Empty list or array
     if len(arr) == 0:
         return True
