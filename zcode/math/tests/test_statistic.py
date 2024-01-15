@@ -49,13 +49,13 @@ class TestStatistic(object):
                                1.89739020e+00,   2.27700285e+00,   2.65661550e+00,
                                3.03622814e+00,   3.41584079e+00,   3.79545344e+00])
 
-        assert_true(np.allclose(count, true_count))
-        assert_true(np.allclose(med, true_med))
+        assert np.allclose(count, true_count)
+        assert np.allclose(med, true_med)
 
         print(conf[:, 0])
-        assert_true(np.allclose(conf[:, 0], true_conf[0]))
-        assert_true(np.allclose(conf[:, 1], true_conf[1]))
-        assert_true(np.allclose(xbins, true_xbins))
+        assert np.allclose(conf[:, 0], true_conf[0])
+        assert np.allclose(conf[:, 1], true_conf[1])
+        assert np.allclose(xbins, true_xbins)
         return
     '''
 
@@ -73,8 +73,8 @@ class TestStatistic(object):
         print("ret_inside = ", ret_inside)
         print("outside = ", outside)
         print("ret_outside = ", ret_outside)
-        assert_true(np.allclose(inside, ret_inside))
-        assert_true(np.allclose(outside, ret_outside))
+        assert np.allclose(inside, ret_inside)
+        assert np.allclose(outside, ret_outside)
 
         # Boundaries
         sig_1 = 1.0
@@ -90,8 +90,8 @@ class TestStatistic(object):
         print("sigma_2 = ", sig_2)
         print("outside_2 = ", outside_2)
         print("ret_outside = ", ret_outside)
-        assert_true(np.allclose(inside_1, ret_inside))
-        assert_true(np.allclose(outside_2, ret_outside))
+        assert np.allclose(inside_1, ret_inside)
+        assert np.allclose(outside_2, ret_outside)
         return
 
     def test_quantiles_1d(self):
@@ -104,7 +104,7 @@ class TestStatistic(object):
         true = np.percentile(aa, 100*pp)
         print("test = ", math_core.str_array(test, format=':.5e'))
         print("true = ", math_core.str_array(true, format=':.5e'))
-        assert_true(np.allclose(test, true, rtol=1e-2))
+        assert np.allclose(test, true, rtol=1e-2)
 
         NUM = 10000
         aa = np.random.normal(10.0, 2.0, size=NUM)
@@ -117,8 +117,8 @@ class TestStatistic(object):
         print("test = ", math_core.str_array(test, format=':.5e'))
         print("true = ", math_core.str_array(true, format=':.5e'))
         print("bads = ", math_core.str_array(bads, format=':.5e'))
-        assert_true(np.allclose(test, true, rtol=1e-2))
-        assert_true(~np.allclose(bads, true, rtol=1e-2))
+        assert np.allclose(test, true, rtol=1e-2)
+        assert ~np.allclose(bads, true, rtol=1e-2)
 
         return
 
@@ -144,7 +144,7 @@ class TestStatistic(object):
                 print(test[bads])
                 print(chck[bads])
 
-            assert_true(np.all(goods))
+            assert np.all(goods)
 
         return
 

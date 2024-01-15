@@ -25,7 +25,7 @@ class TestTimer(object):
         # Create `Timer` object
         times = Timings()
 
-        for ii in xrange(self.NUM_ITER):
+        for ii in range(self.NUM_ITER):
             times.start('one')
             np.random.randint(-1000, 1000, size=1000000)
             times.stop('one')
@@ -52,15 +52,6 @@ class TestTimer(object):
             times.start('three')
             np.sort(np.random.permutation(np.arange(1000000)))
             times.stop('three')
-
-        # for ii in xrange(len(times)):
-        #     names = times.names()
-        #     print(names[ii])
-        #     for jj in times.durations[ii]:
-        #         print(jj, end=' ')
-        #     print("\n")
-        #
-        # print("Averages = ", times.average())
 
         times.report()
 

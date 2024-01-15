@@ -10,6 +10,7 @@ Can be run with:
 import numpy as np
 import scipy as sp
 import scipy.stats  # noqa
+import pytest
 
 from zcode.math import math_core, interpolate
 
@@ -29,7 +30,7 @@ class TestMathCore(object):
         vals = np.array([-1, 0.2, 1, 1.4, 2, 3, 4, 5, 5.5, 10])
         correct = [0, 0, 1, 2, 4, 5, 7, 9, 10, 10]
         retval = argnearest(edges, vals, assume_sorted=True)
-        assert_true(np.all(correct == retval))
+        assert np.all(correct == retval)
         print("Edges = {}".format(edges))
         print("Vals = {}".format(vals))
         print("retval  = {}".format(retval))
@@ -50,7 +51,7 @@ class TestMathCore(object):
         print("correct = {}".format(correct))
         print(correct == retval)
         print(np.all(correct == retval))
-        assert_true(np.all(correct == retval))
+        assert np.all(correct == retval)
 
         correct += 1
         for ee in edges:
@@ -62,7 +63,7 @@ class TestMathCore(object):
         print("Vals = {}".format(vals))
         print("retval  = {}".format(retval))
         print("correct = {}".format(correct))
-        assert_true(np.all(correct == retval))
+        assert np.all(correct == retval)
 
         return
 
@@ -84,7 +85,7 @@ class TestMathCore(object):
         print("Vals = {}".format(vals))
         print("retval  = {}".format(retval))
         print("correct = {}".format(correct))
-        assert_true(np.all(correct == retval))
+        assert np.all(correct == retval)
         return
 
     def test_argnearest_unordered_xy(self):
@@ -107,7 +108,7 @@ class TestMathCore(object):
         print("Vals = {}".format(vals))
         print("retval  = {}".format(retval))
         print("correct = {}".format(correct))
-        assert_true(np.all(correct == retval))
+        assert np.all(correct == retval)
         return
 
     def test_spacing(self):
@@ -116,22 +117,22 @@ class TestMathCore(object):
         # Linear Spacing
         ref1 = np.linspace(0.0, 1.0, num=20)
         spc1 = spacing([0.0, 1.0], scale='lin', num=20)
-        assert_true(np.allclose(ref1, spc1))
+        assert np.allclose(ref1, spc1)
 
         # Logarithmic Spacing
         ref2 = np.logspace(0.0, 2.5, num=20)
         spc2 = spacing([np.power(10.0, 0.0), np.power(10.0, 2.5)], scale='log', num=20)
-        assert_true(np.allclose(ref2, spc2))
+        assert np.allclose(ref2, spc2)
 
         # Automatically selects appropriate Range
         ref3 = np.logspace(1.0, 2.0, num=13)
         spc3 = spacing([-10.0, 100.0, 0.0, 10.0], scale='log', num=13)
-        assert_true(np.allclose(ref3, spc3))
+        assert np.allclose(ref3, spc3)
 
         # Manually selects appropraite range
         ref4 = np.linspace(-5.0, -2.5, num=27)
         spc4 = spacing([3.0, -2.5, -5.0, 0.0], scale='lin', num=27, filter='<')
-        assert_true(np.allclose(ref4, spc4))
+        assert np.allclose(ref4, spc4)
 
         # Only integral (whole number) values
         # log spacing
@@ -144,7 +145,7 @@ class TestMathCore(object):
         print(f"integers, log-scaled:\n\tbounds={vals}\n\tvalues={retvals}\n\ttruth={res}")
         # print(retvals)
         print(np.allclose(retvals, res))
-        assert_true(np.allclose(retvals, res))
+        assert np.allclose(retvals, res)
 
         # lin spacing
         vals = [2.34, 11.23]
@@ -152,7 +153,7 @@ class TestMathCore(object):
         retvals = spacing(vals, 'lin', integers=True)
         print("integers, lin\n", vals, "\n\t", res, "\n\t", retvals)
         print(np.allclose(retvals, res))
-        assert_true(np.allclose(retvals, res))
+        assert np.allclose(retvals, res)
 
         return
 
@@ -163,18 +164,18 @@ class TestMathCore(object):
         arr_le = [11.5, 9.2, -2.0, -2.0, -301.0]
         arr_e = 11*[1.0]
 
-        assert_true(math_core.mono(arr_g, 'g'))
-        assert_true(math_core.mono(arr_ge, 'ge'))
-        assert_true(math_core.mono(arr_g, 'ge'))
-        assert_false(math_core.mono(arr_ge, 'g'))
+        assert math_core.mono(arr_g, 'g')
+        assert math_core.mono(arr_ge, 'ge')
+        assert math_core.mono(arr_g, 'ge')
+        assert (math_core.mono(arr_ge, 'g') == False)   # noqa  | this needs to be ` == False` because np._bool is used!
 
-        assert_true(math_core.mono(arr_l, 'l'))
-        assert_true(math_core.mono(arr_le, 'le'))
-        assert_true(math_core.mono(arr_l, 'le'))
-        assert_false(math_core.mono(arr_le, 'l'))
+        assert math_core.mono(arr_l, 'l')
+        assert math_core.mono(arr_le, 'le')
+        assert math_core.mono(arr_l, 'le')
+        assert math_core.mono(arr_le, 'l') == False   # noqa  | this needs to be ` == False` because np._bool is used!
 
-        assert_true(math_core.mono(arr_e, 'e'))
-        assert_false(math_core.mono(arr_le, 'e'))
+        assert math_core.mono(arr_e, 'e')
+        assert math_core.mono(arr_le, 'e') == False   # noqa  | this needs to be ` == False` because np._bool is used!
 
     def test_ordered_groups(self):
         arr = np.array([99, 77, 14, 21, 71, 64, 98, 38, 66, 25])
@@ -186,91 +187,98 @@ class TestMathCore(object):
         #    Exclusively
         print("Below, exclusive:")
         locs, isort = math_core.ordered_groups(arr, targets, inds=None, dir='b', include=False)
-        assert_true(np.all(sinds == isort))
+        assert np.all(sinds == isort)
         #    Check subsets from each target location
         for ll, tt in zip(locs, targets):
             print("target = {}, loc = {}".format(tt, ll))
             print(set(arr[isort[:ll]]), set(arr[sinds][arr[sinds] < tt]))
-            assert_true(set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] < tt]))
+            assert set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] < tt])
         #    Inclusively
         print("Below, inclusive:")
         locs, isort = math_core.ordered_groups(arr, targets, inds=None, dir='b', include=True)
-        assert_true(np.all(sinds == isort))
+        assert np.all(sinds == isort)
         #    Check subsets from each target location
         for ll, tt in zip(locs, targets):
             print("target = {}, loc = {}".format(tt, ll))
             print(set(arr[isort[:ll]]), set(arr[sinds][arr[sinds] <= tt]))
-            assert_true(set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] <= tt]))
+            assert set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] <= tt])
 
         # Group into elements above targets
         #    Exclusive
         print("Above, exclusive:")
         locs, isort = math_core.ordered_groups(arr, targets, inds=None, dir='a', include=False)
-        assert_true(np.all(sinds[::-1] == isort))
+        assert np.all(sinds[::-1] == isort)
         # Check subsets from each target location
         for ll, tt in zip(locs, targets):
             print("target = {}, loc = {}".format(tt, ll))
             print(set(arr[isort[:ll]]), set(arr[sinds][arr[sinds] > tt]))
-            assert_true(set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] > tt]))
+            assert set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] > tt])
 
         #    Exclusive
         print("Above, inclusive:")
         locs, isort = math_core.ordered_groups(arr, targets, inds=None, dir='a', include=True)
-        assert_true(np.all(sinds[::-1] == isort))
+        assert np.all(sinds[::-1] == isort)
         # Check subsets from each target location
         for ll, tt in zip(locs, targets):
             print("target = {}, loc = {}".format(tt, ll))
             print(set(arr[isort[:ll]]), set(arr[sinds][arr[sinds] >= tt]))
-            assert_true(set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] >= tt]))
+            assert set(arr[isort[:ll]]) == set(arr[sinds][arr[sinds] >= tt])
 
         # Should raise error for unsorted `targets`
-        assert_raises(ValueError, math_core.ordered_groups, arr, targets[::-1])
+        with pytest.raises(ValueError):
+            math_core.ordered_groups(arr, targets[::-1])
 
         # Should raise error for `dir` not starting with 'a' or 'b'
-        assert_raises(ValueError, math_core.ordered_groups, arr, targets, None, 'c')
+        with pytest.raises(ValueError):
+            math_core.ordered_groups(arr, targets, None, 'c')
         return
 
     def test_really1d(self):
         from zcode.math import really1d
-        assert_true(really1d([1, 2, 3]))
-        assert_true(really1d([1]))
-        assert_true(really1d([]))
-        assert_true(really1d(np.arange(10)))
+        assert really1d([1, 2, 3])
+        assert really1d([1])
+        assert really1d([])
+        assert really1d(np.arange(10))
 
-        assert_false(really1d(1))
-        assert_false(really1d([[1]]))
-        assert_false(really1d([[1, 2], [2, 3]]))
-        assert_false(really1d([[1, 2, 3], [4, 5]]))
-        assert_false(really1d(np.random.random((4, 3))))
-        assert_false(really1d([[]]))
+        assert really1d(1) == False   # noqa
+        assert really1d([[1]]) == False   # noqa
+        assert really1d([[1, 2], [2, 3]]) == False   # noqa
+        assert really1d([[1, 2, 3], [4, 5]]) == False   # noqa
+        assert really1d(np.random.random((4, 3))) == False   # noqa
+        assert really1d([[]]) == False   # noqa
 
     def test_argextrema(self):
         # Basic usage without filtering
-        assert_equal(math_core.argextrema([-1, -5, 2, 10], 'min'), 1)
-        assert_equal(math_core.argextrema([-1, -5, 2, 10], 'max'), 3)
+        assert math_core.argextrema([-1, -5, 2, 10], 'min') ==  1
+        assert math_core.argextrema([-1, -5, 2, 10], 'max') ==  3
 
         # Filtering
         #    min
-        assert_equal(math_core.argextrema([-1, -5, 2, 10, 0], 'min', 'g'), 2)
-        assert_equal(math_core.argextrema([-1, -5, 2, 10, 0], 'min', 'ge'), 4)
-        assert_equal(math_core.argextrema([-1, -5, 0, 2, 10], 'min', 'l'), 1)
-        assert_equal(math_core.argextrema([-1, -5, 0, 2, 10], 'min', 'le'), 1)
+        assert math_core.argextrema([-1, -5, 2, 10, 0], 'min', 'g') ==  2
+        assert math_core.argextrema([-1, -5, 2, 10, 0], 'min', 'ge') ==  4
+        assert math_core.argextrema([-1, -5, 0, 2, 10], 'min', 'l') ==  1
+        assert math_core.argextrema([-1, -5, 0, 2, 10], 'min', 'le') ==  1
         #    max
-        assert_equal(math_core.argextrema([-1, -5, 2, 10, 0], 'max', 'g'), 3)
-        assert_equal(math_core.argextrema([-1, -5, 2, 10, 0], 'max', 'ge'), 3)
-        assert_equal(math_core.argextrema([-1, -5, 0, 2, 10], 'max', 'l'), 0)
-        assert_equal(math_core.argextrema([-1, -5, 0, 2, 10], 'max', 'le'), 2)
+        assert math_core.argextrema([-1, -5, 2, 10, 0], 'max', 'g') ==  3
+        assert math_core.argextrema([-1, -5, 2, 10, 0], 'max', 'ge') ==  3
+        assert math_core.argextrema([-1, -5, 0, 2, 10], 'max', 'l') ==  0
+        assert math_core.argextrema([-1, -5, 0, 2, 10], 'max', 'le') ==  2
 
         # Raises appropriate errors
         #    Incorrect shape input array
-        assert_raises(ValueError, math_core.argextrema, np.arange(4).reshape(2, 2), 'max')
-        assert_raises(ValueError, math_core.argextrema, 0.0, 'max')
+        with pytest.raises(ValueError):
+            math_core.argextrema(np.arange(4).reshape(2, 2), 'max')
+        with pytest.raises(ValueError):
+            math_core.argextrema(0.0, 'max')
         #    Invalid `type` argument
-        assert_raises(ValueError, math_core.argextrema, [1, 2], 'mex')
+        with pytest.raises(ValueError):
+            math_core.argextrema([1, 2], 'mex')
         #    Invalid `filter` argument
-        assert_raises(ValueError, math_core.argextrema, [1, 2], 'max', 'e')
+        with pytest.raises(ValueError):
+            math_core.argextrema([1, 2], 'max', 'e')
         #    Invalid `filter` argument
-        assert_raises(ValueError, math_core.argextrema, [1, 2], 'max', 'greater')
+        with pytest.raises(ValueError):
+            math_core.argextrema([1, 2], 'max', 'greater')
 
     def test_asBinEdges_1d(self):
         print("TestMathCore.test_asBinEdges_1d")
@@ -279,25 +287,27 @@ class TestMathCore(object):
         data_1d = np.random.random(40)
         bins_1d = np.arange(20)
         # Preserves valid bins
-        assert_true(np.allclose(bins_1d, asBinEdges(bins_1d, data_1d)))
+        assert np.allclose(bins_1d, asBinEdges(bins_1d, data_1d))
 
         # Constructs valid bins
         #    lin
         lin_1d = spacing(data_1d, scale='lin', num=8+1)
         lin_edges_1d = asBinEdges(8, data_1d, scale='lin')
-        assert_true(np.allclose(lin_1d, lin_edges_1d))
+        assert np.allclose(lin_1d, lin_edges_1d)
         #    log
         log_1d = spacing(data_1d, scale='log', num=7+1)
         log_edges_1d = asBinEdges(7, data_1d, scale='log')
-        assert_true(np.allclose(log_1d, log_edges_1d))
+        assert np.allclose(log_1d, log_edges_1d)
 
         # Raises appropriate errors
         data_2d = data_1d.reshape(8, 5)
         bins_2d = bins_1d.reshape(4, 5)
         #    1D bins, 2D data
-        assert_raises(ValueError, asBinEdges, bins_1d, data_2d)
+        with pytest.raises(ValueError):
+            asBinEdges(bins_1d, data_2d)
         #    2D bins, 1D data
-        assert_raises(ValueError, asBinEdges, bins_2d, data_1d)
+        with pytest.raises(ValueError):
+            asBinEdges(bins_2d, data_1d)
 
     def test_asBinEdges_nd(self):
         print("TestMathCore.test_asBinEdges_nd")
@@ -309,26 +319,28 @@ class TestMathCore(object):
 
         # Preserves valid bins
         edges_2d = asBinEdges(bins_2d, data_2d)
-        assert_true(np.allclose(bins_2d, edges_2d))
+        assert np.allclose(bins_2d, edges_2d)
         edges_2d2 = asBinEdges(bins_2d2, data_2d)
-        assert_true(np.allclose(bins_2d2[0], edges_2d2[0]))
-        assert_true(np.allclose(bins_2d2[1], edges_2d2[1]))
+        assert np.allclose(bins_2d2[0], edges_2d2[0])
+        assert np.allclose(bins_2d2[1], edges_2d2[1])
 
         # Constructs valid bins
         #    lin
         lin_2d1 = sp.stats.binned_statistic_dd(data_2d, None, 'count', bins=4).bin_edges
         lin_edges_2d1 = asBinEdges(4, data_2d, scale='lin')
-        assert_true(np.allclose(lin_2d1, lin_edges_2d1))
+        assert np.allclose(lin_2d1, lin_edges_2d1)
         lin_2d2 = sp.stats.binned_statistic_dd(data_2d, None, 'count', bins=[4, 3]).bin_edges
         lin_edges_2d2 = asBinEdges([4, 3], data_2d, scale='lin')
-        assert_true(np.allclose(lin_2d2[0], lin_edges_2d2[0]))
-        assert_true(np.allclose(lin_2d2[1], lin_edges_2d2[1]))
+        assert np.allclose(lin_2d2[0], lin_edges_2d2[0])
+        assert np.allclose(lin_2d2[1], lin_edges_2d2[1])
 
         # Raises appropriate errors
         #    1D bins, 2D data
-        assert_raises(ValueError, asBinEdges, [4], data_2d)
+        with pytest.raises(ValueError):
+            asBinEdges([4], data_2d)
         #    2D bins, 1D data
-        assert_raises(ValueError, asBinEdges, [4, 3, 2], data_2d)
+        with pytest.raises(ValueError):
+            asBinEdges([4, 3, 2], data_2d)
 
     def test_comparison_function(self):
         from zcode.math.math_core import _comparison_function
@@ -338,42 +350,42 @@ class TestMathCore(object):
         res = [True, True, False, False]
         for cc in comp:
             func = _comparison_function(cc, value=0.0)
-            assert_true(np.all(np.equal(func(arr), res)))
+            assert np.all(np.equal(func(arr), res))
 
         comp = ['ge', '>=']
         arr = [0.5, 1.5, -0.5, 0.0]
         res = [True, True, False, True]
         for cc in comp:
             func = _comparison_function(cc, value=0.0)
-            assert_true(np.all(np.equal(func(arr), res)))
+            assert np.all(np.equal(func(arr), res))
 
         comp = ['l', '<']
         arr = [-10.5, -1.5, 0.5, 0.0]
         res = [True, True, False, False]
         for cc in comp:
             func = _comparison_function(cc, value=0.0)
-            assert_true(np.all(np.equal(func(arr), res)))
+            assert np.all(np.equal(func(arr), res))
 
         comp = ['le', '<=']
         arr = [-10.5, -1.5, 0.5, 0.0]
         res = [True, True, False, True]
         for cc in comp:
             func = _comparison_function(cc, value=0.0)
-            assert_true(np.all(np.equal(func(arr), res)))
+            assert np.all(np.equal(func(arr), res))
 
         comp = ['e', '=', '==']
         arr = [-10.5, 0.5, 0.0]
         res = [False, False, True]
         for cc in comp:
             func = _comparison_function(cc, value=0.0)
-            assert_true(np.all(np.equal(func(arr), res)))
+            assert np.all(np.equal(func(arr), res))
 
         comp = ['ne', '!=']
         arr = [-10.5, 0.5, 0.0]
         res = [True, True, False]
         for cc in comp:
             func = _comparison_function(cc, value=0.0)
-            assert_true(np.all(np.equal(func(arr), res)))
+            assert np.all(np.equal(func(arr), res))
 
         return
 
@@ -388,9 +400,9 @@ class TestMathCore(object):
         arr = np.array(arr)
         for cc in comp:
             vals = comparison_filter(arr, cc, value=0.0)
-            assert_true(np.all(np.equal(vals, res)))
+            assert np.all(np.equal(vals, res))
             val_inds = comparison_filter(arr, cc, inds=True, value=0.0)
-            assert_true(np.all(np.equal(arr[val_inds], arr[inds])))
+            assert np.all(np.equal(arr[val_inds], arr[inds]))
 
         comp = ['le', '<=']
         arr = [0.5, -1.0, 1.5, -0.5, 0.0]
@@ -400,9 +412,9 @@ class TestMathCore(object):
         arr = np.array(arr)
         for cc in comp:
             vals = comparison_filter(arr, cc, value=0.0)
-            assert_true(np.all(np.equal(vals, res)))
+            assert np.all(np.equal(vals, res))
             vals = comparison_filter(arr, cc, inds=True, value=0.0)
-            assert_true(np.all(np.equal(arr[vals], arr[inds])))
+            assert np.all(np.equal(arr[vals], arr[inds]))
 
         return
 
@@ -451,12 +463,14 @@ class TestMathCore(object):
             print(vv)
             res = around(*vv[0])
             print("\t", res)
-            assert_true(np.isclose(vv[1], res))
+            assert np.isclose(vv[1], res)
 
         # Invalid 'scaling'
-        assert_raises(ValueError, around, 1234.567, 1, 'symlog', 'n')
+        with pytest.raises(ValueError):
+.           around(1234.567, 1, 'symlog', 'n')
         # Invalid 'dir'ection
-        assert_raises(ValueError, around, 1234.567, 1, 'log', 'm')
+        with pytest.raises(ValueError):
+.           around(1234.567, 1, 'log', 'm')
         return
     '''
 
@@ -468,35 +482,35 @@ class TestMathCore(object):
         correct = '[0.00, 2.00, 4.00, 6.00, 8.00, 10.00]'
         sa = str_array(arr)
         print("'({})' ==> '{}', should be '{}'".format(arr, sa, correct))
-        assert_true(sa == correct)
+        assert sa == correct
 
         sa = str_array(arr, (2, 2))
         print("'({}, (2, 2))' ==> '{}'".format(arr, sa))
-        assert_true(sa == '[0.00, 2.00... 8.00, 10.00]')
+        assert sa == '[0.00, 2.00... 8.00, 10.00]'
 
         sa = str_array(arr, None)
         print("'({}, None)' ==> '{}'".format(arr, sa))
-        assert_true(sa == '[0.00, 2.00, 4.00, 6.00, 8.00, 10.00]')
+        assert sa == '[0.00, 2.00, 4.00, 6.00, 8.00, 10.00]'
 
         sa = str_array(arr, 1)
         print("'({}, 1)' ==> '{}'".format(arr, sa))
-        assert_true(sa == '[0.00... 10.00]')
+        assert sa == '[0.00... 10.00]'
 
         sa = str_array(arr, (1, 3))
         print("'({}, (1, 3))' ==> '{}'".format(arr, sa))
-        assert_true(sa == '[0.00... 6.00, 8.00, 10.00]')
+        assert sa == '[0.00... 6.00, 8.00, 10.00]'
 
         sa = str_array(arr, (12, 10))
         print("'({}, (12, 10))' ==> '{}'".format(arr, sa))
-        assert_true(sa == '[0.00, 2.00, 4.00, 6.00, 8.00, 10.00]')
+        assert sa == '[0.00, 2.00, 4.00, 6.00, 8.00, 10.00]'
 
         sa = str_array(arr, (2, 1), delim=' ')
         print("'({}, (2, 1), delim=' ')' ==> '{}'".format(arr, sa))
-        assert_true(sa == '[0.00 2.00... 10.00]')
+        assert sa == '[0.00 2.00... 10.00]'
 
         sa = str_array(arr, (2, 1), format=':.1e')
         print("'({}, (2, 1), format=':.1e')' ==> '{}'".format(arr, sa))
-        assert_true(sa == '[0.0e+00, 2.0e+00... 1.0e+01]')
+        assert sa == '[0.0e+00, 2.0e+00... 1.0e+01]'
 
         return
 
@@ -507,8 +521,8 @@ class TestMathCore(object):
             dot = broadcast(*din)
             print("input:  {}".format(din))
             print("output: {} ({})".format(dot, check))
-            assert_true(np.all([dd == cc for dd, cc in zip(dot, check)]))
-            assert_true(np.all([np.shape(dd) == np.shape(cc) for dd, cc in zip(dot, check)]))
+            assert np.all([dd == cc for dd, cc in zip(dot, check)])
+            assert np.all([np.shape(dd) == np.shape(cc) for dd, cc in zip(dot, check)])
             return
 
         # Normal broadcast (1,) (2,) ==> (2,) (2,)
@@ -541,7 +555,7 @@ class TestMathCore(object):
         dot = broadcast(*din)
         print("Input shapes: '{}'".format(sh_in))
         print("Output shapes: '{}' ({})".format([dd.shape for dd in dot], sh_ot))
-        assert_true(np.all([dd.shape == sh for dd, sh in zip(dot, sh_ot)]))
+        assert np.all([dd.shape == sh for dd, sh in zip(dot, sh_ot)])
         return
 
 
@@ -561,9 +575,9 @@ class Test_Interp(object):
             yy = interpolate.interp(xx, xo, yo, **kw)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
-                assert_true(np.isnan(yy))
+                assert np.isnan(yy)
             else:
-                assert_almost_equal(yy, zz)
+                assert np.isclose(yy, zz)
 
         return
 
@@ -581,9 +595,9 @@ class Test_Interp(object):
             yy = interpolate.interp(xx, xo, yo, **kw)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
-                assert_true(np.isnan(yy))
+                assert np.isnan(yy)
             else:
-                assert_almost_equal(yy, zz)
+                assert np.isclose(yy, zz)
 
         return
 
@@ -601,9 +615,9 @@ class Test_Interp(object):
             yy = interpolate.interp(xx, xo, yo, **kw)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
-                assert_true(np.isnan(yy))
+                assert np.isnan(yy)
             else:
-                assert_almost_equal(yy, zz)
+                assert np.isclose(yy, zz)
 
         return
 
@@ -621,9 +635,9 @@ class Test_Interp(object):
             yy = interpolate.interp(xx, xo, yo, **kw)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
-                assert_true(np.isnan(yy))
+                assert np.isnan(yy)
             else:
-                assert_almost_equal(yy, zz)
+                assert np.isclose(yy, zz)
 
         return
 
@@ -660,7 +674,7 @@ class Test_Interp_Func_Linear(object):
 
                     y1 = interpolate.interp(xx, xo, yo, valid=False, **kw)
                     y2 = interpolate.interp_func(xo, yo, kind='linear', bounds_error=False, **kw)(xx)
-                    assert_true(np.allclose(y1, y2))
+                    assert np.allclose(y1, y2)
 
         return
 
@@ -679,9 +693,9 @@ class Test_Interp_Func_Linear(object):
             yy = interpolate.interp_func(xo, yo, **kw)(xx)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
-                assert_true(np.isnan(yy))
+                assert np.isnan(yy)
             else:
-                assert_almost_equal(yy, zz)
+                assert np.isclose(yy, zz)
 
         return
 
@@ -700,9 +714,9 @@ class Test_Interp_Func_Linear(object):
             yy = interpolate.interp_func(xo, yo, **kw)(xx)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
-                assert_true(np.isnan(yy))
+                assert np.isnan(yy)
             else:
-                assert_almost_equal(yy, zz)
+                assert np.isclose(yy, zz)
 
         return
 
@@ -721,9 +735,9 @@ class Test_Interp_Func_Linear(object):
             yy = interpolate.interp_func(xo, yo, **kw)(xx)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
-                assert_true(np.isnan(yy))
+                assert np.isnan(yy)
             else:
-                assert_almost_equal(yy, zz)
+                assert np.isclose(yy, zz)
 
         return
 
@@ -742,9 +756,9 @@ class Test_Interp_Func_Linear(object):
             yy = interpolate.interp_func(xo, yo, **kw)(xx)
             print("{} ==> {}, should be {}".format(xx, yy, zz))
             if np.isnan(zz):
-                assert_true(np.isnan(yy))
+                assert np.isnan(yy)
             else:
-                assert_almost_equal(yy, zz)
+                assert np.isclose(yy, zz)
 
         return
 
@@ -784,12 +798,12 @@ class Test_Interp_Func_Mono(object):
                 func = interpolate.interp_func(xo, yo, xlog=xlog, ylog=ylog, kind='mono')
                 yn = func(xn)
                 print("xlog = {}, ylog = {}".format(xlog, ylog))
-                assert_true(test_within(xn, yn))
+                assert test_within(xn, yn)
 
                 # 'cubic' should be NON-monotonic, make sure test shows that
                 func = interpolate.interp_func(xo, yo, xlog=xlog, ylog=ylog, kind='cubic')
                 yn = func(xn)
-                assert_false(test_within(xn, yn))
+                assert test_within(xn, yn) == False  # noqa
 
         return
 
@@ -811,7 +825,7 @@ class Test_Edges_From_Cents(object):
 
             print("truth = {}".format(math_core.str_array(true)))
             print("recov = {}".format(math_core.str_array(edges)))
-            assert_true(np.allclose(edges, true))
+            assert np.allclose(edges, true)
 
         return
 
@@ -831,7 +845,7 @@ class Test_Edges_From_Cents(object):
             print("pars = ", pars)
             print("truth = {}".format(math_core.str_array(true)))
             print("recov = {}".format(math_core.str_array(edges)))
-            assert_true(np.allclose(edges, true))
+            assert np.allclose(edges, true)
 
         return
 
@@ -851,7 +865,7 @@ class Test_Edges_From_Cents(object):
         edges = math_core.edges_from_cents(cents, log=False)
         print("truth = {}".format(math_core.str_array(true)))
         print("recov = {}".format(math_core.str_array(edges)))
-        assert_true(np.allclose(edges, true, rtol=1e-1))
+        assert np.allclose(edges, true, rtol=1e-1)
 
         return
 

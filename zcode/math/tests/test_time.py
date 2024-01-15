@@ -45,7 +45,7 @@ class TestTime(object):
             print("\tcorrect = '{}'".format(correct))
             retval = zcode.math.time.to_datetime(test[1])
             print("\tretval  = '{}' ({})".format(retval, type(retval)))
-            assert_true(retval == correct)
+            assert retval == correct
 
         # Try using the `format` argument
         correct = datetime.datetime(2017, 5, 4, 15, 23, 24, 12400)
@@ -55,7 +55,7 @@ class TestTime(object):
         print("\tcorrect = '{}'".format(correct))
         retval = zcode.math.time.to_datetime(weird, format=form)
         print("\tretval  = '{}'".format(retval))
-        assert_true(retval == correct)
+        assert retval == correct
 
         return
 

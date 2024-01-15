@@ -60,7 +60,7 @@ class TestInoutCore(object):
 
         # Try saving
         dictToNPZ(data, fname)
-        assert_true(os.path.exists(fname))
+        assert os.path.exists(fname)
 
         # Try Loading
         loaded = npzToDict(fname)
@@ -70,8 +70,8 @@ class TestInoutCore(object):
             print("\t", type(item), repr(item))
             # Look at internal dictionary separately
             if type(item) is not dict and type(loaded[key]) is not dict:
-                assert_true(np.array_equal(loaded[key], item))
-                assert_equal(type(loaded[key]), type(item))
+                assert np.array_equal(loaded[key], item)
+                assert type(loaded[key]) == type(item)
 
         # Check internal dictionary
         subloaded = loaded['three']
@@ -80,12 +80,12 @@ class TestInoutCore(object):
             print("key = ", key)
             print("\t", subloaded[key])
             print("\t", item)
-            assert_true(np.array_equal(subloaded[key], item))
-            assert_equal(type(subloaded[key]), type(item))
+            assert np.array_equal(subloaded[key], item)
+            assert type(subloaded[key]) == type(item)
 
         # Make sure subdirectories are created if needed
         dictToNPZ(data, fname_subdir)
-        assert_true(os.path.exists(fname_subdir))
+        assert os.path.exists(fname_subdir)
 
     def test_modify_exists_files(self):
         fdir = self.test_dir_0
@@ -118,7 +118,7 @@ class TestInoutCore(object):
         for ii in range(num_files):
             new_name = modify_exists(fname, max=max_files)
             print(ii, "new_name = ", new_name)
-            assert_false(os.path.exists(new_name))
+            assert os.path.exists(new_name) is False
             # Create file
             open(new_name, 'a')
             if ii == 0:
@@ -127,14 +127,14 @@ class TestInoutCore(object):
                 intended_name = modify_filename(fname, append="_{:02d}".format(ii-1))
 
             print("\tshould be = ", intended_name)
-            assert_true(os.path.exists(intended_name))
+            assert os.path.exists(intended_name)
             if not os.path.exists(new_name):
                 raise RuntimeError("New file should have been created '{}'.".format(new_name))
 
         # Make sure filenames dont exceed maximum, and raises warning
         with warnings.catch_warnings(record=True) as ww:
-            assert_equal(modify_exists(fname, max=num_files-1), None)
-            assert_true(len(ww) > 0)
+            assert modify_exists(fname, max=num_files-1) is None
+            assert len(ww) > 0
 
     def test_modify_exists_dirs(self):
         fdir = self.test_dir_0
@@ -163,7 +163,7 @@ class TestInoutCore(object):
         for ii in range(num_files):
             new_name = modify_exists(fdir, max=max_files)
             print(ii, "new_name = ", new_name)
-            assert_false(os.path.exists(new_name))
+            assert os.path.exists(new_name) is False
             # Create directory
             os.makedirs(new_name)
             created.append(new_name)
@@ -174,7 +174,7 @@ class TestInoutCore(object):
                 intended_name = modify_filename(fdir, append="_{:02d}".format(ii-1))
 
             print("\tshould be = ", intended_name)
-            assert_true(os.path.exists(intended_name))
+            assert os.path.exists(intended_name)
             if not os.path.exists(new_name):
                 raise RuntimeError("New file should have been created '{}'.".format(new_name))
 

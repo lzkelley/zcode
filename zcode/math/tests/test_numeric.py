@@ -43,7 +43,7 @@ class Test_Numeric(object):
                 test_dadx = numeric.cumtrapz_loglog(yy, xx, bounds=bounds, dlogx=None)
                 error = (test_dadx - exact) / exact
                 print("dA/dx, true: {:.4e}, test: {:.4e}, error = {:.4e}".format(exact, test_dadx, error))
-                assert_true(np.fabs(error) < 1e-6)
+                assert np.fabs(error) < 1e-6
 
                 # y = dA/dlog10x
                 bounds = np.array(bounds)
@@ -54,6 +54,6 @@ class Test_Numeric(object):
                 test_dadx = numeric.cumtrapz_loglog(yy, xx, bounds=bounds, dlogx=10.0)
                 error = (test_dadx - exact) / exact
                 print("dA/dlogx, true: {:.4e}, test: {:.4e}, error = {:.4e}".format(exact, test_dadx, error))
-                assert_true(np.fabs(error) < 1e-6)
+                assert np.fabs(error) < 1e-6
 
         return
