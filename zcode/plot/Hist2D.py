@@ -293,7 +293,7 @@ def corner(axes, data, edges, hist1d=None, hist2d=None, labels=None, color='k', 
     return handle
 
 
-'''
+r'''
 def hist2d(x, y, bins=20, range=None, weights=None, levels=None, smooth=None,
            ax=None, color=None, quiet=False,
            plot_datapoints=True, plot_density=True,
@@ -473,7 +473,7 @@ def hist2d(x, y, bins=20, range=None, weights=None, levels=None, smooth=None,
 
 
 
-'''
+r'''
 data = np.array([m2/MSOL, mt/MSOL, mr, sepa/PC, fedds_sys])
 weights = pv[:, 3]
 NAME = 'either_5'
@@ -594,7 +594,7 @@ plt.show()
 '''
 
 
-'''
+r'''
 def plot2DHistProj(xvals, yvals, weights=None, statistic=None, bins=10, filter=None, extrema=None,
                    cumulative=None,
                    fig=None, xproj=True, yproj=True, hratio=0.7, wratio=0.7, pad=0.0, alpha=1.0,
