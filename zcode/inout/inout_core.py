@@ -797,7 +797,7 @@ def iterable_notstring(var):
     return not isinstance(var, six.string_types) and isinstance(var, collections.Iterable)
 
 
-def str_format_dict(jdict, **kwargs):
+def str_format_dict(jdict, file=None, **kwargs):
     """Pretty-format a dictionary into a nice looking string using the `json` package.
 
     Arguments
@@ -823,7 +823,10 @@ def str_format_dict(jdict, **kwargs):
     kwargs.setdefault('sort_keys', True)
     kwargs.setdefault('indent', 4)
 
-    jstr = json.dumps(jdict, separators=(',', ': '), cls=NumpyEncoder, **kwargs)
+    if file is None:
+        jstr = json.dumps(jdict, separators=(',', ': '), cls=NumpyEncoder, **kwargs)
+    else:
+        jstr = json.dump(jdict, file, separators=(',', ': '), cls=NumpyEncoder, **kwargs)
     return jstr
 
 

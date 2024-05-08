@@ -5,13 +5,13 @@ from setuptools import setup, find_packages
 
 short_description = __doc__.strip()
 
-with open('requirements.txt') as inn:
+with open('./requirements.txt') as inn:
     requirements = inn.read().splitlines()
 
-with open("README.rst", "r") as inn:
+with open("./README.rst", "r") as inn:
     long_description = inn.read().strip()
 
-with open('zcode/VERSION') as inn:
+with open('./zcode/VERSION') as inn:
     version = inn.read().strip()
 
 setup(
