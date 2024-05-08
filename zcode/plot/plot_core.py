@@ -492,9 +492,9 @@ def set_ticks(ax, axis='y', every=2, log=True):
 
     ylims = np.array(ax.get_ylim())
     man, exp = zmath.frexp10(ylims[0])
-    low = np.int(exp)
+    low = int(exp)
     man, exp = zmath.frexp10(ylims[1])
-    high = np.int(exp)
+    high = int(exp)
 
     vals = np.arange(low, high, every)
     vals = np.power(10.0, vals)
@@ -1342,7 +1342,7 @@ def skipTicks(ax, axis='y', skip=2, num=None, first=None, last=None):
     count = len(ax_labels)
 
     # Determine ``skip`` to match target number of labels
-    if num is not None: skip = np.int(np.ceil(1.0*count/num))
+    if num is not None: skip = int(np.ceil(1.0*count/num))
 
     visible = np.zeros(count, dtype=bool)
 
@@ -1492,7 +1492,7 @@ def scientific_notation(val, man=0, exp=0, dollar=True, one=True, zero=False, si
     if (exp is not None) and np.isfinite(val_exp):
         # Try to convert `val_exp` to integer, fails if 'inf' or 'nan'
         try:
-            val_exp = np.int(val_exp)
+            val_exp = int(val_exp)
             str_exp = "10^{{ {:d} }}".format(val_exp)
         except:
             str_exp = "10^{{ {0:.{1:d}f} }}".format(val_exp, exp)
@@ -1631,7 +1631,7 @@ def get_norm(data, midpoint=None, log=False, filter=None):
         else:
             min, max = rv
     elif np.size(data) == 1:
-        min, max = 0, np.int(data) - 1
+        min, max = 0, int(data) - 1
     elif np.size(data) == 2:
         min, max = data
     else:

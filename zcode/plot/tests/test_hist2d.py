@@ -4,11 +4,8 @@ Can be run with:
     $ nosetests plot/tests/test_hist2d.py
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-from numpy.testing import run_module_suite
-from nose.tools import assert_true
 
 from zcode.plot import Hist2D
 import zcode.inout as zio
@@ -51,8 +48,3 @@ class TestHist2D(object):
         count = save_fig(fig, fname, count)
         '''
         return
-
-
-# Run all methods as if with `nosetests ...`
-if __name__ == "__main__":
-    run_module_suite()

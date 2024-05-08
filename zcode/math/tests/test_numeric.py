@@ -4,11 +4,8 @@ Can be run with:
     $ nosetests math/tests/test_math_core.py
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
-from numpy.testing import run_module_suite
-from nose.tools import assert_true
 
 # import zcodes
 # import zcode.plot
@@ -46,7 +43,7 @@ class Test_Numeric(object):
                 test_dadx = numeric.cumtrapz_loglog(yy, xx, bounds=bounds, dlogx=None)
                 error = (test_dadx - exact) / exact
                 print("dA/dx, true: {:.4e}, test: {:.4e}, error = {:.4e}".format(exact, test_dadx, error))
-                assert_true(np.fabs(error) < 1e-6)
+                assert np.fabs(error) < 1e-6
 
                 # y = dA/dlog10x
                 bounds = np.array(bounds)
@@ -57,11 +54,6 @@ class Test_Numeric(object):
                 test_dadx = numeric.cumtrapz_loglog(yy, xx, bounds=bounds, dlogx=10.0)
                 error = (test_dadx - exact) / exact
                 print("dA/dlogx, true: {:.4e}, test: {:.4e}, error = {:.4e}".format(exact, test_dadx, error))
-                assert_true(np.fabs(error) < 1e-6)
+                assert np.fabs(error) < 1e-6
 
         return
-
-
-# Run all methods as if with `nosetests ...`
-if __name__ == "__main__":
-    run_module_suite()

@@ -134,8 +134,8 @@ def colormap2d(xargs, yargs, cmap=None, scale=None):
     elif np.size(scale) != 2:
         raise ValueError("`scale` must be a single or pair of values.")
 
-    if np.size(xargs) == 1: xargs = [0, np.int(xargs)-1]
-    if np.size(yargs) == 1: yargs = [0, np.int(yargs)-1]
+    if np.size(xargs) == 1: xargs = [0, int(xargs)-1]
+    if np.size(yargs) == 1: yargs = [0, int(yargs)-1]
 
     if scale[0] is None: scale[0] = zmath._infer_scale(xargs)
     if scale[1] is None: scale[1] = zmath._infer_scale(yargs)

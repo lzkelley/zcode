@@ -721,7 +721,7 @@ def modify_exists(fname, max=1000):
     is_dir = os.path.isdir(fname)
 
     # Determine number of digits for modified filenames to allow up to `max` files
-    prec = np.int(np.ceil(np.log10(max)))
+    prec = int(np.ceil(np.log10(max)))
 
     # Look for existing, modified filenames
     # -------------------------------------
@@ -750,7 +750,7 @@ def modify_exists(fname, max=1000):
         mat = mat.split(".")[0]
         # Try to convert to integer, raise error on failure
         try:
-            num = np.int(mat)+1
+            num = int(mat)+1
         except:
             errStr = "Could not match integer from last match = '{}', mat = '{}'.".format(
                 matches[-1], mat)

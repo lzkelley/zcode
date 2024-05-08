@@ -10,11 +10,9 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import warnings
-from numpy.testing import run_module_suite
-from nose.tools import assert_true
 
 from zcode.plot import plot_core
-import zcode.inout as zio
+# import zcode.inout as zio
 
 _THIS_PATH = os.path.abspath(os.path.dirname(__file__))
 _PLOT_DIR = os.path.join(_THIS_PATH, 'figures/')
@@ -79,7 +77,3 @@ class TestPlotCore(object):
         warnings.warn("Saved figure to '{}'".format(fname))
         return
 
-
-# Run all methods as if with `nosetests ...`
-if __name__ == "__main__":
-    run_module_suite()

@@ -11,9 +11,6 @@ import astropy as ap
 import astropy.time
 import datetime
 
-from numpy.testing import run_module_suite
-from nose.tools import assert_true
-
 import zcode
 import zcode.math.time
 
@@ -48,7 +45,7 @@ class TestTime(object):
             print("\tcorrect = '{}'".format(correct))
             retval = zcode.math.time.to_datetime(test[1])
             print("\tretval  = '{}' ({})".format(retval, type(retval)))
-            assert_true(retval == correct)
+            assert retval == correct
 
         # Try using the `format` argument
         correct = datetime.datetime(2017, 5, 4, 15, 23, 24, 12400)
@@ -58,11 +55,7 @@ class TestTime(object):
         print("\tcorrect = '{}'".format(correct))
         retval = zcode.math.time.to_datetime(weird, format=form)
         print("\tretval  = '{}'".format(retval))
-        assert_true(retval == correct)
+        assert retval == correct
 
         return
 
-
-# Run all methods as if with `nosetests ...`
-if __name__ == "__main__":
-    run_module_suite()

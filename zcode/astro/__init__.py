@@ -15,6 +15,3 @@ __all__.extend(astro_core.__all__)
 __all__.extend(gws.__all__)
 __all__.extend(scalings.__all__)
 __all__.extend(obs.__all__)
-
-from numpy.testing import Tester
-test = Tester().test

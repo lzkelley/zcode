@@ -19,5 +19,5 @@ __all__.extend(numeric.__all__)
 __all__.extend(interpolate.__all__)
 __all__.extend(statistic.__all__)
 
-from numpy.testing import Tester
-test = Tester().test
+# from numpy.testing import Tester
+# test = Tester().test
