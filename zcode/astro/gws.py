@@ -17,7 +17,7 @@ __all__ = [
     'gw_strain_source',
     'gw_char_strain', 'gw_freq_dist_func', '_gw_freq_dist_func_old', 'gw_lum_circ',
     # 'gw_strain_source_circ',
-    'sep_to_merge_in_time', 'time_to_merge_at_sep',
+    'sep_to_merge_in_time', 'time_to_merge_at_sep', 'time_to_merge_at_freq',
 ]
 
 _SCHW_CONST = 2*NWTG/np.square(SPLC)
@@ -227,6 +227,13 @@ def time_to_merge_at_sep(m1, m2, sep):
     a1 = astro_core.rad_isco(m1, m2)
     delta_sep = np.power(sep, 4.0) - np.power(a1, 4.0)
     return delta_sep/(GW_CONST*m1*m2*(m1+m2))
+
+
+def time_to_merge_at_freq(m1, m2, freq):
+    """The time required to merge starting from the given initial orbital frequency.
+    """
+    sepa = astro_core.kepler_sep_from_freq(m1+m2, freq)
+    return time_to_merge_at_sep(sepa)
 
 
 def _gw_ecc_func(ecc):
